@@ -115,10 +115,13 @@ $$;
 
 -- 5. ACCOUNT MANAGEMENT
 
+-- Explicitly drop the function if it exists to ensure signature matches
+DROP FUNCTION IF EXISTS public.delete_own_account();
+
 -- Allow users to delete their own account
--- Improved to handle storage object cleanup which often blocks user deletion due to foreign keys
-CREATE OR REPLACE FUNCTION delete_own_account()
-RETURNS void
+-- Using RETURNS json to prevent issues with void returns in some clients
+CREATE OR REPLACE FUNCTION public.delete_own_account()
+RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
 -- Set search path to include storage schema access
@@ -129,18 +132,26 @@ DECLARE
 BEGIN
   current_user_id := auth.uid();
   
+  -- Check if user exists/authenticated
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
   -- 1. Delete all storage objects owned by the user to prevent FK constraint violations
   -- This handles orphaned files that might not be in the public.files table
+  -- We delete from storage.objects where owner is the current user
   DELETE FROM storage.objects 
   WHERE owner = current_user_id;
 
   -- 2. Delete the user
   DELETE FROM auth.users WHERE id = current_user_id;
+  
+  RETURN json_build_object('status', 'success');
 END;
 $$;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION delete_own_account() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_own_account() TO authenticated;
 
 -- 4. STORAGE SETUP
 
@@ -164,3 +175,7 @@ DROP POLICY IF EXISTS "Auth Delete" ON storage.objects;
 CREATE POLICY "Auth Delete"
 ON storage.objects FOR DELETE
 USING ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
+
+-- FORCE CACHE RELOAD
+-- This notifies PostgREST to reload the schema cache immediately
+NOTIFY pgrst, 'reload schema';

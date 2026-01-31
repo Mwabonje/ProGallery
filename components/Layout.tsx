@@ -35,9 +35,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Clean up Storage Files (Best effort from Client Side)
-      // We attempt to delete known files from the DB first.
-      // The RPC function will handle the rest (orphaned files) to ensure the account can be deleted.
+      // 1. Clean up Storage Files (Client Side Best Effort)
+      // We try to clean up known files first. The RPC deals with the rest.
       try {
         const { data: galleries } = await supabase
           .from('galleries')
@@ -62,14 +61,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
       } catch (cleanupError) {
         console.warn("Manual cleanup failed, relying on RPC cascade:", cleanupError);
-        // Continue to RPC even if manual cleanup partially fails
       }
 
       // 2. Call RPC to delete account
-      // This function now handles storage.objects cleanup internally to prevent FK errors
+      // Note: We expect a JSON response now, or void.
       const { error } = await supabase.rpc('delete_own_account');
 
-      if (error) throw error;
+      if (error) {
+         // Specific handling for "Function not found" error which is common if migration didn't run
+         if (error.message.includes('Could not find the function') || error.code === 'PGRST202') {
+             throw new Error("Database configuration missing. Please run the SQL setup script in Supabase.");
+         }
+         throw error;
+      }
 
       // 3. Sign out and redirect
       await supabase.auth.signOut();
@@ -77,7 +81,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     } catch (error: any) {
       console.error("Account deletion failed:", error);
-      alert(`Failed to delete account: ${error.message || 'Unknown error'}. Please try again or contact support.`);
+      alert(`Failed to delete account: ${error.message || 'Unknown error'}.`);
       setIsDeleting(false);
     }
   };
