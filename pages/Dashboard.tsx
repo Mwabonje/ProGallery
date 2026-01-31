@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -97,6 +97,46 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const deleteGallery = async (e: React.MouseEvent, galleryId: string, clientName: string) => {
+    e.stopPropagation(); // Prevent navigation
+    
+    if (!window.confirm(`Are you sure you want to delete the gallery for "${clientName}"?\nThis action cannot be undone and will delete all associated files.`)) {
+        return;
+    }
+
+    try {
+        // 1. Get all file paths to clean up storage first
+        // We do this before deleting the DB record so we know what files to delete
+        const { data: filesData } = await supabase
+            .from('files')
+            .select('file_path')
+            .eq('gallery_id', galleryId);
+            
+        // 2. Delete from storage
+        if (filesData && filesData.length > 0) {
+            const paths = filesData.map(f => f.file_path);
+            // Supabase storage remove can handle multiple files
+            await supabase.storage.from('gallery-files').remove(paths);
+        }
+
+        // 3. Delete gallery record from Database
+        // Note: The 'files' table rows will be automatically deleted due to ON DELETE CASCADE in the schema
+        const { error } = await supabase
+            .from('galleries')
+            .delete()
+            .eq('id', galleryId);
+
+        if (error) throw error;
+
+        // 4. Update local state
+        setGalleries(prev => prev.filter(g => g.id !== galleryId));
+
+    } catch (err) {
+        console.error("Error deleting gallery:", err);
+        alert("Failed to delete gallery. Check console for details.");
+    }
+  };
+
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading galleries...</div>;
 
   return (
@@ -137,6 +177,15 @@ export const Dashboard: React.FC = () => {
               
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+              
+              {/* Delete Button */}
+              <button
+                onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
+                className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-slate-400 hover:text-red-600 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-90 group-hover:scale-100 z-10"
+                title="Delete Gallery"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Info Container */}
