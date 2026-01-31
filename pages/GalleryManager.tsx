@@ -111,16 +111,23 @@ export const GalleryManager: React.FC = () => {
       // Process all uploads in parallel
       await Promise.all(filesToUpload.map(async (file: File) => {
         try {
-          // Use a unique ID for the folder to prevent collisions, 
-          // but keep the original filename for display and download.
+          // Use a unique ID for the folder to prevent collisions
           const uniqueId = Math.random().toString(36).substring(2);
-          const fileName = file.name; 
-          const filePath = `${gallery.id}/${uniqueId}/${fileName}`;
+          
+          // Sanitize filename: replace non-alphanumeric chars (except ._-) with _
+          // This prevents issues with special characters in URLs which can break video playback
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const filePath = `${gallery.id}/${uniqueId}/${sanitizedFileName}`;
 
           // 1. Upload to Storage
+          // Explicitly set contentType to ensure proper handling of videos
           const { error: uploadError } = await supabase.storage
             .from('gallery-files')
-            .upload(filePath, file);
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type // Crucial for video playback and browser handling
+            });
 
           if (uploadError) throw uploadError;
 
@@ -140,6 +147,7 @@ export const GalleryManager: React.FC = () => {
               gallery_id: gallery.id,
               file_url: publicUrl,
               file_path: filePath,
+              // Fallback to 'video' if not 'image', ensures DB constraint is met
               file_type: file.type.startsWith('image/') ? 'image' : 'video',
               expires_at: expiresAt.toISOString()
             }]);
