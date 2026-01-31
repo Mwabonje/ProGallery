@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2 } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
@@ -34,19 +34,17 @@ export const ClientGallery: React.FC = () => {
     // Find the earliest expiry date (assuming batch upload, they are close)
     const firstFile = files[0];
     
-    const timer = setInterval(() => {
+    const updateTimer = () => {
         const { hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
         if (expired) {
             setTimeRemaining('Expired');
         } else {
             setTimeRemaining(`${hours}h ${minutes}m`);
         }
-    }, 60000); // Update every minute
+    };
 
-    // Initial set
-    const { hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
-    if(expired) setTimeRemaining('Expired');
-    else setTimeRemaining(`${hours}h ${minutes}m`);
+    updateTimer(); // Initial call
+    const timer = setInterval(updateTimer, 60000); // Update every minute
 
     return () => clearInterval(timer);
   }, [files]);
@@ -109,7 +107,7 @@ export const ClientGallery: React.FC = () => {
       }
 
       if (!galData.link_enabled) {
-        setError('This gallery is currently unavailable. Please contact your photographer.');
+        setError('This gallery is currently unavailable. Please contact the photographer.');
         setLoading(false);
         return;
       }
@@ -126,7 +124,8 @@ export const ClientGallery: React.FC = () => {
       if (fileError) throw fileError;
       
       if (!fileData || fileData.length === 0) {
-         setError('This gallery has expired or has no files.');
+         // We set a specific friendly message for expiration/empty states
+         setError('This gallery link has expired. Please contact the photographer to request access.');
       } else {
          setFiles(fileData);
       }
@@ -229,10 +228,15 @@ export const ClientGallery: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
-            <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Access Restricted</h1>
-            <p className="text-slate-600">{error}</p>
+        <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-8 h-8 text-slate-400" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 mb-3">Gallery Unavailable</h1>
+            <p className="text-slate-600 mb-8 leading-relaxed">{error}</p>
+            <div className="pt-6 border-t border-slate-100">
+                <p className="text-sm text-slate-400">ProGallery</p>
+            </div>
         </div>
       </div>
     );
@@ -250,8 +254,14 @@ export const ClientGallery: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
-            <p className="text-sm text-slate-500">
-                {files.length} items • Expires in <span className="text-red-500 font-medium">{timeRemaining}</span>
+            <p className="text-sm text-slate-500 flex items-center gap-2">
+                {files.length} items 
+                <span className="text-slate-300">•</span>
+                {timeRemaining === 'Expired' ? (
+                   <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs uppercase tracking-wide">Expired</span>
+                ) : (
+                   <span>Expires in <span className="text-red-500 font-medium">{timeRemaining}</span></span>
+                )}
             </p>
           </div>
           

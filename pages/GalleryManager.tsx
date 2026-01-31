@@ -4,17 +4,22 @@ import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Downl
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useUpload } from '../contexts/UploadContext';
 
 export const GalleryManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Use Global Upload Context
+  const { uploading, progress, activeGalleryId, uploadFiles } = useUpload();
+  const isUploadingThisGallery = uploading && activeGalleryId === id;
+  
+  // Track previous uploading state to trigger refresh on completion
+  const prevUploadingRef = useRef(uploading);
+
   // Edit states
-  // 'balance' here refers to the Total Agreed Amount based on DB schema
   const [agreedAmount, setAgreedAmount] = useState<number>(0);
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
@@ -32,7 +37,7 @@ export const GalleryManager: React.FC = () => {
         if (saved) {
             setExpiryHours(parseFloat(saved));
         } else {
-            setExpiryHours(24); // Default to 24 hours if no specific setting exists for this client
+            setExpiryHours(24);
         }
     } catch {
         setExpiryHours(24);
@@ -50,6 +55,18 @@ export const GalleryManager: React.FC = () => {
     if (id) fetchGalleryData();
   }, [id]);
 
+  // Effect to refresh data when global upload finishes
+  useEffect(() => {
+    const wasUploading = prevUploadingRef.current;
+    if (wasUploading && !uploading) {
+        // Upload finished. 
+        // Ideally we check if it was *this* gallery, but checking activeGalleryId is tricky because it might be null now.
+        // However, a refresh is cheap enough to just do it.
+        fetchGalleryData();
+    }
+    prevUploadingRef.current = uploading;
+  }, [uploading]);
+
   const fetchGalleryData = async () => {
     if (!id) return;
     
@@ -66,7 +83,7 @@ export const GalleryManager: React.FC = () => {
     }
     
     setGallery(galData);
-    setAgreedAmount(galData.agreed_balance); // Mapping agreed_balance to Total Agreed Amount
+    setAgreedAmount(galData.agreed_balance);
     setPaid(galData.amount_paid);
 
     // Get Files
@@ -83,111 +100,12 @@ export const GalleryManager: React.FC = () => {
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0 || !gallery) return;
 
-    setUploading(true);
-    setUploadProgress(0);
-    
-    // Convert FileList to Array
     const filesToUpload = Array.from(fileList);
-    const totalFiles = filesToUpload.length;
-    let completedCount = 0;
-    let successCount = 0;
     
-    // Simulated progress tracker
-    let fakeProgress = 0;
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        // Increment fake progress by random amount (1-5%)
-        // But cap it at 90% until real completion happens
-        const increment = Math.random() * 5;
-        const nextFake = Math.min(fakeProgress + increment, 90);
-        fakeProgress = nextFake;
-        
-        // Always show the larger of Real vs Fake
-        return Math.max(prev, Math.round(nextFake));
-      });
-    }, 500);
-
-    try {
-      // Process all uploads in parallel
-      await Promise.all(filesToUpload.map(async (file: File) => {
-        try {
-          // Use a unique ID for the folder to prevent collisions
-          const uniqueId = Math.random().toString(36).substring(2);
-          
-          // Sanitize filename: replace non-alphanumeric chars (except ._-) with _
-          // This prevents issues with special characters in URLs which can break video playback
-          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const filePath = `${gallery.id}/${uniqueId}/${sanitizedFileName}`;
-
-          // 1. Upload to Storage
-          // Explicitly set contentType to ensure proper handling of videos
-          const { error: uploadError } = await supabase.storage
-            .from('gallery-files')
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: false,
-              contentType: file.type // Crucial for video playback and browser handling
-            });
-
-          if (uploadError) throw uploadError;
-
-          // 2. Get Public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('gallery-files')
-            .getPublicUrl(filePath);
-
-          // 3. Create DB Record
-          const expiresAt = new Date();
-          // Add expiryHours (converting hours to milliseconds)
-          expiresAt.setTime(expiresAt.getTime() + expiryHours * 60 * 60 * 1000);
-
-          const { error: dbError } = await supabase
-            .from('files')
-            .insert([{
-              gallery_id: gallery.id,
-              file_url: publicUrl,
-              file_path: filePath,
-              // Fallback to 'video' if not 'image', ensures DB constraint is met
-              file_type: file.type.startsWith('image/') ? 'image' : 'video',
-              expires_at: expiresAt.toISOString()
-            }]);
-
-          if (dbError) throw dbError;
-          successCount++;
-        } catch (err) {
-          console.error(`Failed to upload ${file.name}`, err);
-        } finally {
-          completedCount++;
-          const realPercentage = Math.round((completedCount / totalFiles) * 100);
-          
-          // Update state with real percentage (it will override fake if higher)
-          setUploadProgress(prev => Math.max(prev, realPercentage));
-          
-          // Sync fake progress so it doesn't drag behind
-          fakeProgress = Math.max(fakeProgress, realPercentage);
-        }
-      }));
-
-      if (successCount < filesToUpload.length) {
-        alert(`Uploaded ${successCount} of ${filesToUpload.length} files. Check console for errors.`);
-      }
-
-      // Refresh list
-      fetchGalleryData();
-    } catch (error) {
-      console.error('Batch upload error:', error);
-      alert('An error occurred during upload.');
-    } finally {
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
-      // Add a small delay before hiding the progress bar to show 100%
-      setTimeout(() => {
-        setUploading(false);
-        setUploadProgress(0);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }, 500);
-    }
+    // Use Context
+    await uploadFiles(gallery.id, filesToUpload, expiryHours);
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const updatePayment = async () => {
@@ -448,17 +366,17 @@ export const GalleryManager: React.FC = () => {
                             accept="image/*,video/*"
                         />
                         
-                        {uploading ? (
+                        {isUploadingThisGallery ? (
                           <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
                              <div className="flex flex-col w-32">
                                 <div className="flex justify-between text-xs mb-1">
                                    <span className="text-slate-600 font-medium">Uploading...</span>
-                                   <span className="text-emerald-600 font-bold">{uploadProgress}%</span>
+                                   <span className="text-emerald-600 font-bold">{progress}%</span>
                                 </div>
                                 <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                                    <div 
                                       className="h-full bg-emerald-500 transition-all duration-300 ease-out"
-                                      style={{ width: `${uploadProgress}%` }}
+                                      style={{ width: `${progress}%` }}
                                    />
                                 </div>
                              </div>
@@ -466,10 +384,11 @@ export const GalleryManager: React.FC = () => {
                         ) : (
                           <button 
                               onClick={() => fileInputRef.current?.click()}
-                              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+                              disabled={uploading} // Disable if uploading somewhere else too
+                              className={`bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                               <Upload className="w-4 h-4" />
-                              <span>Upload Files</span>
+                              <span>{uploading ? 'Busy...' : 'Upload Files'}</span>
                           </button>
                         )}
                     </div>

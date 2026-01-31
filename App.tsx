@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { GalleryManager } from './pages/GalleryManager';
 import { ClientGallery } from './pages/ClientGallery';
 import { Session } from '@supabase/supabase-js';
+import { UploadProvider } from './contexts/UploadContext';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -35,33 +36,35 @@ const App: React.FC = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-400">Loading...</div>;
 
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/g/:galleryId" element={<ClientGallery />} />
+    <UploadProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/g/:galleryId" element={<ClientGallery />} />
 
-        {/* Protected Photographer Routes */}
-        <Route path="/dashboard" element={
-          session ? (
-            <Layout>
-              <Dashboard />
-            </Layout>
-          ) : <Navigate to="/login" />
-        } />
-        
-        <Route path="/gallery/:id" element={
-          session ? (
-            <Layout>
-              <GalleryManager />
-            </Layout>
-          ) : <Navigate to="/login" />
-        } />
+          {/* Protected Photographer Routes */}
+          <Route path="/dashboard" element={
+            session ? (
+              <Layout>
+                <Dashboard />
+              </Layout>
+            ) : <Navigate to="/login" />
+          } />
+          
+          <Route path="/gallery/:id" element={
+            session ? (
+              <Layout>
+                <GalleryManager />
+              </Layout>
+            ) : <Navigate to="/login" />
+          } />
 
-        {/* Default */}
-        <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
-      </Routes>
-    </Router>
+          {/* Default */}
+          <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+        </Routes>
+      </Router>
+    </UploadProvider>
   );
 };
 
