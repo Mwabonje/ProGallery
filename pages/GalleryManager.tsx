@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -16,6 +16,7 @@ export const GalleryManager: React.FC = () => {
   // 'balance' here refers to the Total Agreed Amount based on DB schema
   const [agreedAmount, setAgreedAmount] = useState<number>(0);
   const [paid, setPaid] = useState<number>(0);
+  const [paymentUpdated, setPaymentUpdated] = useState(false);
 
   useEffect(() => {
     if (id) fetchGalleryData();
@@ -131,7 +132,9 @@ export const GalleryManager: React.FC = () => {
         action: `Payment updated: Agreed ${agreedAmount}, Paid ${paid}`
       });
 
-      alert('Payment details updated');
+      setPaymentUpdated(true);
+      setTimeout(() => setPaymentUpdated(false), 3000);
+      
       fetchGalleryData();
     } catch (error) {
       console.error(error);
@@ -265,10 +268,24 @@ export const GalleryManager: React.FC = () => {
 
               <button 
                 onClick={updatePayment}
-                className="w-full bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-800 flex justify-center items-center gap-2"
+                disabled={paymentUpdated}
+                className={`w-full py-2 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 ${
+                  paymentUpdated 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                }`}
               >
-                <Save className="w-4 h-4" />
-                <span>Update Payment</span>
+                {paymentUpdated ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Updated!</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Update Payment</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
