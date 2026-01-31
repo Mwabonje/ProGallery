@@ -116,15 +116,31 @@ $$;
 -- 5. ACCOUNT MANAGEMENT
 
 -- Allow users to delete their own account
+-- Improved to handle storage object cleanup which often blocks user deletion due to foreign keys
 CREATE OR REPLACE FUNCTION delete_own_account()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+-- Set search path to include storage schema access
+SET search_path = public, storage, auth
 AS $$
+DECLARE
+  current_user_id uuid;
 BEGIN
-  DELETE FROM auth.users WHERE id = auth.uid();
+  current_user_id := auth.uid();
+  
+  -- 1. Delete all storage objects owned by the user to prevent FK constraint violations
+  -- This handles orphaned files that might not be in the public.files table
+  DELETE FROM storage.objects 
+  WHERE owner = current_user_id;
+
+  -- 2. Delete the user
+  DELETE FROM auth.users WHERE id = current_user_id;
 END;
 $$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION delete_own_account() TO authenticated;
 
 -- 4. STORAGE SETUP
 

@@ -35,33 +35,38 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Clean up Storage Files
-      // We need to do this manually because storage objects aren't automatically deleted when the user row is deleted
-      const { data: galleries } = await supabase
-        .from('galleries')
-        .select('id')
-        .eq('photographer_id', user.id);
+      // 1. Clean up Storage Files (Best effort from Client Side)
+      // We attempt to delete known files from the DB first.
+      // The RPC function will handle the rest (orphaned files) to ensure the account can be deleted.
+      try {
+        const { data: galleries } = await supabase
+          .from('galleries')
+          .select('id')
+          .eq('photographer_id', user.id);
 
-      if (galleries && galleries.length > 0) {
-        const galleryIds = galleries.map(g => g.id);
-        const { data: files } = await supabase
-          .from('files')
-          .select('file_path')
-          .in('gallery_id', galleryIds);
+        if (galleries && galleries.length > 0) {
+          const galleryIds = galleries.map(g => g.id);
+          const { data: files } = await supabase
+            .from('files')
+            .select('file_path')
+            .in('gallery_id', galleryIds);
 
-        if (files && files.length > 0) {
-          const filePaths = files.map(f => f.file_path);
-          // Delete in batches of 100 just to be safe, though Supabase handles more
-          const batchSize = 100;
-          for (let i = 0; i < filePaths.length; i += batchSize) {
-             const batch = filePaths.slice(i, i + batchSize);
-             await supabase.storage.from('gallery-files').remove(batch);
+          if (files && files.length > 0) {
+            const filePaths = files.map(f => f.file_path);
+            const batchSize = 100;
+            for (let i = 0; i < filePaths.length; i += batchSize) {
+               const batch = filePaths.slice(i, i + batchSize);
+               await supabase.storage.from('gallery-files').remove(batch);
+            }
           }
         }
+      } catch (cleanupError) {
+        console.warn("Manual cleanup failed, relying on RPC cascade:", cleanupError);
+        // Continue to RPC even if manual cleanup partially fails
       }
 
       // 2. Call RPC to delete account
-      // This will cascade delete galleries and file records due to schema constraints
+      // This function now handles storage.objects cleanup internally to prevent FK errors
       const { error } = await supabase.rpc('delete_own_account');
 
       if (error) throw error;
@@ -70,9 +75,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       await supabase.auth.signOut();
       navigate('/login');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Account deletion failed:", error);
-      alert("Failed to delete account fully. Some data might remain. Please contact support.");
+      alert(`Failed to delete account: ${error.message || 'Unknown error'}. Please try again or contact support.`);
       setIsDeleting(false);
     }
   };
