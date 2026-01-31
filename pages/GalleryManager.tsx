@@ -218,10 +218,11 @@ export const GalleryManager: React.FC = () => {
                 href={`/#/g/${gallery.id}`}
                 target="_blank" 
                 rel="noreferrer"
-                className="flex-1 md:flex-none justify-center px-4 py-2 bg-slate-900 border border-slate-900 text-white rounded-lg hover:bg-slate-800 flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
+                className="flex-1 md:flex-none justify-center px-4 py-2 bg-slate-900 border border-slate-900 text-white rounded-lg hover:bg-slate-800 flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
                 >
                     <Eye className="w-4 h-4" />
-                    <span>Client Preview</span>
+                    <span className="hidden sm:inline">Client Preview</span>
+                    <span className="inline sm:hidden">Preview</span>
                 </a>
                 
                 <button
