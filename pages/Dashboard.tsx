@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, ExternalLink, Clock, DollarSign, Loader2 } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
-import { formatCurrency, formatDate } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 
+// Extended interface for dashboard display
+interface DashboardGallery extends Gallery {
+  coverUrl: string | null;
+  itemCount: number;
+}
+
 export const Dashboard: React.FC = () => {
-  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [galleries, setGalleries] = useState<DashboardGallery[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -19,14 +24,43 @@ export const Dashboard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      // 1. Fetch Galleries
+      const { data: galleriesData, error } = await supabase
         .from('galleries')
         .select('*')
         .eq('photographer_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setGalleries(data || []);
+
+      // 2. Fetch details for each gallery (Cover Image & Count)
+      // Note: In a larger production app, this should be a database view or a join query.
+      const enrichedGalleries = await Promise.all(
+        (galleriesData || []).map(async (gallery) => {
+          // Get item count
+          const { count } = await supabase
+            .from('files')
+            .select('*', { count: 'exact', head: true })
+            .eq('gallery_id', gallery.id);
+
+          // Get latest image for cover
+          const { data: files } = await supabase
+            .from('files')
+            .select('file_url')
+            .eq('gallery_id', gallery.id)
+            .eq('file_type', 'image')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          return {
+            ...gallery,
+            itemCount: count || 0,
+            coverUrl: files && files.length > 0 ? files[0].file_url : null,
+          };
+        })
+      );
+
+      setGalleries(enrichedGalleries);
     } catch (error) {
       console.error('Error loading galleries:', error);
     } finally {
@@ -48,7 +82,7 @@ export const Dashboard: React.FC = () => {
           photographer_id: user.id,
           client_name: clientName,
           title: `${clientName}'s Gallery`,
-          agreed_balance: 100, // Default Agreed Amount
+          agreed_balance: 0,
           amount_paid: 0,
           link_enabled: true
         }])
@@ -63,76 +97,82 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading galleries...</div>;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Manage your client deliveries</p>
+           {/* Header purposefully left minimal or could be added back if needed */}
         </div>
         <button
           onClick={createGallery}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm"
+          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center space-x-2 transition-all shadow-lg active:scale-95"
         >
           <Plus className="w-5 h-5" />
-          <span>New Delivery</span>
+          <span>New Gallery</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {galleries.map((gallery) => {
-          const balanceDue = Math.max(0, gallery.agreed_balance - gallery.amount_paid);
-          
-          return (
-            <div 
-              key={gallery.id} 
-              onClick={() => navigate(`/gallery/${gallery.id}`)}
-              className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow cursor-pointer overflow-hidden group"
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                    {gallery.client_name}
-                  </h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    gallery.link_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {gallery.link_enabled ? 'Active' : 'Disabled'}
-                  </span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+        {galleries.map((gallery) => (
+          <div 
+            key={gallery.id} 
+            onClick={() => navigate(`/gallery/${gallery.id}`)}
+            className="group cursor-pointer flex flex-col"
+          >
+            {/* Image Container */}
+            <div className="relative aspect-[3/2] bg-slate-100 rounded-md overflow-hidden mb-3 shadow-sm transition-all duration-300 group-hover:shadow-md">
+              {gallery.coverUrl ? (
+                <img 
+                  src={gallery.coverUrl} 
+                  alt={gallery.client_name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                  <ImageIcon className="w-10 h-10" />
                 </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <DollarSign className="w-4 h-4 mr-2 text-slate-400" />
-                    <div className="flex flex-col">
-                      <span className={balanceDue === 0 ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
-                        {balanceDue === 0 ? "Fully Paid" : `Balance: ${formatCurrency(balanceDue)}`}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                         Total: {formatCurrency(gallery.agreed_balance)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                    <span>Created {formatDate(gallery.created_at)}</span>
-                  </div>
-                </div>
-              </div>
+              )}
               
-              <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-sm text-slate-500">
-                <span>View details</span>
-                <ExternalLink className="w-4 h-4" />
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+            </div>
+
+            {/* Info Container */}
+            <div className="space-y-1">
+              {/* Title Row */}
+              <div className="flex items-center gap-2">
+                {gallery.link_enabled ? (
+                  <Eye className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <EyeOff className="w-4 h-4 text-slate-400" />
+                )}
+                <h3 className="font-semibold text-slate-800 truncate group-hover:text-slate-600 transition-colors">
+                  {gallery.client_name}
+                </h3>
+              </div>
+
+              {/* Status Row */}
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${gallery.link_enabled && gallery.itemCount > 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                <span className="text-slate-500">
+                  {gallery.itemCount} {gallery.itemCount === 1 ? 'item' : 'items'}
+                </span>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
 
+        {/* Empty State */}
         {galleries.length === 0 && (
-          <div className="col-span-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
-            <p className="text-slate-500">No galleries yet. Create your first delivery!</p>
+          <div 
+            onClick={createGallery}
+            className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
+          >
+            <ImageIcon className="w-12 h-12 mb-4 text-slate-300" />
+            <p className="font-medium">No galleries found</p>
+            <p className="text-sm mt-1">Create your first gallery to get started</p>
           </div>
         )}
       </div>
