@@ -64,7 +64,7 @@ export const GalleryManager: React.FC = () => {
 
     try {
       // Process all uploads in parallel
-      await Promise.all(filesToUpload.map(async (file) => {
+      await Promise.all(filesToUpload.map(async (file: File) => {
         try {
           // Use a unique ID for the folder to prevent collisions, 
           // but keep the original filename for display and download.

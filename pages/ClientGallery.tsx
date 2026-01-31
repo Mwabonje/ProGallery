@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
+// @ts-ignore
+import JSZip from 'jszip';
+// @ts-ignore
+import saveAs from 'file-saver';
 
 export const ClientGallery: React.FC = () => {
   const { galleryId } = useParams<{ galleryId: string }>();
@@ -14,6 +18,10 @@ export const ClientGallery: React.FC = () => {
   const [showPayModal, setShowPayModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
+  
+  // Download All State
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     if (galleryId) loadGallery();
@@ -161,6 +169,61 @@ export const ClientGallery: React.FC = () => {
     }
   };
 
+  const handleDownloadAll = async () => {
+    if (!gallery || !files.length) return;
+
+    // Payment Check
+    const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
+    if (balance > 0) {
+      setShowPayModal(true);
+      return;
+    }
+
+    setDownloadingAll(true);
+    setDownloadProgress(0);
+
+    try {
+      const zip = new JSZip();
+      let processed = 0;
+
+      // Create an array of promises
+      const promises = files.map(async (file) => {
+        try {
+          const response = await fetch(file.file_url);
+          if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
+          const blob = await response.blob();
+          
+          // Get clean filename
+          const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
+          
+          zip.file(fileName, blob);
+        } catch (error) {
+          console.error(`Error downloading file: ${file.id}`, error);
+        } finally {
+          processed++;
+          setDownloadProgress(Math.round((processed / files.length) * 100));
+        }
+      });
+
+      // Wait for all downloads to complete
+      await Promise.all(promises);
+
+      // Generate Zip
+      const content = await zip.generateAsync({ type: "blob" });
+      const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      saveAs(content, `${galleryName}_photos.zip`);
+
+      // Ideally increment download counts for all files here, but for now we skip to avoid spamming DB
+      
+    } catch (error) {
+      console.error('Error creating zip:', error);
+      alert('Failed to download all files. Please try downloading individually.');
+    } finally {
+      setDownloadingAll(false);
+      setDownloadProgress(0);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin h-8 w-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
 
   if (error) {
@@ -192,7 +255,32 @@ export const ClientGallery: React.FC = () => {
             </p>
           </div>
           
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+             {/* Download All Button */}
+             <button
+                onClick={handleDownloadAll}
+                disabled={downloadingAll || files.length === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isLocked 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : downloadingAll 
+                        ? 'bg-slate-100 text-slate-600 cursor-wait'
+                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                }`}
+             >
+                {downloadingAll ? (
+                    <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{downloadProgress}%</span>
+                    </>
+                ) : (
+                    <>
+                        <FolderDown className="w-4 h-4" />
+                        <span>Download All</span>
+                    </>
+                )}
+             </button>
+
              {isLocked ? (
                  <div className="flex items-center gap-4 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">
                     <div className="flex flex-col text-right">
@@ -204,7 +292,7 @@ export const ClientGallery: React.FC = () => {
              ) : (
                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-200">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span>Paid in Full</span>
+                    <span className="hidden sm:inline">Paid in Full</span>
                  </div>
              )}
           </div>
