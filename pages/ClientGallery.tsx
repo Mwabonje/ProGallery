@@ -93,8 +93,10 @@ export const ClientGallery: React.FC = () => {
   const handleDownload = async (file: GalleryFile) => {
     if (!gallery) return;
 
-    // Payment Check
-    if (gallery.amount_paid < gallery.agreed_balance) {
+    // Payment Check: Lock if Balance > 0
+    const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
+    
+    if (balance > 0) {
       setShowPayModal(true);
       return;
     }
@@ -132,13 +134,16 @@ export const ClientGallery: React.FC = () => {
     );
   }
 
-  const isLocked = gallery && gallery.amount_paid < gallery.agreed_balance;
+  const agreedAmount = gallery?.agreed_balance || 0;
+  const amountPaid = gallery?.amount_paid || 0;
+  const balanceDue = Math.max(0, agreedAmount - amountPaid);
+  const isLocked = balanceDue > 0;
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
             <p className="text-sm text-slate-500">
@@ -146,14 +151,18 @@ export const ClientGallery: React.FC = () => {
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 text-sm">
              {isLocked ? (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-medium border border-amber-200">
-                    <Lock className="w-3 h-3" />
-                    <span>Balance Due: {formatCurrency((gallery?.agreed_balance || 0) - (gallery?.amount_paid || 0))}</span>
+                 <div className="flex items-center gap-4 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">
+                    <div className="flex flex-col text-right">
+                        <span className="text-slate-500 text-xs">Balance Due</span>
+                        <span className="font-bold text-amber-700">{formatCurrency(balanceDue)}</span>
+                    </div>
+                    <Lock className="w-5 h-5 text-amber-600" />
                  </div>
              ) : (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-200">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
                     <span>Paid in Full</span>
                  </div>
              )}
@@ -181,7 +190,7 @@ export const ClientGallery: React.FC = () => {
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <button
                   onClick={() => handleDownload(file)}
-                  className="bg-white/90 hover:bg-white text-slate-900 px-6 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all"
+                  className="bg-white/90 hover:bg-white text-slate-900 px-6 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg"
                 >
                   {isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
                   <span>{isLocked ? 'Locked' : 'Download'}</span>
@@ -201,7 +210,9 @@ export const ClientGallery: React.FC = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Downloads Locked</h3>
             <p className="text-slate-600 mb-6">
-              Please clear the remaining balance of <strong>{formatCurrency((gallery?.agreed_balance || 0) - (gallery?.amount_paid || 0))}</strong> to download full resolution files.
+              You have a remaining balance of <strong>{formatCurrency(balanceDue)}</strong>.
+              <br/>
+              <span className="text-xs text-slate-500 mt-2 block">(Agreed: {formatCurrency(agreedAmount)} - Paid: {formatCurrency(amountPaid)})</span>
             </p>
             <div className="space-y-3">
                 <button 

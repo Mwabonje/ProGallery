@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -13,7 +13,8 @@ export const GalleryManager: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Edit states
-  const [balance, setBalance] = useState<number>(0);
+  // 'balance' here refers to the Total Agreed Amount based on DB schema
+  const [agreedAmount, setAgreedAmount] = useState<number>(0);
   const [paid, setPaid] = useState<number>(0);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export const GalleryManager: React.FC = () => {
     }
     
     setGallery(galData);
-    setBalance(galData.agreed_balance);
+    setAgreedAmount(galData.agreed_balance); // Mapping agreed_balance to Total Agreed Amount
     setPaid(galData.amount_paid);
 
     // Get Files
@@ -121,13 +122,13 @@ export const GalleryManager: React.FC = () => {
     try {
       await supabase
         .from('galleries')
-        .update({ agreed_balance: balance, amount_paid: paid })
+        .update({ agreed_balance: agreedAmount, amount_paid: paid })
         .eq('id', gallery.id);
       
       // Log activity
       await supabase.from('activity_logs').insert({
         gallery_id: gallery.id,
-        action: `Payment updated: Paid KES ${paid} of KES ${balance}`
+        action: `Payment updated: Agreed ${agreedAmount}, Paid ${paid}`
       });
 
       alert('Payment details updated');
@@ -170,6 +171,8 @@ export const GalleryManager: React.FC = () => {
 
   if (!gallery) return <div className="p-8">Loading...</div>;
 
+  const remainingBalance = Math.max(0, agreedAmount - paid);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -211,17 +214,19 @@ export const GalleryManager: React.FC = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Agreed Balance</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Agreed Amount</label>
                 <div className="relative">
                     <span className="absolute left-3 top-2 text-slate-400">KES</span>
                     <input 
                     type="number" 
-                    value={balance}
-                    onChange={(e) => setBalance(Number(e.target.value))}
+                    value={agreedAmount}
+                    onChange={(e) => setAgreedAmount(Number(e.target.value))}
                     className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    placeholder="Total amount"
                     />
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
                 <div className="relative">
@@ -231,12 +236,31 @@ export const GalleryManager: React.FC = () => {
                     value={paid}
                     onChange={(e) => setPaid(Number(e.target.value))}
                     className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    placeholder="Amount received"
                     />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Remaining Balance</label>
+                <div className="relative bg-slate-50 rounded-lg">
+                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
+                    <input 
+                    type="text" 
+                    value={formatCurrency(remainingBalance).replace('KES', '').trim()}
+                    disabled
+                    className="w-full pl-12 pr-4 py-2 border border-slate-300 bg-slate-100 text-slate-500 rounded-lg outline-none cursor-not-allowed"
+                    />
+                    <div className="absolute right-3 top-2.5">
+                      <Calculator className="w-4 h-4 text-slate-400" />
+                    </div>
+                </div>
+              </div>
               
-              <div className={`p-3 rounded-lg text-sm ${paid >= balance ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                Status: <strong>{paid >= balance ? 'Paid in Full' : 'Outstanding Balance'}</strong>
+              <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${remainingBalance <= 0 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                <span className="font-medium">{remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance'}</span>
+                {remainingBalance <= 0 && <Unlock className="w-4 h-4" />}
+                {remainingBalance > 0 && <Lock className="w-4 h-4" />}
               </div>
 
               <button 

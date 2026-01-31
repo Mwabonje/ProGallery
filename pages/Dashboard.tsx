@@ -48,7 +48,7 @@ export const Dashboard: React.FC = () => {
           photographer_id: user.id,
           client_name: clientName,
           title: `${clientName}'s Gallery`,
-          agreed_balance: 100, // Default, can be changed
+          agreed_balance: 100, // Default Agreed Amount
           amount_paid: 0,
           link_enabled: true
         }])
@@ -82,44 +82,53 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {galleries.map((gallery) => (
-          <div 
-            key={gallery.id} 
-            onClick={() => navigate(`/gallery/${gallery.id}`)}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow cursor-pointer overflow-hidden group"
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                  {gallery.client_name}
-                </h3>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  gallery.link_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {gallery.link_enabled ? 'Active' : 'Disabled'}
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-slate-600">
-                  <DollarSign className="w-4 h-4 mr-2 text-slate-400" />
-                  <span className={gallery.amount_paid >= gallery.agreed_balance ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
-                    {formatCurrency(gallery.amount_paid)} / {formatCurrency(gallery.agreed_balance)}
+        {galleries.map((gallery) => {
+          const balanceDue = Math.max(0, gallery.agreed_balance - gallery.amount_paid);
+          
+          return (
+            <div 
+              key={gallery.id} 
+              onClick={() => navigate(`/gallery/${gallery.id}`)}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow cursor-pointer overflow-hidden group"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                    {gallery.client_name}
+                  </h3>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    gallery.link_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {gallery.link_enabled ? 'Active' : 'Disabled'}
                   </span>
                 </div>
-                <div className="flex items-center text-sm text-slate-600">
-                  <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                  <span>Created {formatDate(gallery.created_at)}</span>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-slate-600">
+                    <DollarSign className="w-4 h-4 mr-2 text-slate-400" />
+                    <div className="flex flex-col">
+                      <span className={balanceDue === 0 ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
+                        {balanceDue === 0 ? "Fully Paid" : `Balance: ${formatCurrency(balanceDue)}`}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                         Total: {formatCurrency(gallery.agreed_balance)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-sm text-slate-600">
+                    <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                    <span>Created {formatDate(gallery.created_at)}</span>
+                  </div>
                 </div>
               </div>
+              
+              <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-sm text-slate-500">
+                <span>View details</span>
+                <ExternalLink className="w-4 h-4" />
+              </div>
             </div>
-            
-            <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-sm text-slate-500">
-              <span>View details</span>
-              <ExternalLink className="w-4 h-4" />
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {galleries.length === 0 && (
           <div className="col-span-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
