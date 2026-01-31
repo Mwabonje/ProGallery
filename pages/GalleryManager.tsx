@@ -20,20 +20,31 @@ export const GalleryManager: React.FC = () => {
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Expiration settings (in hours) - Persisted in localStorage
-  const [expiryHours, setExpiryHours] = useState<number>(() => {
-    try {
-        const saved = localStorage.getItem('defaultExpiryHours');
-        return saved ? parseFloat(saved) : 24;
-    } catch {
-        return 24;
-    }
-  });
+  // Expiration settings (in hours)
+  const [expiryHours, setExpiryHours] = useState<number>(24);
 
-  // Save preference when it changes
+  // Load preference specific to this gallery ID
   useEffect(() => {
-    localStorage.setItem('defaultExpiryHours', expiryHours.toString());
-  }, [expiryHours]);
+    if (!id) return;
+    try {
+        const key = `gallery_expiry_${id}`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+            setExpiryHours(parseFloat(saved));
+        } else {
+            setExpiryHours(24); // Default to 24 hours if no specific setting exists for this client
+        }
+    } catch {
+        setExpiryHours(24);
+    }
+  }, [id]);
+
+  // Save preference specific to this gallery ID when it changes
+  useEffect(() => {
+    if (!id) return;
+    const key = `gallery_expiry_${id}`;
+    localStorage.setItem(key, expiryHours.toString());
+  }, [expiryHours, id]);
 
   useEffect(() => {
     if (id) fetchGalleryData();
@@ -92,9 +103,6 @@ export const GalleryManager: React.FC = () => {
         fakeProgress = nextFake;
         
         // Always show the larger of Real vs Fake
-        // Since we can't access 'completedCount' inside this closure easily without refs,
-        // we rely on the fact that the Promise loop below also updates setUploadProgress
-        // and 'prev' here will be the latest state.
         return Math.max(prev, Math.round(nextFake));
       });
     }, 500);
@@ -147,7 +155,7 @@ export const GalleryManager: React.FC = () => {
           // Update state with real percentage (it will override fake if higher)
           setUploadProgress(prev => Math.max(prev, realPercentage));
           
-          // Sync fake progress so it doesn't drag behind if we switch back to it
+          // Sync fake progress so it doesn't drag behind
           fakeProgress = Math.max(fakeProgress, realPercentage);
         }
       }));
