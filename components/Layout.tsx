@@ -1,5 +1,5 @@
-import React from 'react';
-import { LogOut, Camera, LayoutDashboard, Settings, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { LogOut, Camera, LayoutDashboard, Settings, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
@@ -12,10 +12,69 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { uploading, progress } = useUpload();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("ARE YOU SURE? This will permanently delete your account, all galleries, and all files. This action cannot be undone.")) {
+      return;
+    }
+
+    // Double confirmation for safety
+    if (!window.confirm("This is the final warning. All data will be lost immediately. Continue?")) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Clean up Storage Files
+      // We need to do this manually because storage objects aren't automatically deleted when the user row is deleted
+      const { data: galleries } = await supabase
+        .from('galleries')
+        .select('id')
+        .eq('photographer_id', user.id);
+
+      if (galleries && galleries.length > 0) {
+        const galleryIds = galleries.map(g => g.id);
+        const { data: files } = await supabase
+          .from('files')
+          .select('file_path')
+          .in('gallery_id', galleryIds);
+
+        if (files && files.length > 0) {
+          const filePaths = files.map(f => f.file_path);
+          // Delete in batches of 100 just to be safe, though Supabase handles more
+          const batchSize = 100;
+          for (let i = 0; i < filePaths.length; i += batchSize) {
+             const batch = filePaths.slice(i, i + batchSize);
+             await supabase.storage.from('gallery-files').remove(batch);
+          }
+        }
+      }
+
+      // 2. Call RPC to delete account
+      // This will cascade delete galleries and file records due to schema constraints
+      const { error } = await supabase.rpc('delete_own_account');
+
+      if (error) throw error;
+
+      // 3. Sign out and redirect
+      await supabase.auth.signOut();
+      navigate('/login');
+
+    } catch (error) {
+      console.error("Account deletion failed:", error);
+      alert("Failed to delete account fully. Some data might remain. Please contact support.");
+      setIsDeleting(false);
+    }
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -46,10 +105,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
         </div>
 
-        <div className="p-4 border-t border-slate-700">
+        <div className="p-4 border-t border-slate-700 space-y-4">
           {/* Upload Status in Sidebar */}
           {uploading && (
-            <div className="mb-4 bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-slate-300 font-medium flex items-center gap-2">
                         <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
@@ -68,10 +127,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <button
             onClick={handleLogout}
+            disabled={isDeleting}
             className="w-full flex items-center space-x-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
+          </button>
+          
+          <button
+            onClick={handleDeleteAccount}
+            disabled={isDeleting}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors text-sm"
+          >
+            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            <span>{isDeleting ? 'Deleting...' : 'Delete Account'}</span>
           </button>
         </div>
       </aside>
