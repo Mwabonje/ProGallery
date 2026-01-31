@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -10,6 +10,7 @@ export const GalleryManager: React.FC = () => {
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Edit states
@@ -60,9 +61,12 @@ export const GalleryManager: React.FC = () => {
     if (!fileList || fileList.length === 0 || !gallery) return;
 
     setUploading(true);
+    setUploadProgress(0);
     
     // Convert FileList to Array
     const filesToUpload = Array.from(fileList);
+    const totalFiles = filesToUpload.length;
+    let completedCount = 0;
     let successCount = 0;
 
     try {
@@ -72,9 +76,6 @@ export const GalleryManager: React.FC = () => {
           // Use a unique ID for the folder to prevent collisions, 
           // but keep the original filename for display and download.
           const uniqueId = Math.random().toString(36).substring(2);
-          // Sanitize filename to ensure it works well in URLs (optional but recommended)
-          // We keep it simple to respect "default name" strictly, 
-          // but basic cleaning of paths is good practice.
           const fileName = file.name; 
           const filePath = `${gallery.id}/${uniqueId}/${fileName}`;
 
@@ -109,6 +110,9 @@ export const GalleryManager: React.FC = () => {
           successCount++;
         } catch (err) {
           console.error(`Failed to upload ${file.name}`, err);
+        } finally {
+          completedCount++;
+          setUploadProgress(Math.round((completedCount / totalFiles) * 100));
         }
       }));
 
@@ -122,8 +126,12 @@ export const GalleryManager: React.FC = () => {
       console.error('Batch upload error:', error);
       alert('An error occurred during upload.');
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Add a small delay before hiding the progress bar to show 100%
+      setTimeout(() => {
+        setUploading(false);
+        setUploadProgress(0);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }, 500);
     }
   };
 
@@ -359,6 +367,7 @@ export const GalleryManager: React.FC = () => {
                              onChange={(e) => setExpiryHours(Number(e.target.value))}
                              className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer"
                              title="Content Expiration"
+                             disabled={uploading}
                            >
                              <option value={0.5}>30 Minutes</option>
                              <option value={1}>1 Hour</option>
@@ -383,14 +392,31 @@ export const GalleryManager: React.FC = () => {
                             className="hidden"
                             accept="image/*,video/*"
                         />
-                        <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                            <span>{uploading ? 'Uploading...' : 'Upload Files'}</span>
-                        </button>
+                        
+                        {uploading ? (
+                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
+                             <div className="flex flex-col w-32">
+                                <div className="flex justify-between text-xs mb-1">
+                                   <span className="text-slate-600 font-medium">Uploading...</span>
+                                   <span className="text-emerald-600 font-bold">{uploadProgress}%</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                   <div 
+                                      className="h-full bg-emerald-500 transition-all duration-300 ease-out"
+                                      style={{ width: `${uploadProgress}%` }}
+                                   />
+                                </div>
+                             </div>
+                          </div>
+                        ) : (
+                          <button 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+                          >
+                              <Upload className="w-4 h-4" />
+                              <span>Upload Files</span>
+                          </button>
+                        )}
                     </div>
                 </div>
 
