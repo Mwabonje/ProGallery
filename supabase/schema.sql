@@ -115,17 +115,15 @@ $$;
 
 -- 5. ACCOUNT MANAGEMENT
 
--- Explicitly drop the function if it exists to ensure signature matches
+-- Drop old functions to avoid confusion
 DROP FUNCTION IF EXISTS public.delete_own_account();
+DROP FUNCTION IF EXISTS public.delete_user_account();
 
--- Allow users to delete their own account
--- Using RETURNS json to prevent issues with void returns in some clients
-CREATE OR REPLACE FUNCTION public.delete_own_account()
+-- New robust V2 function with fully qualified names
+CREATE OR REPLACE FUNCTION public.delete_account_v2()
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
--- Set search path to include storage schema access
-SET search_path = public, storage, auth
 AS $$
 DECLARE
   current_user_id uuid;
@@ -134,24 +132,28 @@ BEGIN
   
   -- Check if user exists/authenticated
   IF current_user_id IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
+    RETURN json_build_object('status', 'error', 'message', 'Not authenticated');
   END IF;
 
-  -- 1. Delete all storage objects owned by the user to prevent FK constraint violations
-  -- This handles orphaned files that might not be in the public.files table
-  -- We delete from storage.objects where owner is the current user
+  -- 1. Delete all storage objects owned by the user
+  -- Using fully qualified 'storage.objects' to avoid search_path issues
   DELETE FROM storage.objects 
   WHERE owner = current_user_id;
 
   -- 2. Delete the user
+  -- Using fully qualified 'auth.users'
   DELETE FROM auth.users WHERE id = current_user_id;
   
   RETURN json_build_object('status', 'success');
+EXCEPTION WHEN OTHERS THEN
+  -- Catch any other errors and return them
+  RETURN json_build_object('status', 'error', 'message', SQLERRM);
 END;
 $$;
 
--- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.delete_own_account() TO authenticated;
+-- Grant execute permission
+GRANT EXECUTE ON FUNCTION public.delete_account_v2() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_account_v2() TO service_role;
 
 -- 4. STORAGE SETUP
 
@@ -177,5 +179,4 @@ ON storage.objects FOR DELETE
 USING ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
 
 -- FORCE CACHE RELOAD
--- This notifies PostgREST to reload the schema cache immediately
 NOTIFY pgrst, 'reload schema';

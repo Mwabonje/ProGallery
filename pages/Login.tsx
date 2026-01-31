@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { Camera, AlertTriangle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
-export const Login: React.FC = () => {
+const LoginComponent: React.FC<RouteComponentProps> = ({ history }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for errors in the URL fragment (Supabase returns errors in hash)
@@ -50,7 +49,7 @@ export const Login: React.FC = () => {
           password,
         });
         if (error) throw error;
-        navigate('/dashboard');
+        history.push('/dashboard');
       }
     } catch (error: any) {
       setErrorMessage(error.message);
@@ -130,3 +129,5 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
+export const Login = withRouter(LoginComponent);

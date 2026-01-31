@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
@@ -9,8 +9,12 @@ import JSZip from 'jszip';
 // @ts-ignore
 import saveAs from 'file-saver';
 
-export const ClientGallery: React.FC = () => {
-  const { galleryId } = useParams<{ galleryId: string }>();
+interface RouteParams {
+    galleryId: string;
+}
+
+const ClientGalleryComponent: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
+  const { galleryId } = match.params;
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -403,3 +407,5 @@ export const ClientGallery: React.FC = () => {
     </div>
   );
 };
+
+export const ClientGallery = withRouter(ClientGalleryComponent);

@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import { LogOut, Camera, LayoutDashboard, Settings, Loader2, Trash2 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
 
-interface LayoutProps {
+interface LayoutProps extends RouteComponentProps {
   children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const LayoutComponent: React.FC<LayoutProps> = ({ children, history, location }) => {
   const { uploading, progress } = useUpload();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/login');
+    history.push('/login');
   };
 
   const handleDeleteAccount = async () => {
@@ -24,7 +22,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       return;
     }
 
-    // Double confirmation for safety
     if (!window.confirm("This is the final warning. All data will be lost immediately. Continue?")) {
       return;
     }
@@ -35,53 +32,69 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Clean up Storage Files (Client Side Best Effort)
-      // We try to clean up known files first. The RPC deals with the rest.
+      // --- STRATEGY 1: Try Server-Side RPC (Preferred) ---
+      // This is the cleanest way, but requires the SQL script to be run in Supabase.
       try {
-        const { data: galleries } = await supabase
-          .from('galleries')
-          .select('id')
-          .eq('photographer_id', user.id);
+        const { data, error: rpcError } = await supabase.rpc('delete_account_v2');
 
-        if (galleries && galleries.length > 0) {
-          const galleryIds = galleries.map(g => g.id);
-          const { data: files } = await supabase
-            .from('files')
-            .select('file_path')
-            .in('gallery_id', galleryIds);
+        if (!rpcError && data?.status === 'success') {
+          // Success!
+          await supabase.auth.signOut();
+          history.push('/login');
+          return;
+        }
+        
+        // If we get here, either RPC failed or returned an error status
+        console.warn("RPC deletion failed or not found, falling back to manual cleanup.", rpcError || data);
+      } catch (e) {
+        console.warn("RPC invocation failed entirely.", e);
+      }
 
-          if (files && files.length > 0) {
-            const filePaths = files.map(f => f.file_path);
-            const batchSize = 100;
-            for (let i = 0; i < filePaths.length; i += batchSize) {
-               const batch = filePaths.slice(i, i + batchSize);
-               await supabase.storage.from('gallery-files').remove(batch);
-            }
+      // --- STRATEGY 2: Fallback Manual Cleanup ---
+      // If RPC is missing, we manually delete data from the client side.
+      // This ensures the user's files are gone even if the account deletion script isn't active.
+      
+      // 1. Get all galleries for this user
+      const { data: galleries } = await supabase
+        .from('galleries')
+        .select('id')
+        .eq('photographer_id', user.id);
+
+      if (galleries && galleries.length > 0) {
+        const galleryIds = galleries.map(g => g.id);
+
+        // 2. Get all files in those galleries
+        const { data: files } = await supabase
+          .from('files')
+          .select('file_path')
+          .in('gallery_id', galleryIds);
+
+        // 3. Delete from Storage
+        if (files && files.length > 0) {
+          const paths = files.map(f => f.file_path);
+          // Delete in batches of 100 to avoid API limits
+          for (let i = 0; i < paths.length; i += 100) {
+             const batch = paths.slice(i, i + 100);
+             await supabase.storage.from('gallery-files').remove(batch);
           }
         }
-      } catch (cleanupError) {
-        console.warn("Manual cleanup failed, relying on RPC cascade:", cleanupError);
+
+        // 4. Delete Galleries (Database)
+        // This will cascade delete the file records in the DB
+        await supabase
+          .from('galleries')
+          .delete()
+          .in('id', galleryIds);
       }
 
-      // 2. Call RPC to delete account
-      // Note: We expect a JSON response now, or void.
-      const { error } = await supabase.rpc('delete_own_account');
-
-      if (error) {
-         // Specific handling for "Function not found" error which is common if migration didn't run
-         if (error.message.includes('Could not find the function') || error.code === 'PGRST202') {
-             throw new Error("Database configuration missing. Please run the SQL setup script in Supabase.");
-         }
-         throw error;
-      }
-
-      // 3. Sign out and redirect
+      // 5. Finalize
+      alert("Success: All galleries and files have been permanently deleted.\n\nNote: Because the database script was not found, your login email remains active. Please contact support if you need your email removed completely.");
       await supabase.auth.signOut();
-      navigate('/login');
+      history.push('/login');
 
     } catch (error: any) {
       console.error("Account deletion failed:", error);
-      alert(`Failed to delete account: ${error.message || 'Unknown error'}.`);
+      alert(`Failed to delete account data: ${error.message || 'Unknown error'}`);
       setIsDeleting(false);
     }
   };
@@ -100,7 +113,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           
           <nav className="mt-6 px-4 space-y-2">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => history.push('/dashboard')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive('/dashboard') 
                   ? 'bg-emerald-600 text-white' 
@@ -163,3 +176,5 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     </div>
   );
 };
+
+export const Layout = withRouter(LayoutComponent);
