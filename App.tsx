@@ -14,20 +14,28 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Real Supabase Session Check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    }).catch((err) => {
-      console.warn("Supabase session check failed:", err);
-      setLoading(false);
-    });
+    // Check for hash parameters for auth (e.g. access_token, error, type=signup)
+    const hash = window.location.hash;
+    const isAuthRedirect = hash && (hash.includes('access_token') || hash.includes('error') || hash.includes('type='));
 
-    // Listen for changes
+    // If we are NOT processing an auth redirect, we can check the local storage session immediately.
+    // If we ARE processing a redirect, we wait for onAuthStateChange to fire to avoid race conditions.
+    if (!isAuthRedirect) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setLoading(false);
+      }).catch((err) => {
+        console.warn("Supabase session check failed:", err);
+        setLoading(false);
+      });
+    }
+
+    // Listen for auth changes (this handles the hash parsing for magic links/confirmations)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

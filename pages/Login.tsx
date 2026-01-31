@@ -20,11 +20,15 @@ export const Login: React.FC = () => {
   useEffect(() => {
     // Check for errors in the URL fragment
     const hash = window.location.hash;
-    if (hash && hash.includes('error=')) {
+    if (hash) {
+      // Handle Supabase error fragments
       const params = new URLSearchParams(hash.replace(/^#\/?/, ''));
       const errorDescription = params.get('error_description');
-      if (errorDescription) {
-        setErrorMessage(decodeURIComponent(errorDescription).replace(/\+/g, ' '));
+      const error = params.get('error');
+      
+      if (errorDescription || error) {
+        setErrorMessage(decodeURIComponent(errorDescription || error || 'Authentication error').replace(/\+/g, ' '));
+        // Clean URL but keep us on the login page if possible
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     }
@@ -47,16 +51,21 @@ export const Login: React.FC = () => {
     
     try {
       if (view === 'signup') {
+        // Construct the redirect URL to point explicitly to the login page
+        // We use window.location.origin to get the base domain (e.g. localhost:5173)
+        // And append /#/login because we are using HashRouter
+        const redirectUrl = `${window.location.origin}/#/login`;
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { role: 'photographer' },
-            emailRedirectTo: window.location.origin
+            emailRedirectTo: redirectUrl
           }
         });
         if (error) throw error;
-        setSuccessMessage('Check your email for the confirmation link!');
+        setSuccessMessage('Check your email for the confirmation link! Note: If the link in your email goes to "localhost:3000" but you are running on port 5173, please change the port in the URL manually.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -78,8 +87,9 @@ export const Login: React.FC = () => {
     clearMessages();
 
     try {
+      const redirectUrl = `${window.location.origin}/#/login`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/dashboard',
+        redirectTo: redirectUrl,
       });
       if (error) throw error;
       setSuccessMessage('Password reset instructions have been sent to your email.');
