@@ -50,49 +50,65 @@ export const GalleryManager: React.FC = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || !event.target.files.length || !gallery) return;
+    const fileList = event.target.files;
+    if (!fileList || fileList.length === 0 || !gallery) return;
 
     setUploading(true);
-    const file = event.target.files[0];
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${gallery.id}/${fileName}`;
+    // Convert FileList to Array
+    const filesToUpload = Array.from(fileList);
+    let successCount = 0;
 
     try {
-      // 1. Upload to Storage
-      const { error: uploadError } = await supabase.storage
-        .from('gallery-files')
-        .upload(filePath, file);
+      // Process all uploads in parallel
+      await Promise.all(filesToUpload.map(async (file) => {
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `${gallery.id}/${fileName}`;
 
-      if (uploadError) throw uploadError;
+          // 1. Upload to Storage
+          const { error: uploadError } = await supabase.storage
+            .from('gallery-files')
+            .upload(filePath, file);
 
-      // 2. Get Public URL (Private bucket would use signed URL, keeping simple for demo structure)
-      const { data: { publicUrl } } = supabase.storage
-        .from('gallery-files')
-        .getPublicUrl(filePath);
+          if (uploadError) throw uploadError;
 
-      // 3. Create DB Record
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
+          // 2. Get Public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('gallery-files')
+            .getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase
-        .from('files')
-        .insert([{
-          gallery_id: gallery.id,
-          file_url: publicUrl,
-          file_path: filePath,
-          file_type: file.type.startsWith('image/') ? 'image' : 'video',
-          expires_at: expiresAt.toISOString()
-        }]);
+          // 3. Create DB Record
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 24);
 
-      if (dbError) throw dbError;
+          const { error: dbError } = await supabase
+            .from('files')
+            .insert([{
+              gallery_id: gallery.id,
+              file_url: publicUrl,
+              file_path: filePath,
+              file_type: file.type.startsWith('image/') ? 'image' : 'video',
+              expires_at: expiresAt.toISOString()
+            }]);
+
+          if (dbError) throw dbError;
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to upload ${file.name}`, err);
+        }
+      }));
+
+      if (successCount < filesToUpload.length) {
+        alert(`Uploaded ${successCount} of ${filesToUpload.length} files. Check console for errors.`);
+      }
 
       // Refresh list
       fetchGalleryData();
     } catch (error) {
-      alert('Error uploading file');
-      console.error(error);
+      console.error('Batch upload error:', error);
+      alert('An error occurred during upload.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -257,6 +273,7 @@ export const GalleryManager: React.FC = () => {
                     <div className="flex gap-2">
                          <input
                             type="file"
+                            multiple
                             ref={fileInputRef}
                             onChange={handleFileUpload}
                             className="hidden"
@@ -268,7 +285,7 @@ export const GalleryManager: React.FC = () => {
                             className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50"
                         >
                             {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                            <span>Upload File</span>
+                            <span>{uploading ? 'Uploading...' : 'Upload Files'}</span>
                         </button>
                     </div>
                 </div>
