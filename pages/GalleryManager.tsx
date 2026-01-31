@@ -20,8 +20,20 @@ export const GalleryManager: React.FC = () => {
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Expiration settings (in hours)
-  const [expiryHours, setExpiryHours] = useState<number>(24);
+  // Expiration settings (in hours) - Persisted in localStorage
+  const [expiryHours, setExpiryHours] = useState<number>(() => {
+    try {
+        const saved = localStorage.getItem('defaultExpiryHours');
+        return saved ? parseFloat(saved) : 24;
+    } catch {
+        return 24;
+    }
+  });
+
+  // Save preference when it changes
+  useEffect(() => {
+    localStorage.setItem('defaultExpiryHours', expiryHours.toString());
+  }, [expiryHours]);
 
   useEffect(() => {
     if (id) fetchGalleryData();
