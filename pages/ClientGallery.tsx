@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
@@ -13,6 +13,7 @@ export const ClientGallery: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
 
   useEffect(() => {
     if (galleryId) loadGallery();
@@ -41,6 +42,46 @@ export const ClientGallery: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [files]);
+
+  // Anti-Screenshot & Right-Click Protection
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      // Only show warning if clicking on an image context
+      if ((e.target as HTMLElement).tagName === 'IMG' || (e.target as HTMLElement).tagName === 'VIDEO') {
+          setShowScreenshotWarning(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'PrintScreen') {
+        setShowScreenshotWarning(true);
+        // Attempt to clear clipboard to prevent pasting
+        try {
+            navigator.clipboard.writeText('');
+        } catch (err) {
+            // Clipboard access might fail
+        }
+      }
+    };
+
+    // Attempt to catch common screenshot shortcuts (OS usually intercepts these, but good to have)
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === 's')) {
+            setShowScreenshotWarning(true);
+        }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const loadGallery = async () => {
     try {
@@ -140,7 +181,7 @@ export const ClientGallery: React.FC = () => {
   const isLocked = balanceDue > 0;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white select-none">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -179,11 +220,12 @@ export const ClientGallery: React.FC = () => {
                 <img 
                     src={file.file_url} 
                     alt="Gallery item" 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading="lazy"
+                    onContextMenu={(e) => e.preventDefault()}
                 />
               ) : (
-                <video src={file.file_url} className="w-full h-full object-cover" controls />
+                <video src={file.file_url} className="w-full h-full object-cover" controls controlsList="nodownload" />
               )}
               
               {/* Overlay */}
@@ -222,6 +264,37 @@ export const ClientGallery: React.FC = () => {
                     Close
                 </button>
                 <p className="text-xs text-slate-400">Contact your photographer to settle payment.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Screenshot Warning Modal */}
+      {showScreenshotWarning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="relative">
+                <button 
+                    onClick={() => setShowScreenshotWarning(false)}
+                    className="absolute right-0 top-0 text-slate-400 hover:text-slate-600"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShieldAlert className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Screenshotting Not Allowed</h3>
+                <p className="text-slate-600 mb-6">
+                  To protect the photographer's work, screenshots are disabled. 
+                  <br/><br/>
+                  Please {isLocked ? 'complete the payment' : 'use the download button'} to access high-quality versions of these images.
+                </p>
+                <button 
+                    onClick={() => setShowScreenshotWarning(false)}
+                    className="w-full bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+                >
+                    I Understand
+                </button>
             </div>
           </div>
         </div>
