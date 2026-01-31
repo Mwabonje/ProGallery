@@ -80,6 +80,24 @@ export const GalleryManager: React.FC = () => {
     const totalFiles = filesToUpload.length;
     let completedCount = 0;
     let successCount = 0;
+    
+    // Simulated progress tracker
+    let fakeProgress = 0;
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        // Increment fake progress by random amount (1-5%)
+        // But cap it at 90% until real completion happens
+        const increment = Math.random() * 5;
+        const nextFake = Math.min(fakeProgress + increment, 90);
+        fakeProgress = nextFake;
+        
+        // Always show the larger of Real vs Fake
+        // Since we can't access 'completedCount' inside this closure easily without refs,
+        // we rely on the fact that the Promise loop below also updates setUploadProgress
+        // and 'prev' here will be the latest state.
+        return Math.max(prev, Math.round(nextFake));
+      });
+    }, 500);
 
     try {
       // Process all uploads in parallel
@@ -124,7 +142,13 @@ export const GalleryManager: React.FC = () => {
           console.error(`Failed to upload ${file.name}`, err);
         } finally {
           completedCount++;
-          setUploadProgress(Math.round((completedCount / totalFiles) * 100));
+          const realPercentage = Math.round((completedCount / totalFiles) * 100);
+          
+          // Update state with real percentage (it will override fake if higher)
+          setUploadProgress(prev => Math.max(prev, realPercentage));
+          
+          // Sync fake progress so it doesn't drag behind if we switch back to it
+          fakeProgress = Math.max(fakeProgress, realPercentage);
         }
       }));
 
@@ -138,6 +162,9 @@ export const GalleryManager: React.FC = () => {
       console.error('Batch upload error:', error);
       alert('An error occurred during upload.');
     } finally {
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
       // Add a small delay before hiding the progress bar to show 100%
       setTimeout(() => {
         setUploading(false);
