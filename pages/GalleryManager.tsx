@@ -66,9 +66,14 @@ export const GalleryManager: React.FC = () => {
       // Process all uploads in parallel
       await Promise.all(filesToUpload.map(async (file) => {
         try {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${gallery.id}/${fileName}`;
+          // Use a unique ID for the folder to prevent collisions, 
+          // but keep the original filename for display and download.
+          const uniqueId = Math.random().toString(36).substring(2);
+          // Sanitize filename to ensure it works well in URLs (optional but recommended)
+          // We keep it simple to respect "default name" strictly, 
+          // but basic cleaning of paths is good practice.
+          const fileName = file.name; 
+          const filePath = `${gallery.id}/${uniqueId}/${fileName}`;
 
           // 1. Upload to Storage
           const { error: uploadError } = await supabase.storage
