@@ -1,17 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useUpload } from '../contexts/UploadContext';
 
-interface RouteParams {
-    id: string;
-}
-
-const GalleryManagerComponent: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
-  const { id } = match.params;
+export const GalleryManager: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -446,5 +442,3 @@ const GalleryManagerComponent: React.FC<RouteComponentProps<RouteParams>> = ({ m
     </div>
   );
 };
-
-export const GalleryManager = withRouter(GalleryManagerComponent);

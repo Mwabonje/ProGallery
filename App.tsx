@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
@@ -38,31 +38,31 @@ const App: React.FC = () => {
   return (
     <UploadProvider>
       <Router>
-        <Switch>
+        <Routes>
           {/* Public Routes */}
-          <Route path="/login" render={() => !session ? <Login /> : <Redirect to="/dashboard" />} />
-          <Route path="/g/:galleryId" component={ClientGallery} />
+          <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/g/:galleryId" element={<ClientGallery />} />
 
           {/* Protected Photographer Routes */}
-          <Route path="/dashboard" render={() => 
+          <Route path="/dashboard" element={
             session ? (
               <Layout>
                 <Dashboard />
               </Layout>
-            ) : <Redirect to="/login" />
+            ) : <Navigate to="/login" />
           } />
           
-          <Route path="/gallery/:id" render={() => 
+          <Route path="/gallery/:id" element={
             session ? (
               <Layout>
                 <GalleryManager />
               </Layout>
-            ) : <Redirect to="/login" />
+            ) : <Navigate to="/login" />
           } />
 
           {/* Default */}
-          <Route path="*" render={() => <Redirect to={session ? "/dashboard" : "/login"} />} />
-        </Switch>
+          <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+        </Routes>
       </Router>
     </UploadProvider>
   );

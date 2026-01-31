@@ -1,102 +1,21 @@
-import React, { useState } from 'react';
-import { LogOut, Camera, LayoutDashboard, Settings, Loader2, Trash2 } from 'lucide-react';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
+import React from 'react';
+import { LogOut, Camera, LayoutDashboard, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
 
-interface LayoutProps extends RouteComponentProps {
+interface LayoutProps {
   children: React.ReactNode;
 }
 
-const LayoutComponent: React.FC<LayoutProps> = ({ children, history, location }) => {
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { uploading, progress } = useUpload();
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    history.push('/login');
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!window.confirm("ARE YOU SURE? This will permanently delete your account, all galleries, and all files. This action cannot be undone.")) {
-      return;
-    }
-
-    if (!window.confirm("This is the final warning. All data will be lost immediately. Continue?")) {
-      return;
-    }
-
-    setIsDeleting(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // --- STRATEGY 1: Try Server-Side RPC (Preferred) ---
-      // This is the cleanest way, but requires the SQL script to be run in Supabase.
-      try {
-        const { data, error: rpcError } = await supabase.rpc('delete_account_v2');
-
-        if (!rpcError && data?.status === 'success') {
-          // Success!
-          await supabase.auth.signOut();
-          history.push('/login');
-          return;
-        }
-        
-        // If we get here, either RPC failed or returned an error status
-        console.warn("RPC deletion failed or not found, falling back to manual cleanup.", rpcError || data);
-      } catch (e) {
-        console.warn("RPC invocation failed entirely.", e);
-      }
-
-      // --- STRATEGY 2: Fallback Manual Cleanup ---
-      // If RPC is missing, we manually delete data from the client side.
-      // This ensures the user's files are gone even if the account deletion script isn't active.
-      
-      // 1. Get all galleries for this user
-      const { data: galleries } = await supabase
-        .from('galleries')
-        .select('id')
-        .eq('photographer_id', user.id);
-
-      if (galleries && galleries.length > 0) {
-        const galleryIds = galleries.map(g => g.id);
-
-        // 2. Get all files in those galleries
-        const { data: files } = await supabase
-          .from('files')
-          .select('file_path')
-          .in('gallery_id', galleryIds);
-
-        // 3. Delete from Storage
-        if (files && files.length > 0) {
-          const paths = files.map(f => f.file_path);
-          // Delete in batches of 100 to avoid API limits
-          for (let i = 0; i < paths.length; i += 100) {
-             const batch = paths.slice(i, i + 100);
-             await supabase.storage.from('gallery-files').remove(batch);
-          }
-        }
-
-        // 4. Delete Galleries (Database)
-        // This will cascade delete the file records in the DB
-        await supabase
-          .from('galleries')
-          .delete()
-          .in('id', galleryIds);
-      }
-
-      // 5. Finalize
-      alert("Success: All galleries and files have been permanently deleted.\n\nNote: Because the database script was not found, your login email remains active. Please contact support if you need your email removed completely.");
-      await supabase.auth.signOut();
-      history.push('/login');
-
-    } catch (error: any) {
-      console.error("Account deletion failed:", error);
-      alert(`Failed to delete account data: ${error.message || 'Unknown error'}`);
-      setIsDeleting(false);
-    }
+    navigate('/login');
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -113,7 +32,7 @@ const LayoutComponent: React.FC<LayoutProps> = ({ children, history, location })
           
           <nav className="mt-6 px-4 space-y-2">
             <button
-              onClick={() => history.push('/dashboard')}
+              onClick={() => navigate('/dashboard')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive('/dashboard') 
                   ? 'bg-emerald-600 text-white' 
@@ -149,20 +68,10 @@ const LayoutComponent: React.FC<LayoutProps> = ({ children, history, location })
 
           <button
             onClick={handleLogout}
-            disabled={isDeleting}
             className="w-full flex items-center space-x-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
-          </button>
-          
-          <button
-            onClick={handleDeleteAccount}
-            disabled={isDeleting}
-            className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors text-sm"
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            <span>{isDeleting ? 'Deleting...' : 'Delete Account'}</span>
           </button>
         </div>
       </aside>
@@ -176,5 +85,3 @@ const LayoutComponent: React.FC<LayoutProps> = ({ children, history, location })
     </div>
   );
 };
-
-export const Layout = withRouter(LayoutComponent);

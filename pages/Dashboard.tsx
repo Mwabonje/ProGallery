@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -10,7 +10,8 @@ interface DashboardGallery extends Gallery {
   itemCount: number;
 }
 
-const DashboardComponent: React.FC<RouteComponentProps> = ({ history }) => {
+export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [galleries, setGalleries] = useState<DashboardGallery[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +90,7 @@ const DashboardComponent: React.FC<RouteComponentProps> = ({ history }) => {
         .single();
 
       if (error) throw error;
-      history.push(`/gallery/${data.id}`);
+      navigate(`/gallery/${data.id}`);
     } catch (error) {
       alert('Error creating gallery');
       console.error(error);
@@ -157,7 +158,7 @@ const DashboardComponent: React.FC<RouteComponentProps> = ({ history }) => {
         {galleries.map((gallery) => (
           <div 
             key={gallery.id} 
-            onClick={() => history.push(`/gallery/${gallery.id}`)}
+            onClick={() => navigate(`/gallery/${gallery.id}`)}
             className="group cursor-pointer flex flex-col"
           >
             {/* Image Container */}
@@ -227,5 +228,3 @@ const DashboardComponent: React.FC<RouteComponentProps> = ({ history }) => {
     </div>
   );
 };
-
-export const Dashboard = withRouter(DashboardComponent);
