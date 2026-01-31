@@ -1,5 +1,5 @@
-import React from 'react';
-import { LogOut, Camera, LayoutDashboard, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { LogOut, Camera, LayoutDashboard, Loader2, Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
@@ -12,6 +12,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { uploading, progress } = useUpload();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -22,17 +23,47 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Sidebar / Mobile Header */}
-      <aside className="bg-slate-900 text-white w-full md:w-64 flex-shrink-0 flex flex-col justify-between z-20">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
+        <div className="flex items-center space-x-2">
+           <Camera className="w-6 h-6 text-emerald-400" />
+           <span className="text-xl font-bold tracking-tight">ProGallery</span>
+        </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+          className="p-1 rounded-md hover:bg-slate-800 transition-colors"
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Sidebar Overlay (Mobile) */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out shadow-xl
+        md:relative md:translate-x-0 md:shadow-none flex flex-col justify-between
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <div>
-          <div className="p-6 flex items-center space-x-3 border-b border-slate-700">
+          <div className="p-6 hidden md:flex items-center space-x-3 border-b border-slate-700">
             <Camera className="w-6 h-6 text-emerald-400" />
             <span className="text-xl font-bold tracking-tight">ProGallery</span>
           </div>
           
           <nav className="mt-6 px-4 space-y-2">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => {
+                navigate('/dashboard');
+                setIsMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive('/dashboard') 
                   ? 'bg-emerald-600 text-white' 
@@ -77,7 +108,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto h-screen relative">
+      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] md:h-screen relative bg-gray-50">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

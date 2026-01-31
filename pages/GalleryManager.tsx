@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2 } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useUpload } from '../contexts/UploadContext';
+import { useNavigate } from 'react-router-dom';
 
 export const GalleryManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -180,58 +182,66 @@ export const GalleryManager: React.FC = () => {
   const remainingBalance = Math.max(0, agreedAmount - paid);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 pb-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{gallery.client_name}</h1>
-          <p className="text-slate-500">Gallery ID: {gallery.id}</p>
-        </div>
-        <div className="flex items-center gap-3">
-            <button
-              onClick={handleCopyLink}
-              className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-all active:scale-95"
-            >
-              {linkCopied ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  <span className="text-emerald-600 font-medium">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>Copy Link</span>
-                </>
-              )}
-            </button>
-            <a 
-              href={`/#/g/${gallery.id}`}
-              target="_blank" 
-              rel="noreferrer"
-              className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2"
-            >
-                <ExternalLink className="w-4 h-4" />
-                <span className="hidden sm:inline">View Public Link</span>
-                <span className="sm:hidden">View</span>
-            </a>
-            <button
-              onClick={toggleStatus}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 text-white transition-colors ${
-                gallery.link_enabled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'
-              }`}
-            >
-              {gallery.link_enabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              <span className="hidden sm:inline">{gallery.link_enabled ? 'Link Active' : 'Link Disabled'}</span>
-               <span className="sm:hidden">{gallery.link_enabled ? 'Active' : 'Disabled'}</span>
-            </button>
+      <div className="flex flex-col gap-4">
+        {/* Back Button (Mobile only) */}
+        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-slate-500 hover:text-slate-900 mb-2">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+        </button>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words">{gallery.client_name}</h1>
+            <p className="text-slate-500 text-sm">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+                <button
+                onClick={handleCopyLink}
+                className="flex-1 md:flex-none justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-all active:scale-95 text-sm font-medium shadow-sm"
+                >
+                {linkCopied ? (
+                    <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-600">Copied</span>
+                    </>
+                ) : (
+                    <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Link</span>
+                    </>
+                )}
+                </button>
+                
+                <a 
+                href={`/#/g/${gallery.id}`}
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-1 md:flex-none justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm font-medium shadow-sm"
+                >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>View</span>
+                </a>
+                
+                <button
+                onClick={toggleStatus}
+                className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg flex items-center gap-2 text-white transition-colors text-sm font-medium shadow-sm ${
+                    gallery.link_enabled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'
+                }`}
+                >
+                {gallery.link_enabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                <span>{gallery.link_enabled ? 'Active' : 'Disabled'}</span>
+                </button>
+            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left Column: Settings */}
         <div className="lg:col-span-1 space-y-6">
           {/* Payment Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-slate-500" />
               Payment & Access
@@ -290,7 +300,7 @@ export const GalleryManager: React.FC = () => {
               <button 
                 onClick={updatePayment}
                 disabled={paymentUpdated}
-                className={`w-full py-2 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 ${
+                className={`w-full py-2.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
                   paymentUpdated 
                     ? 'bg-emerald-600 text-white' 
                     : 'bg-slate-900 text-white hover:bg-slate-800'
@@ -312,16 +322,16 @@ export const GalleryManager: React.FC = () => {
           </div>
 
           {/* Stats Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
-            <div className="space-y-2 text-sm text-slate-600">
-                <div className="flex justify-between">
-                    <span>Total Files:</span>
-                    <span className="font-medium">{files.length}</span>
+            <div className="space-y-3 text-sm text-slate-600">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span>Total Files</span>
+                    <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
                 </div>
-                <div className="flex justify-between">
-                    <span>Total Downloads:</span>
-                    <span className="font-medium">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
+                <div className="flex justify-between items-center">
+                    <span>Total Downloads</span>
+                    <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
                 </div>
             </div>
           </div>
@@ -330,15 +340,15 @@ export const GalleryManager: React.FC = () => {
         {/* Right Column: Content */}
         <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <h2 className="text-lg font-semibold">Gallery Content</h2>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                           <Clock className="w-4 h-4 text-slate-500" />
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 flex-1 sm:flex-none">
+                           <Clock className="w-4 h-4 text-slate-500 shrink-0" />
                            <select 
                              value={expiryHours}
                              onChange={(e) => setExpiryHours(Number(e.target.value))}
-                             className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer"
+                             className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer w-full sm:w-auto"
                              title="Content Expiration"
                              disabled={uploading}
                            >
@@ -367,8 +377,8 @@ export const GalleryManager: React.FC = () => {
                         />
                         
                         {isUploadingThisGallery ? (
-                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
-                             <div className="flex flex-col w-32">
+                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 flex-1 sm:flex-none">
+                             <div className="flex flex-col w-full sm:w-32">
                                 <div className="flex justify-between text-xs mb-1">
                                    <span className="text-slate-600 font-medium">Uploading...</span>
                                    <span className="text-emerald-600 font-bold">{progress}%</span>
@@ -384,11 +394,11 @@ export const GalleryManager: React.FC = () => {
                         ) : (
                           <button 
                               onClick={() => fileInputRef.current?.click()}
-                              disabled={uploading} // Disable if uploading somewhere else too
-                              className={`bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={uploading} 
+                              className={`bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 flex justify-center items-center gap-2 font-medium transition-colors shadow-sm ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                               <Upload className="w-4 h-4" />
-                              <span>{uploading ? 'Busy...' : 'Upload Files'}</span>
+                              <span>Upload Files</span>
                           </button>
                         )}
                     </div>
@@ -402,34 +412,36 @@ export const GalleryManager: React.FC = () => {
                 ) : (
                     <div className="divide-y divide-slate-100">
                         {files.map((file) => (
-                            <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                            <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                                    <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
                                         {file.file_type === 'image' ? (
                                             <img src={file.file_url} alt="Thumbnail" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400">Video</div>
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
+                                                <span className="text-xs">Video</span>
+                                            </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-900 truncate max-w-[200px]">{file.file_path.split('/').pop()}</p>
-                                        <p className="text-xs text-slate-500">Uploaded: {formatDate(file.created_at)}</p>
-                                        <p className="text-xs text-red-500">Expires: {formatDate(file.expires_at)}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-slate-900 truncate">{file.file_path.split('/').pop()}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
+                                        <p className="text-xs text-red-500 mt-0.5 truncate">Expires: {formatDate(file.expires_at)}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-xs text-slate-400 mr-2 flex items-center gap-1">
+                                <div className="flex items-center gap-1 md:gap-3 pl-2">
+                                    <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
                                         <Download className="w-3 h-3" />
                                         {file.download_count}
                                     </div>
-                                    <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-emerald-600">
-                                        <Eye className="w-4 h-4" />
+                                    <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
+                                        <Eye className="w-5 h-5 md:w-4 md:h-4" />
                                     </a>
                                     <button 
                                         onClick={() => deleteFile(file.id, file.file_path)}
-                                        className="p-2 text-slate-400 hover:text-red-600"
+                                        className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                                     </button>
                                 </div>
                             </div>

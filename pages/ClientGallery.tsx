@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
@@ -31,7 +31,7 @@ export const ClientGallery: React.FC = () => {
   useEffect(() => {
     if (!files.length) return;
     
-    // Find the earliest expiry date (files are sorted by expiry in fetch now)
+    // Find the earliest expiry date
     const firstFile = files[0];
     
     const updateTimer = () => {
@@ -45,8 +45,8 @@ export const ClientGallery: React.FC = () => {
         }
     };
 
-    updateTimer(); // Initial call
-    const timer = setInterval(updateTimer, 60000); // Update every minute
+    updateTimer(); 
+    const timer = setInterval(updateTimer, 60000); 
 
     return () => clearInterval(timer);
   }, [files]);
@@ -55,7 +55,6 @@ export const ClientGallery: React.FC = () => {
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      // Only show warning if clicking on an image context
       if ((e.target as HTMLElement).tagName === 'IMG' || (e.target as HTMLElement).tagName === 'VIDEO') {
           setShowScreenshotWarning(true);
       }
@@ -64,16 +63,10 @@ export const ClientGallery: React.FC = () => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'PrintScreen') {
         setShowScreenshotWarning(true);
-        // Attempt to clear clipboard to prevent pasting
-        try {
-            navigator.clipboard.writeText('');
-        } catch (err) {
-            // Clipboard access might fail
-        }
+        try { navigator.clipboard.writeText(''); } catch (err) {}
       }
     };
 
-    // Attempt to catch common screenshot shortcuts (OS usually intercepts these, but good to have)
     const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === 's')) {
             setShowScreenshotWarning(true);
@@ -95,7 +88,6 @@ export const ClientGallery: React.FC = () => {
     try {
       if (!galleryId) return;
 
-      // 1. Fetch Gallery Details
       const { data: galData, error: galError } = await supabase
         .from('galleries')
         .select('*')
@@ -116,18 +108,16 @@ export const ClientGallery: React.FC = () => {
 
       setGallery(galData);
 
-      // 2. Fetch Files
       const { data: fileData, error: fileError } = await supabase
         .from('files')
         .select('*')
         .eq('gallery_id', galleryId)
-        .gt('expires_at', new Date().toISOString()) // Only fetch non-expired
-        .order('expires_at', { ascending: true }); // Sort by soonest expiry
+        .gt('expires_at', new Date().toISOString()) 
+        .order('expires_at', { ascending: true }); 
 
       if (fileError) throw fileError;
       
       if (!fileData || fileData.length === 0) {
-         // We set a specific friendly message for expiration/empty states
          setError('This gallery link has expired. Please contact the photographer to request access.');
       } else {
          setFiles(fileData);
@@ -144,7 +134,6 @@ export const ClientGallery: React.FC = () => {
   const handleDownload = async (file: GalleryFile) => {
     if (!gallery) return;
 
-    // Payment Check: Lock if Balance > 0
     const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
     
     if (balance > 0) {
@@ -153,10 +142,8 @@ export const ClientGallery: React.FC = () => {
     }
 
     try {
-      // Increment download count
       await supabase.rpc('increment_download', { row_id: file.id });
       
-      // Force browser download
       const response = await fetch(file.file_url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -174,7 +161,6 @@ export const ClientGallery: React.FC = () => {
   const handleDownloadAll = async () => {
     if (!gallery || !files.length) return;
 
-    // Payment Check
     const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
     if (balance > 0) {
       setShowPayModal(true);
@@ -188,16 +174,12 @@ export const ClientGallery: React.FC = () => {
       const zip = new JSZip();
       let processed = 0;
 
-      // Create an array of promises
       const promises = files.map(async (file) => {
         try {
           const response = await fetch(file.file_url);
           if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
           const blob = await response.blob();
-          
-          // Get clean filename
           const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
-          
           zip.file(fileName, blob);
         } catch (error) {
           console.error(`Error downloading file: ${file.id}`, error);
@@ -207,16 +189,12 @@ export const ClientGallery: React.FC = () => {
         }
       });
 
-      // Wait for all downloads to complete
       await Promise.all(promises);
 
-      // Generate Zip
       const content = await zip.generateAsync({ type: "blob" });
       const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       saveAs(content, `${galleryName}_photos.zip`);
 
-      // Ideally increment download counts for all files here, but for now we skip to avoid spamming DB
-      
     } catch (error) {
       console.error('Error creating zip:', error);
       alert('Failed to download all files. Please try downloading individually.');
@@ -231,7 +209,7 @@ export const ClientGallery: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-        <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
+        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Clock className="w-8 h-8 text-slate-400" />
             </div>
@@ -253,11 +231,11 @@ export const ClientGallery: React.FC = () => {
   return (
     <div className="min-h-screen bg-white select-none">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
-            <p className="text-sm text-slate-500 flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
+            <p className="text-xs md:text-sm text-slate-500 flex items-center gap-2">
                 {files.length} items 
                 <span className="text-slate-300">•</span>
                 {timeRemaining === 'Expired' ? (
@@ -268,12 +246,12 @@ export const ClientGallery: React.FC = () => {
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
              {/* Download All Button */}
              <button
                 onClick={handleDownloadAll}
                 disabled={downloadingAll || files.length === 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                     isLocked 
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
                     : downloadingAll 
@@ -295,17 +273,17 @@ export const ClientGallery: React.FC = () => {
              </button>
 
              {isLocked ? (
-                 <div className="flex items-center gap-4 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">
+                 <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
                     <div className="flex flex-col text-right">
-                        <span className="text-slate-500 text-xs">Balance Due</span>
-                        <span className="font-bold text-amber-700">{formatCurrency(balanceDue)}</span>
+                        <span className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Balance Due</span>
+                        <span className="font-bold text-amber-700 text-sm leading-tight">{formatCurrency(balanceDue)}</span>
                     </div>
-                    <Lock className="w-5 h-5 text-amber-600" />
+                    <Lock className="w-4 h-4 text-amber-600" />
                  </div>
              ) : (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-200">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span className="hidden sm:inline">Paid in Full</span>
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-200 text-xs md:text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span>Paid in Full</span>
                  </div>
              )}
           </div>
@@ -313,8 +291,8 @@ export const ClientGallery: React.FC = () => {
       </header>
 
       {/* Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
           {files.map((file) => (
             <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
               {file.file_type === 'image' ? (
@@ -333,9 +311,9 @@ export const ClientGallery: React.FC = () => {
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <button
                   onClick={() => handleDownload(file)}
-                  className="bg-white/90 hover:bg-white text-slate-900 px-6 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg"
+                  className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm"
                 >
-                  {isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                  {isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
                   <span>{isLocked ? 'Locked' : 'Download'}</span>
                 </button>
               </div>
@@ -347,20 +325,20 @@ export const ClientGallery: React.FC = () => {
       {/* Pay Modal */}
       {showPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-6 h-6 text-amber-600" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Downloads Locked</h3>
-            <p className="text-slate-600 mb-6">
-              You have a remaining balance of <strong>{formatCurrency(balanceDue)}</strong>.
+            <p className="text-slate-600 mb-6 text-sm">
+              You have a remaining balance of <strong className="text-slate-900">{formatCurrency(balanceDue)}</strong>.
               <br/>
               <span className="text-xs text-slate-500 mt-2 block">(Agreed: {formatCurrency(agreedAmount)} - Paid: {formatCurrency(amountPaid)})</span>
             </p>
             <div className="space-y-3">
                 <button 
                     onClick={() => setShowPayModal(false)}
-                    className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800"
+                    className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
                 >
                     Close
                 </button>
@@ -377,7 +355,7 @@ export const ClientGallery: React.FC = () => {
             <div className="relative">
                 <button 
                     onClick={() => setShowScreenshotWarning(false)}
-                    className="absolute right-0 top-0 text-slate-400 hover:text-slate-600"
+                    className="absolute right-0 top-0 text-slate-400 hover:text-slate-600 p-2"
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -385,7 +363,7 @@ export const ClientGallery: React.FC = () => {
                     <ShieldAlert className="w-8 h-8 text-red-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Screenshotting Not Allowed</h3>
-                <p className="text-slate-600 mb-6">
+                <p className="text-slate-600 mb-6 text-sm">
                   To protect the photographer's work, screenshots are disabled. 
                   <br/><br/>
                   Please {isLocked ? 'complete the payment' : 'use the download button'} to access high-quality versions of these images.
