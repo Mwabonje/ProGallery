@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -18,6 +18,9 @@ export const GalleryManager: React.FC = () => {
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Expiration settings (in hours)
+  const [expiryHours, setExpiryHours] = useState<number>(24);
 
   useEffect(() => {
     if (id) fetchGalleryData();
@@ -89,7 +92,8 @@ export const GalleryManager: React.FC = () => {
 
           // 3. Create DB Record
           const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 24);
+          // Add expiryHours (converting hours to milliseconds)
+          expiresAt.setTime(expiresAt.getTime() + expiryHours * 60 * 60 * 1000);
 
           const { error: dbError } = await supabase
             .from('files')
@@ -345,10 +349,33 @@ export const GalleryManager: React.FC = () => {
         {/* Right Column: Content */}
         <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <h2 className="text-lg font-semibold">Gallery Content</h2>
-                    <div className="flex gap-2">
-                         <input
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                           <Clock className="w-4 h-4 text-slate-500" />
+                           <select 
+                             value={expiryHours}
+                             onChange={(e) => setExpiryHours(Number(e.target.value))}
+                             className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer"
+                             title="Content Expiration"
+                           >
+                             <option value={0.5}>30 Minutes</option>
+                             <option value={1}>1 Hour</option>
+                             <option value={2}>2 Hours</option>
+                             <option value={3}>3 Hours</option>
+                             <option value={6}>6 Hours</option>
+                             <option value={12}>12 Hours</option>
+                             <option value={24}>24 Hours</option>
+                             <option value={48}>48 Hours</option>
+                             <option value={72}>3 Days</option>
+                             <option value={168}>1 Week</option>
+                           </select>
+                        </div>
+                        
+                        <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
+
+                        <input
                             type="file"
                             multiple
                             ref={fileInputRef}
@@ -370,7 +397,7 @@ export const GalleryManager: React.FC = () => {
                 {files.length === 0 ? (
                     <div className="p-12 text-center text-slate-500">
                         <Upload className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                        <p>No files uploaded yet. Files automatically expire in 24 hours.</p>
+                        <p>No files uploaded yet. Select an expiration time above and upload.</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
