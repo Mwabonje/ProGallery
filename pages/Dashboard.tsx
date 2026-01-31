@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, ExternalLink, Clock, DollarSign, Loader2 } from 'lucide-react';
-import { supabase, isDemoMode } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
@@ -15,35 +15,6 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   const fetchGalleries = async () => {
-    if (isDemoMode) {
-      // MOCK DATA
-      const mockData: Gallery[] = [
-        {
-          id: 'demo-1',
-          photographer_id: 'demo-user',
-          client_name: 'Alice & Bob Wedding',
-          title: 'Alice & Bob Wedding',
-          agreed_balance: 1500,
-          amount_paid: 500,
-          link_enabled: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'demo-2',
-          photographer_id: 'demo-user',
-          client_name: 'Tech Corp Headshots',
-          title: 'Tech Corp Headshots',
-          agreed_balance: 300,
-          amount_paid: 300,
-          link_enabled: true,
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-        }
-      ];
-      setGalleries(mockData);
-      setLoading(false);
-      return;
-    }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -66,21 +37,6 @@ export const Dashboard: React.FC = () => {
   const createGallery = async () => {
     const clientName = prompt("Enter Client Name:");
     if (!clientName) return;
-
-    if (isDemoMode) {
-      const newMock: Gallery = {
-        id: `demo-${Math.random()}`,
-        photographer_id: 'demo-user',
-        client_name: clientName,
-        title: `${clientName}'s Gallery`,
-        agreed_balance: 100,
-        amount_paid: 0,
-        link_enabled: true,
-        created_at: new Date().toISOString()
-      };
-      setGalleries([newMock, ...galleries]);
-      return;
-    }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +70,7 @@ export const Dashboard: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Manage your client deliveries {isDemoMode && '(Demo Mode)'}</p>
+          <p className="text-slate-500 mt-1">Manage your client deliveries</p>
         </div>
         <button
           onClick={createGallery}

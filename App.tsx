@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase, isDemoMode } from './services/supabase';
+import { supabase } from './services/supabase';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -13,17 +13,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check for Demo Session
-    if (isDemoMode) {
-      const demoUser = localStorage.getItem('demo_user');
-      if (demoUser) {
-        setSession({ user: { id: 'demo-user', email: 'demo@example.com' } } as any);
-      }
-      setLoading(false);
-      return; 
-    }
-
-    // 2. Real Supabase Session Check
+    // Real Supabase Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);

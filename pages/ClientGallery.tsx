@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle } from 'lucide-react';
-import { supabase, isDemoMode } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
 
@@ -23,15 +23,12 @@ export const ClientGallery: React.FC = () => {
     if (!files.length) return;
     
     // Find the earliest expiry date (assuming batch upload, they are close)
-    // In a real robust system, each file has individual timer, 
-    // but for UI simplicity we show the soonest expiry or main batch expiry.
     const firstFile = files[0];
     
     const timer = setInterval(() => {
         const { hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
         if (expired) {
             setTimeRemaining('Expired');
-            // Optional: trigger re-fetch to see if backend deleted them
         } else {
             setTimeRemaining(`${hours}h ${minutes}m`);
         }
@@ -48,48 +45,6 @@ export const ClientGallery: React.FC = () => {
   const loadGallery = async () => {
     try {
       if (!galleryId) return;
-
-      if (isDemoMode) {
-        // Mock Data
-        const mockGallery: Gallery = {
-            id: galleryId,
-            photographer_id: 'demo-user',
-            client_name: 'Demo Client',
-            title: 'Demo Gallery',
-            agreed_balance: 500,
-            amount_paid: 200, // Partial payment to show lock
-            link_enabled: true,
-            created_at: new Date().toISOString()
-        };
-        
-        const mockFiles: GalleryFile[] = [
-            {
-            id: 'f1',
-            gallery_id: galleryId,
-            file_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=300&h=300',
-            file_path: 'mock/1.jpg',
-            file_type: 'image',
-            created_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 86400000).toISOString(),
-            download_count: 5
-            },
-            {
-            id: 'f2',
-            gallery_id: galleryId,
-            file_url: 'https://images.unsplash.com/photo-1511285560982-1356c11d4606?auto=format&fit=crop&q=80&w=300&h=300',
-            file_path: 'mock/2.jpg',
-            file_type: 'image',
-            created_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 86400000).toISOString(),
-            download_count: 2
-            }
-        ];
-
-        setGallery(mockGallery);
-        setFiles(mockFiles);
-        setLoading(false);
-        return;
-      }
 
       // 1. Fetch Gallery Details
       const { data: galData, error: galError } = await supabase
@@ -112,8 +67,7 @@ export const ClientGallery: React.FC = () => {
 
       setGallery(galData);
 
-      // 2. Fetch Files (RLS will filter expired ones automatically if setup correctly, 
-      // but UI handles display too)
+      // 2. Fetch Files
       const { data: fileData, error: fileError } = await supabase
         .from('files')
         .select('*')
@@ -146,10 +100,6 @@ export const ClientGallery: React.FC = () => {
     }
 
     try {
-      if (isDemoMode) {
-        alert("Downloading file in Demo Mode (simulated).");
-        return;
-      }
       // Increment download count
       await supabase.rpc('increment_download', { row_id: file.id });
       
@@ -190,7 +140,7 @@ export const ClientGallery: React.FC = () => {
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{gallery?.client_name} {isDemoMode && '(Demo)'}</h1>
+            <h1 className="text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
             <p className="text-sm text-slate-500">
                 {files.length} items • Expires in <span className="text-red-500 font-medium">{timeRemaining}</span>
             </p>

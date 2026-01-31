@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign } from 'lucide-react';
-import { supabase, isDemoMode } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
@@ -23,49 +23,6 @@ export const GalleryManager: React.FC = () => {
   const fetchGalleryData = async () => {
     if (!id) return;
     
-    if (isDemoMode) {
-      // Mock Data
-      const mockGallery: Gallery = {
-        id: id,
-        photographer_id: 'demo-user',
-        client_name: 'Demo Client',
-        title: 'Demo Gallery',
-        agreed_balance: 500,
-        amount_paid: 200,
-        link_enabled: true,
-        created_at: new Date().toISOString()
-      };
-      
-      const mockFiles: GalleryFile[] = [
-        {
-          id: 'f1',
-          gallery_id: id,
-          file_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=300&h=300',
-          file_path: 'mock/1.jpg',
-          file_type: 'image',
-          created_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 86400000).toISOString(),
-          download_count: 5
-        },
-        {
-          id: 'f2',
-          gallery_id: id,
-          file_url: 'https://images.unsplash.com/photo-1511285560982-1356c11d4606?auto=format&fit=crop&q=80&w=300&h=300',
-          file_path: 'mock/2.jpg',
-          file_type: 'image',
-          created_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 86400000).toISOString(),
-          download_count: 2
-        }
-      ];
-
-      setGallery(mockGallery);
-      setBalance(mockGallery.agreed_balance);
-      setPaid(mockGallery.amount_paid);
-      setFiles(mockFiles);
-      return;
-    }
-
     // Get Gallery
     const { data: galData, error: galError } = await supabase
       .from('galleries')
@@ -98,25 +55,6 @@ export const GalleryManager: React.FC = () => {
     setUploading(true);
     const file = event.target.files[0];
     
-    if (isDemoMode) {
-      setTimeout(() => {
-        const newFile: GalleryFile = {
-           id: Math.random().toString(),
-           gallery_id: gallery.id,
-           file_url: URL.createObjectURL(file), // Local preview
-           file_path: 'demo/path',
-           file_type: file.type.startsWith('image/') ? 'image' : 'video',
-           created_at: new Date().toISOString(),
-           expires_at: new Date(Date.now() + 86400000).toISOString(),
-           download_count: 0
-        };
-        setFiles([newFile, ...files]);
-        setUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }, 1000);
-      return;
-    }
-
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `${gallery.id}/${fileName}`;
@@ -164,12 +102,6 @@ export const GalleryManager: React.FC = () => {
   const updatePayment = async () => {
     if (!gallery) return;
     
-    if (isDemoMode) {
-      setGallery({...gallery, agreed_balance: balance, amount_paid: paid});
-      alert('Payment details updated (Demo)');
-      return;
-    }
-
     try {
       await supabase
         .from('galleries')
@@ -191,10 +123,7 @@ export const GalleryManager: React.FC = () => {
 
   const toggleStatus = async () => {
     if (!gallery) return;
-    if (isDemoMode) {
-       setGallery({ ...gallery, link_enabled: !gallery.link_enabled });
-       return;
-    }
+
     try {
       const newStatus = !gallery.link_enabled;
       await supabase
@@ -210,10 +139,7 @@ export const GalleryManager: React.FC = () => {
 
   const deleteFile = async (fileId: string, filePath: string) => {
     if (!confirm('Delete this file permanently?')) return;
-    if (isDemoMode) {
-      setFiles(files.filter(f => f.id !== fileId));
-      return;
-    }
+
     try {
       // Delete from storage
       await supabase.storage.from('gallery-files').remove([filePath]);
@@ -233,7 +159,7 @@ export const GalleryManager: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{gallery.client_name} {isDemoMode && '(Demo)'}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{gallery.client_name}</h1>
           <p className="text-slate-500">Gallery ID: {gallery.id}</p>
         </div>
         <div className="flex items-center gap-3">
