@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -17,6 +17,7 @@ export const GalleryManager: React.FC = () => {
   const [agreedAmount, setAgreedAmount] = useState<number>(0);
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     if (id) fetchGalleryData();
@@ -157,6 +158,18 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const handleCopyLink = async () => {
+    if (!gallery) return;
+    const url = `${window.location.origin}/#/g/${gallery.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
   const deleteFile = async (fileId: string, filePath: string) => {
     if (!confirm('Delete this file permanently?')) return;
 
@@ -185,6 +198,22 @@ export const GalleryManager: React.FC = () => {
           <p className="text-slate-500">Gallery ID: {gallery.id}</p>
         </div>
         <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopyLink}
+              className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-all active:scale-95"
+            >
+              {linkCopied ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-600 font-medium">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Copy Link</span>
+                </>
+              )}
+            </button>
             <a 
               href={`/#/g/${gallery.id}`}
               target="_blank" 
@@ -192,7 +221,8 @@ export const GalleryManager: React.FC = () => {
               className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2"
             >
                 <ExternalLink className="w-4 h-4" />
-                <span>View Public Link</span>
+                <span className="hidden sm:inline">View Public Link</span>
+                <span className="sm:hidden">View</span>
             </a>
             <button
               onClick={toggleStatus}
@@ -201,7 +231,8 @@ export const GalleryManager: React.FC = () => {
               }`}
             >
               {gallery.link_enabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              <span>{gallery.link_enabled ? 'Link Active' : 'Link Disabled'}</span>
+              <span className="hidden sm:inline">{gallery.link_enabled ? 'Link Active' : 'Link Disabled'}</span>
+               <span className="sm:hidden">{gallery.link_enabled ? 'Active' : 'Disabled'}</span>
             </button>
         </div>
       </div>
