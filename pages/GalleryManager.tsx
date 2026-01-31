@@ -111,7 +111,7 @@ export const GalleryManager: React.FC = () => {
       // Log activity
       await supabase.from('activity_logs').insert({
         gallery_id: gallery.id,
-        action: `Payment updated: Paid $${paid} of $${balance}`
+        action: `Payment updated: Paid KES ${paid} of KES ${balance}`
       });
 
       alert('Payment details updated');
@@ -197,24 +197,24 @@ export const GalleryManager: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Agreed Balance</label>
                 <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400">$</span>
+                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
                     <input 
                     type="number" 
                     value={balance}
                     onChange={(e) => setBalance(Number(e.target.value))}
-                    className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
                 <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400">$</span>
+                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
                     <input 
                     type="number" 
                     value={paid}
                     onChange={(e) => setPaid(Number(e.target.value))}
-                    className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                 </div>
               </div>
