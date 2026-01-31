@@ -209,7 +209,8 @@ export const GalleryManager: React.FC = () => {
                 ) : (
                     <>
                     <Copy className="w-4 h-4" />
-                    <span>Copy Link</span>
+                    <span className="hidden sm:inline">Copy Link</span>
+                    <span className="inline sm:hidden">Copy</span>
                     </>
                 )}
                 </button>
