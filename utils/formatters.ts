@@ -16,12 +16,14 @@ export const formatDate = (dateString: string) => {
 };
 
 export const getTimeRemaining = (expiresAt: string) => {
-  const total = Date.parse(expiresAt) - Date.parse(new Date().toISOString());
+  const total = Date.parse(expiresAt) - Date.now();
+  const days = Math.floor(total / (1000 * 60 * 60 * 24));
   const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
   const minutes = Math.floor((total / 1000 / 60) % 60);
   
   return {
     total,
+    days,
     hours,
     minutes,
     expired: total <= 0

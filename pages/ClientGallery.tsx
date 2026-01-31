@@ -31,13 +31,15 @@ export const ClientGallery: React.FC = () => {
   useEffect(() => {
     if (!files.length) return;
     
-    // Find the earliest expiry date (assuming batch upload, they are close)
+    // Find the earliest expiry date (files are sorted by expiry in fetch now)
     const firstFile = files[0];
     
     const updateTimer = () => {
-        const { hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
+        const { days, hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
         if (expired) {
             setTimeRemaining('Expired');
+        } else if (days > 0) {
+            setTimeRemaining(`${days}d ${hours}h`);
         } else {
             setTimeRemaining(`${hours}h ${minutes}m`);
         }
@@ -119,7 +121,8 @@ export const ClientGallery: React.FC = () => {
         .from('files')
         .select('*')
         .eq('gallery_id', galleryId)
-        .gt('expires_at', new Date().toISOString()); // Only fetch non-expired
+        .gt('expires_at', new Date().toISOString()) // Only fetch non-expired
+        .order('expires_at', { ascending: true }); // Sort by soonest expiry
 
       if (fileError) throw fileError;
       
