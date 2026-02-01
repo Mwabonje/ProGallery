@@ -77,9 +77,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await Promise.all(filesToUpload.map(async (file, index) => {
             // Adaptive Simulation:
             // For small files (<5MB), we simulate fast.
-            // For large files (>50MB), we simulate VERY slow to avoid the "stuck at 90%" feeling.
-            let estimatedSpeed = 2000000; // Default 2MB/s simulation
-            if (file.size > 50 * 1024 * 1024) estimatedSpeed = 500000; // 0.5MB/s for large files
+            // For large files (>50MB), we simulate slower but realistic.
+            let estimatedSpeed = 3000000; // Default 3MB/s simulation
+            if (file.size > 50 * 1024 * 1024) estimatedSpeed = 1000000; // 1MB/s for large files
             
             // Split bandwidth among concurrent files
             const bandwidthPerFile = estimatedSpeed / filesToUpload.length;
@@ -101,11 +101,13 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const mimeType = getMimeType(file);
 
                 // 1. Upload to Supabase Storage
+                // Standard upload works for files up to 6MB. 
+                // For larger files, supabase-js automatically uses TUS if the browser supports it.
                 const { error: uploadError } = await supabase.storage
                     .from('gallery-files')
                     .upload(filePath, file, {
                         cacheControl: '3600',
-                        upsert: true, // changed to true to avoid conflicts
+                        upsert: true,
                         contentType: mimeType
                     });
 
@@ -137,7 +139,14 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             } catch (err: any) {
                 console.error(`Failed to upload ${file.name}`, err);
-                uploadErrors.push(`${file.name}: ${err.message || 'Unknown error'}`);
+                let msg = err.message || 'Unknown error';
+                
+                // Enhance error message for common Supabase limits
+                if (msg.includes('maximum allowed size') || msg.includes('Entity Too Large')) {
+                    msg = 'File exceeds server size limit. Please check Supabase Bucket settings.';
+                }
+                
+                uploadErrors.push(`${file.name}: ${msg}`);
             } finally {
                 clearInterval(simulationInterval);
                 // Snap this file's progress to 100%
@@ -152,9 +161,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setProgress(100);
         
         if (uploadErrors.length > 0) {
-            // Keep the "Uploading..." UI visible for a moment if there's an error so user sees context?
-            // Actually, we should alert immediately.
-            alert(`Upload completed with errors:\n\n${uploadErrors.join('\n')}\n\nPlease check your file size (limits may apply) and internet connection.`);
+            alert(`Upload completed with errors:\n\n${uploadErrors.join('\n')}\n\nPlease try again or check your configuration.`);
         }
 
         // Reset state
@@ -163,7 +170,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setActiveGalleryId(null);
             setProgress(0);
             fileProgressMap.current = [];
-        }, 1500); // Increased delay slightly to let user see 100%
+        }, 1500);
     }
   }, [uploading]);
 

@@ -157,10 +157,12 @@ GRANT EXECUTE ON FUNCTION public.delete_account_v2() TO service_role;
 
 -- 4. STORAGE SETUP
 
--- Insert bucket if not exists
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('gallery-files', 'gallery-files', true)
-ON CONFLICT (id) DO NOTHING;
+-- Insert bucket if not exists, OR UPDATE if it exists to ensure file_size_limit is high enough
+-- We set the limit to 1GB (1073741824 bytes) to comfortably accommodate the 250MB requirement
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('gallery-files', 'gallery-files', true, 1073741824)
+ON CONFLICT (id) DO UPDATE SET
+file_size_limit = 1073741824;
 
 -- Storage Policies
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
