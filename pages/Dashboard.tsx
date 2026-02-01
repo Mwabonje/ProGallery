@@ -3,6 +3,7 @@ import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2 } from 'lucide-r
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { getOptimizedImageUrl } from '../utils/formatters';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -165,9 +166,13 @@ export const Dashboard: React.FC = () => {
             <div className="relative aspect-[3/2] bg-slate-100 rounded-md overflow-hidden mb-3 shadow-sm transition-all duration-300 group-hover:shadow-md">
               {gallery.coverUrl ? (
                 <img 
-                  src={gallery.coverUrl} 
+                  src={getOptimizedImageUrl(gallery.coverUrl, 600, 400)} 
                   alt={gallery.client_name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== gallery.coverUrl) target.src = gallery.coverUrl!;
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">

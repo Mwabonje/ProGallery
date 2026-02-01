@@ -29,3 +29,19 @@ export const getTimeRemaining = (expiresAt: string) => {
     expired: total <= 0
   };
 };
+
+export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number) => {
+  if (!url) return '';
+  // Only apply to Supabase Storage URLs
+  if (url.includes('supabase.co/storage/v1/object/public')) {
+    const separator = url.includes('?') ? '&' : '?';
+    let params = `width=${width}&quality=60`;
+    
+    if (height) {
+      params += `&height=${height}&resize=cover`;
+    }
+    
+    return `${url}${separator}${params}`;
+  }
+  return url;
+};

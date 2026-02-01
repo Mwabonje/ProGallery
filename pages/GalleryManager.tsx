@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, getOptimizedImageUrl } from '../utils/formatters';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -479,7 +479,15 @@ export const GalleryManager: React.FC = () => {
                                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                                         <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
                                             {file.file_type === 'image' ? (
-                                                <img src={file.file_url} alt="Thumbnail" className="w-full h-full object-cover" />
+                                                <img 
+                                                  src={getOptimizedImageUrl(file.file_url, 100, 100)} 
+                                                  alt="Thumbnail" 
+                                                  className="w-full h-full object-cover" 
+                                                  onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    if (target.src !== file.file_url) target.src = file.file_url;
+                                                  }}
+                                                />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
                                                     <span className="text-xs">Video</span>

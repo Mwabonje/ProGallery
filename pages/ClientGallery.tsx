@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, getTimeRemaining } from '../utils/formatters';
+import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
 // @ts-ignore
 import JSZip from 'jszip';
 // @ts-ignore
@@ -302,10 +302,17 @@ export const ClientGallery: React.FC = () => {
             <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
               {file.file_type === 'image' ? (
                 <img 
-                    src={file.file_url} 
+                    src={getOptimizedImageUrl(file.file_url, 600, 600)} 
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading="lazy"
+                    onError={(e) => {
+                        // Fallback to original if optimization fails
+                        const target = e.target as HTMLImageElement;
+                        if (target.src !== file.file_url) {
+                            target.src = file.file_url;
+                        }
+                    }}
                     onContextMenu={(e) => e.preventDefault()}
                 />
               ) : (
