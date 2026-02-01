@@ -32,16 +32,23 @@ export const getTimeRemaining = (expiresAt: string) => {
 
 export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number) => {
   if (!url) return '';
+  
   // Only apply to Supabase Storage URLs
+  // We need to switch from standard storage URL to the Image Transformation URL
+  // Standard: .../storage/v1/object/public/...
+  // Transform: .../storage/v1/render/image/public/...
   if (url.includes('supabase.co/storage/v1/object/public')) {
-    const separator = url.includes('?') ? '&' : '?';
-    let params = `width=${width}&quality=60`;
+    const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
+    
+    const separator = optimizedUrl.includes('?') ? '&' : '?';
+    // Lower quality to 50 for previews to ensure speed
+    let params = `width=${width}&quality=50`;
     
     if (height) {
       params += `&height=${height}&resize=cover`;
     }
     
-    return `${url}${separator}${params}`;
+    return `${optimizedUrl}${separator}${params}`;
   }
   return url;
 };

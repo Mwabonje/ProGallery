@@ -302,7 +302,7 @@ export const ClientGallery: React.FC = () => {
             <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
               {file.file_type === 'image' ? (
                 <img 
-                    src={getOptimizedImageUrl(file.file_url, 600, 600)} 
+                    src={getOptimizedImageUrl(file.file_url, 400, 400)} 
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading="lazy"
