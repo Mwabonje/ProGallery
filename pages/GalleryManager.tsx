@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -180,6 +180,7 @@ export const GalleryManager: React.FC = () => {
   if (!gallery) return <div className="p-8">Loading...</div>;
 
   const remainingBalance = Math.max(0, agreedAmount - paid);
+  const isVolunteer = agreedAmount === 0;
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10">
@@ -250,7 +251,10 @@ export const GalleryManager: React.FC = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Total Agreed Amount</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Total Agreed Amount
+                    <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 for volunteer)</span>
+                </label>
                 <div className="relative">
                     <span className="absolute left-3 top-2 text-slate-400">KES</span>
                     <input 
@@ -293,10 +297,17 @@ export const GalleryManager: React.FC = () => {
                 </div>
               </div>
               
-              <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${remainingBalance <= 0 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                <span className="font-medium">{remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance'}</span>
-                {remainingBalance <= 0 && <Unlock className="w-4 h-4" />}
-                {remainingBalance > 0 && <Lock className="w-4 h-4" />}
+              <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${
+                isVolunteer 
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
+                    : remainingBalance <= 0 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                        : 'bg-amber-50 text-amber-700 border border-amber-100'
+              }`}>
+                <span className="font-medium">
+                    {isVolunteer ? 'Volunteer / Collaboration' : (remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance')}
+                </span>
+                {isVolunteer ? <Heart className="w-4 h-4" /> : (remainingBalance <= 0 ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
               </div>
 
               <button 

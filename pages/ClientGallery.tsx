@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2 } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining } from '../utils/formatters';
@@ -280,9 +280,14 @@ export const ClientGallery: React.FC = () => {
                     </div>
                     <Lock className="w-4 h-4 text-amber-600" />
                  </div>
+             ) : agreedAmount === 0 ? (
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-200 text-xs md:text-sm">
+                    <Heart className="w-4 h-4 text-indigo-600" />
+                    <span>Collaboration</span>
+                 </div>
              ) : (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-200 text-xs md:text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 text-xs md:text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span>Paid in Full</span>
                  </div>
              )}
