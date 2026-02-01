@@ -42,7 +42,8 @@ export const getOptimizedImageUrl = (url: string, width: number = 800, height?: 
     
     const separator = optimizedUrl.includes('?') ? '&' : '?';
     // Lower quality to 50 for previews to ensure speed
-    let params = `width=${width}&quality=50`;
+    // Add format=webp for significantly smaller file sizes
+    let params = `width=${width}&quality=50&format=webp`;
     
     if (height) {
       params += `&height=${height}&resize=cover`;

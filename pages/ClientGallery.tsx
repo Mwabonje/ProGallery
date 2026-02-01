@@ -369,6 +369,7 @@ export const ClientGallery: React.FC = () => {
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                         // Fallback to original if optimization fails
                         const target = e.target as HTMLImageElement;
