@@ -30,7 +30,7 @@ export const getTimeRemaining = (expiresAt: string) => {
   };
 };
 
-export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number) => {
+export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 50) => {
   if (!url) return '';
   
   // Only apply to Supabase Storage URLs
@@ -41,9 +41,8 @@ export const getOptimizedImageUrl = (url: string, width: number = 800, height?: 
     const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
     
     const separator = optimizedUrl.includes('?') ? '&' : '?';
-    // Lower quality to 50 for previews to ensure speed
     // Add format=webp for significantly smaller file sizes
-    let params = `width=${width}&quality=50&format=webp`;
+    let params = `width=${width}&quality=${quality}&format=webp`;
     
     if (height) {
       params += `&height=${height}&resize=cover`;

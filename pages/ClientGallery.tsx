@@ -361,14 +361,20 @@ export const ClientGallery: React.FC = () => {
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-          {files.map((file) => (
+          {files.map((file, index) => (
             <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
               {file.file_type === 'image' ? (
                 <img 
-                    src={getOptimizedImageUrl(file.file_url, 400, 400)} 
+                    src={getOptimizedImageUrl(file.file_url, 400, 400, 75)}
+                    srcSet={`
+                        ${getOptimizedImageUrl(file.file_url, 200, 200, 50)} 200w,
+                        ${getOptimizedImageUrl(file.file_url, 400, 400, 60)} 400w,
+                        ${getOptimizedImageUrl(file.file_url, 800, 800, 70)} 800w
+                    `}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                    loading="lazy"
+                    loading={index < 12 ? "eager" : "lazy"}
                     decoding="async"
                     onError={(e) => {
                         // Fallback to original if optimization fails
