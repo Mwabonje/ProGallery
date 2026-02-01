@@ -73,7 +73,7 @@ export const Login: React.FC = () => {
           }
         });
         if (error) throw error;
-        setSuccessMessage('Check your email for the confirmation link! Note: If the link in your email goes to "localhost:3000" but you are running on port 5173, please change the port in the URL manually.');
+        setSuccessMessage('Check your email for the confirmation link! Tip: Try signing in with your email and password. If the account was actually confirmed (despite any error), it will just work.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
