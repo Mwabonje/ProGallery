@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, AlertTriangle, Eye, EyeOff, KeyRound, ArrowLeft, Mail } from 'lucide-react';
+import { Camera, AlertTriangle, Eye, EyeOff, KeyRound, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 type AuthView = 'signin' | 'signup' | 'forgot';
@@ -24,10 +24,18 @@ export const Login: React.FC = () => {
       // Handle Supabase error fragments
       const params = new URLSearchParams(hash.replace(/^#\/?/, ''));
       const errorDescription = params.get('error_description');
+      const errorCode = params.get('error_code');
       const error = params.get('error');
       
       if (errorDescription || error) {
-        setErrorMessage(decodeURIComponent(errorDescription || error || 'Authentication error').replace(/\+/g, ' '));
+        let msg = decodeURIComponent(errorDescription || error || 'Authentication error').replace(/\+/g, ' ');
+        
+        // Custom message for expired OTP/Links
+        if (errorCode === 'otp_expired' || msg.toLowerCase().includes('expired')) {
+             msg = 'This link has expired or has already been used. Please try signing in. If you have not confirmed your email yet, please try signing up again or contact support.';
+        }
+
+        setErrorMessage(msg);
         // Clean URL but keep us on the login page if possible
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
@@ -100,6 +108,31 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    if (!email) {
+        setErrorMessage("Please enter your email address first.");
+        return;
+    }
+    setLoading(true);
+    clearMessages();
+    try {
+        const redirectUrl = `${window.location.origin}/#/login`;
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: redirectUrl
+            }
+        });
+        if (error) throw error;
+        setSuccessMessage('Confirmation email resent! Please check your inbox.');
+    } catch (error: any) {
+        setErrorMessage(error.message);
+    } finally {
+        setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl">
@@ -112,9 +145,23 @@ export const Login: React.FC = () => {
         </div>
 
         {errorMessage && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{errorMessage}</p>
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col items-start gap-2">
+            <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{errorMessage}</p>
+            </div>
+            {/* Show resend button if looking like an expired link */}
+            {(errorMessage.includes('expired') || errorMessage.includes('invalid')) && view === 'signin' && (
+                <button 
+                    onClick={() => {
+                        setView('signup'); // Switch to signup so they can try again or see the email field
+                        setErrorMessage("Please enter your email to resend the confirmation.");
+                    }}
+                    className="text-xs text-red-600 underline hover:text-red-800 ml-8"
+                >
+                    Need a new link? Click here.
+                </button>
+            )}
           </div>
         )}
 
@@ -225,6 +272,21 @@ export const Login: React.FC = () => {
             >
               {loading ? 'Processing...' : (view === 'signup' ? 'Create Account' : 'Sign In')}
             </button>
+
+            {/* Resend Confirmation Button (only visible in signup view to keep UI clean, or if we want to expose it explicitly) */}
+            {view === 'signup' && (
+                <div className="mt-2 text-center">
+                    <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        disabled={loading || !email}
+                        className="text-xs text-slate-500 hover:text-emerald-600 flex items-center justify-center gap-1 mx-auto"
+                    >
+                        <RefreshCw className="w-3 h-3" />
+                        Resend Confirmation Email
+                    </button>
+                </div>
+            )}
           </form>
         )}
 
