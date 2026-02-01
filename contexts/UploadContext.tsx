@@ -46,6 +46,16 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
     }
 
+    // Validate file sizes (Max 250MB)
+    const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB in bytes
+    const oversizedFiles = filesToUpload.filter(file => file.size > MAX_FILE_SIZE);
+    
+    if (oversizedFiles.length > 0) {
+        const fileList = oversizedFiles.map(f => `- ${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join('\n');
+        alert(`Upload Cancelled.\n\nThe following files exceed the 250MB limit:\n${fileList}\n\nPlease remove them or compress them before uploading.`);
+        return;
+    }
+
     setUploading(true);
     setActiveGalleryId(galleryId);
     setProgress(0);
