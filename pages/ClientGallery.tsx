@@ -364,8 +364,7 @@ export const ClientGallery: React.FC = () => {
           {files.map((file, index) => (
             <div 
                 key={file.id} 
-                // Added [content-visibility:auto] to skip rendering off-screen content
-                className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden [content-visibility:auto]"
+                className="group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid"
             >
               {file.file_type === 'image' ? (
                 <img 
@@ -378,8 +377,7 @@ export const ClientGallery: React.FC = () => {
                     `}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     alt="Gallery item" 
-                    // Added transform-gpu for hardware acceleration and reduced transition duration
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none transform-gpu"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading={index < 12 ? "eager" : "lazy"}
                     decoding="async"
                     // @ts-ignore
