@@ -293,8 +293,8 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white select-none">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-100">
+      {/* Header - Removed backdrop-blur for smoother scrolling performance */}
+      <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
@@ -362,7 +362,11 @@ export const ClientGallery: React.FC = () => {
       <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
           {files.map((file, index) => (
-            <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
+            <div 
+                key={file.id} 
+                // Added [content-visibility:auto] to skip rendering off-screen content
+                className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden [content-visibility:auto]"
+            >
               {file.file_type === 'image' ? (
                 <img 
                     src={getOptimizedImageUrl(file.file_url, 400, 400, 50)}
@@ -374,7 +378,8 @@ export const ClientGallery: React.FC = () => {
                     `}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     alt="Gallery item" 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                    // Added transform-gpu for hardware acceleration and reduced transition duration
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none transform-gpu"
                     loading={index < 12 ? "eager" : "lazy"}
                     decoding="async"
                     // @ts-ignore
