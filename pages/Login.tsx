@@ -42,6 +42,16 @@ export const Login: React.FC = () => {
     }
   }, []);
 
+  // Auto-clear success message after a delay to allow reading
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 20000); // 20 seconds to allow time to read the detailed message
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const clearMessages = () => {
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -145,7 +155,7 @@ export const Login: React.FC = () => {
         </div>
 
         {errorMessage && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col items-start gap-2">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col items-start gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-start space-x-3">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-700">{errorMessage}</p>
@@ -166,9 +176,9 @@ export const Login: React.FC = () => {
         )}
 
         {successMessage && (
-          <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start space-x-3">
+          <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start space-x-3 animate-in fade-in slide-in-from-top-2 duration-300">
             <Mail className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-emerald-700">{successMessage}</p>
+            <p className="text-sm text-emerald-700 leading-relaxed">{successMessage}</p>
           </div>
         )}
 
