@@ -31,6 +31,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const totalBytes = filesToUpload.reduce((acc, f) => acc + f.size, 0);
     // Initialize progress map with 0 for each file index
     fileProgressMap.current = new Array(filesToUpload.length).fill(0);
+    const uploadErrors: string[] = [];
 
     // Global ticker to update the React state from the Refs
     // This decouples the high-frequency simulation from the UI render cycle
@@ -65,12 +66,15 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const filePath = `${galleryId}/${uniqueId}/${sanitizedFileName}`;
 
                 // 1. Upload to Supabase Storage
+                // For large files, Supabase client automatically handles TUS if configured correctly,
+                // but standard upload works for most cases < 6MB. For larger, it internally splits or streams.
+                // We ensure contentType is set.
                 const { error: uploadError } = await supabase.storage
                     .from('gallery-files')
                     .upload(filePath, file, {
                         cacheControl: '3600',
                         upsert: false,
-                        contentType: file.type
+                        contentType: file.type || 'application/octet-stream'
                     });
 
                 if (uploadError) throw uploadError;
@@ -96,8 +100,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
                 if (dbError) throw dbError;
 
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`Failed to upload ${file.name}`, err);
+                uploadErrors.push(`${file.name}: ${err.message || 'Unknown error'}`);
                 // Even if failed, we mark as "processed" in the progress bar to avoid getting stuck
             } finally {
                 clearInterval(simulationInterval);
@@ -106,11 +111,16 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
         }));
     } catch (error) {
-        console.error("Batch upload error", error);
+        console.error("Batch upload critical error", error);
+        uploadErrors.push("Batch process failed critically.");
     } finally {
         clearInterval(uiInterval);
         setProgress(100);
         
+        if (uploadErrors.length > 0) {
+            alert(`Upload completed with errors:\n\n${uploadErrors.join('\n')}\n\nPlease try uploading the failed files again.`);
+        }
+
         // Reset state after a short delay
         setTimeout(() => {
             setUploading(false);
