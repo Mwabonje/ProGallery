@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
@@ -22,7 +22,11 @@ export const ClientGallery: React.FC = () => {
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStatusText, setDownloadStatusText] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Ref to cancel download if needed
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (galleryId) loadGallery();
@@ -178,29 +182,69 @@ export const ClientGallery: React.FC = () => {
 
     setDownloadingAll(true);
     setDownloadProgress(0);
+    setDownloadStatusText('Preparing list...');
+    abortControllerRef.current = new AbortController();
 
     try {
       const zip = new JSZip();
       let processed = 0;
+      const total = files.length;
+      
+      // We process files in batches (Concurrency Limit) to avoid choking the browser/network
+      const CONCURRENCY_LIMIT = 3;
+      const queue = [...files];
+      const activePromises: Promise<void>[] = [];
+      const signal = abortControllerRef.current.signal;
 
-      const promises = files.map(async (file) => {
+      const processFile = async (file: GalleryFile) => {
+        if (signal.aborted) return;
+        
         try {
-          const response = await fetch(file.file_url);
+          const response = await fetch(file.file_url, { signal });
           if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
           const blob = await response.blob();
           const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
           zip.file(fileName, blob);
-        } catch (error) {
-          console.error(`Error downloading file: ${file.id}`, error);
+        } catch (error: any) {
+          if (error.name !== 'AbortError') {
+             console.error(`Error downloading file: ${file.id}`, error);
+          }
         } finally {
           processed++;
-          setDownloadProgress(Math.round((processed / files.length) * 100));
+          setDownloadProgress(Math.round((processed / total) * 100));
+          setDownloadStatusText(`Fetching files (${processed}/${total})...`);
         }
+      };
+
+      // Helper to manage concurrency
+      const next = async (): Promise<void> => {
+        if (queue.length === 0) return;
+        const file = queue.shift();
+        if (file) {
+           await processFile(file);
+           await next();
+        }
+      };
+
+      // Start initial batch
+      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, files.length); i++) {
+         activePromises.push(next());
+      }
+      
+      await Promise.all(activePromises);
+
+      if (signal.aborted) return;
+
+      setDownloadStatusText('Packaging... (almost done)');
+      
+      // Use STORE compression (no compression) which is MUCH faster for images/videos
+      const content = await zip.generateAsync({ 
+          type: "blob", 
+          compression: "STORE" 
       });
+      
+      if (signal.aborted) return;
 
-      await Promise.all(promises);
-
-      const content = await zip.generateAsync({ type: "blob" });
       const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       saveAs(content, `${galleryName}_photos.zip`);
 
@@ -210,7 +254,17 @@ export const ClientGallery: React.FC = () => {
     } finally {
       setDownloadingAll(false);
       setDownloadProgress(0);
+      setDownloadStatusText('');
+      abortControllerRef.current = null;
     }
+  };
+
+  const cancelDownloadAll = () => {
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          setDownloadingAll(false);
+          setDownloadStatusText('');
+      }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin h-8 w-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
@@ -271,7 +325,7 @@ export const ClientGallery: React.FC = () => {
                 {downloadingAll ? (
                     <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>{downloadProgress}%</span>
+                        <span>Preparing...</span>
                     </>
                 ) : (
                     <>
@@ -397,6 +451,45 @@ export const ClientGallery: React.FC = () => {
                 <p className="text-xs text-slate-400">Contact your photographer to settle payment.</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Download Progress Modal */}
+      {downloadingAll && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95">
+                <div className="text-center mb-6">
+                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+                        <Loader2 className="w-7 h-7 text-emerald-600 animate-spin" />
+                        <div className="absolute inset-0 border-2 border-slate-200 rounded-full"></div>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">Preparing Download</h3>
+                    <p className="text-sm text-slate-500 mt-1">{downloadStatusText}</p>
+                </div>
+                
+                <div className="mb-6">
+                    <div className="flex justify-between text-xs mb-2 font-medium">
+                        <span className="text-slate-600">Progress</span>
+                        <span className="text-emerald-600">{downloadProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-emerald-500 transition-all duration-200 ease-out" 
+                            style={{ width: `${downloadProgress}%` }}
+                        ></div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2 text-center">
+                        Please do not close this window.
+                    </p>
+                </div>
+
+                <button 
+                    onClick={cancelDownloadAll}
+                    className="w-full py-2.5 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition-colors text-sm"
+                >
+                    Cancel
+                </button>
+            </div>
         </div>
       )}
 
