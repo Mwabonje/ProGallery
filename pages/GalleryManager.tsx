@@ -110,6 +110,40 @@ export const GalleryManager: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleExtendExpiration = async () => {
+    if (!gallery || files.length === 0) return;
+    
+    // Calculate readable expiration time for confirmation
+    const newExpiry = new Date();
+    newExpiry.setTime(newExpiry.getTime() + expiryHours * 60 * 60 * 1000);
+    const formattedTime = newExpiry.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+    const confirmMessage = `Are you sure you want to update the expiration for all ${files.length} files?\n\nThey will be set to expire in ${expiryHours} hours from now (approx ${formattedTime}).\n\nThis will reactivate any currently expired files.`;
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ expires_at: newExpiry.toISOString() })
+        .eq('gallery_id', gallery.id);
+        
+      if (error) throw error;
+      
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        gallery_id: gallery.id,
+        action: `Extended expiration for ${files.length} files by ${expiryHours} hours`
+      });
+
+      await fetchGalleryData();
+      alert("Files updated successfully! The link is active again.");
+    } catch (error) {
+      console.error('Error updating expiration:', error);
+      alert('Failed to update expiration.');
+    }
+  };
+
   const updatePayment = async () => {
     if (!gallery) return;
     
@@ -376,6 +410,20 @@ export const GalleryManager: React.FC = () => {
                              <option value={72}>3 Days</option>
                              <option value={168}>1 Week</option>
                            </select>
+
+                           {files.length > 0 && (
+                            <>
+                                <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                                <button
+                                    onClick={handleExtendExpiration}
+                                    disabled={uploading}
+                                    className="text-slate-400 hover:text-emerald-600 transition-colors p-1 rounded-md hover:bg-emerald-50"
+                                    title="Apply this duration to all existing files (Reactivate expired)"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
+                            </>
+                           )}
                         </div>
                         
                         <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
@@ -424,41 +472,46 @@ export const GalleryManager: React.FC = () => {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {files.map((file) => (
-                            <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                                    <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
-                                        {file.file_type === 'image' ? (
-                                            <img src={file.file_url} alt="Thumbnail" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
-                                                <span className="text-xs">Video</span>
-                                            </div>
-                                        )}
+                        {files.map((file) => {
+                            const isExpired = new Date(file.expires_at) < new Date();
+                            return (
+                                <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                                        <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
+                                            {file.file_type === 'image' ? (
+                                                <img src={file.file_url} alt="Thumbnail" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
+                                                    <span className="text-xs">Video</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-slate-900 truncate">{file.file_path.split('/').pop()}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
+                                            <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
+                                                {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium text-slate-900 truncate">{file.file_path.split('/').pop()}</p>
-                                        <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
-                                        <p className="text-xs text-red-500 mt-0.5 truncate">Expires: {formatDate(file.expires_at)}</p>
+                                    <div className="flex items-center gap-1 md:gap-3 pl-2">
+                                        <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
+                                            <Download className="w-3 h-3" />
+                                            {file.download_count}
+                                        </div>
+                                        <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
+                                            <Eye className="w-5 h-5 md:w-4 md:h-4" />
+                                        </a>
+                                        <button 
+                                            onClick={() => deleteFile(file.id, file.file_path)}
+                                            className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                        >
+                                            <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 md:gap-3 pl-2">
-                                    <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
-                                        <Download className="w-3 h-3" />
-                                        {file.download_count}
-                                    </div>
-                                    <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
-                                        <Eye className="w-5 h-5 md:w-4 md:h-4" />
-                                    </a>
-                                    <button 
-                                        onClick={() => deleteFile(file.id, file.file_path)}
-                                        className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
