@@ -19,9 +19,10 @@ export const ClientGallery: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   
-  // Download All State
+  // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (galleryId) loadGallery();
@@ -141,6 +142,8 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
+    setDownloadingId(file.id);
+
     try {
       await supabase.rpc('increment_download', { row_id: file.id });
       
@@ -153,8 +156,14 @@ export const ClientGallery: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Short timeout to allow the download to start before removing spinner
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (e) {
       console.error('Download failed', e);
+      alert('Download failed. Please check your internet connection.');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -319,16 +328,47 @@ export const ClientGallery: React.FC = () => {
                 <video src={file.file_url} className="w-full h-full object-cover" controls controlsList="nodownload" />
               )}
               
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              {/* Desktop Hover Overlay */}
+              <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
                 <button
                   onClick={() => handleDownload(file)}
-                  className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm"
+                  disabled={downloadingId === file.id}
+                  className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                 >
-                  {isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                  <span>{isLocked ? 'Locked' : 'Download'}</span>
+                  {downloadingId === file.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : isLocked ? (
+                      <Lock className="w-3 h-3" />
+                  ) : (
+                      <Download className="w-3 h-3" />
+                  )}
+                  <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
                 </button>
               </div>
+
+              {/* Mobile Always-Visible Button */}
+              {/* Only show on touch/small screens. We use hidden md:block logic reversed */}
+              <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(file);
+                }}
+                disabled={downloadingId === file.id}
+                className={`md:hidden absolute bottom-2 right-2 p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                    ${isLocked 
+                        ? 'bg-amber-100/90 text-amber-700' 
+                        : 'bg-white/90 text-slate-900'
+                    }`}
+                aria-label="Download"
+              >
+                  {downloadingId === file.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isLocked ? (
+                      <Lock className="w-4 h-4" />
+                  ) : (
+                      <Download className="w-4 h-4" />
+                  )}
+              </button>
             </div>
           ))}
         </div>
