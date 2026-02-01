@@ -32,6 +32,27 @@ export const ClientGallery: React.FC = () => {
     if (galleryId) loadGallery();
   }, [galleryId]);
 
+  // Network Optimization: Preconnect to Supabase Storage
+  useEffect(() => {
+    if (files.length > 0) {
+      try {
+        // Extract the hostname from the first file URL to preconnect
+        const url = new URL(files[0].file_url);
+        const origin = url.origin;
+        
+        // Check if link already exists
+        if (!document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = origin;
+            document.head.appendChild(link);
+        }
+      } catch (e) {
+        // Ignore URL parsing errors
+      }
+    }
+  }, [files]);
+
   // Timer effect
   useEffect(() => {
     if (!files.length) return;
@@ -293,7 +314,7 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white select-none">
-      {/* Header - Removed backdrop-blur for smoother scrolling performance */}
+      {/* Header */}
       <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
@@ -368,23 +389,25 @@ export const ClientGallery: React.FC = () => {
             >
               {file.file_type === 'image' ? (
                 <img 
-                    src={getOptimizedImageUrl(file.file_url, 400, 400, 50)}
+                    src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
                     srcSet={`
-                        ${getOptimizedImageUrl(file.file_url, 200, 200, 40)} 200w,
-                        ${getOptimizedImageUrl(file.file_url, 400, 400, 50)} 400w,
-                        ${getOptimizedImageUrl(file.file_url, 600, 600, 60)} 600w,
-                        ${getOptimizedImageUrl(file.file_url, 800, 800, 70)} 800w
+                        ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
+                        ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
+                        ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
+                        ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
                     `}
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    // Tighter sizes definition to avoid fetching larger images than necessary
+                    sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                    loading={index < 12 ? "eager" : "lazy"}
+                    // Increase eager loading to first 8 images (typical viewport)
+                    loading={index < 8 ? "eager" : "lazy"}
                     decoding="async"
+                    // Prioritize only the very first row
                     // @ts-ignore
                     fetchPriority={index < 4 ? "high" : "auto"}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        // IMPORTANT: Remove srcset and sizes so the browser stops trying to use the broken responsive versions
                         target.removeAttribute('srcset');
                         target.removeAttribute('sizes');
                         if (target.src !== file.file_url) {
