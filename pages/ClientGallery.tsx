@@ -377,8 +377,10 @@ export const ClientGallery: React.FC = () => {
                     loading={index < 12 ? "eager" : "lazy"}
                     decoding="async"
                     onError={(e) => {
-                        // Fallback to original if optimization fails
                         const target = e.target as HTMLImageElement;
+                        // IMPORTANT: Remove srcset and sizes so the browser stops trying to use the broken responsive versions
+                        target.removeAttribute('srcset');
+                        target.removeAttribute('sizes');
                         if (target.src !== file.file_url) {
                             target.src = file.file_url;
                         }
