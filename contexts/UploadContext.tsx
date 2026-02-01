@@ -10,6 +10,28 @@ interface UploadContextType {
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
+// Helper to deduce MIME type if browser fails (common with MKV, AVI, etc.)
+const getMimeType = (file: File) => {
+    if (file.type && file.type !== "") return file.type;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    
+    // Video fallbacks
+    if (ext === 'mp4') return 'video/mp4';
+    if (ext === 'mov') return 'video/quicktime';
+    if (ext === 'webm') return 'video/webm';
+    if (ext === 'avi') return 'video/x-msvideo';
+    if (ext === 'mkv') return 'video/x-matroska';
+    if (ext === 'wmv') return 'video/x-ms-wmv';
+    
+    // Image fallbacks
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'gif') return 'image/gif';
+    if (ext === 'webp') return 'image/webp';
+    
+    return 'application/octet-stream';
+};
+
 export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -34,27 +56,29 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const uploadErrors: string[] = [];
 
     // Global ticker to update the React state from the Refs
-    // This decouples the high-frequency simulation from the UI render cycle
     const uiInterval = setInterval(() => {
         const totalUploaded = fileProgressMap.current.reduce((a, b) => a + b, 0);
         const percentage = totalBytes > 0 ? Math.round((totalUploaded / totalBytes) * 100) : 0;
-        // Cap at 99% until everything is truly resolved
-        setProgress(Math.min(99, percentage));
+        // Cap visual progress at 95% until everything is truly resolved
+        setProgress(Math.min(95, percentage));
     }, 200);
 
     try {
         await Promise.all(filesToUpload.map(async (file, index) => {
-            // Estimated Upload Speed Simulation
-            // We assume a shared bandwidth of roughly 3MB/s (3,000,000 bytes)
-            // We split this bandwidth among concurrent uploads to avoid over-estimating speed
-            const estimatedBandwidth = 3000000 / filesToUpload.length;
-            const tickRateMs = 250;
-            const bytesPerTick = (estimatedBandwidth * tickRateMs) / 1000;
+            // Adaptive Simulation:
+            // For small files (<5MB), we simulate fast.
+            // For large files (>50MB), we simulate VERY slow to avoid the "stuck at 90%" feeling.
+            let estimatedSpeed = 2000000; // Default 2MB/s simulation
+            if (file.size > 50 * 1024 * 1024) estimatedSpeed = 500000; // 0.5MB/s for large files
+            
+            // Split bandwidth among concurrent files
+            const bandwidthPerFile = estimatedSpeed / filesToUpload.length;
+            const tickRateMs = 500;
+            const bytesPerTick = (bandwidthPerFile * tickRateMs) / 1000;
 
             const simulationInterval = setInterval(() => {
                 const current = fileProgressMap.current[index];
-                // Only simulate up to 90% of the file size, then wait for actual promise resolution
-                // This prevents the bar from hitting 100% while the server is still processing
+                // Only simulate up to 90% of the file size
                 if (current < file.size * 0.90) {
                     fileProgressMap.current[index] = current + bytesPerTick;
                 }
@@ -64,17 +88,15 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const uniqueId = Math.random().toString(36).substring(2);
                 const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
                 const filePath = `${galleryId}/${uniqueId}/${sanitizedFileName}`;
+                const mimeType = getMimeType(file);
 
                 // 1. Upload to Supabase Storage
-                // For large files, Supabase client automatically handles TUS if configured correctly,
-                // but standard upload works for most cases < 6MB. For larger, it internally splits or streams.
-                // We ensure contentType is set.
                 const { error: uploadError } = await supabase.storage
                     .from('gallery-files')
                     .upload(filePath, file, {
                         cacheControl: '3600',
-                        upsert: false,
-                        contentType: file.type || 'application/octet-stream'
+                        upsert: true, // changed to true to avoid conflicts
+                        contentType: mimeType
                     });
 
                 if (uploadError) throw uploadError;
@@ -88,13 +110,16 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const expiresAt = new Date();
                 expiresAt.setTime(expiresAt.getTime() + expiryHours * 60 * 60 * 1000);
 
+                // Determine type for DB
+                const dbFileType = mimeType.startsWith('image/') ? 'image' : 'video';
+
                 const { error: dbError } = await supabase
                     .from('files')
                     .insert([{
                         gallery_id: galleryId,
                         file_url: publicUrl,
                         file_path: filePath,
-                        file_type: file.type.startsWith('image/') ? 'image' : 'video',
+                        file_type: dbFileType,
                         expires_at: expiresAt.toISOString()
                     }]);
 
@@ -103,10 +128,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             } catch (err: any) {
                 console.error(`Failed to upload ${file.name}`, err);
                 uploadErrors.push(`${file.name}: ${err.message || 'Unknown error'}`);
-                // Even if failed, we mark as "processed" in the progress bar to avoid getting stuck
             } finally {
                 clearInterval(simulationInterval);
-                // Snap this file's progress to 100% (its full size)
+                // Snap this file's progress to 100%
                 fileProgressMap.current[index] = file.size;
             }
         }));
@@ -118,16 +142,18 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setProgress(100);
         
         if (uploadErrors.length > 0) {
-            alert(`Upload completed with errors:\n\n${uploadErrors.join('\n')}\n\nPlease try uploading the failed files again.`);
+            // Keep the "Uploading..." UI visible for a moment if there's an error so user sees context?
+            // Actually, we should alert immediately.
+            alert(`Upload completed with errors:\n\n${uploadErrors.join('\n')}\n\nPlease check your file size (limits may apply) and internet connection.`);
         }
 
-        // Reset state after a short delay
+        // Reset state
         setTimeout(() => {
             setUploading(false);
             setActiveGalleryId(null);
             setProgress(0);
             fileProgressMap.current = [];
-        }, 1000);
+        }, 1500); // Increased delay slightly to let user see 100%
     }
   }, [uploading]);
 
