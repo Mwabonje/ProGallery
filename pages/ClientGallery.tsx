@@ -365,17 +365,20 @@ export const ClientGallery: React.FC = () => {
             <div key={file.id} className="group relative aspect-square bg-slate-100 rounded-lg overflow-hidden break-inside-avoid">
               {file.file_type === 'image' ? (
                 <img 
-                    src={getOptimizedImageUrl(file.file_url, 400, 400, 75)}
+                    src={getOptimizedImageUrl(file.file_url, 400, 400, 50)}
                     srcSet={`
-                        ${getOptimizedImageUrl(file.file_url, 200, 200, 50)} 200w,
-                        ${getOptimizedImageUrl(file.file_url, 400, 400, 60)} 400w,
+                        ${getOptimizedImageUrl(file.file_url, 200, 200, 40)} 200w,
+                        ${getOptimizedImageUrl(file.file_url, 400, 400, 50)} 400w,
+                        ${getOptimizedImageUrl(file.file_url, 600, 600, 60)} 600w,
                         ${getOptimizedImageUrl(file.file_url, 800, 800, 70)} 800w
                     `}
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                     loading={index < 12 ? "eager" : "lazy"}
                     decoding="async"
+                    // @ts-ignore
+                    fetchPriority={index < 4 ? "high" : "auto"}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         // IMPORTANT: Remove srcset and sizes so the browser stops trying to use the broken responsive versions
