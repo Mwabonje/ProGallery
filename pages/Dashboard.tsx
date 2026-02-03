@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -179,6 +179,16 @@ export const Dashboard: React.FC = () => {
                   <ImageIcon className="w-10 h-10" />
                 </div>
               )}
+              
+              {/* Status Badges Overlay */}
+              <div className="absolute top-2 left-2 flex gap-1">
+                 {gallery.selection_status === 'submitted' && (
+                     <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                        <Heart className="w-3 h-3 fill-current" />
+                        SUBMITTED
+                     </div>
+                 )}
+              </div>
               
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />

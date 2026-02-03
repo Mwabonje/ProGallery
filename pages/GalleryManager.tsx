@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl } from '../utils/formatters';
@@ -12,6 +12,7 @@ export const GalleryManager: React.FC = () => {
   const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [clientSelections, setClientSelections] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Use Global Upload Context
@@ -26,6 +27,9 @@ export const GalleryManager: React.FC = () => {
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  
+  // UI States
+  const [viewFilter, setViewFilter] = useState<'all' | 'selected'>('all');
 
   // Expiration settings (in hours)
   const [expiryHours, setExpiryHours] = useState<number>(24);
@@ -96,6 +100,18 @@ export const GalleryManager: React.FC = () => {
       .order('created_at', { ascending: false });
 
     if (fileData) setFiles(fileData);
+
+    // Get Selections
+    if (galData.selection_enabled) {
+        const { data: selectionData } = await supabase
+            .from('selections')
+            .select('file_id')
+            .eq('gallery_id', id);
+        
+        if (selectionData) {
+            setClientSelections(new Set(selectionData.map(s => s.file_id)));
+        }
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,6 +200,26 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const toggleSelectionMode = async () => {
+      if (!gallery) return;
+      
+      try {
+          const newStatus = !gallery.selection_enabled;
+          await supabase
+            .from('galleries')
+            .update({ selection_enabled: newStatus })
+            .eq('id', gallery.id);
+            
+          setGallery({ ...gallery, selection_enabled: newStatus });
+          
+          if (newStatus) {
+              fetchGalleryData(); // Fetch selections if turning on
+          }
+      } catch (error) {
+          console.error(error);
+      }
+  };
+
   const handleCopyLink = async () => {
     if (!gallery) return;
     const url = `${window.location.origin}/#/g/${gallery.id}`;
@@ -215,6 +251,11 @@ export const GalleryManager: React.FC = () => {
 
   const remainingBalance = Math.max(0, agreedAmount - paid);
   const isVolunteer = agreedAmount === 0;
+
+  // Filter files based on view
+  const visibleFiles = viewFilter === 'selected' 
+     ? files.filter(f => clientSelections.has(f.id))
+     : files;
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10">
@@ -273,6 +314,27 @@ export const GalleryManager: React.FC = () => {
             </div>
         </div>
       </div>
+      
+      {/* Notifications Area */}
+      {gallery.selection_status === 'submitted' && (
+          <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                  <div className="bg-rose-100 p-2 rounded-full">
+                      <Heart className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                      <p className="font-semibold text-rose-900">Client Selection Submitted</p>
+                      <p className="text-sm text-rose-700">The client has finished selecting {clientSelections.size} photos.</p>
+                  </div>
+              </div>
+              <button 
+                onClick={() => setViewFilter('selected')}
+                className="text-sm font-medium text-rose-700 hover:text-rose-900 underline"
+              >
+                  View Selection
+              </button>
+          </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left Column: Settings */}
@@ -368,6 +430,25 @@ export const GalleryManager: React.FC = () => {
             </div>
           </div>
 
+          {/* Settings Card */}
+          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+             <h2 className="text-lg font-semibold mb-4">Gallery Settings</h2>
+             
+             {/* Selection Mode Toggle */}
+             <div className="flex items-center justify-between mb-2">
+                 <div>
+                     <p className="font-medium text-slate-900">Client Selection</p>
+                     <p className="text-xs text-slate-500">Allow clients to "heart" photos</p>
+                 </div>
+                 <button
+                    onClick={toggleSelectionMode}
+                    className={`w-11 h-6 rounded-full transition-colors relative ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
+                 >
+                     <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
+                 </button>
+             </div>
+          </div>
+
           {/* Stats Card */}
           <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
@@ -375,6 +456,10 @@ export const GalleryManager: React.FC = () => {
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                     <span>Total Files</span>
                     <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span>Selected by Client</span>
+                    <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.size}</span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span>Total Downloads</span>
@@ -388,7 +473,26 @@ export const GalleryManager: React.FC = () => {
         <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                    <h2 className="text-lg font-semibold">Gallery Content</h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-semibold">Gallery Content</h2>
+                        {/* Filter Tabs */}
+                        <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
+                            <button 
+                                onClick={() => setViewFilter('all')}
+                                className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                All ({files.length})
+                            </button>
+                            <button 
+                                onClick={() => setViewFilter('selected')}
+                                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                            >
+                                <Heart className="w-3 h-3" />
+                                Selected ({clientSelections.size})
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
                         <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 flex-1 sm:flex-none">
                            <Clock className="w-4 h-4 text-slate-500 shrink-0" />
@@ -465,19 +569,29 @@ export const GalleryManager: React.FC = () => {
                     </div>
                 </div>
 
-                {files.length === 0 ? (
+                {visibleFiles.length === 0 ? (
                     <div className="p-12 text-center text-slate-500">
-                        <Upload className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                        <p>No files uploaded yet. Select an expiration time above and upload.</p>
+                        {viewFilter === 'selected' ? (
+                            <>
+                                <Heart className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                                <p>No files selected by the client yet.</p>
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                                <p>No files uploaded yet. Select an expiration time above and upload.</p>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {files.map((file) => {
+                        {visibleFiles.map((file) => {
                             const isExpired = new Date(file.expires_at) < new Date();
+                            const isSelected = clientSelections.has(file.id);
                             return (
-                                <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div key={file.id} className={`p-4 flex items-center justify-between hover:bg-slate-50 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
                                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                                        <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
+                                        <div className="relative w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
                                             {file.file_type === 'image' ? (
                                                 <img 
                                                   src={getOptimizedImageUrl(file.file_url, 100, 100)} 
@@ -493,9 +607,17 @@ export const GalleryManager: React.FC = () => {
                                                     <span className="text-xs">Video</span>
                                                 </div>
                                             )}
+                                            {isSelected && (
+                                                <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
+                                                    <Heart className="w-6 h-6 text-rose-600 fill-rose-600" />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-slate-900 truncate">{file.file_path.split('/').pop()}</p>
+                                            <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-2">
+                                                {file.file_path.split('/').pop()}
+                                                {isSelected && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>}
+                                            </p>
                                             <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
                                             <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
                                                 {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}

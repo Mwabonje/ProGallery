@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS public.galleries (
   agreed_balance numeric DEFAULT 0,
   amount_paid numeric DEFAULT 0,
   link_enabled boolean DEFAULT true,
+  selection_enabled boolean DEFAULT false,
+  selection_status text DEFAULT 'pending', -- 'pending', 'submitted', 'completed'
   created_at timestamptz DEFAULT now()
 );
 
@@ -27,6 +29,14 @@ CREATE TABLE IF NOT EXISTS public.files (
   download_count integer DEFAULT 0
 );
 
+-- Create selections table (Junction table)
+CREATE TABLE IF NOT EXISTS public.selections (
+  gallery_id uuid REFERENCES public.galleries(id) ON DELETE CASCADE NOT NULL,
+  file_id uuid REFERENCES public.files(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  PRIMARY KEY (gallery_id, file_id)
+);
+
 -- Create activity logs
 CREATE TABLE IF NOT EXISTS public.activity_logs (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -40,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
 -- Enable RLS
 ALTER TABLE public.galleries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.selections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES FOR GALLERIES
@@ -56,6 +67,12 @@ DROP POLICY IF EXISTS "Public can view active galleries" ON public.galleries;
 CREATE POLICY "Public can view active galleries"
 ON public.galleries
 FOR SELECT
+USING (link_enabled = true);
+-- Public can update selection status if link is enabled (to submit selection)
+DROP POLICY IF EXISTS "Public can update status" ON public.galleries;
+CREATE POLICY "Public can update status"
+ON public.galleries
+FOR UPDATE
 USING (link_enabled = true);
 
 
@@ -85,6 +102,31 @@ USING (
     SELECT id FROM public.galleries WHERE link_enabled = true
   )
 );
+
+-- POLICIES FOR SELECTIONS
+
+-- Photographers can view selections for their galleries
+DROP POLICY IF EXISTS "Photographers can view selections" ON public.selections;
+CREATE POLICY "Photographers can view selections"
+ON public.selections
+FOR SELECT
+USING (
+  gallery_id IN (
+    SELECT id FROM public.galleries WHERE photographer_id = auth.uid()
+  )
+);
+
+-- Public can manage selections (View, Insert, Delete) if gallery is enabled
+DROP POLICY IF EXISTS "Public can manage selections" ON public.selections;
+CREATE POLICY "Public can manage selections"
+ON public.selections
+FOR ALL
+USING (
+  gallery_id IN (
+    SELECT id FROM public.galleries WHERE link_enabled = true
+  )
+);
+
 
 -- POLICIES FOR ACTIVITY LOGS
 DROP POLICY IF EXISTS "Photographers can manage logs" ON public.activity_logs;

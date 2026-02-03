@@ -12,6 +12,8 @@ export interface Gallery {
   agreed_balance: number;
   amount_paid: number;
   link_enabled: boolean;
+  selection_enabled: boolean; // New: Toggle selection mode
+  selection_status: 'pending' | 'submitted' | 'completed'; // New: Workflow status
   created_at: string;
 }
 
@@ -24,6 +26,12 @@ export interface GalleryFile {
   created_at: string;
   expires_at: string;
   download_count: number;
+}
+
+export interface Selection {
+  gallery_id: string;
+  file_id: string;
+  created_at: string;
 }
 
 export interface ActivityLog {

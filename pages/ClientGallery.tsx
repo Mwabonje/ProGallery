@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
@@ -19,6 +19,11 @@ export const ClientGallery: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   
+  // Selection Mode State
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [submittingSelection, setSubmittingSelection] = useState(false);
+  const [selectionSubmitted, setSelectionSubmitted] = useState(false);
+
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -133,7 +138,11 @@ export const ClientGallery: React.FC = () => {
       }
 
       setGallery(galData);
+      if (galData.selection_status === 'submitted' || galData.selection_status === 'completed') {
+        setSelectionSubmitted(true);
+      }
 
+      // Load Files
       const { data: fileData, error: fileError } = await supabase
         .from('files')
         .select('*')
@@ -149,11 +158,82 @@ export const ClientGallery: React.FC = () => {
          setFiles(fileData);
       }
 
+      // Load Selections if enabled
+      if (galData.selection_enabled) {
+        const { data: selectionData } = await supabase
+            .from('selections')
+            .select('file_id')
+            .eq('gallery_id', galleryId);
+        
+        if (selectionData) {
+            setSelectedFileIds(new Set(selectionData.map(s => s.file_id)));
+        }
+      }
+
     } catch (err) {
       console.error(err);
       setError('Error loading gallery.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleSelection = async (file: GalleryFile) => {
+    if (!gallery?.selection_enabled || selectionSubmitted) return;
+
+    const isSelected = selectedFileIds.has(file.id);
+    const newSet = new Set(selectedFileIds);
+    
+    // Optimistic UI Update
+    if (isSelected) {
+        newSet.delete(file.id);
+    } else {
+        newSet.add(file.id);
+    }
+    setSelectedFileIds(newSet);
+
+    try {
+        if (isSelected) {
+            // Remove from DB
+            await supabase
+                .from('selections')
+                .delete()
+                .eq('gallery_id', gallery.id)
+                .eq('file_id', file.id);
+        } else {
+            // Add to DB
+            await supabase
+                .from('selections')
+                .insert({ gallery_id: gallery.id, file_id: file.id });
+        }
+    } catch (err) {
+        console.error("Selection sync failed", err);
+        // Revert on error
+        setSelectedFileIds(selectedFileIds); // Revert to old state
+    }
+  };
+
+  const submitSelection = async () => {
+    if (!gallery) return;
+    if (!confirm(`Are you sure you want to submit your selection of ${selectedFileIds.size} photos? This will notify the photographer.`)) return;
+
+    setSubmittingSelection(true);
+    try {
+        const { error } = await supabase
+            .from('galleries')
+            .update({ selection_status: 'submitted' })
+            .eq('id', gallery.id);
+        
+        if (error) throw error;
+        setSelectionSubmitted(true);
+        setGallery({ ...gallery, selection_status: 'submitted' });
+        
+        alert("Selection submitted successfully! The photographer has been notified.");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to submit selection. Please try again.");
+    } finally {
+        setSubmittingSelection(false);
     }
   };
 
@@ -311,9 +391,10 @@ export const ClientGallery: React.FC = () => {
   const amountPaid = gallery?.amount_paid || 0;
   const balanceDue = Math.max(0, agreedAmount - amountPaid);
   const isLocked = balanceDue > 0;
+  const isSelectionMode = gallery?.selection_enabled;
 
   return (
-    <div className="min-h-screen bg-white select-none">
+    <div className={`min-h-screen bg-white select-none ${isSelectionMode ? 'pb-24' : ''}`}>
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
@@ -382,10 +463,12 @@ export const ClientGallery: React.FC = () => {
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-          {files.map((file, index) => (
+          {files.map((file, index) => {
+            const isSelected = selectedFileIds.has(file.id);
+            return (
             <div 
                 key={file.id} 
-                className="group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid"
+                className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''}`}
             >
               {file.file_type === 'image' ? (
                 <img 
@@ -396,14 +479,11 @@ export const ClientGallery: React.FC = () => {
                         ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
                         ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
                     `}
-                    // Tighter sizes definition to avoid fetching larger images than necessary
                     sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                     alt="Gallery item" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                    // Increase eager loading to first 8 images (typical viewport)
                     loading={index < 8 ? "eager" : "lazy"}
                     decoding="async"
-                    // Prioritize only the very first row
                     // @ts-ignore
                     fetchPriority={index < 4 ? "high" : "auto"}
                     onError={(e) => {
@@ -421,50 +501,95 @@ export const ClientGallery: React.FC = () => {
               )}
               
               {/* Desktop Hover Overlay */}
-              <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
-                <button
-                  onClick={() => handleDownload(file)}
-                  disabled={downloadingId === file.id}
-                  className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
-                >
-                  {downloadingId === file.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : isLocked ? (
-                      <Lock className="w-3 h-3" />
-                  ) : (
-                      <Download className="w-3 h-3" />
-                  )}
-                  <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
-                </button>
+              <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
+                 {isSelectionMode ? (
+                     <button
+                        onClick={() => toggleSelection(file)}
+                        className={`p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
+                        disabled={selectionSubmitted}
+                     >
+                        <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
+                     </button>
+                 ) : (
+                    <button
+                        onClick={() => handleDownload(file)}
+                        disabled={downloadingId === file.id}
+                        className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
+                    >
+                        {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
+                        <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
+                    </button>
+                 )}
               </div>
 
-              {/* Mobile Always-Visible Button */}
-              {/* Only show on touch/small screens. We use hidden md:block logic reversed */}
-              <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(file);
-                }}
-                disabled={downloadingId === file.id}
-                className={`md:hidden absolute bottom-2 right-2 p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
-                    ${isLocked 
-                        ? 'bg-amber-100/90 text-amber-700' 
-                        : 'bg-white/90 text-slate-900'
-                    }`}
-                aria-label="Download"
-              >
-                  {downloadingId === file.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isLocked ? (
-                      <Lock className="w-4 h-4" />
-                  ) : (
-                      <Download className="w-4 h-4" />
-                  )}
-              </button>
+              {/* Mobile Actions */}
+              <div className="md:hidden absolute bottom-2 right-2 flex gap-2">
+                 {isSelectionMode && (
+                     <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelection(file);
+                        }}
+                        disabled={selectionSubmitted}
+                        className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-400'}`}
+                     >
+                        <Heart className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
+                     </button>
+                 )}
+                 {!isSelectionMode && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(file);
+                        }}
+                        disabled={downloadingId === file.id}
+                        className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                            ${isLocked 
+                                ? 'bg-amber-100/90 text-amber-700' 
+                                : 'bg-white/90 text-slate-900'
+                            }`}
+                    >
+                        {downloadingId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                    </button>
+                 )}
+              </div>
             </div>
-          ))}
+          )}})}
         </div>
       </main>
+
+      {/* Selection Mode Bottom Bar */}
+      {isSelectionMode && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-30">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="bg-rose-100 p-2 rounded-full">
+                        <Heart className="w-5 h-5 text-rose-600 fill-rose-600" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-slate-900">{selectedFileIds.size} Selected</p>
+                        <p className="text-xs text-slate-500 hidden sm:inline-block">Select your favorites for the photographer</p>
+                    </div>
+                </div>
+                
+                {selectionSubmitted ? (
+                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>Submitted</span>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={submitSelection}
+                        disabled={submittingSelection || selectedFileIds.size === 0}
+                        className="bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {submittingSelection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        <span>Submit Selection</span>
+                    </button>
+                )}
+            </div>
+        </div>
+      )}
 
       {/* Pay Modal */}
       {showPayModal && (
