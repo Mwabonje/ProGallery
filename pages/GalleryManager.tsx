@@ -65,9 +65,6 @@ export const GalleryManager: React.FC = () => {
   useEffect(() => {
     const wasUploading = prevUploadingRef.current;
     if (wasUploading && !uploading) {
-        // Upload finished. 
-        // Ideally we check if it was *this* gallery, but checking activeGalleryId is tricky because it might be null now.
-        // However, a refresh is cheap enough to just do it.
         fetchGalleryData();
     }
     prevUploadingRef.current = uploading;
@@ -101,16 +98,14 @@ export const GalleryManager: React.FC = () => {
 
     if (fileData) setFiles(fileData);
 
-    // Get Selections
-    if (galData.selection_enabled) {
-        const { data: selectionData } = await supabase
-            .from('selections')
-            .select('file_id')
-            .eq('gallery_id', id);
-        
-        if (selectionData) {
-            setClientSelections(new Set(selectionData.map(s => s.file_id)));
-        }
+    // Get Selections - Always fetch these so the photographer can see them even if they disabled the mode
+    const { data: selectionData } = await supabase
+        .from('selections')
+        .select('file_id')
+        .eq('gallery_id', id);
+    
+    if (selectionData) {
+        setClientSelections(new Set(selectionData.map(s => s.file_id)));
     }
   };
 
@@ -211,10 +206,7 @@ export const GalleryManager: React.FC = () => {
             .eq('id', gallery.id);
             
           setGallery({ ...gallery, selection_enabled: newStatus });
-          
-          if (newStatus) {
-              fetchGalleryData(); // Fetch selections if turning on
-          }
+          // Note: We don't need to fetch selections here anymore because we fetch them unconditionally on load
       } catch (error) {
           console.error(error);
       }

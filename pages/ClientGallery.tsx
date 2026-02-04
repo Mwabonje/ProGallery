@@ -24,6 +24,7 @@ export const ClientGallery: React.FC = () => {
   const [submittingSelection, setSubmittingSelection] = useState(false);
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -188,10 +189,15 @@ export const ClientGallery: React.FC = () => {
     // Optimistic UI Update
     if (isSelected) {
         newSet.delete(file.id);
+        setToast({ message: 'Removed from favorites', type: 'info' });
     } else {
         newSet.add(file.id);
+        setToast({ message: 'Added to favorites', type: 'success' });
     }
     setSelectedFileIds(newSet);
+    
+    // Auto hide toast
+    setTimeout(() => setToast(null), 2000);
 
     try {
         if (isSelected) {
@@ -670,6 +676,18 @@ export const ClientGallery: React.FC = () => {
                         </button>
                     )}
                 </div>
+            </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className={`px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium ${
+                toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white'
+            }`}>
+                {toast.type === 'success' ? <Heart className="w-4 h-4 fill-current" /> : <Heart className="w-4 h-4" />}
+                {toast.message}
             </div>
         </div>
       )}
