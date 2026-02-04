@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
@@ -23,6 +23,7 @@ export const ClientGallery: React.FC = () => {
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [submittingSelection, setSubmittingSelection] = useState(false);
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -403,15 +404,26 @@ export const ClientGallery: React.FC = () => {
   const isLocked = balanceDue > 0;
   const isSelectionMode = gallery?.selection_enabled;
 
+  const displayedFiles = showFavoritesOnly 
+    ? files.filter(f => selectedFileIds.has(f.id))
+    : files;
+
   return (
     <div className={`min-h-screen bg-white select-none ${isSelectionMode ? 'pb-24' : ''}`}>
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm">
+      <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-900">{gallery?.client_name}</h1>
+            <h1 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
+                {showFavoritesOnly && (
+                    <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 text-slate-400">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                )}
+                {showFavoritesOnly ? "My Selection" : gallery?.client_name}
+            </h1>
             <p className="text-xs md:text-sm text-slate-500 flex items-center gap-2">
-                {files.length} items 
+                {displayedFiles.length} items 
                 <span className="text-slate-300">•</span>
                 {timeRemaining === 'Expired' ? (
                    <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs uppercase tracking-wide">Expired</span>
@@ -428,9 +440,6 @@ export const ClientGallery: React.FC = () => {
                      <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-200 text-xs md:text-sm animate-in fade-in">
                         <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
                         <span>Selection Mode Active</span>
-                     </div>
-                     <div className="hidden md:block text-xs text-slate-400">
-                         Downloads disabled
                      </div>
                  </div>
              ) : (
@@ -488,7 +497,7 @@ export const ClientGallery: React.FC = () => {
 
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
-        {isSelectionMode && (
+        {isSelectionMode && !showFavoritesOnly && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
                 <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-rose-800">
@@ -497,131 +506,170 @@ export const ClientGallery: React.FC = () => {
             </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-          {files.map((file, index) => {
-            const isSelected = selectedFileIds.has(file.id);
-            return (
-            <div 
-                key={file.id} 
-                className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''}`}
-            >
-              {file.file_type === 'image' ? (
-                <img 
-                    src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
-                    srcSet={`
-                        ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
-                        ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
-                        ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
-                        ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
-                    `}
-                    sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
-                    alt="Gallery item" 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                    loading={index < 8 ? "eager" : "lazy"}
-                    decoding="async"
-                    // @ts-ignore
-                    fetchPriority={index < 4 ? "high" : "auto"}
-                    onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.removeAttribute('srcset');
-                        target.removeAttribute('sizes');
-                        if (target.src !== file.file_url) {
-                            target.src = file.file_url;
-                        }
-                    }}
-                    onContextMenu={(e) => e.preventDefault()}
-                />
-              ) : (
-                <video src={file.file_url} className="w-full h-full object-cover" controls controlsList="nodownload" />
-              )}
-              
-              {/* Desktop Hover Overlay */}
-              <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
-                 {isSelectionMode ? (
-                     <button
-                        onClick={() => toggleSelection(file)}
-                        className={`p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
-                        disabled={selectionSubmitted}
-                     >
-                        <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
-                     </button>
-                 ) : (
-                    <button
-                        onClick={() => handleDownload(file)}
-                        disabled={downloadingId === file.id}
-                        className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
-                    >
-                        {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                        <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
-                    </button>
-                 )}
-              </div>
-
-              {/* Mobile Actions */}
-              <div className="md:hidden absolute bottom-2 right-2 flex gap-2">
-                 {isSelectionMode && (
-                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelection(file);
-                        }}
-                        disabled={selectionSubmitted}
-                        className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-400'}`}
-                     >
-                        <Heart className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
-                     </button>
-                 )}
-                 {!isSelectionMode && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(file);
-                        }}
-                        disabled={downloadingId === file.id}
-                        className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
-                            ${isLocked 
-                                ? 'bg-amber-100/90 text-amber-700' 
-                                : 'bg-white/90 text-slate-900'
-                            }`}
-                    >
-                        {downloadingId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-                    </button>
-                 )}
-              </div>
+        {displayedFiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                {showFavoritesOnly ? (
+                    <>
+                        <Heart className="w-16 h-16 text-slate-200 mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-600">No Favorites Yet</h3>
+                        <p className="text-sm mb-6 max-w-xs text-center">Tap the heart icon on photos to add them to your selection.</p>
+                        <button 
+                            onClick={() => setShowFavoritesOnly(false)}
+                            className="text-rose-600 font-medium hover:underline"
+                        >
+                            Browse Photos
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
+                        <p>No photos available.</p>
+                    </>
+                )}
             </div>
-          )}})}
-        </div>
+        ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {displayedFiles.map((file, index) => {
+                const isSelected = selectedFileIds.has(file.id);
+                return (
+                <div 
+                    key={file.id} 
+                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''}`}
+                >
+                {file.file_type === 'image' ? (
+                    <img 
+                        src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
+                        srcSet={`
+                            ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
+                            ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
+                            ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
+                            ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
+                        `}
+                        sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+                        alt="Gallery item" 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                        loading={index < 8 ? "eager" : "lazy"}
+                        decoding="async"
+                        // @ts-ignore
+                        fetchPriority={index < 4 ? "high" : "auto"}
+                        onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.removeAttribute('srcset');
+                            target.removeAttribute('sizes');
+                            if (target.src !== file.file_url) {
+                                target.src = file.file_url;
+                            }
+                        }}
+                        onContextMenu={(e) => e.preventDefault()}
+                    />
+                ) : (
+                    <video src={file.file_url} className="w-full h-full object-cover" controls controlsList="nodownload" />
+                )}
+                
+                {/* Desktop Hover Overlay */}
+                <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
+                    {isSelectionMode ? (
+                        <button
+                            onClick={() => toggleSelection(file)}
+                            className={`p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
+                            disabled={selectionSubmitted}
+                        >
+                            <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleDownload(file)}
+                            disabled={downloadingId === file.id}
+                            className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
+                        >
+                            {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
+                            <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Mobile Actions */}
+                <div className="md:hidden absolute bottom-2 right-2 flex gap-2">
+                    {isSelectionMode && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelection(file);
+                            }}
+                            disabled={selectionSubmitted}
+                            className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-400'}`}
+                        >
+                            <Heart className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
+                        </button>
+                    )}
+                    {!isSelectionMode && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(file);
+                            }}
+                            disabled={downloadingId === file.id}
+                            className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                                ${isLocked 
+                                    ? 'bg-amber-100/90 text-amber-700' 
+                                    : 'bg-white/90 text-slate-900'
+                                }`}
+                        >
+                            {downloadingId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                        </button>
+                    )}
+                </div>
+                </div>
+            )}})}
+            </div>
+        )}
       </main>
 
       {/* Selection Mode Bottom Bar */}
       {isSelectionMode && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-30">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="bg-rose-100 p-2 rounded-full">
-                        <Heart className="w-5 h-5 text-rose-600 fill-rose-600" />
-                    </div>
-                    <div>
-                        <p className="font-bold text-slate-900">{selectedFileIds.size} Selected</p>
-                        <p className="text-xs text-slate-500 hidden sm:inline-block">Select your favorites for the photographer</p>
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer group"
+                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    >
+                        <div className={`p-2 rounded-full transition-colors ${showFavoritesOnly ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                            <Heart className={`w-5 h-5 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors">{selectedFileIds.size} Selected</p>
+                            <p className="text-xs text-slate-500 hidden sm:inline-block">
+                                {showFavoritesOnly ? "Showing favorites" : "Tap heart to select"}
+                            </p>
+                        </div>
                     </div>
                 </div>
                 
-                {selectionSubmitted ? (
-                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>Submitted</span>
-                    </div>
-                ) : (
+                <div className="flex gap-2 w-full sm:w-auto">
                     <button 
-                        onClick={submitSelection}
-                        disabled={submittingSelection || selectedFileIds.size === 0}
-                        className="bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                        className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm transition-colors"
                     >
-                        {submittingSelection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        <span>Submit Selection</span>
+                        {showFavoritesOnly ? "Browse All" : "Review"}
                     </button>
-                )}
+
+                    {selectionSubmitted ? (
+                        <div className="flex-1 sm:flex-none bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center justify-center gap-2 text-sm">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span>Submitted</span>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={submitSelection}
+                            disabled={submittingSelection || selectedFileIds.size === 0}
+                            className="flex-1 sm:flex-none bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                        >
+                            {submittingSelection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            <span>Submit Selection</span>
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
       )}
