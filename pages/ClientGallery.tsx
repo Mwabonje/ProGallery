@@ -540,7 +540,8 @@ export const ClientGallery: React.FC = () => {
                 return (
                 <div 
                     key={file.id} 
-                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''}`}
+                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    style={{ contentVisibility: 'auto' }}
                 >
                 {file.file_type === 'image' ? (
                     <img 
@@ -553,7 +554,7 @@ export const ClientGallery: React.FC = () => {
                         `}
                         sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                         alt="Gallery item" 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                        className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
                         loading={index < 8 ? "eager" : "lazy"}
                         decoding="async"
                         // @ts-ignore
