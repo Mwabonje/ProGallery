@@ -60,8 +60,16 @@ export const Dashboard: React.FC = () => {
           };
         })
       );
+      
+      // Sort galleries: Submitted selections first, then by date
+      const sortedGalleries = enrichedGalleries.sort((a, b) => {
+          if (a.selection_status === 'submitted' && b.selection_status !== 'submitted') return -1;
+          if (a.selection_status !== 'submitted' && b.selection_status === 'submitted') return 1;
+          // Fallback to existing order (created_at desc)
+          return 0;
+      });
 
-      setGalleries(enrichedGalleries);
+      setGalleries(sortedGalleries);
     } catch (error) {
       console.error('Error loading galleries:', error);
     } finally {
@@ -181,9 +189,9 @@ export const Dashboard: React.FC = () => {
               )}
               
               {/* Status Badges Overlay */}
-              <div className="absolute top-2 left-2 flex gap-1">
+              <div className="absolute top-2 left-2 flex gap-1 z-10">
                  {gallery.selection_status === 'submitted' && (
-                     <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                     <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1 animate-bounce">
                         <Heart className="w-3 h-3 fill-current" />
                         SUBMITTED
                      </div>

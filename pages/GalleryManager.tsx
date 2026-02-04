@@ -438,11 +438,13 @@ export const GalleryManager: React.FC = () => {
              <div className="flex items-center justify-between mb-2">
                  <div>
                      <p className="font-medium text-slate-900">Client Selection</p>
-                     <p className="text-xs text-slate-500">Allow clients to "heart" photos</p>
+                     <p className="text-xs text-slate-500 max-w-[200px]">
+                         When enabled, clients can favorite photos but <strong>cannot download them</strong>.
+                     </p>
                  </div>
                  <button
                     onClick={toggleSelectionMode}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
+                    className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
                  >
                      <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
                  </button>

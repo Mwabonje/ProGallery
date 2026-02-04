@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
@@ -240,6 +240,11 @@ export const ClientGallery: React.FC = () => {
   const handleDownload = async (file: GalleryFile) => {
     if (!gallery) return;
 
+    if (gallery.selection_enabled) {
+        alert("Downloads are disabled while Selection Mode is active.");
+        return;
+    }
+
     const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
     
     if (balance > 0) {
@@ -274,6 +279,11 @@ export const ClientGallery: React.FC = () => {
 
   const handleDownloadAll = async () => {
     if (!gallery || !files.length) return;
+    
+    if (gallery.selection_enabled) {
+        alert("Downloads are disabled while Selection Mode is active.");
+        return;
+    }
 
     const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
     if (balance > 0) {
@@ -412,49 +422,65 @@ export const ClientGallery: React.FC = () => {
           </div>
           
           <div className="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
-             {/* Download All Button */}
-             <button
-                onClick={handleDownloadAll}
-                disabled={downloadingAll || files.length === 0}
-                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
-                    isLocked 
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : downloadingAll 
-                        ? 'bg-slate-100 text-slate-600 cursor-wait'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
-                }`}
-             >
-                {downloadingAll ? (
-                    <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Preparing...</span>
-                    </>
-                ) : (
-                    <>
-                        <FolderDown className="w-4 h-4" />
-                        <span>Download All</span>
-                    </>
-                )}
-             </button>
-
-             {isLocked ? (
-                 <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
-                    <div className="flex flex-col text-right">
-                        <span className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Balance Due</span>
-                        <span className="font-bold text-amber-700 text-sm leading-tight">{formatCurrency(balanceDue)}</span>
-                    </div>
-                    <Lock className="w-4 h-4 text-amber-600" />
-                 </div>
-             ) : agreedAmount === 0 ? (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-200 text-xs md:text-sm">
-                    <Heart className="w-4 h-4 text-indigo-600" />
-                    <span>Collaboration</span>
+             {isSelectionMode ? (
+                 // Selection Mode Header Content
+                 <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-200 text-xs md:text-sm animate-in fade-in">
+                        <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
+                        <span>Selection Mode Active</span>
+                     </div>
+                     <div className="hidden md:block text-xs text-slate-400">
+                         Downloads disabled
+                     </div>
                  </div>
              ) : (
-                 <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 text-xs md:text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Paid in Full</span>
-                 </div>
+                // Standard Mode Header Content
+                <>
+                    {/* Download All Button */}
+                    <button
+                        onClick={handleDownloadAll}
+                        disabled={downloadingAll || files.length === 0}
+                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                            isLocked 
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                            : downloadingAll 
+                                ? 'bg-slate-100 text-slate-600 cursor-wait'
+                                : 'bg-slate-900 text-white hover:bg-slate-800'
+                        }`}
+                    >
+                        {downloadingAll ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Preparing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <FolderDown className="w-4 h-4" />
+                                <span>Download All</span>
+                            </>
+                        )}
+                    </button>
+
+                    {isLocked ? (
+                        <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
+                            <div className="flex flex-col text-right">
+                                <span className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Balance Due</span>
+                                <span className="font-bold text-amber-700 text-sm leading-tight">{formatCurrency(balanceDue)}</span>
+                            </div>
+                            <Lock className="w-4 h-4 text-amber-600" />
+                        </div>
+                    ) : agreedAmount === 0 ? (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-200 text-xs md:text-sm">
+                            <Heart className="w-4 h-4 text-indigo-600" />
+                            <span>Collaboration</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 text-xs md:text-sm">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Paid in Full</span>
+                        </div>
+                    )}
+                </>
              )}
           </div>
         </div>
@@ -462,6 +488,15 @@ export const ClientGallery: React.FC = () => {
 
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
+        {isSelectionMode && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
+                <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-rose-800">
+                    <strong>Selection Mode:</strong> Tap the heart icon to select your favorites. Downloads are disabled until selection is complete.
+                </p>
+            </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
           {files.map((file, index) => {
             const isSelected = selectedFileIds.has(file.id);
@@ -674,7 +709,11 @@ export const ClientGallery: React.FC = () => {
                 <p className="text-slate-600 mb-6 text-sm">
                   To protect the photographer's work, screenshots are disabled. 
                   <br/><br/>
-                  Please {isLocked ? 'complete the payment' : 'use the download button'} to access high-quality versions of these images.
+                  {isSelectionMode ? (
+                      <span className="font-medium text-rose-600">Downloads are currently disabled while Selection Mode is active. Please select your favorites first.</span>
+                  ) : (
+                      <span>Please {isLocked ? 'complete the payment' : 'use the download button'} to access high-quality versions of these images.</span>
+                  )}
                 </p>
                 <button 
                     onClick={() => setShowScreenshotWarning(false)}
