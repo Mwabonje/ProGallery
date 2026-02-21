@@ -226,12 +226,16 @@ export const ClientGallery: React.FC = () => {
 
     setSubmittingSelection(true);
     try {
-        const { error } = await supabase
-            .from('galleries')
-            .update({ selection_status: 'submitted' })
-            .eq('id', gallery.id);
+        const { error } = await supabase.rpc('submit_selection', { gallery_id: gallery.id });
         
         if (error) throw error;
+        
+        // Log activity
+        await supabase.from('activity_logs').insert({
+            gallery_id: gallery.id,
+            action: `Client submitted selection of ${selectedFileIds.size} photos`
+        });
+
         setSelectionSubmitted(true);
         setGallery({ ...gallery, selection_status: 'submitted' });
         
@@ -627,7 +631,7 @@ export const ClientGallery: React.FC = () => {
                     )}
                 </div>
                 </div>
-            )}})}
+            )})}
             </div>
         )}
       </main>

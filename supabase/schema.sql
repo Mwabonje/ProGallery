@@ -68,12 +68,9 @@ CREATE POLICY "Public can view active galleries"
 ON public.galleries
 FOR SELECT
 USING (link_enabled = true);
--- Public can update selection status if link is enabled (to submit selection)
+
+-- Remove insecure update policy
 DROP POLICY IF EXISTS "Public can update status" ON public.galleries;
-CREATE POLICY "Public can update status"
-ON public.galleries
-FOR UPDATE
-USING (link_enabled = true);
 
 
 -- POLICIES FOR FILES
@@ -118,12 +115,40 @@ USING (
 
 -- Public can manage selections (View, Insert, Delete) if gallery is enabled
 DROP POLICY IF EXISTS "Public can manage selections" ON public.selections;
-CREATE POLICY "Public can manage selections"
+
+-- Public can VIEW selections
+CREATE POLICY "Public can view selections"
 ON public.selections
-FOR ALL
+FOR SELECT
 USING (
   gallery_id IN (
     SELECT id FROM public.galleries WHERE link_enabled = true
+  )
+);
+
+-- Public can INSERT selections
+CREATE POLICY "Public can insert selections"
+ON public.selections
+FOR INSERT
+WITH CHECK (
+  gallery_id IN (
+    SELECT id FROM public.galleries 
+    WHERE link_enabled = true 
+    AND selection_enabled = true
+    AND selection_status = 'pending'
+  )
+);
+
+-- Public can DELETE selections
+CREATE POLICY "Public can delete selections"
+ON public.selections
+FOR DELETE
+USING (
+  gallery_id IN (
+    SELECT id FROM public.galleries 
+    WHERE link_enabled = true 
+    AND selection_enabled = true
+    AND selection_status = 'pending'
   )
 );
 
@@ -136,6 +161,17 @@ FOR ALL
 USING (
   gallery_id IN (
     SELECT id FROM public.galleries WHERE photographer_id = auth.uid()
+  )
+);
+
+-- Public can insert logs (e.g. for selection submission)
+DROP POLICY IF EXISTS "Public can insert logs" ON public.activity_logs;
+CREATE POLICY "Public can insert logs"
+ON public.activity_logs
+FOR INSERT
+WITH CHECK (
+  gallery_id IN (
+    SELECT id FROM public.galleries WHERE link_enabled = true
   )
 );
 
@@ -154,6 +190,24 @@ BEGIN
   WHERE id = row_id;
 END;
 $$;
+
+-- Function to submit selection
+CREATE OR REPLACE FUNCTION submit_selection(gallery_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.galleries
+  SET selection_status = 'submitted'
+  WHERE id = gallery_id AND link_enabled = true;
+END;
+$$;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO anon;
 
 -- 5. ACCOUNT MANAGEMENT
 
