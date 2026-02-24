@@ -230,11 +230,8 @@ export const ClientGallery: React.FC = () => {
         
         if (error) throw error;
         
-        // Log activity
-        await supabase.from('activity_logs').insert({
-            gallery_id: gallery.id,
-            action: `Client submitted selection of ${selectedFileIds.size} photos`
-        });
+        // Log activity is now handled by the RPC function
+        // await supabase.from('activity_logs').insert({ ... });
 
         setSelectionSubmitted(true);
         setGallery({ ...gallery, selection_status: 'submitted' });

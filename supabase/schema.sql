@@ -191,18 +191,98 @@ BEGIN
 END;
 $$;
 
--- Function to submit selection
+-- 1. SECURE ACTIVITY LOGS
+-- Revoke direct insert permission from anon (public)
+REVOKE INSERT ON public.activity_logs FROM anon;
+
+-- Drop the public insert policy
+DROP POLICY IF EXISTS "Public can insert logs" ON public.activity_logs;
+
+-- 2. UPDATE SUBMIT_SELECTION RPC
 CREATE OR REPLACE FUNCTION submit_selection(gallery_id uuid)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  gallery_record public.galleries%ROWTYPE;
 BEGIN
+  -- Fetch gallery and lock row
+  SELECT * INTO gallery_record
+  FROM public.galleries
+  WHERE id = gallery_id
+  FOR UPDATE;
+
+  -- Validation checks
+  IF gallery_record.id IS NULL THEN
+    RAISE EXCEPTION 'Gallery not found';
+  END IF;
+
+  IF gallery_record.link_enabled = false THEN
+    RAISE EXCEPTION 'Gallery is disabled';
+  END IF;
+
+  IF gallery_record.selection_enabled = false THEN
+    RAISE EXCEPTION 'Selection mode is disabled';
+  END IF;
+
+  IF gallery_record.selection_status != 'pending' THEN
+    RAISE EXCEPTION 'Selection already submitted';
+  END IF;
+
+  -- Update status
   UPDATE public.galleries
   SET selection_status = 'submitted'
-  WHERE id = gallery_id AND link_enabled = true;
+  WHERE id = gallery_id;
+
+  -- Insert log entry (Securely on server side)
+  INSERT INTO public.activity_logs (gallery_id, action)
+  VALUES (gallery_id, 'Client submitted selection');
+
 END;
 $$;
+
+-- 3. SECURE SELECTIONS INSERT (Prevent Cross-Gallery Pollution)
+DROP POLICY IF EXISTS "Public can insert selections" ON public.selections;
+CREATE POLICY "Public can insert selections"
+ON public.selections
+FOR INSERT
+WITH CHECK (
+  -- 1. Gallery must be open and in correct state
+  gallery_id IN (
+    SELECT id FROM public.galleries 
+    WHERE link_enabled = true 
+    AND selection_enabled = true
+    AND selection_status = 'pending'
+  )
+  AND
+  -- 2. File must belong to the gallery (Prevent IDOR/Pollution)
+  EXISTS (
+    SELECT 1 FROM public.files 
+    WHERE id = file_id 
+    AND gallery_id = selections.gallery_id
+  )
+);
+
+-- 4. SECURE STORAGE ACCESS (Respect Gallery Status)
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+CREATE POLICY "Public Access"
+ON storage.objects FOR SELECT
+USING (
+  bucket_id = 'gallery-files' 
+  AND (
+    -- Allow if user is authenticated (photographer) - simplified check
+    auth.role() = 'authenticated'
+    OR
+    -- Allow if file belongs to an active gallery
+    EXISTS (
+        SELECT 1 FROM public.files f
+        JOIN public.galleries g ON f.gallery_id = g.id
+        WHERE f.file_path = storage.objects.name
+        AND g.link_enabled = true
+    )
+  )
+);
 
 -- Grant permissions
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO authenticated;
@@ -278,3 +358,15 @@ USING ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
 
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';
+
+-- GRANT PERMISSIONS TO ANON ROLE
+GRANT SELECT ON public.galleries TO anon;
+GRANT SELECT ON public.files TO anon;
+GRANT SELECT, INSERT, DELETE ON public.selections TO anon;
+GRANT INSERT ON public.activity_logs TO anon;
+
+-- GRANT PERMISSIONS TO AUTHENTICATED ROLE
+GRANT SELECT ON public.galleries TO authenticated;
+GRANT SELECT ON public.files TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.selections TO authenticated;
+GRANT INSERT ON public.activity_logs TO authenticated;
