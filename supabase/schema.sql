@@ -178,7 +178,7 @@ WITH CHECK (
 
 -- 3. FUNCTIONS
 
--- Helper to increment download count safely
+-- Helper to increment download count safely (Hardened)
 CREATE OR REPLACE FUNCTION increment_download(row_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -187,7 +187,12 @@ AS $$
 BEGIN
   UPDATE public.files
   SET download_count = download_count + 1
-  WHERE id = row_id;
+  WHERE id = row_id
+  AND EXISTS (
+    SELECT 1 FROM public.galleries g
+    WHERE g.id = files.gallery_id
+    AND g.link_enabled = true
+  );
 END;
 $$;
 
@@ -264,17 +269,17 @@ WITH CHECK (
   )
 );
 
--- 4. SECURE STORAGE ACCESS (Respect Gallery Status)
+-- 4. SECURE STORAGE ACCESS (Respect Gallery Status & Ownership)
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access"
 ON storage.objects FOR SELECT
 USING (
   bucket_id = 'gallery-files' 
   AND (
-    -- Allow if user is authenticated (photographer) - simplified check
-    auth.role() = 'authenticated'
+    -- Allow if user is the owner (photographer)
+    owner = auth.uid()
     OR
-    -- Allow if file belongs to an active gallery
+    -- Allow if file belongs to an active gallery (Public view)
     EXISTS (
         SELECT 1 FROM public.files f
         JOIN public.galleries g ON f.gallery_id = g.id
@@ -282,6 +287,19 @@ USING (
         AND g.link_enabled = true
     )
   )
+);
+
+DROP POLICY IF EXISTS "Auth Upload" ON storage.objects;
+CREATE POLICY "Auth Upload"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
+
+DROP POLICY IF EXISTS "Auth Delete" ON storage.objects;
+CREATE POLICY "Auth Delete"
+ON storage.objects FOR DELETE
+USING ( 
+  bucket_id = 'gallery-files' 
+  AND owner = auth.uid() -- STRICT OWNERSHIP CHECK
 );
 
 -- Grant permissions
@@ -339,22 +357,6 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit)
 VALUES ('gallery-files', 'gallery-files', true, 1073741824)
 ON CONFLICT (id) DO UPDATE SET
 file_size_limit = 1073741824;
-
--- Storage Policies
-DROP POLICY IF EXISTS "Public Access" ON storage.objects;
-CREATE POLICY "Public Access"
-ON storage.objects FOR SELECT
-USING ( bucket_id = 'gallery-files' );
-
-DROP POLICY IF EXISTS "Auth Upload" ON storage.objects;
-CREATE POLICY "Auth Upload"
-ON storage.objects FOR INSERT
-WITH CHECK ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
-
-DROP POLICY IF EXISTS "Auth Delete" ON storage.objects;
-CREATE POLICY "Auth Delete"
-ON storage.objects FOR DELETE
-USING ( bucket_id = 'gallery-files' AND auth.role() = 'authenticated' );
 
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';
