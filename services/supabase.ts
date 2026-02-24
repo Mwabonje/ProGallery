@@ -30,7 +30,13 @@ const supabaseKey = getEnv('REACT_APP_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KE
 // Disable demo mode
 export const isDemoMode = false;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 export const getPublicUrl = (path: string) => {
   const { data } = supabase.storage.from('gallery-files').getPublicUrl(path);
