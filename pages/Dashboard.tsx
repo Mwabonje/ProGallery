@@ -24,7 +24,15 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    const initDashboard = async () => {
+        try {
+            await supabase.rpc('delete_expired_files');
+        } catch (e) {
+            // Ignore error if function doesn't exist or permission denied
+        }
+        fetchData();
+    };
+    initDashboard();
   }, []);
 
   const fetchData = async () => {

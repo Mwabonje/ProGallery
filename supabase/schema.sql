@@ -247,6 +247,33 @@ BEGIN
 END;
 $$;
 
+-- Function to delete expired files (Auto-cleanup)
+CREATE OR REPLACE FUNCTION delete_expired_files()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  expired_paths text[];
+BEGIN
+  -- Identify expired files
+  SELECT array_agg(file_path) INTO expired_paths
+  FROM public.files
+  WHERE expires_at < now();
+
+  IF expired_paths IS NOT NULL THEN
+    -- Delete from Storage
+    DELETE FROM storage.objects
+    WHERE bucket_id = 'gallery-files'
+    AND name = ANY(expired_paths);
+
+    -- Delete from DB
+    DELETE FROM public.files
+    WHERE expires_at < now();
+  END IF;
+END;
+$$;
+
 -- 3. SECURE SELECTIONS INSERT (Prevent Cross-Gallery Pollution)
 DROP POLICY IF EXISTS "Public can insert selections" ON public.selections;
 CREATE POLICY "Public can insert selections"
@@ -306,6 +333,8 @@ USING (
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION delete_expired_files() TO authenticated;
+GRANT EXECUTE ON FUNCTION delete_expired_files() TO service_role;
 
 -- 5. ACCOUNT MANAGEMENT
 
