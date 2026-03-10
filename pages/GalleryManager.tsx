@@ -195,9 +195,9 @@ export const GalleryManager: React.FC = () => {
       if (error) throw error;
       
       setGallery({ ...gallery, link_enabled: newStatus });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling status:', error);
-      alert('Failed to update gallery status.');
+      alert('Failed to update gallery status: ' + (error?.message || JSON.stringify(error)));
     }
   };
 
@@ -215,9 +215,9 @@ export const GalleryManager: React.FC = () => {
             
           setGallery({ ...gallery, selection_enabled: newStatus });
           // Note: We don't need to fetch selections here anymore because we fetch them unconditionally on load
-      } catch (error) {
+      } catch (error: any) {
           console.error('Error toggling selection mode:', error);
-          alert('Failed to update selection mode.');
+          alert('Failed to update selection mode: ' + (error?.message || JSON.stringify(error)));
       }
   };
 
