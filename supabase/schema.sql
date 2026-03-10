@@ -248,12 +248,57 @@ BEGIN
 
   -- Update status
   UPDATE public.galleries
-  SET selection_status = 'submitted'
+  SET selection_status = 'submitted',
+      link_enabled = false
   WHERE id = gallery_id;
 
   -- Insert log entry (Securely on server side)
   INSERT INTO public.activity_logs (gallery_id, action)
   VALUES (gallery_id, 'Client submitted selection');
+
+END;
+$$;
+
+-- UPDATE UNSUBMIT_SELECTION RPC
+CREATE OR REPLACE FUNCTION unsubmit_selection(gallery_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  gallery_record public.galleries%ROWTYPE;
+BEGIN
+  -- Fetch gallery and lock row
+  SELECT * INTO gallery_record
+  FROM public.galleries
+  WHERE id = gallery_id
+  FOR UPDATE;
+
+  -- Validation checks
+  IF gallery_record.id IS NULL THEN
+    RAISE EXCEPTION 'Gallery not found';
+  END IF;
+
+  IF gallery_record.link_enabled = false THEN
+    RAISE EXCEPTION 'Gallery is disabled';
+  END IF;
+
+  IF gallery_record.selection_enabled = false THEN
+    RAISE EXCEPTION 'Selection mode is disabled';
+  END IF;
+
+  IF gallery_record.selection_status != 'submitted' THEN
+    RAISE EXCEPTION 'Selection is not submitted';
+  END IF;
+
+  -- Update status
+  UPDATE public.galleries
+  SET selection_status = 'pending'
+  WHERE id = gallery_id;
+
+  -- Insert log entry
+  INSERT INTO public.activity_logs (gallery_id, action)
+  VALUES (gallery_id, 'Client re-opened selection for editing');
 
 END;
 $$;
@@ -340,6 +385,9 @@ USING (
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION submit_selection(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION unsubmit_selection(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION unsubmit_selection(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION unsubmit_selection(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION delete_expired_files() TO authenticated;
 GRANT EXECUTE ON FUNCTION delete_expired_files() TO service_role;
 

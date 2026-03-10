@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
@@ -25,6 +25,7 @@ export const ClientGallery: React.FC = () => {
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+  const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
 
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -215,11 +216,11 @@ export const ClientGallery: React.FC = () => {
                 .insert({ gallery_id: gallery.id, file_id: file.id });
             if (error) throw error;
         }
-    } catch (err) {
+    } catch (err: any) {
         console.error("Selection sync failed", err);
         // Revert on error
         setSelectedFileIds(selectedFileIds); // Revert to old state
-        setToast({ message: 'Failed to update selection', type: 'info' });
+        setToast({ message: 'Failed to update selection: ' + (err?.message || JSON.stringify(err)), type: 'info' });
     }
   };
 
@@ -233,16 +234,36 @@ export const ClientGallery: React.FC = () => {
         
         if (error) throw error;
         
-        // Log activity is now handled by the RPC function
-        // await supabase.from('activity_logs').insert({ ... });
-
         setSelectionSubmitted(true);
-        setGallery({ ...gallery, selection_status: 'submitted' });
+        setGallery({ ...gallery, selection_status: 'submitted', link_enabled: false });
+        setError('This gallery is currently unavailable. Please contact the photographer.');
         
         alert("Selection submitted successfully! The photographer has been notified.");
     } catch (err: any) {
         console.error(err);
         alert("Failed to submit selection: " + (err?.message || JSON.stringify(err)));
+    } finally {
+        setSubmittingSelection(false);
+    }
+  };
+
+  const unsubmitSelection = async () => {
+    if (!gallery) return;
+    if (!confirm(`Are you sure you want to edit your selection? This will notify the photographer that you are making changes.`)) return;
+
+    setSubmittingSelection(true);
+    try {
+        const { error } = await supabase.rpc('unsubmit_selection', { gallery_id: gallery.id });
+        
+        if (error) throw error;
+        
+        setSelectionSubmitted(false);
+        setGallery({ ...gallery, selection_status: 'pending' });
+        
+        alert("Selection re-opened for editing.");
+    } catch (err: any) {
+        console.error(err);
+        alert("Failed to re-open selection: " + (err?.message || JSON.stringify(err)));
     } finally {
         setSubmittingSelection(false);
     }
@@ -544,7 +565,12 @@ export const ClientGallery: React.FC = () => {
                 return (
                 <div 
                     key={file.id} 
-                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    onClick={() => isSelectionMode && setLightboxFile(file)}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        setShowScreenshotWarning(true);
+                    }}
+                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto' }}
                 >
                 {file.file_type === 'image' ? (
@@ -581,7 +607,10 @@ export const ClientGallery: React.FC = () => {
                 <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
                     {isSelectionMode ? (
                         <button
-                            onClick={() => toggleSelection(file)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelection(file);
+                            }}
                             className={`p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
                             disabled={selectionSubmitted}
                         >
@@ -666,9 +695,19 @@ export const ClientGallery: React.FC = () => {
                     </button>
 
                     {selectionSubmitted ? (
-                        <div className="flex-1 sm:flex-none bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center justify-center gap-2 text-sm">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span>Submitted</span>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <div className="flex-1 sm:flex-none bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center justify-center gap-2 text-sm">
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span>Submitted</span>
+                            </div>
+                            <button 
+                                onClick={unsubmitSelection}
+                                disabled={submittingSelection}
+                                className="flex-1 sm:flex-none bg-white text-slate-700 px-4 py-2 rounded-lg font-medium border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                            >
+                                {submittingSelection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit2 className="w-4 h-4" />}
+                                <span>Edit Selection</span>
+                            </button>
                         </div>
                     ) : (
                         <button 
@@ -794,6 +833,73 @@ export const ClientGallery: React.FC = () => {
                 </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxFile && (
+        <div 
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            onClick={() => setLightboxFile(null)}
+        >
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxFile(null);
+                }}
+                className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50 bg-black/50 rounded-full transition-colors"
+            >
+                <X className="w-6 h-6" />
+            </button>
+            
+            <div 
+                className="relative w-full h-full flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    setShowScreenshotWarning(true);
+                }}
+            >
+                {lightboxFile.file_type === 'image' ? (
+                    <img 
+                        src={lightboxFile.file_url}
+                        alt="Gallery item preview" 
+                        className="max-w-full max-h-full object-contain pointer-events-none"
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            setShowScreenshotWarning(true);
+                        }}
+                    />
+                ) : (
+                    <video 
+                        src={lightboxFile.file_url} 
+                        className="max-w-full max-h-full object-contain" 
+                        controls 
+                        controlsList="nodownload" 
+                    />
+                )}
+            </div>
+
+            {/* Selection toggle in lightbox */}
+            {isSelectionMode && (
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelection(lightboxFile);
+                        }}
+                        disabled={selectionSubmitted}
+                        className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all ${
+                            selectedFileIds.has(lightboxFile.id) 
+                                ? 'bg-rose-500 text-white hover:bg-rose-600' 
+                                : 'bg-white text-slate-900 hover:bg-slate-100'
+                        }`}
+                    >
+                        <Heart className={`w-5 h-5 ${selectedFileIds.has(lightboxFile.id) ? 'fill-current' : ''}`} />
+                        <span>{selectedFileIds.has(lightboxFile.id) ? 'Selected' : 'Select Photo'}</span>
+                    </button>
+                </div>
+            )}
         </div>
       )}
     </div>
