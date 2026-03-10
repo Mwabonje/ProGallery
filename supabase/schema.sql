@@ -17,6 +17,17 @@ CREATE TABLE IF NOT EXISTS public.galleries (
   created_at timestamptz DEFAULT now()
 );
 
+-- Safely add new columns to existing table (for users upgrading from older versions)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_enabled') THEN
+        ALTER TABLE public.galleries ADD COLUMN selection_enabled boolean DEFAULT false;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_status') THEN
+        ALTER TABLE public.galleries ADD COLUMN selection_status text DEFAULT 'pending';
+    END IF;
+END $$;
+
 -- Create files table
 CREATE TABLE IF NOT EXISTS public.files (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

@@ -240,9 +240,9 @@ export const ClientGallery: React.FC = () => {
         setGallery({ ...gallery, selection_status: 'submitted' });
         
         alert("Selection submitted successfully! The photographer has been notified.");
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
-        alert("Failed to submit selection. Please try again.");
+        alert("Failed to submit selection: " + (err?.message || JSON.stringify(err)));
     } finally {
         setSubmittingSelection(false);
     }
