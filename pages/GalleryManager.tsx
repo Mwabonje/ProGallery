@@ -329,7 +329,10 @@ export const GalleryManager: React.FC = () => {
                   </div>
               </div>
               <button 
-                onClick={() => setViewFilter('selected')}
+                onClick={() => {
+                  setViewFilter('selected');
+                  document.getElementById('gallery-content')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-sm font-medium text-rose-700 hover:text-rose-900 underline"
               >
                   View Selection
@@ -473,7 +476,7 @@ export const GalleryManager: React.FC = () => {
         </div>
 
         {/* Right Column: Content */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2" id="gallery-content">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div className="flex items-center gap-3">
