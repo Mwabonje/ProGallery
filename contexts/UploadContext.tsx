@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase, supabaseUrl } from '../services/supabase';
+import * as tus from 'tus-js-client';
 
 interface UploadContextType {
   uploading: boolean;
@@ -101,17 +102,64 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const mimeType = getMimeType(file);
 
                 // 1. Upload to Supabase Storage
-                // Standard upload works for files up to 6MB. 
-                // For larger files, supabase-js automatically uses TUS if the browser supports it.
-                const { error: uploadError } = await supabase.storage
-                    .from('gallery-files')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: true,
-                        contentType: mimeType
-                    });
+                // Use standard upload for files <= 6MB, and TUS resumable upload for larger files
+                if (file.size <= 6 * 1024 * 1024) {
+                    const { error: uploadError } = await supabase.storage
+                        .from('gallery-files')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: true,
+                            contentType: mimeType
+                        });
 
-                if (uploadError) throw uploadError;
+                    if (uploadError) throw uploadError;
+                } else {
+                    // TUS Resumable Upload for larger files
+                    clearInterval(simulationInterval);
+                    const { data: { session } } = await supabase.auth.getSession();
+                    
+                    if (!session) {
+                        throw new Error("Authentication required for large file uploads");
+                    }
+                    
+                    await new Promise<void>((resolve, reject) => {
+                        const upload = new tus.Upload(file, {
+                            endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+                            retryDelays: [0, 3000, 5000, 10000, 20000],
+                            headers: {
+                                authorization: `Bearer ${session?.access_token}`,
+                                'x-upsert': 'true',
+                            },
+                            uploadDataDuringCreation: true,
+                            removeFingerprintOnSuccess: true,
+                            metadata: {
+                                bucketName: 'gallery-files',
+                                objectName: filePath,
+                                contentType: mimeType,
+                                cacheControl: '3600',
+                            },
+                            chunkSize: 6 * 1024 * 1024, // 6MB chunk size
+                            onError: function (error) {
+                                reject(error);
+                            },
+                            onProgress: function (bytesUploaded, bytesTotal) {
+                                // Update actual progress instead of simulated progress
+                                fileProgressMap.current[index] = bytesUploaded;
+                            },
+                            onSuccess: function () {
+                                resolve();
+                            },
+                        });
+
+                        // Check if there are any previous uploads to continue.
+                        upload.findPreviousUploads().then(function (previousUploads) {
+                            if (previousUploads.length) {
+                                upload.resumeFromPreviousUpload(previousUploads[0]);
+                            }
+                            upload.start();
+                        }).catch(reject);
+                    });
+                }
 
                 // 2. Get Public URL
                 const { data: { publicUrl } } = supabase.storage

@@ -24,8 +24,8 @@ const getEnv = (key: string, viteKey: string, fallback: string) => {
 };
 
 // Use provided credentials as default fallback
-const supabaseUrl = getEnv('REACT_APP_SUPABASE_URL', 'VITE_SUPABASE_URL', 'https://bdaqtpyzqutelkdgcoex.supabase.co');
-const supabaseKey = getEnv('REACT_APP_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY', 'sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib');
+export const supabaseUrl = getEnv('REACT_APP_SUPABASE_URL', 'VITE_SUPABASE_URL', 'https://bdaqtpyzqutelkdgcoex.supabase.co');
+export const supabaseKey = getEnv('REACT_APP_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY', 'sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib');
 
 // Disable demo mode
 export const isDemoMode = false;
