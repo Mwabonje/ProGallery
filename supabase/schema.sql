@@ -393,10 +393,10 @@ GRANT SELECT, INSERT, DELETE ON public.selections TO anon;
 GRANT INSERT ON public.activity_logs TO anon;
 
 -- GRANT PERMISSIONS TO AUTHENTICATED ROLE
-GRANT SELECT ON public.galleries TO authenticated;
-GRANT SELECT ON public.files TO authenticated;
+GRANT ALL ON public.galleries TO authenticated;
+GRANT ALL ON public.files TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.selections TO authenticated;
-GRANT INSERT ON public.activity_logs TO authenticated;
+GRANT INSERT, SELECT ON public.activity_logs TO authenticated;
 
 -- 6. TRIGGERS
 -- Enforce maximum of 2 galleries per user

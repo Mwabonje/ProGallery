@@ -159,11 +159,13 @@ export const GalleryManager: React.FC = () => {
     if (!gallery) return;
     
     try {
-      await supabase
+      const { error } = await supabase
         .from('galleries')
         .update({ agreed_balance: agreedAmount, amount_paid: paid })
         .eq('id', gallery.id);
       
+      if (error) throw error;
+
       // Log activity
       await supabase.from('activity_logs').insert({
         gallery_id: gallery.id,
@@ -175,7 +177,8 @@ export const GalleryManager: React.FC = () => {
       
       fetchGalleryData();
     } catch (error) {
-      console.error(error);
+      console.error('Error updating payment:', error);
+      alert('Failed to update payment.');
     }
   };
 
@@ -184,14 +187,17 @@ export const GalleryManager: React.FC = () => {
 
     try {
       const newStatus = !gallery.link_enabled;
-      await supabase
+      const { error } = await supabase
         .from('galleries')
         .update({ link_enabled: newStatus })
         .eq('id', gallery.id);
       
+      if (error) throw error;
+      
       setGallery({ ...gallery, link_enabled: newStatus });
     } catch (error) {
-      console.error(error);
+      console.error('Error toggling status:', error);
+      alert('Failed to update gallery status.');
     }
   };
 
@@ -200,15 +206,18 @@ export const GalleryManager: React.FC = () => {
       
       try {
           const newStatus = !gallery.selection_enabled;
-          await supabase
+          const { error } = await supabase
             .from('galleries')
             .update({ selection_enabled: newStatus })
             .eq('id', gallery.id);
             
+          if (error) throw error;
+            
           setGallery({ ...gallery, selection_enabled: newStatus });
           // Note: We don't need to fetch selections here anymore because we fetch them unconditionally on load
       } catch (error) {
-          console.error(error);
+          console.error('Error toggling selection mode:', error);
+          alert('Failed to update selection mode.');
       }
   };
 
