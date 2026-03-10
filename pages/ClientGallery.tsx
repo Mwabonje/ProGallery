@@ -202,21 +202,24 @@ export const ClientGallery: React.FC = () => {
     try {
         if (isSelected) {
             // Remove from DB
-            await supabase
+            const { error } = await supabase
                 .from('selections')
                 .delete()
                 .eq('gallery_id', gallery.id)
                 .eq('file_id', file.id);
+            if (error) throw error;
         } else {
             // Add to DB
-            await supabase
+            const { error } = await supabase
                 .from('selections')
                 .insert({ gallery_id: gallery.id, file_id: file.id });
+            if (error) throw error;
         }
     } catch (err) {
         console.error("Selection sync failed", err);
         // Revert on error
         setSelectedFileIds(selectedFileIds); // Revert to old state
+        setToast({ message: 'Failed to update selection', type: 'info' });
     }
   };
 

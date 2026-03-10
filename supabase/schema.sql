@@ -289,11 +289,7 @@ WITH CHECK (
   )
   AND
   -- 2. File must belong to the gallery (Prevent IDOR/Pollution)
-  EXISTS (
-    SELECT 1 FROM public.files 
-    WHERE id = file_id 
-    AND gallery_id = selections.gallery_id
-  )
+  gallery_id = (SELECT gallery_id FROM public.files WHERE id = file_id)
 );
 
 -- 4. SECURE STORAGE ACCESS (Respect Gallery Status & Ownership)
