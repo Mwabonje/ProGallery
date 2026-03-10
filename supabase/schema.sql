@@ -401,3 +401,23 @@ GRANT SELECT ON public.galleries TO authenticated;
 GRANT SELECT ON public.files TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.selections TO authenticated;
 GRANT INSERT ON public.activity_logs TO authenticated;
+
+-- 6. TRIGGERS
+-- Enforce maximum of 2 galleries per user
+CREATE OR REPLACE FUNCTION check_gallery_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+  gallery_count INT;
+BEGIN
+  SELECT COUNT(*) INTO gallery_count FROM public.galleries WHERE photographer_id = NEW.photographer_id;
+  IF gallery_count >= 2 THEN
+    RAISE EXCEPTION 'Maximum limit of 2 galleries reached. Please delete an existing gallery first.';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS enforce_gallery_limit ON public.galleries;
+CREATE TRIGGER enforce_gallery_limit
+BEFORE INSERT ON public.galleries
+FOR EACH ROW EXECUTE FUNCTION check_gallery_limit();

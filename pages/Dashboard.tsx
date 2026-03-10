@@ -105,6 +105,11 @@ export const Dashboard: React.FC = () => {
   };
 
   const createGallery = async () => {
+    if (galleries.length >= 2) {
+      alert("You have reached the maximum limit of 2 galleries. Please delete an existing gallery to create a new one.");
+      return;
+    }
+
     const clientName = prompt("Enter Client Name:");
     if (!clientName) return;
 
