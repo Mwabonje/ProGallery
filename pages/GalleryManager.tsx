@@ -33,6 +33,7 @@ export const GalleryManager: React.FC = () => {
 
   // Expiration settings (in hours)
   const [expiryHours, setExpiryHours] = useState<number>(24);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Load preference specific to this gallery ID
   useEffect(() => {
@@ -111,6 +112,33 @@ export const GalleryManager: React.FC = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
+    if (!fileList || fileList.length === 0 || !gallery) return;
+
+    const filesToUpload = Array.from(fileList);
+    
+    // Use Context
+    await uploadFiles(gallery.id, filesToUpload, expiryHours);
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+        setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    
+    const fileList = event.dataTransfer.files;
     if (!fileList || fileList.length === 0 || !gallery) return;
 
     const filesToUpload = Array.from(fileList);
@@ -477,7 +505,23 @@ export const GalleryManager: React.FC = () => {
 
         {/* Right Column: Content */}
         <div className="lg:col-span-2" id="gallery-content">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div 
+                className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-colors relative ${
+                    isDragging ? 'border-emerald-500 bg-emerald-50/30 border-2 border-dashed' : 'border-slate-200'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
+                {isDragging && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-emerald-50/80 backdrop-blur-sm pointer-events-none">
+                        <div className="flex flex-col items-center text-emerald-600">
+                            <Upload className="w-12 h-12 mb-4 animate-bounce" />
+                            <h3 className="text-xl font-bold">Drop files to upload</h3>
+                            <p className="text-sm mt-2 opacity-80">Images and videos are supported</p>
+                        </div>
+                    </div>
+                )}
                 <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div className="flex items-center gap-3">
                         <h2 className="text-lg font-semibold">Gallery Content</h2>
