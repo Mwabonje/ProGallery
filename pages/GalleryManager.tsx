@@ -291,8 +291,8 @@ export const GalleryManager: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         {/* Back Button (Mobile only) */}
-        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-slate-500 hover:text-slate-900 mb-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-slate-500 hover:text-slate-900 mb-2 py-2 -ml-2 px-2">
+            <ArrowLeft className="w-5 h-5 mr-1" /> Back to Dashboard
         </button>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -523,7 +523,7 @@ export const GalleryManager: React.FC = () => {
                     </div>
                 )}
                 <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-lg font-semibold">Gallery Content</h2>
                         {/* Filter Tabs */}
                         <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
@@ -571,10 +571,10 @@ export const GalleryManager: React.FC = () => {
                                 <button
                                     onClick={handleExtendExpiration}
                                     disabled={uploading}
-                                    className="text-slate-400 hover:text-emerald-600 transition-colors p-1 rounded-md hover:bg-emerald-50"
+                                    className="text-slate-400 hover:text-emerald-600 transition-colors p-2 md:p-1 rounded-md hover:bg-emerald-50"
                                     title="Apply this duration to all existing files (Reactivate expired)"
                                 >
-                                    <RefreshCw className="w-4 h-4" />
+                                    <RefreshCw className="w-5 h-5 md:w-4 md:h-4" />
                                 </button>
                             </>
                            )}
@@ -679,12 +679,12 @@ export const GalleryManager: React.FC = () => {
                                             <Download className="w-3 h-3" />
                                             {file.download_count}
                                         </div>
-                                        <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
+                                        <a href={file.file_url} target="_blank" rel="noreferrer" className="p-3 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
                                             <Eye className="w-5 h-5 md:w-4 md:h-4" />
                                         </a>
                                         <button 
                                             onClick={() => deleteFile(file.id, file.file_path)}
-                                            className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                            className="p-3 md:p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
                                         >
                                             <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                                         </button>

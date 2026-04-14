@@ -31,7 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="p-1 rounded-md hover:bg-slate-800 transition-colors"
+          className="p-2 -mr-2 rounded-md hover:bg-slate-800 transition-colors"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

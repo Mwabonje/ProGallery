@@ -179,14 +179,14 @@ export const Dashboard: React.FC = () => {
     <div className="flex flex-col lg:flex-row gap-8">
       {/* Main Content */}
       <div className="flex-1">
-        <div className="flex justify-between items-end mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
             <div>
                <h1 className="text-2xl font-bold text-slate-900">Galleries</h1>
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
             <button
             onClick={createGallery}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center space-x-2 transition-all shadow-lg active:scale-95"
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
             >
             <Plus className="w-5 h-5" />
             <span>New Gallery</span>
@@ -234,10 +234,10 @@ export const Dashboard: React.FC = () => {
                 {/* Delete Button */}
                 <button
                     onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
-                    className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-slate-400 hover:text-red-600 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-90 group-hover:scale-100 z-10"
+                    className="absolute top-2 right-2 p-3 md:p-2 bg-white/90 rounded-full text-slate-400 hover:text-red-600 hover:bg-white shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-100 md:scale-90 group-hover:scale-100 z-10"
                     title="Delete Gallery"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
                 </div>
 

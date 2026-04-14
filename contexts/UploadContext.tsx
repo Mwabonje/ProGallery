@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { supabase, supabaseUrl } from '../services/supabase';
+import { supabase, supabaseUrl, supabaseKey } from '../services/supabase';
 import * as tus from 'tus-js-client';
 
 interface UploadContextType {
@@ -75,7 +75,26 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, 200);
 
     try {
-        await Promise.all(filesToUpload.map(async (file, index) => {
+        // Helper to run promises with a concurrency limit
+        const asyncPool = async <T,>(poolLimit: number, array: T[], iteratorFn: (item: T, index: number) => Promise<void>) => {
+            const ret: Promise<void>[] = [];
+            const executing = new Set<Promise<void>>();
+            for (let i = 0; i < array.length; i++) {
+                const item = array[i];
+                const p = Promise.resolve().then(() => iteratorFn(item, i));
+                ret.push(p);
+                executing.add(p);
+                const clean = () => executing.delete(p);
+                p.then(clean).catch(clean);
+                if (executing.size >= poolLimit) {
+                    await Promise.race(executing);
+                }
+            }
+            return Promise.all(ret);
+        };
+
+        // Limit to 3 concurrent uploads to prevent "Failed to fetch" network errors
+        await asyncPool(3, filesToUpload, async (file, index) => {
             // Adaptive Simulation:
             // For small files (<5MB), we simulate fast.
             // For large files (>50MB), we simulate slower but realistic.
@@ -128,6 +147,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             retryDelays: [0, 3000, 5000, 10000, 20000],
                             headers: {
                                 authorization: `Bearer ${session?.access_token}`,
+                                apikey: supabaseKey,
                                 'x-upsert': 'true',
                             },
                             uploadDataDuringCreation: true,
@@ -200,7 +220,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 // Snap this file's progress to 100%
                 fileProgressMap.current[index] = file.size;
             }
-        }));
+        });
     } catch (error) {
         console.error("Batch upload critical error", error);
         uploadErrors.push("Batch process failed critically.");

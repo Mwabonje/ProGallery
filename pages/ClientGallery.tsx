@@ -447,8 +447,8 @@ export const ClientGallery: React.FC = () => {
           <div>
             <h1 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
                 {showFavoritesOnly && (
-                    <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 text-slate-400">
-                        <ArrowLeft className="w-5 h-5" />
+                    <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">
+                        <ArrowLeft className="w-6 h-6" />
                     </button>
                 )}
                 {showFavoritesOnly ? "My Selection" : gallery?.client_name}
@@ -637,9 +637,9 @@ export const ClientGallery: React.FC = () => {
                                 toggleSelection(file);
                             }}
                             disabled={selectionSubmitted}
-                            className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-400'}`}
+                            className={`p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-400'}`}
                         >
-                            <Heart className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
+                            <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
                         </button>
                     )}
                     {!isSelectionMode && (
@@ -649,13 +649,13 @@ export const ClientGallery: React.FC = () => {
                                 handleDownload(file);
                             }}
                             disabled={downloadingId === file.id}
-                            className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                            className={`p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
                                     ? 'bg-amber-100/90 text-amber-700' 
                                     : 'bg-white/90 text-slate-900'
                                 }`}
                         >
-                            {downloadingId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                            {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
                         </button>
                     )}
                 </div>
@@ -808,9 +808,9 @@ export const ClientGallery: React.FC = () => {
             <div className="relative">
                 <button 
                     onClick={() => setShowScreenshotWarning(false)}
-                    className="absolute right-0 top-0 text-slate-400 hover:text-slate-600 p-2"
+                    className="absolute right-0 top-0 text-slate-400 hover:text-slate-600 p-3 -mt-2 -mr-2"
                 >
-                    <X className="w-5 h-5" />
+                    <X className="w-6 h-6" />
                 </button>
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ShieldAlert className="w-8 h-8 text-red-600" />
@@ -847,7 +847,7 @@ export const ClientGallery: React.FC = () => {
                     e.stopPropagation();
                     setLightboxFile(null);
                 }}
-                className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50 bg-black/50 rounded-full transition-colors"
+                className="absolute top-4 right-4 text-white/70 hover:text-white p-3 md:p-2 z-50 bg-black/50 rounded-full transition-colors"
             >
                 <X className="w-6 h-6" />
             </button>

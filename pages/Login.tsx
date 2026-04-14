@@ -145,7 +145,7 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl">
         <div className="flex flex-col items-center mb-8">
             <div className="bg-emerald-100 p-3 rounded-full mb-3">
                 <Camera className="w-8 h-8 text-emerald-600" />
