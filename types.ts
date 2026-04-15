@@ -26,6 +26,7 @@ export interface GalleryFile {
   created_at: string;
   expires_at: string;
   download_count: number;
+  is_edited: boolean;
 }
 
 export interface Selection {

@@ -249,6 +249,23 @@ export const GalleryManager: React.FC = () => {
       }
   };
 
+  const handleToggleEdited = async (fileId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ is_edited: !currentStatus })
+        .eq('id', fileId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setFiles(files.map(f => f.id === fileId ? { ...f, is_edited: !currentStatus } : f));
+    } catch (error: any) {
+      console.error('Error toggling edited status:', error);
+      alert('Failed to update edited status: ' + (error?.message || JSON.stringify(error)));
+    }
+  };
+
   const handleCopyLink = async () => {
     if (!gallery) return;
     const url = `${window.location.origin}/#/g/${gallery.id}`;
@@ -667,6 +684,7 @@ export const GalleryManager: React.FC = () => {
                                             <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-2">
                                                 {file.file_path.split('/').pop()}
                                                 {isSelected && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>}
+                                                {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">EDITED</span>}
                                             </p>
                                             <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
                                             <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
@@ -675,6 +693,16 @@ export const GalleryManager: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 md:gap-3 pl-2">
+                                        <div className="flex items-center gap-2 mr-1 md:mr-3 bg-slate-100 px-2 py-1 rounded-md">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={file.is_edited || false}
+                                                onChange={() => handleToggleEdited(file.id, file.is_edited || false)}
+                                                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                                                id={`edited-${file.id}`}
+                                            />
+                                            <label htmlFor={`edited-${file.id}`} className="text-xs font-medium text-slate-600 cursor-pointer hidden sm:block">Edited</label>
+                                        </div>
                                         <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
                                             <Download className="w-3 h-3" />
                                             {file.download_count}

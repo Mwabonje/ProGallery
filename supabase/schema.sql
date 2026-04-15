@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS public.files (
   file_type text CHECK (file_type IN ('image', 'video')),
   created_at timestamptz DEFAULT now(),
   expires_at timestamptz NOT NULL,
-  download_count integer DEFAULT 0
+  download_count integer DEFAULT 0,
+  is_edited boolean DEFAULT false
 );
 
 -- Create selections table (Junction table)
