@@ -22,6 +22,9 @@ export const Dashboard: React.FC = () => {
   const [galleries, setGalleries] = useState<DashboardGallery[]>([]);
   const [activities, setActivities] = useState<EnrichedActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const initDashboard = async () => {
@@ -104,14 +107,20 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const createGallery = async () => {
-    if (galleries.length >= 2) {
-      alert("You have reached the maximum limit of 2 galleries. Please delete an existing gallery to create a new one.");
+  const handleOpenCreateModal = () => {
+    if (galleries.length >= 3) {
+      alert("You have reached the maximum limit of 3 galleries. Please delete an existing gallery to create a new one.");
       return;
     }
+    setNewClientName('');
+    setIsCreateModalOpen(true);
+  };
 
-    const clientName = prompt("Enter Client Name:");
-    if (!clientName) return;
+  const createGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClientName.trim()) return;
+    
+    setIsCreating(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -121,8 +130,8 @@ export const Dashboard: React.FC = () => {
         .from('galleries')
         .insert([{
           photographer_id: user.id,
-          client_name: clientName,
-          title: `${clientName}'s Gallery`,
+          client_name: newClientName,
+          title: `${newClientName}'s Gallery`,
           agreed_balance: 0,
           amount_paid: 0,
           link_enabled: true
@@ -131,10 +140,13 @@ export const Dashboard: React.FC = () => {
         .single();
 
       if (error) throw error;
+      setIsCreateModalOpen(false);
       navigate(`/gallery/${data.id}`);
     } catch (error) {
       alert('Error creating gallery');
       console.error(error);
+    } finally {
+        setIsCreating(false);
     }
   };
 
@@ -184,13 +196,15 @@ export const Dashboard: React.FC = () => {
                <h1 className="text-2xl font-bold text-slate-900">Galleries</h1>
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
+            {galleries.length < 3 && (
             <button
-            onClick={createGallery}
+            onClick={handleOpenCreateModal}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
             >
             <Plus className="w-5 h-5" />
             <span>New Gallery</span>
             </button>
+            )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -266,6 +280,21 @@ export const Dashboard: React.FC = () => {
             </div>
             ))}
 
+            {/* Create New Gallery Card */}
+            {galleries.length < 3 && (
+            <div 
+                onClick={handleOpenCreateModal}
+                className="group cursor-pointer flex flex-col h-full"
+            >
+                <div className="relative aspect-[3/2] flex flex-col items-center justify-center bg-slate-50 rounded-xl overflow-hidden mb-3 border-2 border-dashed border-slate-200 transition-all duration-300 group-hover:border-slate-400 group-hover:bg-slate-100">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-slate-600 transition-colors mb-3 group-hover:scale-110">
+                        <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="font-medium text-slate-500 group-hover:text-slate-700">Add New Gallery</span>
+                </div>
+            </div>
+            )}
+
             {/* Empty State */}
             {galleries.length === 0 && (
             <div 
@@ -318,6 +347,59 @@ export const Dashboard: React.FC = () => {
             )}
         </div>
       </div>
+
+      {/* Create Gallery Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-semibold text-slate-900">New Gallery</h2>
+              <button 
+                onClick={() => setIsCreateModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                disabled={isCreating}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={createGallery} className="p-6">
+              <div className="mb-6">
+                <label htmlFor="clientName" className="block text-sm font-medium text-slate-700 mb-2">
+                  Client Name
+                </label>
+                <input
+                  id="clientName"
+                  type="text"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
+                  placeholder="e.g. John & Jane Wedding"
+                  autoFocus
+                  required
+                  disabled={isCreating}
+                />
+              </div>
+              <div className="flex gap-3 justify-end mt-8">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+                  disabled={isCreating}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newClientName.trim() || isCreating}
+                  className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isCreating ? 'Creating...' : 'Create Gallery'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
