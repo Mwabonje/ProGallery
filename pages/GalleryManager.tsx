@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl } from '../utils/formatters';
@@ -266,6 +266,41 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (!files || files.length === 0) return;
+    if (clientSelections.size === 0) {
+        alert('No photos selected yet.');
+        return;
+    }
+    
+    const selectedFiles = files.filter(f => clientSelections.has(f.id));
+    
+    // Create CSV content definition
+    const rows = [
+      ["File Name", "Uploaded At", "Status", "Edited"],
+      ...selectedFiles.map(f => [
+        f.file_path.split('/').pop() || 'unknown',
+        new Date(f.created_at).toLocaleString(),
+        "Selected",
+        f.is_edited ? "Yes" : "No"
+      ])
+    ];
+
+    const csvContent = rows.map(row => 
+      row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    // Create downloaded blob
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${gallery?.client_name || 'gallery'}_selections.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleCopyLink = async () => {
     if (!gallery) return;
     const url = `${window.location.origin}/#/g/${gallery.id}`;
@@ -503,7 +538,7 @@ export const GalleryManager: React.FC = () => {
           {/* Stats Card */}
           <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
-            <div className="space-y-3 text-sm text-slate-600">
+            <div className="space-y-3 text-sm text-slate-600 mb-4">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                     <span>Total Files</span>
                     <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
@@ -517,6 +552,16 @@ export const GalleryManager: React.FC = () => {
                     <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
                 </div>
             </div>
+            
+            {clientSelections.size > 0 && (
+              <button 
+                onClick={handleExportCSV}
+                className="w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>Export Selections (CSV)</span>
+              </button>
+            )}
           </div>
         </div>
 
