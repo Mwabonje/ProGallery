@@ -30,25 +30,23 @@ export const getTimeRemaining = (expiresAt: string) => {
   };
 };
 
-export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 50) => {
+export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 70) => {
   if (!url) return '';
   
-  // Only apply to Supabase Storage URLs
-  // We need to switch from standard storage URL to the Image Transformation URL
-  // Standard: .../storage/v1/object/public/...
-  // Transform: .../storage/v1/render/image/public/...
-  if (url.includes('supabase.co/storage/v1/object/public')) {
-    const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
-    
-    const separator = optimizedUrl.includes('?') ? '&' : '?';
-    // Add format=webp for significantly smaller file sizes
-    let params = `width=${width}&quality=${quality}&format=webp`;
+  // Use a global, free image compression proxy (wsrv.nl)
+  // This ensures images load blazing fast on mobile without needing a paid Supabase plan
+  try {
+    // Some urls might already have query params from supabase
+    const cleanUrl = url.split('?')[0]; 
+    const encodedUrl = encodeURIComponent(cleanUrl);
+    let wsrvUrl = `https://wsrv.nl/?url=${encodedUrl}&w=${width}&q=${quality}&output=webp`;
     
     if (height) {
-      params += `&height=${height}&resize=cover`;
+      wsrvUrl += `&h=${height}&fit=cover`;
     }
     
-    return `${optimizedUrl}${separator}${params}`;
+    return wsrvUrl;
+  } catch (e) {
+    return url;
   }
-  return url;
 };

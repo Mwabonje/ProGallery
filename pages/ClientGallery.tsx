@@ -862,9 +862,9 @@ export const ClientGallery: React.FC = () => {
             >
                 {lightboxFile.file_type === 'image' ? (
                     <img 
-                        src={lightboxFile.file_url}
+                        src={getOptimizedImageUrl(lightboxFile.file_url, 1920, undefined, 85)}
                         alt="Gallery item preview" 
-                        className="max-w-full max-h-full object-contain pointer-events-none"
+                        className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
                         onContextMenu={(e) => {
                             e.preventDefault();
                             setShowScreenshotWarning(true);
