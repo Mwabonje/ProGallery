@@ -318,7 +318,11 @@ export const GalleryManager: React.FC = () => {
 
     try {
       // Delete from storage
-      await supabase.storage.from('gallery-files').remove([filePath]);
+      await fetch('/api/delete-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath })
+      });
       // Delete from DB
       await supabase.from('files').delete().eq('id', fileId);
       

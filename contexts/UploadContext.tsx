@@ -115,76 +115,46 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }, tickRateMs);
 
             try {
-                const uniqueId = Math.random().toString(36).substring(2);
-                const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                const filePath = `${galleryId}/${uniqueId}/${sanitizedFileName}`;
                 const mimeType = getMimeType(file);
 
-                // 1. Upload to Supabase Storage
-                // Use standard upload for files <= 6MB, and TUS resumable upload for larger files
-                if (file.size <= 6 * 1024 * 1024) {
-                    const { error: uploadError } = await supabase.storage
-                        .from('gallery-files')
-                        .upload(filePath, file, {
-                            cacheControl: '3600',
-                            upsert: true,
-                            contentType: mimeType
-                        });
+                // 1. Get Presigned URL from Backend
+                const presignRes = await fetch('/api/upload-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileName: file.name, fileType: mimeType })
+                });
 
-                    if (uploadError) throw uploadError;
-                } else {
-                    // TUS Resumable Upload for larger files
-                    clearInterval(simulationInterval);
-                    const { data: { session } } = await supabase.auth.getSession();
-                    
-                    if (!session) {
-                        throw new Error("Authentication required for large file uploads");
-                    }
-                    
-                    await new Promise<void>((resolve, reject) => {
-                        const upload = new tus.Upload(file, {
-                            endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
-                            retryDelays: [0, 3000, 5000, 10000, 20000],
-                            headers: {
-                                authorization: `Bearer ${session?.access_token}`,
-                                apikey: supabaseKey,
-                                'x-upsert': 'true',
-                            },
-                            uploadDataDuringCreation: true,
-                            removeFingerprintOnSuccess: true,
-                            metadata: {
-                                bucketName: 'gallery-files',
-                                objectName: filePath,
-                                contentType: mimeType,
-                                cacheControl: '3600',
-                            },
-                            chunkSize: 6 * 1024 * 1024, // 6MB chunk size
-                            onError: function (error) {
-                                reject(error);
-                            },
-                            onProgress: function (bytesUploaded, bytesTotal) {
-                                // Update actual progress instead of simulated progress
-                                fileProgressMap.current[index] = bytesUploaded;
-                            },
-                            onSuccess: function () {
-                                resolve();
-                            },
-                        });
-
-                        // Check if there are any previous uploads to continue.
-                        upload.findPreviousUploads().then(function (previousUploads) {
-                            if (previousUploads.length) {
-                                upload.resumeFromPreviousUpload(previousUploads[0]);
-                            }
-                            upload.start();
-                        }).catch(reject);
-                    });
+                if (!presignRes.ok) {
+                    throw new Error(`Failed to get upload URL: ${await presignRes.text()}`);
                 }
+                const { presignedUrl, publicUrl, filePath } = await presignRes.json();
 
-                // 2. Get Public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('gallery-files')
-                    .getPublicUrl(filePath);
+                // 2. Upload directly to Cloudflare R2
+                clearInterval(simulationInterval);
+                await new Promise<void>((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", (e) => {
+                        if (e.lengthComputable) {
+                            fileProgressMap.current[index] = e.loaded;
+                        }
+                    });
+                    
+                    xhr.addEventListener("load", () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve();
+                        } else {
+                            reject(new Error(`Upload failed with status ${xhr.status}`));
+                        }
+                    });
+                    
+                    xhr.addEventListener("error", () => reject(new Error("Network Error")));
+                    xhr.addEventListener("abort", () => reject(new Error("Upload Aborted")));
+
+                    xhr.open("PUT", presignedUrl);
+                    // R2 needs exact Content-Type that was used to sign the URL
+                    xhr.setRequestHeader("Content-Type", mimeType);
+                    xhr.send(file);
+                });
 
                 // 3. Insert Record into DB
                 const expiresAt = new Date();

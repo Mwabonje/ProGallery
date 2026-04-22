@@ -165,7 +165,11 @@ export const Dashboard: React.FC = () => {
             
         if (filesData && filesData.length > 0) {
             const paths = filesData.map(f => f.file_path);
-            await supabase.storage.from('gallery-files').remove(paths);
+            await fetch('/api/delete-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePaths: paths })
+            });
         }
 
         const { error } = await supabase
