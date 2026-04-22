@@ -2,6 +2,11 @@
   command = "npm run build"
   publish = "dist"
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
+
 [[redirects]]
   from = "/api/upload-url"
   to = "/.netlify/functions/upload-url"
