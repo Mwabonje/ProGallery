@@ -37,8 +37,11 @@ export const Portfolio: React.FC = () => {
                      setPhotographerName("My Portfolio"); // Placeholder, could be customized later
                 }
 
+                // Filter out non-portfolio items (client deliveries without a category)
+                const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '');
+
                 const enrichedGalleries = await Promise.all(
-                    (galleriesData || []).map(async (gallery) => {
+                    portfolioItems.map(async (gallery) => {
                         const { data: files } = await supabase
                             .from('files')
                             .select('file_url, file_type')
