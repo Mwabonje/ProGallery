@@ -12,9 +12,11 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    const accountId = R2_ACCOUNT_ID.replace(/^https?:\/\//, '').replace(/\.r2\.cloudflarestorage\.com.*$/, '').replace(/\/$/, '');
+    
     const s3 = new S3Client({
       region: "auto",
-      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       forcePathStyle: true,
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID,

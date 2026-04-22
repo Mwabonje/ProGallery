@@ -29,9 +29,10 @@ async function startServer() {
 
   let s3: S3Client | null = null;
   if (isR2Configured) {
+    const accountId = R2_ACCOUNT_ID!.replace(/^https?:\/\//, '').replace(/\.r2\.cloudflarestorage\.com.*$/, '').replace(/\/$/, '');
     s3 = new S3Client({
       region: "auto",
-      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       forcePathStyle: true,
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID!,
