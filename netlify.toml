@@ -3,8 +3,13 @@
   publish = "dist"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/upload-url"
+  to = "/.netlify/functions/upload-url"
+  status = 200
+
+[[redirects]]
+  from = "/api/delete-file"
+  to = "/.netlify/functions/delete-file"
   status = 200
 
 [[redirects]]
