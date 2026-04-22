@@ -9,6 +9,8 @@ import { ClientGallery } from './pages/ClientGallery';
 import { Session } from '@supabase/supabase-js';
 import { UploadProvider } from './contexts/UploadContext';
 
+import { Portfolio } from './pages/Portfolio';
+
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,7 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/g/:galleryId" element={<ClientGallery />} />
+          <Route path="/p/:photographerId" element={<Portfolio />} />
 
           {/* Protected Photographer Routes */}
           <Route path="/dashboard" element={

@@ -26,6 +26,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_status') THEN
         ALTER TABLE public.galleries ADD COLUMN selection_status text DEFAULT 'pending';
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='category') THEN
+        ALTER TABLE public.galleries ADD COLUMN category text;
+    END IF;
 END $$;
 
 -- Create files table
@@ -304,32 +307,8 @@ BEGIN
 END;
 $$;
 
--- Function to delete expired files (Auto-cleanup)
-CREATE OR REPLACE FUNCTION delete_expired_files()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  expired_paths text[];
-BEGIN
-  -- Identify expired files
-  SELECT array_agg(file_path) INTO expired_paths
-  FROM public.files
-  WHERE expires_at < now();
-
-  IF expired_paths IS NOT NULL THEN
-    -- Delete from Storage
-    DELETE FROM storage.objects
-    WHERE bucket_id = 'gallery-files'
-    AND name = ANY(expired_paths);
-
-    -- Delete from DB
-    DELETE FROM public.files
-    WHERE expires_at < now();
-  END IF;
-END;
-$$;
+-- Drop the problematic function that orphans files
+DROP FUNCTION IF EXISTS delete_expired_files();
 
 -- 3. SECURE SELECTIONS INSERT (Prevent Cross-Gallery Pollution)
 DROP POLICY IF EXISTS "Public can insert selections" ON public.selections;

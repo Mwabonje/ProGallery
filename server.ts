@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createServer as createViteServer } from "vite";
 
@@ -97,16 +97,20 @@ async function startServer() {
 
     try {
       const { filePath, filePaths } = req.body;
-      if (!filePath && (!filePaths || !Array.isArray(filePaths))) {
-        return res.status(400).json({ error: "filePath or filePaths array is required" });
+      const pathsToDelete = filePaths || (filePath ? [filePath] : []);
+
+      if (pathsToDelete.length === 0) {
+        return res.status(400).json({ error: "No files to delete" });
       }
 
-      const pathsToDelete = filePaths || [filePath];
-
-      for (const path of pathsToDelete) {
-        const command = new DeleteObjectCommand({
+      for (let i = 0; i < pathsToDelete.length; i += 1000) {
+        const chunk = pathsToDelete.slice(i, i + 1000);
+        const command = new DeleteObjectsCommand({
           Bucket: R2_BUCKET_NAME!,
-          Key: path,
+          Delete: {
+            Objects: chunk.filter(Boolean).map((Key: string) => ({ Key })),
+            Quiet: true,
+          },
         });
         await s3.send(command);
       }

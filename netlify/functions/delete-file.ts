@@ -1,5 +1,5 @@
 import { Handler } from "@netlify/functions";
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -30,16 +30,23 @@ export const handler: Handler = async (event) => {
 
     const body = JSON.parse(event.body || "{}");
     const { filePath, filePaths } = body;
-    const pathsToDelete = filePaths || [filePath];
+    const pathsToDelete = filePaths || (filePath ? [filePath] : []);
 
-    for (const path of pathsToDelete) {
-      if (path) {
-        const command = new DeleteObjectCommand({
-          Bucket: R2_BUCKET_NAME!,
-          Key: path,
-        });
-        await s3.send(command);
-      }
+    if (pathsToDelete.length === 0) {
+      return { statusCode: 400, body: JSON.stringify({ error: "No files to delete" }) };
+    }
+
+    // Process in chunks of 1000 (S3 limit for DeleteObjectsCommand)
+    for (let i = 0; i < pathsToDelete.length; i += 1000) {
+      const chunk = pathsToDelete.slice(i, i + 1000);
+      const command = new DeleteObjectsCommand({
+        Bucket: R2_BUCKET_NAME!,
+        Delete: {
+          Objects: chunk.filter(Boolean).map((Key: string) => ({ Key })),
+          Quiet: true,
+        },
+      });
+      await s3.send(command);
     }
 
     return {

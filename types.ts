@@ -9,6 +9,7 @@ export interface Gallery {
   photographer_id: string;
   client_name: string;
   title: string;
+  category?: string; // New: Portfolio category (e.g. Wedding, Portraits)
   agreed_balance: number;
   amount_paid: number;
   link_enabled: boolean;
