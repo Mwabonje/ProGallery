@@ -719,9 +719,12 @@ export const GalleryManager: React.FC = () => {
                                                   }}
                                                 />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
-                                                    <span className="text-xs">Video</span>
-                                                </div>
+                                                <video 
+                                                    src={file.file_url} 
+                                                    className="w-full h-full object-cover"
+                                                    muted
+                                                    preload="metadata"
+                                                />
                                             )}
                                             {isSelected && (
                                                 <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">

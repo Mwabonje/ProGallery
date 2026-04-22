@@ -61,12 +61,11 @@ export const Dashboard: React.FC = () => {
             .select('*', { count: 'exact', head: true })
             .eq('gallery_id', gallery.id);
 
-          // Get latest image for cover
+          // Get latest file for cover
           const { data: files } = await supabase
             .from('files')
-            .select('file_url')
+            .select('file_url, file_type')
             .eq('gallery_id', gallery.id)
-            .eq('file_type', 'image')
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -74,6 +73,7 @@ export const Dashboard: React.FC = () => {
             ...gallery,
             itemCount: count || 0,
             coverUrl: files && files.length > 0 ? files[0].file_url : null,
+            coverType: files && files.length > 0 ? files[0].file_type : null,
           };
         })
       );
@@ -221,15 +221,33 @@ export const Dashboard: React.FC = () => {
                 {/* Image Container */}
                 <div className="relative aspect-[3/2] bg-slate-100 rounded-xl overflow-hidden mb-3 shadow-sm transition-all duration-300 group-hover:shadow-md border border-slate-100">
                 {gallery.coverUrl ? (
-                    <img 
-                    src={getOptimizedImageUrl(gallery.coverUrl, 600, 400)} 
-                    alt={gallery.client_name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target.src !== gallery.coverUrl) target.src = gallery.coverUrl!;
-                    }}
-                    />
+                    gallery.coverType === 'video' ? (
+                        <video 
+                            src={gallery.coverUrl} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            muted
+                            playsInline
+                            loop
+                            // Try to load just the first frame
+                            preload="metadata"
+                            onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
+                            onMouseOut={(e) => {
+                                const v = e.target as HTMLVideoElement;
+                                v.pause();
+                                v.currentTime = 0;
+                            }}
+                        />
+                    ) : (
+                        <img 
+                        src={getOptimizedImageUrl(gallery.coverUrl, 600, 400)} 
+                        alt={gallery.client_name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (target.src !== gallery.coverUrl) target.src = gallery.coverUrl!;
+                        }}
+                        />
+                    )
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
                     <ImageIcon className="w-10 h-10" />
