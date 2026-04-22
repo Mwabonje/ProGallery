@@ -570,7 +570,7 @@ export const ClientGallery: React.FC = () => {
                         e.preventDefault();
                         setShowScreenshotWarning(true);
                     }}
-                    className={`group relative aspect-square bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${file.file_type === 'image' ? 'aspect-square' : 'w-full h-auto'} bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto' }}
                 >
                 {file.file_type === 'image' ? (
@@ -600,27 +600,30 @@ export const ClientGallery: React.FC = () => {
                         onContextMenu={(e) => e.preventDefault()}
                     />
                 ) : (
-                    <video src={file.file_url} className="w-full h-full object-cover" controls controlsList="nodownload" />
+                    <video src={file.file_url} className="w-full h-auto max-h-[80vh] object-contain" controls controlsList="nodownload" preload="metadata" />
                 )}
                 
                 {/* Desktop Hover Overlay */}
-                <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3">
+                <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3 pointer-events-none">
                     {isSelectionMode ? (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 toggleSelection(file);
                             }}
-                            className={`p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
+                            className={`pointer-events-auto p-3 rounded-full shadow-lg transform transition-all hover:scale-110 ${isSelected ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 hover:text-rose-500'}`}
                             disabled={selectionSubmitted}
                         >
                             <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
                         </button>
                     ) : (
                         <button
-                            onClick={() => handleDownload(file)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(file);
+                            }}
                             disabled={downloadingId === file.id}
-                            className="bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
+                            className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                         >
                             {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
                             <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
