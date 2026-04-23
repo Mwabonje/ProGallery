@@ -339,6 +339,7 @@ export const Dashboard: React.FC = () => {
                 ))}
 
                 {/* Create New Gallery Card */}
+                {galleries.filter(g => !g.category || g.category.trim() === '').length < 3 && (
                 <div 
                     onClick={() => {
                         setNewCategory(''); // Ensure category is blank for Deliveries
@@ -353,6 +354,7 @@ export const Dashboard: React.FC = () => {
                         <span className="font-medium text-slate-500 group-hover:text-slate-700">Add New Delivery</span>
                     </div>
                 </div>
+                )}
             </div>
         </div>
 
