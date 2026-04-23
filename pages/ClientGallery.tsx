@@ -433,7 +433,12 @@ export const ClientGallery: React.FC = () => {
   const amountPaid = gallery?.amount_paid || 0;
   const balanceDue = Math.max(0, agreedAmount - amountPaid);
   const isLocked = balanceDue > 0;
-  const isSelectionMode = gallery?.selection_enabled;
+  
+  // A gallery is considered a public portfolio collection if it has a category
+  const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
+  
+  // Selection mode is not relevant for portfolio collections
+  const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
 
   const displayedFiles = showFavoritesOnly 
     ? files.filter(f => selectedFileIds.has(f.id))
@@ -473,7 +478,7 @@ export const ClientGallery: React.FC = () => {
                         <span>Selection Mode Active</span>
                      </div>
                  </div>
-             ) : (
+             ) : !isPortfolio ? (
                 // Standard Mode Header Content
                 <>
                     {/* Download All Button */}
@@ -521,7 +526,7 @@ export const ClientGallery: React.FC = () => {
                         </div>
                     )}
                 </>
-             )}
+             ) : null}
           </div>
         </div>
       </header>
@@ -568,10 +573,12 @@ export const ClientGallery: React.FC = () => {
                     onClick={() => isSelectionMode && setLightboxFile(file)}
                     onContextMenu={(e) => {
                         e.preventDefault();
-                        setShowScreenshotWarning(true);
+                        if (!isPortfolio) {
+                             setShowScreenshotWarning(true);
+                        }
                     }}
                     className={`group relative ${file.file_type === 'image' ? 'aspect-square' : 'w-full h-auto'} bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
-                    style={{ contentVisibility: 'auto' }}
+                    style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
                     <img 
@@ -616,7 +623,7 @@ export const ClientGallery: React.FC = () => {
                         >
                             <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
                         </button>
-                    ) : (
+                    ) : !isPortfolio && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -645,7 +652,7 @@ export const ClientGallery: React.FC = () => {
                             <Heart className={`w-5 h-5 ${isSelected ? 'fill-current' : ''}`} />
                         </button>
                     )}
-                    {!isSelectionMode && (
+                    {!isSelectionMode && !isPortfolio && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
