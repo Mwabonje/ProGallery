@@ -339,7 +339,6 @@ export const Dashboard: React.FC = () => {
                 ))}
 
                 {/* Create New Gallery Card */}
-                {galleries.filter(g => !g.category || g.category.trim() === '').length < 3 && (
                 <div 
                     onClick={() => {
                         setNewCategory(''); // Ensure category is blank for Deliveries
@@ -354,14 +353,13 @@ export const Dashboard: React.FC = () => {
                         <span className="font-medium text-slate-500 group-hover:text-slate-700">Add New Delivery</span>
                     </div>
                 </div>
-                )}
             </div>
         </div>
 
         {/* Portfolio Collections Section */}
         <div className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Portfolio Collections</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {galleries.filter(g => g.category && g.category.trim() !== '').map((gallery) => (
                 <div 
                     key={gallery.id} 
@@ -418,6 +416,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 
                 {/* Create New Portfolio Collection */}
+                {galleries.filter(g => g.category && g.category.trim() !== '').length < 5 && (
                 <div 
                     onClick={() => {
                         setNewCategory('Wedding'); // Pre-fill with a suggestion since it's portfolio
@@ -432,6 +431,7 @@ export const Dashboard: React.FC = () => {
                         <span className="font-medium text-sm text-slate-500 group-hover:text-slate-700">New Collection</span>
                     </div>
                 </div>
+                )}
             </div>
         </div>
 
