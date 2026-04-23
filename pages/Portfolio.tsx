@@ -132,18 +132,18 @@ export const Portfolio: React.FC = () => {
 
             {/* Main Content Gallery */}
             <main className="flex-1 p-0 md:p-8 overflow-y-auto">
-                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-0 md:gap-6 space-y-0 md:space-y-6">
+                <div className="columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 space-y-4 md:space-y-8 lg:space-y-12">
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
                             to={`/g/${gallery.id}`} 
                             key={gallery.id}
-                            className="group block break-inside-avoid relative overflow-hidden"
+                            className="group block break-inside-avoid relative"
                         >
-                            <div className="bg-slate-100 overflow-hidden">
+                            <div className="bg-slate-50 overflow-hidden relative border border-slate-100">
                                 {gallery.coverType === 'video' ? (
                                     <video 
                                         src={gallery.coverUrl!} 
-                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                                         muted playsInline loop preload="metadata"
                                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
                                         onMouseOut={(e) => {
@@ -156,25 +156,20 @@ export const Portfolio: React.FC = () => {
                                     <img 
                                         src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 70)}
                                         alt={gallery.client_name}
-                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                                         loading={index < 4 ? "eager" : "lazy"}
                                     />
                                 )}
+                                
+                                {/* Title Overlay */}
+                                <div className="absolute inset-x-0 bottom-10 md:bottom-16 pointer-events-none z-10 transition-transform duration-700 md:group-hover:-translate-y-3 flex justify-center">
+                                    <h3 className="text-base md:text-xl font-bold tracking-[0.2em] uppercase text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] text-center px-4">
+                                        {gallery.client_name}
+                                    </h3>
+                                </div>
+                                
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/0 group-hover:from-black/60 transition-colors duration-700 pointer-events-none" />
                             </div>
-
-                            {/* Corner Overlay Display */}
-                            <div className="absolute top-4 left-4 md:top-6 md:left-6 pointer-events-none z-10 transition-transform duration-500 group-hover:translate-x-1">
-                                <h3 className="text-[10px] md:text-xs font-bold tracking-[0.15em] uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                                    {gallery.client_name}
-                                </h3>
-                                {gallery.category && (
-                                    <p className="text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] mt-1">
-                                        {gallery.category}
-                                    </p>
-                                )}
-                            </div>
-                            
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-700 pointer-events-none" />
                         </Link>
                     ))}
                 </div>
