@@ -130,10 +130,6 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleOpenCreateModal = () => {
-    if (galleries.length >= 3) {
-      alert("You have reached the maximum limit of 3 galleries. Please delete an existing gallery to create a new one.");
-      return;
-    }
     setNewClientName('');
     setIsCreateModalOpen(true);
   };
@@ -141,6 +137,19 @@ export const Dashboard: React.FC = () => {
   const createGallery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName.trim()) return;
+
+    const isPortfolio = newCategory.trim() !== '';
+    const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
+    const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '').length;
+
+    if (!isPortfolio && deliveriesCount >= 3) {
+        alert("You have reached the maximum limit of 3 Client Deliveries. Please delete an existing delivery to create a new one.");
+        return;
+    }
+    if (isPortfolio && portfolioCount >= 5) {
+        alert("You have reached the maximum limit of 5 Portfolio Collections. Please delete an existing collection to create a new one.");
+        return;
+    }
     
     setIsCreating(true);
 
@@ -223,7 +232,7 @@ export const Dashboard: React.FC = () => {
                <h1 className="text-2xl font-bold text-slate-900">Galleries</h1>
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
-            <div className="flex w-full sm:w-auto gap-3">
+            <div className="flex w-full sm:w-auto gap-3 mt-4 sm:mt-0">
               {userId && (
                 <button
                   onClick={() => window.open(`#/p/${userId}`, '_blank')}
@@ -233,7 +242,6 @@ export const Dashboard: React.FC = () => {
                   <span className="text-sm font-medium">Live Portfolio</span>
                 </button>
               )}
-              {galleries.length < 3 && (
               <button
               onClick={handleOpenCreateModal}
               className="flex-1 sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
@@ -241,7 +249,6 @@ export const Dashboard: React.FC = () => {
               <Plus className="w-5 h-5" />
               <span className="text-sm font-medium">New Gallery</span>
               </button>
-              )}
             </div>
         </div>
 
