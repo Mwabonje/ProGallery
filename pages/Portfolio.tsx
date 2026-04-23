@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl } from '../utils/formatters';
-import { Camera, Instagram, Globe, Mail } from 'lucide-react';
+import { Instagram, Globe, Mail } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
   coverUrl?: string | null;
@@ -16,7 +16,7 @@ export const Portfolio: React.FC = () => {
     const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState<string>('All');
-    const [photographerName, setPhotographerName] = useState<string>("Photographer");
+    const [photographerName, setPhotographerName] = useState<string>("My Portfolio");
 
     useEffect(() => {
         const fetchPortfolio = async () => {
@@ -31,10 +31,9 @@ export const Portfolio: React.FC = () => {
 
                 if (error) throw error;
 
-                // We attempt to get the photographer's email/name if they have a public profile, 
-                // but for now we'll just extract from the first gallery or keep generic
+                // Configure photographer name placeholder
                 if (galleriesData && galleriesData.length > 0) {
-                     setPhotographerName("My Portfolio"); // Placeholder, could be customized later
+                     setPhotographerName("Osse Greca Sinare"); // Updated to match inspiration style
                 }
 
                 // Filter out non-portfolio items (client deliveries without a category)
@@ -71,8 +70,8 @@ export const Portfolio: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
-                <div className="animate-pulse tracking-widest uppercase text-sm text-white/50 font-light">Loading Portfolio...</div>
+            <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
+                <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Portfolio...</div>
             </div>
         );
     }
@@ -85,68 +84,67 @@ export const Portfolio: React.FC = () => {
         : galleries.filter(g => g.category === activeCategory);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500 selection:text-white">
-            {/* Header */}
-            <header className="p-8 md:p-12 flex justify-center md:justify-between items-center border-b border-white/10">
-                <div className="flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-white/70" />
-                    <span className="font-medium tracking-[0.2em] uppercase text-sm">{photographerName}</span>
-                </div>
-                <div className="hidden md:flex gap-6 text-white/50">
-                    <a href="#" className="hover:text-white transition-colors"><Instagram className="w-4 h-4" /></a>
-                    <a href="#" className="hover:text-white transition-colors"><Globe className="w-4 h-4" /></a>
-                    <a href="#" className="hover:text-white transition-colors"><Mail className="w-4 h-4" /></a>
-                </div>
-            </header>
+        <div className="flex flex-col lg:flex-row min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
+            
+            {/* Sidebar / Left Column */}
+            <aside className="w-full lg:w-72 xl:w-80 lg:shrink-0 lg:h-screen lg:sticky top-0 p-8 md:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 bg-white z-20">
+                <div>
+                   <h1 className="text-3xl lg:text-[40px] uppercase tracking-wider font-bold mb-16 leading-[1.1] drop-shadow-sm" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                       {photographerName.split(' ').map((word, i) => (
+                           <React.Fragment key={i}>
+                               {word}<br aria-hidden="true"/>
+                           </React.Fragment>
+                       ))}
+                   </h1>
 
-            <main className="px-8 py-16 md:px-12 md:py-24 max-w-[1600px] mx-auto">
-                
-                {/* Hero Typographic Section */}
-                <div className="mb-24 md:w-3/4">
-                    <h1 className="text-5xl md:text-8xl font-light tracking-tighter leading-[0.9] mb-8">
-                        Selected <br/> <span className="italic font-serif text-white/60">Works.</span>
-                    </h1>
-                    <p className="text-white/60 text-lg md:text-xl font-light max-w-xl leading-relaxed">
-                        A curated collection of recent commissions, visual stories, and fine art documentation.
+                   {/* Navigation */}
+                   <nav className="flex flex-col gap-5 text-[11px] md:text-xs font-semibold tracking-[0.15em] uppercase">
+                       {categories.length > 1 && categories.map((cat) => (
+                           <button
+                               key={cat}
+                               onClick={() => setActiveCategory(cat as string)}
+                               className={`text-left hover:text-slate-900 transition-colors duration-300 w-fit ${
+                                   activeCategory === cat 
+                                   ? 'text-slate-900' 
+                                   : 'text-slate-400'
+                               }`}
+                           >
+                               {cat}
+                           </button>
+                       ))}
+                       <div className="h-px w-8 bg-slate-200 my-2" />
+                       <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors duration-300 w-fit">About</a>
+                       <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors duration-300 w-fit">Contact</a>
+                   </nav>
+                </div>
+
+                <div className="hidden lg:block space-y-6 pt-12">
+                    <p className="text-[9px] text-slate-400 tracking-[0.2em] uppercase">
+                        © All rights reserved
                     </p>
+                    <div className="flex gap-4">
+                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
+                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
+                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
+                    </div>
                 </div>
+            </aside>
 
-                {/* Categories Navigation */}
-                {categories.length > 1 && (
-                    <nav className="flex flex-wrap gap-4 mb-16">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat as string)}
-                                className={`px-6 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 ${
-                                    activeCategory === cat 
-                                    ? 'bg-white text-black font-semibold' 
-                                    : 'bg-transparent border border-white/20 text-white/70 hover:border-white/50 hover:text-white'
-                                }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </nav>
-                )}
-
-                {/* Masonry / Grid Portfolio */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+            {/* Main Content Gallery */}
+            <main className="flex-1 p-0 md:p-8 overflow-y-auto">
+                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-0 md:gap-6 space-y-0 md:space-y-6">
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
                             to={`/g/${gallery.id}`} 
                             key={gallery.id}
-                            className="group block"
+                            className="group block break-inside-avoid relative overflow-hidden"
                         >
-                            <div className="relative aspect-[3/4] md:aspect-[4/5] bg-white/5 rounded-sm overflow-hidden mb-6">
+                            <div className="bg-slate-100 overflow-hidden">
                                 {gallery.coverType === 'video' ? (
                                     <video 
                                         src={gallery.coverUrl!} 
-                                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                        muted
-                                        playsInline
-                                        loop
-                                        preload="metadata"
+                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                                        muted playsInline loop preload="metadata"
                                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
                                         onMouseOut={(e) => {
                                             const v = e.target as HTMLVideoElement;
@@ -158,30 +156,32 @@ export const Portfolio: React.FC = () => {
                                     <img 
                                         src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 70)}
                                         alt={gallery.client_name}
-                                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-105 opacity-90 group-hover:opacity-100"
                                         loading={index < 4 ? "eager" : "lazy"}
                                     />
                                 )}
-                                
-                                {/* Overlay gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             </div>
 
-                            {/* Meta Labels */}
-                            <div className="flex flex-col gap-2">
-                                <h3 className="text-xl md:text-2xl font-light tracking-tight">{gallery.client_name}</h3>
-                                <div className="flex justify-between items-center text-xs tracking-widest uppercase text-white/50">
-                                    <span>{gallery.category || 'Commission'}</span>
-                                    <span>{new Date(gallery.created_at).getFullYear()}</span>
-                                </div>
+                            {/* Corner Overlay Display */}
+                            <div className="absolute top-4 left-4 md:top-6 md:left-6 pointer-events-none z-10 transition-transform duration-500 group-hover:translate-x-1">
+                                <h3 className="text-[10px] md:text-xs font-bold tracking-[0.15em] uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                    {gallery.client_name}
+                                </h3>
+                                {gallery.category && (
+                                    <p className="text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] mt-1">
+                                        {gallery.category}
+                                    </p>
+                                )}
                             </div>
+                            
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-700 pointer-events-none" />
                         </Link>
                     ))}
                 </div>
 
-                {filteredGalleries.length === 0 && (
-                    <div className="text-center py-32 text-white/40 font-light tracking-widest uppercase text-sm">
-                        No galleries found in this collection.
+                {filteredGalleries.length === 0 && !loading && (
+                    <div className="h-full flex items-center justify-center p-32">
+                        <p className="text-slate-400 tracking-[0.2em] text-xs uppercase font-medium">No collections available.</p>
                     </div>
                 )}
             </main>

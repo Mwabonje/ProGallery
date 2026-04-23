@@ -445,12 +445,12 @@ export const ClientGallery: React.FC = () => {
     : files;
 
   return (
-    <div className={`min-h-screen bg-white select-none ${isSelectionMode ? 'pb-24' : ''}`}>
+    <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 border-b border-slate-100 shadow-sm transition-all duration-300">
+      <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h1 className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? 'text-slate-900 tracking-widest uppercase font-serif' : 'text-slate-900'}`}>
                 {showFavoritesOnly && (
                     <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">
                         <ArrowLeft className="w-6 h-6" />
@@ -458,13 +458,17 @@ export const ClientGallery: React.FC = () => {
                 )}
                 {showFavoritesOnly ? "My Selection" : gallery?.client_name}
             </h1>
-            <p className="text-xs md:text-sm text-slate-500 flex items-center gap-2">
+            <p className={`text-xs md:text-sm flex items-center gap-2 ${isPortfolio ? 'text-slate-500 tracking-[0.2em] uppercase mt-1' : 'text-slate-500'}`}>
                 {displayedFiles.length} items 
-                <span className="text-slate-300">•</span>
-                {timeRemaining === 'Expired' ? (
-                   <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs uppercase tracking-wide">Expired</span>
-                ) : (
-                   <span>Expires in <span className="text-red-500 font-medium">{timeRemaining}</span></span>
+                {!isPortfolio && (
+                    <>
+                        <span className="text-slate-300">•</span>
+                        {timeRemaining === 'Expired' ? (
+                           <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs uppercase tracking-wide">Expired</span>
+                        ) : (
+                           <span>Expires in <span className="text-red-500 font-medium">{timeRemaining}</span></span>
+                        )}
+                    </>
                 )}
             </p>
           </div>
@@ -570,14 +574,14 @@ export const ClientGallery: React.FC = () => {
                 return (
                 <div 
                     key={file.id} 
-                    onClick={() => isSelectionMode && setLightboxFile(file)}
+                    onClick={() => (isSelectionMode || isPortfolio) && setLightboxFile(file)}
                     onContextMenu={(e) => {
                         e.preventDefault();
                         if (!isPortfolio) {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${file.file_type === 'image' ? 'aspect-square' : 'w-full h-auto'} bg-slate-200 rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${file.file_type === 'image' ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-100' : 'bg-slate-200'} rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
@@ -611,7 +615,7 @@ export const ClientGallery: React.FC = () => {
                 )}
                 
                 {/* Desktop Hover Overlay */}
-                <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3 pointer-events-none">
+                <div className={`hidden md:flex absolute inset-0 ${isPortfolio ? 'bg-black/10' : 'bg-black/40'} opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3 pointer-events-none`}>
                     {isSelectionMode ? (
                         <button
                             onClick={(e) => {
@@ -867,7 +871,9 @@ export const ClientGallery: React.FC = () => {
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => {
                     e.preventDefault();
-                    setShowScreenshotWarning(true);
+                    if (!isPortfolio) {
+                        setShowScreenshotWarning(true);
+                    }
                 }}
             >
                 {lightboxFile.file_type === 'image' ? (
@@ -877,7 +883,9 @@ export const ClientGallery: React.FC = () => {
                         className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
                         onContextMenu={(e) => {
                             e.preventDefault();
-                            setShowScreenshotWarning(true);
+                            if (!isPortfolio) {
+                                setShowScreenshotWarning(true);
+                            }
                         }}
                     />
                 ) : (

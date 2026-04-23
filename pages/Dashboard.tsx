@@ -361,7 +361,7 @@ export const Dashboard: React.FC = () => {
         {/* Portfolio Collections Section */}
         <div className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Portfolio Collections</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {galleries.filter(g => g.category && g.category.trim() !== '').map((gallery) => (
                 <div 
                     key={gallery.id} 
