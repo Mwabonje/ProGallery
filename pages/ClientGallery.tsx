@@ -568,7 +568,7 @@ export const ClientGallery: React.FC = () => {
                 )}
             </div>
         ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className={isPortfolio ? "columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 space-y-4 md:space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
             {displayedFiles.map((file, index) => {
                 const isSelected = selectedFileIds.has(file.id);
                 return (
@@ -581,35 +581,54 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${file.file_type === 'image' ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-100' : 'bg-slate-200'} rounded-lg overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${(!isPortfolio && file.file_type === 'image') ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-50 border border-slate-100' : 'bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
-                    <img 
-                        src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
-                        srcSet={`
-                            ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
-                            ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
-                            ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
-                            ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
-                        `}
-                        sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
-                        alt="Gallery item" 
-                        className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
-                        loading={index < 8 ? "eager" : "lazy"}
-                        decoding="async"
-                        // @ts-ignore
-                        fetchPriority={index < 4 ? "high" : "auto"}
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.removeAttribute('srcset');
-                            target.removeAttribute('sizes');
-                            if (target.src !== file.file_url) {
-                                target.src = file.file_url;
-                            }
-                        }}
-                        onContextMenu={(e) => e.preventDefault()}
-                    />
+                    isPortfolio ? (
+                        <img 
+                            src={getOptimizedImageUrl(file.file_url, 800, 1000, 70)}
+                            alt="Portfolio item" 
+                            className="w-full h-auto transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
+                            loading={index < 4 ? "eager" : "lazy"}
+                            decoding="async"
+                            // @ts-ignore
+                            fetchPriority={index < 4 ? "high" : "auto"}
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (target.src !== file.file_url) {
+                                    target.src = file.file_url;
+                                }
+                            }}
+                            onContextMenu={(e) => e.preventDefault()}
+                        />
+                    ) : (
+                        <img 
+                            src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
+                            srcSet={`
+                                ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
+                                ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
+                                ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
+                                ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
+                            `}
+                            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+                            alt="Gallery item" 
+                            className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
+                            loading={index < 8 ? "eager" : "lazy"}
+                            decoding="async"
+                            // @ts-ignore
+                            fetchPriority={index < 4 ? "high" : "auto"}
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.removeAttribute('srcset');
+                                target.removeAttribute('sizes');
+                                if (target.src !== file.file_url) {
+                                    target.src = file.file_url;
+                                }
+                            }}
+                            onContextMenu={(e) => e.preventDefault()}
+                        />
+                    )
                 ) : (
                     <video src={file.file_url} className="w-full h-auto max-h-[80vh] object-contain" controls controlsList="nodownload" preload="metadata" />
                 )}
