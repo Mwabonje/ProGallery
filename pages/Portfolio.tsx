@@ -88,19 +88,25 @@ export const Portfolio: React.FC = () => {
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
             
             {/* Top Navigation Header */}
-            <header className="w-full pt-16 pb-12 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white relative">
-                {/* Mobile Hamburger Button */}
-                <button 
-                    className="md:hidden absolute top-8 left-6 text-slate-500 hover:text-slate-900 z-30 p-2 -ml-2"
-                    onClick={() => setIsMobileMenuOpen(true)}
-                    aria-label="Open menu"
-                >
-                    <Menu className="w-6 h-6" />
-                </button>
-
-                <h1 className="text-3xl lg:text-[44px] uppercase tracking-wider font-bold mb-10 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                    {photographerName}
-                </h1>
+            <header className="w-full py-8 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white relative">
+                
+                <div className="flex w-full justify-between items-center md:justify-center relative">
+                    {/* Spacer for symmetry on mobile */}
+                    <div className="w-10 md:hidden" /> 
+                    
+                    <h1 className="text-2xl md:text-3xl lg:text-[44px] uppercase tracking-wider font-bold md:mb-10 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                        {photographerName}
+                    </h1>
+                    
+                    {/* Mobile Hamburger Button */}
+                    <button 
+                        className="md:hidden text-slate-800 hover:text-black z-30 p-2 -mr-2"
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        aria-label="Open menu"
+                    >
+                        <Menu className="w-8 h-8" strokeWidth={1} />
+                    </button>
+                </div>
 
                 {/* Desktop Navigation Links */}
                 <nav className="hidden md:flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
