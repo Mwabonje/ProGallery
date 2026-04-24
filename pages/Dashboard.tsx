@@ -201,11 +201,16 @@ export const Dashboard: React.FC = () => {
 
         // Also clean up Supabase storage (backward compatibility if user had files before R2)
         try {
-            // Supabase storage delete folder works by listing then deleting
-            const { data: folderFiles } = await supabase.storage.from('gallery-files').list(galleryId);
-            if (folderFiles && folderFiles.length > 0) {
-                const pathsToRemove = folderFiles.map((f: any) => `${galleryId}/${f.name}`);
-                await supabase.storage.from('gallery-files').remove(pathsToRemove);
+            let hasMore = true;
+            // Supabase storage delete folder works by listing then deleting, max 100 at a time
+            while (hasMore) {
+                const { data: folderFiles } = await supabase.storage.from('gallery-files').list(galleryId, { limit: 100 });
+                if (folderFiles && folderFiles.length > 0) {
+                    const pathsToRemove = folderFiles.map((f: any) => `${galleryId}/${f.name}`);
+                    await supabase.storage.from('gallery-files').remove(pathsToRemove);
+                } else {
+                    hasMore = false;
+                }
             }
             // And try to delete the folder itself
             await supabase.storage.from('gallery-files').remove([galleryId]);
@@ -254,11 +259,58 @@ export const Dashboard: React.FC = () => {
                <h1 className="text-2xl font-bold text-slate-900">Galleries</h1>
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
-            <div className="flex w-full sm:w-auto gap-3 mt-4 sm:mt-0">
+            <div className="flex flex-wrap w-full sm:w-auto gap-3 mt-4 sm:mt-0">
+              <button
+                title="Finds and deletes leftover folders in Supabase Storage that don't belong to any galleries"
+                onClick={async () => {
+                   if (!window.confirm("This will scan for and delete orphaned storage folders that were left behind when you deleted cards. Proceed?")) return;
+                   
+                   try {
+                     const { data: dbGalleries } = await supabase.from('galleries').select('id');
+                     const activeIds = new Set((dbGalleries || []).map(g => g.id));
+                     
+                     const { data: rootItems } = await supabase.storage.from('gallery-files').list();
+                     if (!rootItems) return;
+                     
+                     let deletedCount = 0;
+                     for (const item of rootItems) {
+                         const folderName = item.name;
+                         if (folderName.startsWith('.')) continue;
+                         
+                         if (!activeIds.has(folderName)) {
+                             // It's orphaned! Delete contents using loop
+                             let hasMore = true;
+                             while (hasMore) {
+                                 const { data: files } = await supabase.storage.from('gallery-files').list(folderName, { limit: 100 });
+                                 if (files && files.length > 0) {
+                                     const paths = files.map(f => `${folderName}/${f.name}`);
+                                     await supabase.storage.from('gallery-files').remove(paths);
+                                 } else {
+                                     hasMore = false;
+                                 }
+                             }
+                             // Try Cloudflare too, just in case
+                             await fetch('/api/delete-folder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folderPath: folderName })}).catch(() => {});
+                             // Delete folder 
+                             await supabase.storage.from('gallery-files').remove([folderName]);
+                             deletedCount++;
+                         }
+                     }
+                     alert(`Cleanup complete! Removed ${deletedCount} orphaned folder(s).`);
+                   } catch (err) {
+                       console.error(err);
+                       alert("Cleanup encountered an error. Check console.");
+                   }
+                }}
+                className="flex-[1_1_45%] sm:flex-none bg-rose-50 hover:bg-rose-100 text-rose-700 px-4 py-2 border border-rose-200 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+              >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Deep Clean</span>
+              </button>
               {userId && (
                 <button
                   onClick={() => window.open(`#/p/${userId}`, '_blank')}
-                  className="flex-1 sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+                  className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
                 >
                   <Globe className="w-4 h-4" />
                   <span className="text-sm font-medium">Live Portfolio</span>
@@ -266,7 +318,7 @@ export const Dashboard: React.FC = () => {
               )}
               <button
               onClick={handleOpenCreateModal}
-              className="flex-1 sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
+              className="flex-[1_1_100%] sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
               >
               <Plus className="w-5 h-5" />
               <span className="text-sm font-medium">New Gallery</span>
