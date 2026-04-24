@@ -54,7 +54,8 @@ export const getOptimizedImageUrl = (url: string, width: number = 800, height?: 
     const cleanUrl = rewriteUrlToR2(url);
     
     const encodedUrl = encodeURIComponent(cleanUrl);
-    let wsrvUrl = `https://wsrv.nl/?url=${encodedUrl}&w=${width}&q=${quality}&output=webp`;
+    // Tell wsrv.nl to cache aggressively for 1 month
+    let wsrvUrl = `https://wsrv.nl/?url=${encodedUrl}&w=${width}&q=${quality}&output=webp&maxage=31d`;
     
     if (height) {
       wsrvUrl += `&h=${height}&fit=cover`;
