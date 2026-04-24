@@ -110,11 +110,46 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const filterDuplicateFiles = (fileList: FileList) => {
+    const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9.\_-]/g, "_");
+    const newFiles: File[] = [];
+    const duplicateFiles: string[] = [];
+
+    Array.from(fileList).forEach(f => {
+        const sanitized = sanitizeName(f.name);
+        // Compare with existing file names
+        const isDuplicate = files.some(existingFile => {
+            const existingName = existingFile.file_path.split('/').pop();
+            return existingName === sanitized;
+        });
+        
+        if (isDuplicate) {
+            duplicateFiles.push(f.name);
+        } else {
+            newFiles.push(f);
+        }
+    });
+
+    if (duplicateFiles.length > 0) {
+        if (newFiles.length === 0) {
+            alert("All selected files have already been uploaded.");
+        } else {
+            alert(`${duplicateFiles.length} file(s) are already uploaded and will be skipped.`);
+        }
+    }
+    
+    return newFiles;
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0 || !gallery) return;
 
-    const filesToUpload = Array.from(fileList);
+    const filesToUpload = filterDuplicateFiles(fileList);
+    if (filesToUpload.length === 0) {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+    }
     
     // Use Context
     await uploadFiles(gallery.id, filesToUpload, expiryHours);
@@ -141,7 +176,11 @@ export const GalleryManager: React.FC = () => {
     const fileList = event.dataTransfer.files;
     if (!fileList || fileList.length === 0 || !gallery) return;
 
-    const filesToUpload = Array.from(fileList);
+    const filesToUpload = filterDuplicateFiles(fileList);
+    if (filesToUpload.length === 0) {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+    }
     
     // Use Context
     await uploadFiles(gallery.id, filesToUpload, expiryHours);
