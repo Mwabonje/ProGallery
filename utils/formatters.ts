@@ -30,14 +30,29 @@ export const getTimeRemaining = (expiresAt: string) => {
   };
 };
 
+export const rewriteUrlToR2 = (url: string) => {
+  if (!url) return '';
+  let cleanUrl = url.split('?')[0]; 
+  
+  if (cleanUrl.includes('supabase.co')) {
+    const r2BaseUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+    if (r2BaseUrl) {
+        const parts = cleanUrl.split('/public/gallery-files/');
+        if (parts.length === 2 && parts[1]) {
+           return `${r2BaseUrl.replace(/\/$/, '')}/${parts[1]}`;
+        }
+    }
+  }
+  return cleanUrl;
+};
+
 export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 70) => {
   if (!url) return '';
   
-  // Use a global, free image compression proxy (wsrv.nl)
-  // This ensures images load blazing fast on mobile without needing a paid Supabase plan
+  // HOTFIX for Supabase Egress: automatically rewrite old supabase.co URLs to use R2 proxy on the fly!
   try {
-    // Some urls might already have query params from supabase
-    const cleanUrl = url.split('?')[0]; 
+    const cleanUrl = rewriteUrlToR2(url);
+    
     const encodedUrl = encodeURIComponent(cleanUrl);
     let wsrvUrl = `https://wsrv.nl/?url=${encodedUrl}&w=${width}&q=${quality}&output=webp`;
     

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, getTimeRemaining, getOptimizedImageUrl } from '../utils/formatters';
+import { formatCurrency, getTimeRemaining, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 // @ts-ignore
 import JSZip from 'jszip';
 // @ts-ignore
@@ -568,7 +568,7 @@ export const ClientGallery: React.FC = () => {
                 )}
             </div>
         ) : (
-            <div className={isPortfolio ? "columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 space-y-4 md:space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
+            <div className={isPortfolio ? "columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
             {displayedFiles.map((file, index) => {
                 const isSelected = selectedFileIds.has(file.id);
                 return (
@@ -581,7 +581,7 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${(!isPortfolio && file.file_type === 'image') ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-50 border border-slate-100' : 'bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${(!isPortfolio && file.file_type === 'image') ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-50 border border-slate-100 mb-4 md:mb-8 lg:mb-12' : 'bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
@@ -630,7 +630,7 @@ export const ClientGallery: React.FC = () => {
                         />
                     )
                 ) : (
-                    <video src={file.file_url} className="w-full h-auto max-h-[80vh] object-contain" controls controlsList="nodownload" preload="metadata" />
+                    <video src={rewriteUrlToR2(file.file_url)} className="w-full h-auto max-h-[80vh] object-contain" controls controlsList="nodownload" preload="metadata" />
                 )}
                 
                 {/* Desktop Hover Overlay */}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
-import { getOptimizedImageUrl } from '../utils/formatters';
+import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { Instagram, Globe, Mail } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
@@ -132,17 +132,17 @@ export const Portfolio: React.FC = () => {
 
             {/* Main Content Gallery */}
             <main className="flex-1 p-0 md:p-8 overflow-y-auto">
-                <div className="columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 space-y-4 md:space-y-8 lg:space-y-12">
+                <div className="columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12">
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
                             to={`/g/${gallery.id}`} 
                             key={gallery.id}
-                            className="group block break-inside-avoid relative"
+                            className="group block break-inside-avoid relative mb-4 md:mb-8 lg:mb-12"
                         >
                             <div className="bg-slate-50 overflow-hidden relative border border-slate-100">
                                 {gallery.coverType === 'video' ? (
                                     <video 
-                                        src={gallery.coverUrl!} 
+                                        src={rewriteUrlToR2(gallery.coverUrl!)} 
                                         className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                                         muted playsInline loop preload="metadata"
                                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
