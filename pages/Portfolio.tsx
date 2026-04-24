@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
-import { Instagram, Globe, Mail } from 'lucide-react';
+import { Instagram, Globe, Mail, Menu, X } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
   coverUrl?: string | null;
@@ -17,6 +17,7 @@ export const Portfolio: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [photographerName, setPhotographerName] = useState<string>("My Portfolio");
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const fetchPortfolio = async () => {
@@ -87,13 +88,22 @@ export const Portfolio: React.FC = () => {
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
             
             {/* Top Navigation Header */}
-            <header className="w-full pt-16 pb-12 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white">
+            <header className="w-full pt-16 pb-12 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white relative">
+                {/* Mobile Hamburger Button */}
+                <button 
+                    className="md:hidden absolute top-8 left-6 text-slate-500 hover:text-slate-900 z-30 p-2 -ml-2"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    aria-label="Open menu"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+
                 <h1 className="text-3xl lg:text-[44px] uppercase tracking-wider font-bold mb-10 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {photographerName}
                 </h1>
 
-                {/* Navigation Links */}
-                <nav className="flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
+                {/* Desktop Navigation Links */}
+                <nav className="hidden md:flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
                     {categories.length > 0 && categories.map((cat) => (
                         <button
                             key={cat}
@@ -104,7 +114,7 @@ export const Portfolio: React.FC = () => {
                                 : ''
                             }`}
                         >
-                            {cat === 'All' ? 'HOME' : cat}
+                            {cat === 'All' ? 'HOME' : (cat as string).toUpperCase()}
                         </button>
                     ))}
                     <a href="#" className="hover:text-slate-900 transition-colors duration-300">ABOUT</a>
@@ -112,6 +122,56 @@ export const Portfolio: React.FC = () => {
                     <a href="#" className="hover:text-slate-900 transition-colors duration-300">BOOKS & PRINTS</a>
                 </nav>
             </header>
+
+            {/* Mobile Sidebar Navigation */}
+            <>
+                <div 
+                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+                <aside 
+                    className={`fixed inset-y-0 left-0 w-64 bg-white z-50 md:hidden flex flex-col p-8 transform transition-transform duration-300 ease-in-out shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                >
+                    <button 
+                        className="self-end text-slate-400 hover:text-slate-900 -mr-2 p-2 mb-4"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        aria-label="Close menu"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    
+                    <nav className="flex flex-col gap-6 text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 mt-4">
+                        {categories.length > 0 && categories.map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => {
+                                    setActiveCategory(cat as string);
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className={`text-left hover:text-slate-900 transition-colors duration-300 ${
+                                    activeCategory === cat 
+                                    ? 'text-slate-900' 
+                                    : ''
+                                }`}
+                            >
+                                {cat === 'All' ? 'HOME' : (cat as string).toUpperCase()}
+                            </button>
+                        ))}
+                        <div className="h-px w-8 bg-slate-100 my-2" />
+                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">ABOUT</a>
+                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
+                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">BOOKS & PRINTS</a>
+                    </nav>
+
+                    <div className="mt-auto pt-8">
+                        <div className="flex gap-4">
+                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
+                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
+                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
+                        </div>
+                    </div>
+                </aside>
+            </>
 
             {/* Main Content Gallery */}
             <main className="max-w-[1400px] mx-auto p-1 md:p-2 overflow-y-auto w-full">
