@@ -114,19 +114,19 @@ export const Portfolio: React.FC = () => {
             </header>
 
             {/* Main Content Gallery */}
-            <main className="max-w-[1400px] mx-auto p-4 md:p-8 overflow-y-auto">
-                <div className="columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12">
+            <main className="max-w-[1400px] mx-auto p-1 md:p-2 overflow-y-auto w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2">
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
                             to={`/g/${gallery.id}`} 
                             key={gallery.id}
-                            className="group block break-inside-avoid relative mb-4 md:mb-8 lg:mb-12"
+                            className="group block relative aspect-[4/5]"
                         >
-                            <div className="bg-slate-50 overflow-hidden relative border border-slate-100">
+                            <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                                 {gallery.coverType === 'video' ? (
                                     <video 
                                         src={rewriteUrlToR2(gallery.coverUrl!)} 
-                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
+                                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                                         muted playsInline loop preload="metadata"
                                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
                                         onMouseOut={(e) => {
@@ -139,7 +139,7 @@ export const Portfolio: React.FC = () => {
                                     <img 
                                         src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 70)}
                                         alt={gallery.client_name}
-                                        className="w-full h-auto transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
+                                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                                         loading={index < 4 ? "eager" : "lazy"}
                                     />
                                 )}

@@ -568,7 +568,7 @@ export const ClientGallery: React.FC = () => {
                 )}
             </div>
         ) : (
-            <div className={isPortfolio ? "columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
+            <div className={isPortfolio ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
             {displayedFiles.map((file, index) => {
                 const isSelected = selectedFileIds.has(file.id);
                 return (
@@ -581,7 +581,7 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${isPortfolio ? 'w-full h-auto bg-slate-50 border border-slate-100 mb-4 md:mb-8 lg:mb-12 block' : 'aspect-square bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
@@ -589,7 +589,7 @@ export const ClientGallery: React.FC = () => {
                         <img 
                             src={getOptimizedImageUrl(file.file_url, 800, 1000, 70)}
                             alt="Portfolio item" 
-                            className="w-full h-auto transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
+                            className="w-full h-full object-cover block transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
                             loading={index < 4 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
@@ -613,7 +613,7 @@ export const ClientGallery: React.FC = () => {
                             `}
                             sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                             alt="Gallery item" 
-                            className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
+                            className="w-full h-full block object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
                             loading={index < 8 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
