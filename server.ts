@@ -122,6 +122,49 @@ async function startServer() {
     }
   });
 
+  // Delete an entire folder using a prefix
+  app.post("/api/delete-folder", async (req, res) => {
+    if (!s3 || !isR2Configured) {
+      return res.status(500).json({ error: "R2 is not configured" });
+    }
+
+    try {
+      const { folderPath } = req.body;
+      if (!folderPath) {
+        return res.status(400).json({ error: "No folder to delete" });
+      }
+
+      const { ListObjectsV2Command } = require("@aws-sdk/client-s3");
+      const listCommand = new ListObjectsV2Command({
+        Bucket: R2_BUCKET_NAME!,
+        Prefix: folderPath.endsWith("/") ? folderPath : folderPath + "/",
+      });
+
+      const listResult = await s3.send(listCommand);
+
+      if (listResult.Contents && listResult.Contents.length > 0) {
+        const pathsToDelete = listResult.Contents.map((obj: any) => obj.Key);
+        
+        for (let i = 0; i < pathsToDelete.length; i += 1000) {
+          const chunk = pathsToDelete.slice(i, i + 1000);
+          const command = new DeleteObjectsCommand({
+            Bucket: R2_BUCKET_NAME!,
+            Delete: {
+              Objects: chunk.map((Key: string) => ({ Key })),
+              Quiet: true,
+            },
+          });
+          await s3.send(command);
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Delete folder error:", e);
+      res.status(500).json({ error: "Failed to delete folder from R2." });
+    }
+  });
+
   // Proxy the download to bypass CORS if Cloudflare bucket doesn't have CORS setup
   // While Cloudflare supports CORS, proxying makes it zero-setup for the user.
   // We'll redirect instead of streaming to save server bandwidth since Cloudflare R2 is fast, 

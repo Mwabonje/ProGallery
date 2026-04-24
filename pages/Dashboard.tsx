@@ -192,6 +192,26 @@ export const Dashboard: React.FC = () => {
     }
 
     try {
+        // Delete all files in the gallery prefix from Cloudflare R2
+        await fetch('/api/delete-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folderPath: galleryId })
+        });
+
+        // Also clean up Supabase storage (backward compatibility if user had files before R2)
+        try {
+            // Supabase storage delete folder works by listing then deleting
+            const { data: folderFiles } = await supabase.storage.from('gallery-files').list(galleryId);
+            if (folderFiles && folderFiles.length > 0) {
+                const pathsToRemove = folderFiles.map((f: any) => `${galleryId}/${f.name}`);
+                await supabase.storage.from('gallery-files').remove(pathsToRemove);
+            }
+            // And try to delete the folder itself
+            await supabase.storage.from('gallery-files').remove([galleryId]);
+        } catch (ignore) { }
+
+        // Also delete specifically referenced files if not in a prefix somehow
         const { data: filesData } = await supabase
             .from('files')
             .select('file_path')
