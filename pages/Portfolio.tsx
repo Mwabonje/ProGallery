@@ -84,54 +84,37 @@ export const Portfolio: React.FC = () => {
         : galleries.filter(g => g.category === activeCategory);
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
             
-            {/* Sidebar / Left Column */}
-            <aside className="w-full lg:w-72 xl:w-80 lg:shrink-0 lg:h-screen lg:sticky top-0 p-8 md:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 bg-white z-20">
-                <div>
-                   <h1 className="text-3xl lg:text-[40px] uppercase tracking-wider font-bold mb-16 leading-[1.1] drop-shadow-sm" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                       {photographerName.split(' ').map((word, i) => (
-                           <React.Fragment key={i}>
-                               {word}<br aria-hidden="true"/>
-                           </React.Fragment>
-                       ))}
-                   </h1>
+            {/* Top Navigation Header */}
+            <header className="w-full pt-16 pb-12 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white">
+                <h1 className="text-3xl lg:text-[44px] uppercase tracking-wider font-bold mb-10 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    {photographerName}
+                </h1>
 
-                   {/* Navigation */}
-                   <nav className="flex flex-col gap-5 text-[11px] md:text-xs font-semibold tracking-[0.15em] uppercase">
-                       {categories.length > 1 && categories.map((cat) => (
-                           <button
-                               key={cat}
-                               onClick={() => setActiveCategory(cat as string)}
-                               className={`text-left hover:text-slate-900 transition-colors duration-300 w-fit ${
-                                   activeCategory === cat 
-                                   ? 'text-slate-900' 
-                                   : 'text-slate-400'
-                               }`}
-                           >
-                               {cat}
-                           </button>
-                       ))}
-                       <div className="h-px w-8 bg-slate-200 my-2" />
-                       <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors duration-300 w-fit">About</a>
-                       <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors duration-300 w-fit">Contact</a>
-                   </nav>
-                </div>
-
-                <div className="hidden lg:block space-y-6 pt-12">
-                    <p className="text-[9px] text-slate-400 tracking-[0.2em] uppercase">
-                        © All rights reserved
-                    </p>
-                    <div className="flex gap-4">
-                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
-                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
-                        <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
-                    </div>
-                </div>
-            </aside>
+                {/* Navigation Links */}
+                <nav className="flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
+                    {categories.length > 0 && categories.map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat as string)}
+                            className={`hover:text-slate-900 transition-colors duration-300 ${
+                                activeCategory === cat 
+                                ? 'text-slate-900' 
+                                : ''
+                            }`}
+                        >
+                            {cat === 'All' ? 'HOME' : cat}
+                        </button>
+                    ))}
+                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">ABOUT</a>
+                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
+                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">BOOKS & PRINTS</a>
+                </nav>
+            </header>
 
             {/* Main Content Gallery */}
-            <main className="flex-1 p-0 md:p-8 overflow-y-auto">
+            <main className="max-w-[1400px] mx-auto p-4 md:p-8 overflow-y-auto">
                 <div className="columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12">
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
@@ -180,6 +163,18 @@ export const Portfolio: React.FC = () => {
                     </div>
                 )}
             </main>
+            
+            {/* Footer */}
+            <footer className="w-full py-12 flex flex-col items-center justify-center gap-6 border-t border-slate-100 mt-12 text-slate-400">
+                <div className="flex gap-6">
+                    <a href="#" className="hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
+                    <a href="#" className="hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
+                    <a href="#" className="hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
+                </div>
+                <p className="text-[9px] tracking-[0.2em] uppercase">
+                    © All rights reserved
+                </p>
+            </footer>
         </div>
     );
 };
