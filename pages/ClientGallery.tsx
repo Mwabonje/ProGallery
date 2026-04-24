@@ -146,19 +146,38 @@ export const ClientGallery: React.FC = () => {
       }
 
       // Load Files
-      const { data: fileData, error: fileError } = await supabase
-        .from('files')
-        .select('*')
-        .eq('gallery_id', galleryId)
-        .gt('expires_at', new Date().toISOString()) 
-        .order('expires_at', { ascending: true }); 
-
-      if (fileError) throw fileError;
+      let allFiles: GalleryFile[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const limit = 1000;
       
-      if (!fileData || fileData.length === 0) {
+      while (hasMore) {
+        const { data: fileData, error: fileError } = await supabase
+          .from('files')
+          .select('*')
+          .eq('gallery_id', galleryId)
+          .gt('expires_at', new Date().toISOString()) 
+          .order('expires_at', { ascending: true })
+          .range(offset, offset + limit - 1);
+          
+        if (fileError) throw fileError;
+        
+        if (fileData) {
+            allFiles = [...allFiles, ...fileData];
+            if (fileData.length < limit) {
+                hasMore = false;
+            } else {
+                offset += limit;
+            }
+        } else {
+            hasMore = false;
+        }
+      }
+
+      if (allFiles.length === 0) {
          setError('This gallery link has expired. Please contact the photographer to request access.');
       } else {
-         setFiles(fileData);
+         setFiles(allFiles);
       }
 
       // Load Selections if enabled

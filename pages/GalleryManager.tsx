@@ -91,13 +91,32 @@ export const GalleryManager: React.FC = () => {
     setPaid(galData.amount_paid);
 
     // Get Files
-    const { data: fileData, error: fileError } = await supabase
-      .from('files')
-      .select('*')
-      .eq('gallery_id', id)
-      .order('created_at', { ascending: false });
+    let allFiles: GalleryFile[] = [];
+    let hasMore = true;
+    let offset = 0;
+    const limit = 1000;
+    
+    while (hasMore) {
+      const { data: fileData, error: fileError } = await supabase
+        .from('files')
+        .select('*')
+        .eq('gallery_id', id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+        
+      if (fileData) {
+          allFiles = [...allFiles, ...fileData];
+          if (fileData.length < limit) {
+              hasMore = false;
+          } else {
+              offset += limit;
+          }
+      } else {
+          hasMore = false;
+      }
+    }
 
-    if (fileData) setFiles(fileData);
+    setFiles(allFiles);
 
     // Get Selections - Always fetch these so the photographer can see them even if they disabled the mode
     const { data: selectionData } = await supabase
