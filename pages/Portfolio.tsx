@@ -33,7 +33,7 @@ export const Portfolio: React.FC = () => {
 
                 // Configure photographer name placeholder
                 if (galleriesData && galleriesData.length > 0) {
-                     setPhotographerName("Osse Greca Sinare"); // Updated to match inspiration style
+                     setPhotographerName("Mwabonje"); // Updated to match inspiration style
                 }
 
                 // Filter out non-portfolio items (client deliveries without a category)
