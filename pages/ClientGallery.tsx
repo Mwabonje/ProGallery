@@ -568,7 +568,7 @@ export const ClientGallery: React.FC = () => {
                 )}
             </div>
         ) : (
-            <div className={isPortfolio ? "columns-1 md:columns-2 xl:columns-3 gap-4 md:gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
+            <div className={`grid grid-cols-1 ${isPortfolio ? 'md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-12' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
             {displayedFiles.map((file, index) => {
                 const isSelected = selectedFileIds.has(file.id);
                 return (
@@ -581,7 +581,7 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${(!isPortfolio && file.file_type === 'image') ? 'aspect-square' : 'w-full h-auto'} ${isPortfolio ? 'bg-slate-50 border border-slate-100 mb-4 md:mb-8 lg:mb-12' : 'bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${isPortfolio ? 'aspect-[4/5] bg-slate-50 border border-slate-100 rounded-xl' : 'aspect-square bg-slate-200 rounded-lg'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
@@ -589,7 +589,7 @@ export const ClientGallery: React.FC = () => {
                         <img 
                             src={getOptimizedImageUrl(file.file_url, 800, 1000, 70)}
                             alt="Portfolio item" 
-                            className="w-full h-auto transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
+                            className="w-full h-full object-cover transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
                             loading={index < 4 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore

@@ -84,12 +84,14 @@ export const Dashboard: React.FC = () => {
             .eq('gallery_id', gallery.id);
 
           // Get latest file for cover
-          const { data: files } = await supabase
+          const { data: files, error: filesError } = await supabase
             .from('files')
             .select('file_url, file_type')
             .eq('gallery_id', gallery.id)
             .order('created_at', { ascending: false })
             .limit(1);
+
+          if (filesError) console.error("Files query error for gallery", gallery.id, filesError);
 
           return {
             ...gallery,
