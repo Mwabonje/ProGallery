@@ -129,6 +129,8 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
+
   const filterDuplicateFiles = (fileList: FileList) => {
     const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9.\_-]/g, "_");
     const newFiles: File[] = [];
@@ -171,7 +173,7 @@ export const GalleryManager: React.FC = () => {
     }
     
     // Use Context
-    await uploadFiles(gallery.id, filesToUpload, expiryHours);
+    await uploadFiles(gallery.id, filesToUpload, isPortfolio ? 876000 : expiryHours);
     
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -202,7 +204,7 @@ export const GalleryManager: React.FC = () => {
     }
     
     // Use Context
-    await uploadFiles(gallery.id, filesToUpload, expiryHours);
+    await uploadFiles(gallery.id, filesToUpload, isPortfolio ? 876000 : expiryHours);
     
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -668,43 +670,46 @@ export const GalleryManager: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 flex-1 sm:flex-none">
-                           <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-                           <select 
-                             value={expiryHours}
-                             onChange={(e) => setExpiryHours(Number(e.target.value))}
-                             className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer w-full sm:w-auto"
-                             title="Content Expiration"
-                             disabled={uploading}
-                           >
-                             <option value={0.5}>30 Minutes</option>
-                             <option value={1}>1 Hour</option>
-                             <option value={2}>2 Hours</option>
-                             <option value={3}>3 Hours</option>
-                             <option value={6}>6 Hours</option>
-                             <option value={12}>12 Hours</option>
-                             <option value={24}>24 Hours</option>
-                             <option value={48}>48 Hours</option>
-                             <option value={72}>3 Days</option>
-                             <option value={168}>1 Week</option>
-                           </select>
-
-                           {files.length > 0 && (
+                        {!isPortfolio && (
                             <>
-                                <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                                <button
-                                    onClick={handleExtendExpiration}
-                                    disabled={uploading}
-                                    className="text-slate-400 hover:text-emerald-600 transition-colors p-2 md:p-1 rounded-md hover:bg-emerald-50"
-                                    title="Apply this duration to all existing files (Reactivate expired)"
-                                >
-                                    <RefreshCw className="w-5 h-5 md:w-4 md:h-4" />
-                                </button>
+                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 flex-1 sm:flex-none">
+                                   <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                                   <select 
+                                     value={expiryHours}
+                                     onChange={(e) => setExpiryHours(Number(e.target.value))}
+                                     className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer w-full sm:w-auto"
+                                     title="Content Expiration"
+                                     disabled={uploading}
+                                   >
+                                     <option value={0.5}>30 Minutes</option>
+                                     <option value={1}>1 Hour</option>
+                                     <option value={2}>2 Hours</option>
+                                     <option value={3}>3 Hours</option>
+                                     <option value={6}>6 Hours</option>
+                                     <option value={12}>12 Hours</option>
+                                     <option value={24}>24 Hours</option>
+                                     <option value={48}>48 Hours</option>
+                                     <option value={72}>3 Days</option>
+                                     <option value={168}>1 Week</option>
+                                   </select>
+
+                                   {files.length > 0 && (
+                                    <>
+                                        <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                                        <button
+                                            onClick={handleExtendExpiration}
+                                            disabled={uploading}
+                                            className="text-slate-400 hover:text-emerald-600 transition-colors p-2 md:p-1 rounded-md hover:bg-emerald-50"
+                                            title="Apply this duration to all existing files (Reactivate expired)"
+                                        >
+                                            <RefreshCw className="w-5 h-5 md:w-4 md:h-4" />
+                                        </button>
+                                    </>
+                                   )}
+                                </div>
+                                <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
                             </>
-                           )}
-                        </div>
-                        
-                        <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
+                        )}
 
                         <input
                             type="file"
@@ -800,9 +805,11 @@ export const GalleryManager: React.FC = () => {
                                                 {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">EDITED</span>}
                                             </p>
                                             <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
-                                            <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
-                                                {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
-                                            </p>
+                                            {!isPortfolio && (
+                                                <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
+                                                    {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 md:gap-3 pl-2">

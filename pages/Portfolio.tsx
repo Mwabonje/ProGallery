@@ -123,9 +123,9 @@ export const Portfolio: React.FC = () => {
                             {cat === 'All' ? 'HOME' : (cat as string).toUpperCase()}
                         </button>
                     ))}
-                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">ABOUT</a>
-                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
-                    <a href="#" className="hover:text-slate-900 transition-colors duration-300">BOOKS & PRINTS</a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">CONTACT</a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
                 </nav>
             </header>
 
@@ -164,9 +164,9 @@ export const Portfolio: React.FC = () => {
                             </button>
                         ))}
                         <div className="h-px w-8 bg-slate-100 my-2" />
-                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">ABOUT</a>
-                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
-                        <a href="#" className="hover:text-slate-900 transition-colors duration-300">BOOKS & PRINTS</a>
+                        <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
+                        <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">CONTACT</a>
+                        <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
                     </nav>
 
                     <div className="mt-auto pt-8">
