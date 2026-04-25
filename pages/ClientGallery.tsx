@@ -615,8 +615,9 @@ export const ClientGallery: React.FC = () => {
                             fetchPriority={index < 4 ? "high" : "auto"}
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                if (target.src !== rewriteUrlToR2(file.file_url)) {
-                                    target.src = rewriteUrlToR2(file.file_url);
+                                if (!target.dataset.retried) {
+                                    target.dataset.retried = 'true';
+                                    target.src = rewriteUrlToR2(file.file_url) || '';
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
@@ -641,8 +642,9 @@ export const ClientGallery: React.FC = () => {
                                 const target = e.target as HTMLImageElement;
                                 target.removeAttribute('srcset');
                                 target.removeAttribute('sizes');
-                                if (target.src !== rewriteUrlToR2(file.file_url)) {
-                                    target.src = rewriteUrlToR2(file.file_url);
+                                if (!target.dataset.retried) {
+                                    target.dataset.retried = 'true';
+                                    target.src = rewriteUrlToR2(file.file_url) || '';
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}

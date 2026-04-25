@@ -140,7 +140,7 @@ async function startServer() {
         Prefix: folderPath.endsWith("/") ? folderPath : folderPath + "/",
       });
 
-      const listResult = await s3.send(listCommand);
+      const listResult = await s3.send(listCommand) as any;
 
       if (listResult.Contents && listResult.Contents.length > 0) {
         const pathsToDelete = listResult.Contents.map((obj: any) => obj.Key);

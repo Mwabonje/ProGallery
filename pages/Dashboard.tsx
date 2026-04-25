@@ -422,7 +422,10 @@ export const Dashboard: React.FC = () => {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                if (target.src !== rewriteUrlToR2(gallery.coverUrl!)) target.src = rewriteUrlToR2(gallery.coverUrl!);
+                                if (!target.dataset.retried) {
+                                    target.dataset.retried = 'true';
+                                    target.src = rewriteUrlToR2(gallery.coverUrl || '');
+                                }
                             }}
                             />
                         )

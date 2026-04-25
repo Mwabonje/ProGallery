@@ -35,7 +35,7 @@ export const rewriteUrlToR2 = (url: string) => {
   let cleanUrl = url.split('?')[0]; 
   
   if (cleanUrl.includes('supabase.co')) {
-    const r2BaseUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+    const r2BaseUrl = (import.meta as any).env.VITE_R2_PUBLIC_URL || '';
     if (r2BaseUrl) {
         const parts = cleanUrl.split('/public/gallery-files/');
         if (parts.length === 2 && parts[1]) {

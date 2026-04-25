@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, formatDate, getOptimizedImageUrl } from '../utils/formatters';
+import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -773,7 +773,10 @@ export const GalleryManager: React.FC = () => {
                                                   className="w-full h-full object-cover" 
                                                   onError={(e) => {
                                                     const target = e.target as HTMLImageElement;
-                                                    if (target.src !== rewriteUrlToR2(file.file_url)) target.src = rewriteUrlToR2(file.file_url);
+                                                    if (!target.dataset.retried) {
+                                                        target.dataset.retried = 'true';
+                                                        target.src = rewriteUrlToR2(file.file_url);
+                                                    }
                                                   }}
                                                 />
                                             ) : (
