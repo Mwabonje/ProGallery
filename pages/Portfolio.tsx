@@ -110,22 +110,48 @@ export const Portfolio: React.FC = () => {
 
                 {/* Desktop Navigation Links */}
                 <nav className="hidden md:flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
-                    {categories.length > 0 && categories.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat as string)}
-                            className={`hover:text-slate-900 transition-colors duration-300 ${
-                                activeCategory === cat 
-                                ? 'text-slate-900' 
-                                : ''
-                            }`}
-                        >
-                            {cat === 'All' ? 'HOME' : (cat as string).toUpperCase()}
-                        </button>
-                    ))}
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">CONTACT</a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
+                    {categories.length > 0 && categories.map((cat) => {
+                        const isAll = cat === 'All';
+                        const catGalleries = galleries.filter(g => g.category === cat);
+                        const hasDropdown = !isAll && catGalleries.length > 0;
+                        
+                        const displayCatName = isAll ? 'HOME' : (cat === 'Airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
+
+                        return (
+                            <div key={cat as string} className="relative group">
+                                <button
+                                    onClick={() => setActiveCategory(cat as string)}
+                                    className={`py-4 flex items-center hover:text-slate-900 transition-colors duration-300 ${
+                                        activeCategory === cat 
+                                        ? 'text-slate-900' 
+                                        : ''
+                                    }`}
+                                >
+                                    {displayCatName}
+                                    {hasDropdown && <span className="ml-1">+</span>}
+                                </button>
+
+                                {hasDropdown && (
+                                    <div className="absolute left-1/2 -translate-x-1/2 top-full pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                                        <div className="bg-slate-100 px-8 py-6 shadow-xl flex flex-col gap-4 min-w-[240px] items-start">
+                                            {catGalleries.map(g => (
+                                                <Link 
+                                                    key={g.id} 
+                                                    to={`/g/${g.id}`}
+                                                    className="text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap text-left block w-full normal-case font-normal tracking-normal text-[13px]"
+                                                >
+                                                    {g.client_name}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                    <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">CONTACT</a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
                 </nav>
             </header>
 
@@ -147,22 +173,30 @@ export const Portfolio: React.FC = () => {
                     </button>
                     
                     <nav className="flex flex-col gap-6 text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 mt-4">
-                        {categories.length > 0 && categories.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => {
-                                    setActiveCategory(cat as string);
-                                    setIsMobileMenuOpen(false);
-                                }}
-                                className={`text-left hover:text-slate-900 transition-colors duration-300 ${
-                                    activeCategory === cat 
-                                    ? 'text-slate-900' 
-                                    : ''
-                                }`}
-                            >
-                                {cat === 'All' ? 'HOME' : (cat as string).toUpperCase()}
-                            </button>
-                        ))}
+                        {categories.length > 0 && categories.map((cat) => {
+                            const isAll = cat === 'All';
+                            const catGalleries = galleries.filter(g => g.category === cat);
+                            const hasDropdown = !isAll && catGalleries.length > 0;
+                            const displayCatName = isAll ? 'HOME' : (cat === 'Airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
+
+                            return (
+                                <button
+                                    key={cat as string}
+                                    onClick={() => {
+                                        setActiveCategory(cat as string);
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className={`flex items-center text-left hover:text-slate-900 transition-colors duration-300 ${
+                                        activeCategory === cat 
+                                        ? 'text-slate-900' 
+                                        : ''
+                                    }`}
+                                >
+                                    {displayCatName}
+                                    {hasDropdown && <span className="ml-1">+</span>}
+                                </button>
+                            );
+                        })}
                         <div className="h-px w-8 bg-slate-100 my-2" />
                         <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
                         <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">CONTACT</a>
