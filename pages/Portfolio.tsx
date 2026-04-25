@@ -115,7 +115,7 @@ export const Portfolio: React.FC = () => {
                         const catGalleries = galleries.filter(g => g.category === cat);
                         const hasDropdown = !isAll && catGalleries.length > 0;
                         
-                        const displayCatName = isAll ? 'HOME' : (cat === 'Airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
+                        const displayCatName = isAll ? 'HOME' : (cat.toLowerCase() === 'airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
 
                         return (
                             <div key={cat as string} className="relative group">
@@ -128,7 +128,7 @@ export const Portfolio: React.FC = () => {
                                     }`}
                                 >
                                     {displayCatName}
-                                    {hasDropdown && <span className="ml-1">+</span>}
+                                    {hasDropdown && <span>+</span>}
                                 </button>
 
                                 {hasDropdown && (
@@ -138,9 +138,9 @@ export const Portfolio: React.FC = () => {
                                                 <Link 
                                                     key={g.id} 
                                                     to={`/g/${g.id}`}
-                                                    className="text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap text-left block w-full normal-case font-normal tracking-normal text-[13px]"
+                                                    className="text-[10px] md:text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap text-left block w-full"
                                                 >
-                                                    {g.client_name}
+                                                    {g.client_name.toUpperCase()}
                                                 </Link>
                                             ))}
                                         </div>
@@ -177,7 +177,7 @@ export const Portfolio: React.FC = () => {
                             const isAll = cat === 'All';
                             const catGalleries = galleries.filter(g => g.category === cat);
                             const hasDropdown = !isAll && catGalleries.length > 0;
-                            const displayCatName = isAll ? 'HOME' : (cat === 'Airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
+                            const displayCatName = isAll ? 'HOME' : (cat.toLowerCase() === 'airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
 
                             return (
                                 <button
@@ -193,7 +193,7 @@ export const Portfolio: React.FC = () => {
                                     }`}
                                 >
                                     {displayCatName}
-                                    {hasDropdown && <span className="ml-1">+</span>}
+                                    {hasDropdown && <span>+</span>}
                                 </button>
                             );
                         })}
