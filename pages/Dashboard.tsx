@@ -201,17 +201,29 @@ export const Dashboard: React.FC = () => {
 
         // Also clean up Supabase storage (backward compatibility if user had files before R2)
         try {
-            let hasMore = true;
-            // Supabase storage delete folder works by listing then deleting, max 100 at a time
-            while (hasMore) {
-                const { data: folderFiles } = await supabase.storage.from('gallery-files').list(galleryId, { limit: 100 });
-                if (folderFiles && folderFiles.length > 0) {
-                    const pathsToRemove = folderFiles.map((f: any) => `${galleryId}/${f.name}`);
-                    await supabase.storage.from('gallery-files').remove(pathsToRemove);
-                } else {
-                    hasMore = false;
+            const deleteFolderContents = async (folder: string) => {
+                let hasMore = true;
+                let offset = 0;
+                while (hasMore) {
+                    const { data: folderFiles } = await supabase.storage.from('gallery-files').list(folder, { limit: 100, offset });
+                    if (folderFiles && folderFiles.length > 0) {
+                        for (const f of folderFiles) {
+                            if (f.id === null) {
+                                await deleteFolderContents(`${folder}/${f.name}`);
+                                await supabase.storage.from('gallery-files').remove([`${folder}/${f.name}`]);
+                            } else {
+                                await supabase.storage.from('gallery-files').remove([`${folder}/${f.name}`]);
+                            }
+                        }
+                        if (folderFiles.length < 100) hasMore = false;
+                        else offset += 100;
+                    } else {
+                        hasMore = false;
+                    }
                 }
-            }
+            };
+            
+            await deleteFolderContents(galleryId);
             // And try to delete the folder itself
             await supabase.storage.from('gallery-files').remove([galleryId]);
         } catch (ignore) { }
@@ -280,15 +292,30 @@ export const Dashboard: React.FC = () => {
                          if (!activeIds.has(folderName)) {
                              // It's orphaned! Delete contents using loop
                              let hasMore = true;
-                             while (hasMore) {
-                                 const { data: files } = await supabase.storage.from('gallery-files').list(folderName, { limit: 100 });
-                                 if (files && files.length > 0) {
-                                     const paths = files.map(f => `${folderName}/${f.name}`);
-                                     await supabase.storage.from('gallery-files').remove(paths);
-                                 } else {
-                                     hasMore = false;
+                             const deleteFolderContents = async (folder: string) => {
+                                 let hasMore = true;
+                                 let offset = 0;
+                                 while (hasMore) {
+                                     const { data: files } = await supabase.storage.from('gallery-files').list(folder, { limit: 100, offset });
+                                     if (files && files.length > 0) {
+                                         for (const f of files) {
+                                             if (f.id === null) {
+                                                 // It's a subfolder
+                                                 await deleteFolderContents(`${folder}/${f.name}`);
+                                                 await supabase.storage.from('gallery-files').remove([`${folder}/${f.name}`]);
+                                             } else {
+                                                 await supabase.storage.from('gallery-files').remove([`${folder}/${f.name}`]);
+                                             }
+                                         }
+                                         if (files.length < 100) hasMore = false;
+                                         else offset += 100;
+                                     } else {
+                                         hasMore = false;
+                                     }
                                  }
-                             }
+                             };
+                             
+                             await deleteFolderContents(folderName);
                              // Try Cloudflare too, just in case
                              await fetch('/api/delete-folder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folderPath: folderName })}).catch(() => {});
                              // Delete folder 
