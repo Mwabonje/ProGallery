@@ -171,9 +171,9 @@ export const Portfolio: React.FC = () => {
 
                     <div className="mt-auto pt-8">
                         <div className="flex gap-4">
-                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
-                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
-                            <a href="#" className="text-slate-400 hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
+                            <a href="#" onClick={(e) => e.preventDefault()} className="text-slate-400 hover:text-slate-900 transition-colors cursor-default"><Instagram className="w-4 h-4" /></a>
+                            <a href="#" onClick={(e) => e.preventDefault()} className="text-slate-400 hover:text-slate-900 transition-colors cursor-default"><Globe className="w-4 h-4" /></a>
+                            <a href="#" onClick={(e) => e.preventDefault()} className="text-slate-400 hover:text-slate-900 transition-colors cursor-default"><Mail className="w-4 h-4" /></a>
                         </div>
                     </div>
                 </aside>
@@ -233,9 +233,9 @@ export const Portfolio: React.FC = () => {
             {/* Footer */}
             <footer className="w-full py-12 flex flex-col items-center justify-center gap-6 border-t border-slate-100 mt-12 text-slate-400">
                 <div className="flex gap-6">
-                    <a href="#" className="hover:text-slate-900 transition-colors"><Instagram className="w-4 h-4" /></a>
-                    <a href="#" className="hover:text-slate-900 transition-colors"><Globe className="w-4 h-4" /></a>
-                    <a href="#" className="hover:text-slate-900 transition-colors"><Mail className="w-4 h-4" /></a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Instagram className="w-4 h-4" /></a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Globe className="w-4 h-4" /></a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Mail className="w-4 h-4" /></a>
                 </div>
                 <p className="text-[9px] tracking-[0.2em] uppercase">
                     © All rights reserved
