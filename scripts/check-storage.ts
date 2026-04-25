@@ -5,13 +5,20 @@ const supabaseKey = 'sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function listFolders() {
-  console.log("Listing inside c4a25623-9496-4036-b2f8-0e409d9008a0...");
-  const { data: items, error: storageError } = await supabase.storage.from('gallery-files').list('c4a25623-9496-4036-b2f8-0e409d9008a0', { limit: 10000 });
-  if (storageError) {
-    console.error("error", storageError);
+  console.log("Listing buckets...");
+  const { data: buckets, error } = await supabase.storage.listBuckets();
+  if (error) {
+    console.error("error", error);
     return;
   }
-  console.log(items);
+  console.log("Buckets:", buckets?.map(b => b.name));
+  
+  if (buckets) {
+      for (const b of buckets) {
+          const { data: items } = await supabase.storage.from(b.name).list();
+          console.log(`Bucket ${b.name} has ${items?.length} items in root.`);
+      }
+  }
 }
 
 listFolders();
