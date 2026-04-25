@@ -88,7 +88,7 @@ export const Portfolio: React.FC = () => {
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
             
             {/* Top Navigation Header */}
-            <header className="w-full py-8 md:pt-24 md:pb-16 px-4 md:px-8 flex flex-col items-center border-b border-white relative">
+            <header className="w-full pt-8 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 flex flex-col items-center relative">
                 
                 <div className="flex w-full justify-between items-center md:justify-center relative">
                     {/* Spacer for symmetry on mobile */}
