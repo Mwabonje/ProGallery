@@ -773,12 +773,12 @@ export const GalleryManager: React.FC = () => {
                                                   className="w-full h-full object-cover" 
                                                   onError={(e) => {
                                                     const target = e.target as HTMLImageElement;
-                                                    if (target.src !== file.file_url) target.src = file.file_url;
+                                                    if (target.src !== rewriteUrlToR2(file.file_url)) target.src = rewriteUrlToR2(file.file_url);
                                                   }}
                                                 />
                                             ) : (
                                                 <video 
-                                                    src={file.file_url} 
+                                                    src={rewriteUrlToR2(file.file_url)} 
                                                     className="w-full h-full object-cover"
                                                     muted
                                                     preload="metadata"
@@ -817,7 +817,7 @@ export const GalleryManager: React.FC = () => {
                                             <Download className="w-3 h-3" />
                                             {file.download_count}
                                         </div>
-                                        <a href={file.file_url} target="_blank" rel="noreferrer" className="p-3 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
+                                        <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-3 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
                                             <Eye className="w-5 h-5 md:w-4 md:h-4" />
                                         </a>
                                         <button 

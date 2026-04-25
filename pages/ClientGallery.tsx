@@ -308,7 +308,7 @@ export const ClientGallery: React.FC = () => {
     try {
       await supabase.rpc('increment_download', { row_id: file.id });
       
-      const response = await fetch(file.file_url);
+      const response = await fetch(rewriteUrlToR2(file.file_url));
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -362,7 +362,7 @@ export const ClientGallery: React.FC = () => {
         if (signal.aborted) return;
         
         try {
-          const response = await fetch(file.file_url, { signal });
+          const response = await fetch(rewriteUrlToR2(file.file_url), { signal });
           if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
           const blob = await response.blob();
           const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
@@ -615,8 +615,8 @@ export const ClientGallery: React.FC = () => {
                             fetchPriority={index < 4 ? "high" : "auto"}
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                if (target.src !== file.file_url) {
-                                    target.src = file.file_url;
+                                if (target.src !== rewriteUrlToR2(file.file_url)) {
+                                    target.src = rewriteUrlToR2(file.file_url);
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
@@ -641,8 +641,8 @@ export const ClientGallery: React.FC = () => {
                                 const target = e.target as HTMLImageElement;
                                 target.removeAttribute('srcset');
                                 target.removeAttribute('sizes');
-                                if (target.src !== file.file_url) {
-                                    target.src = file.file_url;
+                                if (target.src !== rewriteUrlToR2(file.file_url)) {
+                                    target.src = rewriteUrlToR2(file.file_url);
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}

@@ -307,6 +307,40 @@ export const Dashboard: React.FC = () => {
                   <Trash2 className="w-4 h-4" />
                   <span className="text-sm font-medium">Deep Clean</span>
               </button>
+              <button
+                title="Migrates old Supabase URLs to R2"
+                onClick={async () => {
+                   if (!window.confirm("Run URL migration to R2?")) return;
+                   
+                   try {
+                     let hasMore = true;
+                     let offset = 0;
+                     let updated = 0;
+                     while(hasMore) {
+                         const {data: files} = await supabase.from('files').select('id, file_url').like('file_url', '%supabase.co%').range(offset, offset + 999);
+                         if (files && files.length > 0) {
+                             for (const f of files) {
+                                 const r2Url = rewriteUrlToR2(f.file_url);
+                                 if (r2Url !== f.file_url) {
+                                     await supabase.from('files').update({ file_url: r2Url }).eq('id', f.id);
+                                     updated++;
+                                 }
+                             }
+                             offset += files.length;
+                         } else {
+                             hasMore = false;
+                         }
+                     }
+                     alert(`Migrated ${updated} URLs to R2.`);
+                   } catch (err) {
+                       console.error(err);
+                       alert("Migration error.");
+                   }
+                }}
+                className="flex-[1_1_45%] sm:flex-none bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 border border-blue-200 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+              >
+                  <span className="text-sm font-medium">Migrate URLs</span>
+              </button>
               {userId && (
                 <button
                   onClick={() => window.open(`#/p/${userId}`, '_blank')}
@@ -361,7 +395,7 @@ export const Dashboard: React.FC = () => {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                if (target.src !== gallery.coverUrl) target.src = gallery.coverUrl!;
+                                if (target.src !== rewriteUrlToR2(gallery.coverUrl!)) target.src = rewriteUrlToR2(gallery.coverUrl!);
                             }}
                             />
                         )
