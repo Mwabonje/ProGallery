@@ -440,11 +440,15 @@ export const GalleryManager: React.FC = () => {
                 href={`/#/g/${gallery.id}`}
                 target="_blank" 
                 rel="noreferrer"
-                className="flex-1 md:flex-none justify-center px-4 py-2 bg-slate-900 border border-slate-900 text-white rounded-lg hover:bg-slate-800 flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap"
+                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap ${
+                  isPortfolio 
+                    ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700' 
+                    : 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800'
+                }`}
                 >
                     <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">Client Preview</span>
-                    <span className="inline sm:hidden">Preview</span>
+                    <span className="hidden sm:inline">{isPortfolio ? "Public View" : "Client Preview"}</span>
+                    <span className="inline sm:hidden">{isPortfolio ? "View" : "Preview"}</span>
                 </a>
                 
                 <button
@@ -461,7 +465,7 @@ export const GalleryManager: React.FC = () => {
       </div>
       
       {/* Notifications Area */}
-      {gallery.selection_status === 'submitted' && (
+      {!isPortfolio && gallery.selection_status === 'submitted' && (
           <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg flex items-center justify-between">
               <div className="flex items-center gap-3">
                   <div className="bg-rose-100 p-2 rounded-full">
@@ -484,153 +488,192 @@ export const GalleryManager: React.FC = () => {
           </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className={`grid grid-cols-1 ${!isPortfolio ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6 md:gap-8`}>
         {/* Left Column: Settings */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Payment Card */}
-          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-slate-500" />
-              Payment & Access
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Total Agreed Amount
-                    <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 for volunteer)</span>
-                </label>
-                <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                    <input 
-                    type="number" 
-                    value={agreedAmount}
-                    onChange={(e) => setAgreedAmount(Number(e.target.value))}
-                    className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    placeholder="Total amount"
-                    />
+        {!isPortfolio ? (
+            <div className="lg:col-span-1 space-y-6">
+              {/* Payment Card */}
+              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-slate-500" />
+                  Payment & Access
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Total Agreed Amount
+                        <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 for volunteer)</span>
+                    </label>
+                    <div className="relative">
+                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
+                        <input 
+                        type="number" 
+                        value={agreedAmount}
+                        onChange={(e) => setAgreedAmount(Number(e.target.value))}
+                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        placeholder="Total amount"
+                        />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
+                    <div className="relative">
+                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
+                        <input 
+                        type="number" 
+                        value={paid}
+                        onChange={(e) => setPaid(Number(e.target.value))}
+                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        placeholder="Amount received"
+                        />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Remaining Balance</label>
+                    <div className="relative bg-slate-50 rounded-lg">
+                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
+                        <input 
+                        type="text" 
+                        value={formatCurrency(remainingBalance).replace('KES', '').trim()}
+                        disabled
+                        className="w-full pl-12 pr-4 py-2 border border-slate-300 bg-slate-100 text-slate-500 rounded-lg outline-none cursor-not-allowed"
+                        />
+                        <div className="absolute right-3 top-2.5">
+                          <Calculator className="w-4 h-4 text-slate-400" />
+                        </div>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${
+                    isVolunteer 
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
+                        : remainingBalance <= 0 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                            : 'bg-amber-50 text-amber-700 border border-amber-100'
+                  }`}>
+                    <span className="font-medium">
+                        {isVolunteer ? 'Volunteer / Collaboration' : (remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance')}
+                    </span>
+                    {isVolunteer ? <Heart className="w-4 h-4" /> : (remainingBalance <= 0 ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
+                  </div>
+
+                  <button 
+                    onClick={updatePayment}
+                    disabled={paymentUpdated}
+                    className={`w-full py-2.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
+                      paymentUpdated 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {paymentUpdated ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Updated!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Update Payment</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
-                <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                    <input 
-                    type="number" 
-                    value={paid}
-                    onChange={(e) => setPaid(Number(e.target.value))}
-                    className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    placeholder="Amount received"
-                    />
-                </div>
+              {/* Settings Card */}
+              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                 <h2 className="text-lg font-semibold mb-4">Gallery Settings</h2>
+                 
+                 {/* Selection Mode Toggle */}
+                 <div className="flex items-center justify-between mb-2">
+                     <div>
+                         <p className="font-medium text-slate-900">Client Selection</p>
+                         <p className="text-xs text-slate-500 max-w-[200px]">
+                             When enabled, clients can favorite photos but <strong>cannot download them</strong>.
+                         </p>
+                     </div>
+                     <button
+                        onClick={toggleSelectionMode}
+                        className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
+                     >
+                         <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
+                     </button>
+                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Remaining Balance</label>
-                <div className="relative bg-slate-50 rounded-lg">
-                    <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                    <input 
-                    type="text" 
-                    value={formatCurrency(remainingBalance).replace('KES', '').trim()}
-                    disabled
-                    className="w-full pl-12 pr-4 py-2 border border-slate-300 bg-slate-100 text-slate-500 rounded-lg outline-none cursor-not-allowed"
-                    />
-                    <div className="absolute right-3 top-2.5">
-                      <Calculator className="w-4 h-4 text-slate-400" />
+              {/* Stats Card */}
+              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
+                <div className="space-y-3 text-sm text-slate-600 mb-4">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <span>Total Files</span>
+                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <span>Selected by Client</span>
+                        <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.size}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span>Total Downloads</span>
+                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
+                    </div>
+                </div>
+                
+                {clientSelections.size > 0 && (
+                  <button 
+                    onClick={handleExportCSV}
+                    className="w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Export Selections (CSV)</span>
+                  </button>
+                )}
+              </div>
+            </div>
+        ) : (
+            <div className="lg:col-span-1 space-y-6">
+              {/* Portfolio Detail Card */}
+              <div className="bg-slate-900 text-white p-6 rounded-xl shadow-md border border-slate-800">
+                <h2 className="text-lg font-semibold mb-4">Portfolio Details</h2>
+                <div className="space-y-4 text-sm text-slate-300">
+                    <div>
+                        <span className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Category</span>
+                        <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category}</span>
+                    </div>
+                    <div>
+                        <span className="block text-xs uppercase tracking-wider text-slate-500 mb-1 text-left">Visibility</span>
+                        <span className="font-medium text-emerald-400 flex items-center gap-2">
+                            <Eye className="w-4 h-4" /> Visible on Public Site
+                        </span>
                     </div>
                 </div>
               </div>
-              
-              <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${
-                isVolunteer 
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
-                    : remainingBalance <= 0 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                        : 'bg-amber-50 text-amber-700 border border-amber-100'
-              }`}>
-                <span className="font-medium">
-                    {isVolunteer ? 'Volunteer / Collaboration' : (remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance')}
-                </span>
-                {isVolunteer ? <Heart className="w-4 h-4" /> : (remainingBalance <= 0 ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
+
+              {/* Stats Card */}
+              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="text-lg font-semibold mb-4">Collection Stats</h2>
+                <div className="space-y-3 text-sm text-slate-600 mb-4">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <span>Total Items</span>
+                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span>External Views</span>
+                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">--</span>
+                    </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+                    Portfolio collections are public indefinitely. You don't need to set an expiration time for these items.
+                </p>
               </div>
-
-              <button 
-                onClick={updatePayment}
-                disabled={paymentUpdated}
-                className={`w-full py-2.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
-                  paymentUpdated 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'bg-slate-900 text-white hover:bg-slate-800'
-                }`}
-              >
-                {paymentUpdated ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Updated!</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>Update Payment</span>
-                  </>
-                )}
-              </button>
             </div>
-          </div>
-
-          {/* Settings Card */}
-          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-             <h2 className="text-lg font-semibold mb-4">Gallery Settings</h2>
-             
-             {/* Selection Mode Toggle */}
-             <div className="flex items-center justify-between mb-2">
-                 <div>
-                     <p className="font-medium text-slate-900">Client Selection</p>
-                     <p className="text-xs text-slate-500 max-w-[200px]">
-                         When enabled, clients can favorite photos but <strong>cannot download them</strong>.
-                     </p>
-                 </div>
-                 <button
-                    onClick={toggleSelectionMode}
-                    className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
-                 >
-                     <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
-                 </button>
-             </div>
-          </div>
-
-          {/* Stats Card */}
-          <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
-            <div className="space-y-3 text-sm text-slate-600 mb-4">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span>Total Files</span>
-                    <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span>Selected by Client</span>
-                    <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.size}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span>Total Downloads</span>
-                    <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
-                </div>
-            </div>
-            
-            {clientSelections.size > 0 && (
-              <button 
-                onClick={handleExportCSV}
-                className="w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>Export Selections (CSV)</span>
-              </button>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Right Column: Content */}
-        <div className="lg:col-span-2" id="gallery-content">
+        <div className={!isPortfolio ? "lg:col-span-2" : "lg:col-span-3"} id="gallery-content">
             <div 
                 className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-colors relative ${
                     isDragging ? 'border-emerald-500 bg-emerald-50/30 border-2 border-dashed' : 'border-slate-200'
@@ -652,21 +695,23 @@ export const GalleryManager: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-lg font-semibold">Gallery Content</h2>
                         {/* Filter Tabs */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
-                            <button 
-                                onClick={() => setViewFilter('all')}
-                                className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                All ({files.length})
-                            </button>
-                            <button 
-                                onClick={() => setViewFilter('selected')}
-                                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
-                            >
-                                <Heart className="w-3 h-3" />
-                                Selected ({clientSelections.size})
-                            </button>
-                        </div>
+                        {!isPortfolio && (
+                          <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
+                              <button 
+                                  onClick={() => setViewFilter('all')}
+                                  className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                              >
+                                  All ({files.length})
+                              </button>
+                              <button 
+                                  onClick={() => setViewFilter('selected')}
+                                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                              >
+                                  <Heart className="w-3 h-3" />
+                                  Selected ({clientSelections.size})
+                              </button>
+                          </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
@@ -750,7 +795,7 @@ export const GalleryManager: React.FC = () => {
 
                 {visibleFiles.length === 0 ? (
                     <div className="p-12 text-center text-slate-500">
-                        {viewFilter === 'selected' ? (
+                        {!isPortfolio && viewFilter === 'selected' ? (
                             <>
                                 <Heart className="w-12 h-12 mx-auto mb-4 text-slate-300" />
                                 <p>No files selected by the client yet.</p>
@@ -758,7 +803,7 @@ export const GalleryManager: React.FC = () => {
                         ) : (
                             <>
                                 <Upload className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                                <p>No files uploaded yet. Select an expiration time above and upload.</p>
+                                <p>{isPortfolio ? "No files uploaded to this portfolio yet." : "No files uploaded yet. Select an expiration time above and upload."}</p>
                             </>
                         )}
                     </div>
@@ -792,7 +837,7 @@ export const GalleryManager: React.FC = () => {
                                                     preload="metadata"
                                                 />
                                             )}
-                                            {isSelected && (
+                                            {!isPortfolio && isSelected && (
                                                 <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
                                                     <Heart className="w-6 h-6 text-rose-600 fill-rose-600" />
                                                 </div>
@@ -801,7 +846,7 @@ export const GalleryManager: React.FC = () => {
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-2">
                                                 {file.file_path.split('/').pop()}
-                                                {isSelected && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>}
+                                                {!isPortfolio && isSelected && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>}
                                                 {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">EDITED</span>}
                                             </p>
                                             <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
