@@ -27,6 +27,7 @@ export const Dashboard: React.FC = () => {
   const [newCategory, setNewCategory] = useState('Wedding');
   const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const initDashboard = async () => {
@@ -64,6 +65,7 @@ export const Dashboard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
+      setUserEmail(user.email ?? null);
 
       // 1. Fetch Galleries
       const { data: galleriesData, error } = await supabase
@@ -133,6 +135,9 @@ export const Dashboard: React.FC = () => {
 
   const handleOpenCreateModal = () => {
     setNewClientName('');
+    if (userEmail !== 'ringa.michael@gmail.com') {
+      setNewCategory(''); // Force empty so they can only create client deliveries
+    }
     setIsCreateModalOpen(true);
   };
 
@@ -272,7 +277,7 @@ export const Dashboard: React.FC = () => {
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
             <div className="flex flex-wrap w-full sm:w-auto gap-3 mt-4 sm:mt-0">
-              {userId && (
+              {userId && userEmail === 'ringa.michael@gmail.com' && (
                 <button
                   onClick={() => window.open(`#/p/${userId}`, '_blank')}
                   className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
@@ -408,6 +413,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Portfolio Collections Section */}
+        {userEmail === 'ringa.michael@gmail.com' && (
         <div className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Portfolio Collections</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -492,6 +498,7 @@ export const Dashboard: React.FC = () => {
                 )}
             </div>
         </div>
+        )}
 
         {/* Empty State (If literally 0 galleries total exists everywhere) */}
         {galleries.length === 0 && (
@@ -574,6 +581,7 @@ export const Dashboard: React.FC = () => {
                 />
               </div>
 
+              {userEmail === 'ringa.michael@gmail.com' && (
               <div className="mb-6">
                 <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
                   Portfolio Category
@@ -604,6 +612,7 @@ export const Dashboard: React.FC = () => {
                 </datalist>
                 <p className="text-xs text-slate-500 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
               </div>
+              )}
 
               <div className="flex gap-3 justify-end mt-8">
                 <button
