@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
@@ -11,6 +11,7 @@ import saveAs from 'file-saver';
 
 export const ClientGallery: React.FC = () => {
   const { galleryId } = useParams<{ galleryId: string }>();
+  const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -470,11 +471,15 @@ export const ClientGallery: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
             <h1 className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? 'text-slate-900 tracking-widest uppercase font-serif' : 'text-slate-900'}`}>
-                {showFavoritesOnly && (
+                {showFavoritesOnly ? (
                     <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
-                )}
+                ) : isPortfolio ? (
+                    <button onClick={() => navigate(`/p/${gallery?.photographer_id}`)} className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                ) : null}
                 {showFavoritesOnly ? "My Selection" : gallery?.client_name}
             </h1>
             <p className={`text-xs md:text-sm flex items-center gap-2 ${isPortfolio ? 'text-slate-500 tracking-[0.2em] uppercase mt-1' : 'text-slate-500'}`}>

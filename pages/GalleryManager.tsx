@@ -656,13 +656,9 @@ export const GalleryManager: React.FC = () => {
               <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
                 <h2 className="text-lg font-semibold mb-4">Collection Stats</h2>
                 <div className="space-y-3 text-sm text-slate-600 mb-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                         <span>Total Items</span>
                         <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span>External Views</span>
-                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">--</span>
                     </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-4 leading-relaxed">
