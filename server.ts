@@ -130,8 +130,8 @@ async function startServer() {
 
     try {
       const { folderPath } = req.body;
-      if (!folderPath) {
-        return res.status(400).json({ error: "No folder to delete" });
+      if (!folderPath || folderPath === "uploads" || folderPath === "uploads/") {
+        return res.status(400).json({ error: "Cannot delete the root folder" });
       }
 
       const { ListObjectsV2Command } = require("@aws-sdk/client-s3");

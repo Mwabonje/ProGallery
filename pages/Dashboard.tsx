@@ -316,8 +316,6 @@ export const Dashboard: React.FC = () => {
                              };
                              
                              await deleteFolderContents(folderName);
-                             // Try Cloudflare too, just in case
-                             await fetch('/api/delete-folder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folderPath: folderName })}).catch(() => {});
                              // Delete folder 
                              await supabase.storage.from('gallery-files').remove([folderName]);
                              deletedCount++;
@@ -531,6 +529,13 @@ export const Dashboard: React.FC = () => {
                                 src={getOptimizedImageUrl(gallery.coverUrl, 400, 500)} 
                                 alt={gallery.client_name}
                                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    if (!target.dataset.retried) {
+                                        target.dataset.retried = 'true';
+                                        target.src = rewriteUrlToR2(gallery.coverUrl || '');
+                                    }
+                                }}
                                 />
                             )
                         ) : (
@@ -678,13 +683,18 @@ export const Dashboard: React.FC = () => {
                   disabled={isCreating}
                 />
                 <datalist id="category-options">
-                  <option value="Wedding" />
-                  <option value="Portraits" />
-                  <option value="Commercial" />
-                  <option value="Events" />
-                  <option value="Maternity" />
-                  <option value="Boudoir" />
-                  <option value="Fine Art" />
+                  {Array.from(new Set([
+                    "Wedding", 
+                    "Portraits", 
+                    "Commercial", 
+                    "Events", 
+                    "Maternity", 
+                    "Boudoir", 
+                    "Fine Art",
+                    ...galleries.map(g => g.category).filter(Boolean)
+                  ])).map(cat => (
+                    <option key={cat as string} value={cat as string} />
+                  ))}
                 </datalist>
                 <p className="text-xs text-slate-500 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
               </div>
