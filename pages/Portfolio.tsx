@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
-import { Instagram, Globe, Mail, Menu, X } from 'lucide-react';
+import { Instagram, Globe, Mail, Menu, X, Youtube, Video, MessageCircle } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
   coverUrl?: string | null;
@@ -267,14 +267,23 @@ export const Portfolio: React.FC = () => {
             </main>
             
             {/* Footer */}
-            <footer className="w-full py-12 flex flex-col items-center justify-center gap-6 border-t border-slate-100 mt-12 text-slate-400">
-                <div className="flex gap-6">
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Instagram className="w-4 h-4" /></a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Globe className="w-4 h-4" /></a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors cursor-default"><Mail className="w-4 h-4" /></a>
+            <footer className="w-full py-12 flex flex-col items-center justify-center gap-6 border-t border-slate-100 mt-12 text-[#0a192f]">
+                <div className="flex flex-wrap justify-center gap-8 items-center text-xs font-bold tracking-widest">
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                        <Instagram className="w-4 h-4" /> INSTAGRAM
+                    </a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                        <Video className="w-4 h-4" /> TIK TOK
+                    </a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                        <Youtube className="w-4 h-4" /> YOUTUBE
+                    </a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                        <MessageCircle className="w-4 h-4" /> WHATSAPP
+                    </a>
                 </div>
-                <p className="text-[9px] tracking-[0.2em] uppercase">
-                    © All rights reserved
+                <p className="text-sm font-normal text-slate-400">
+                    © 2026 Mwabonje Photography, All Rights Reserved
                 </p>
             </footer>
         </div>
