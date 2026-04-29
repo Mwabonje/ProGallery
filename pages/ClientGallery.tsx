@@ -34,12 +34,33 @@ export const ClientGallery: React.FC = () => {
   const [downloadStatusText, setDownloadStatusText] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const horizontalRef = useRef<HTMLDivElement | null>(null);
+
   // Ref to cancel download if needed
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (galleryId) loadGallery();
   }, [galleryId]);
+
+  useEffect(() => {
+    const el = horizontalRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            e.preventDefault();
+            const isTrackpad = Math.abs(e.deltaY) < 40;
+            if (isTrackpad) {
+                el.scrollLeft += e.deltaY;
+            } else {
+                el.scrollBy({ left: Math.sign(e.deltaY) * 300, behavior: 'smooth' });
+            }
+        }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [files, showFavoritesOnly]); // re-run when content renders
+
 
   // Network Optimization: Preconnect to Supabase Storage
   useEffect(() => {
@@ -456,6 +477,7 @@ export const ClientGallery: React.FC = () => {
   
   // A gallery is considered a public portfolio collection if it has a category
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
+  const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait'));
   
   // Selection mode is not relevant for portfolio collections
   const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
@@ -560,7 +582,7 @@ export const ClientGallery: React.FC = () => {
       </header>
 
       {/* Grid */}
-      <main className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
+      <main className={isPortraitGallery ? "w-full overflow-hidden" : "max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8"}>
         {isSelectionMode && !showFavoritesOnly && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
                 <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
@@ -592,7 +614,15 @@ export const ClientGallery: React.FC = () => {
                 )}
             </div>
         ) : (
-            <div className={isPortfolio ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
+            <div 
+                ref={isPortraitGallery ? horizontalRef : undefined}
+                className={isPortraitGallery 
+                    ? "flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-140px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                    : isPortfolio 
+                        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" 
+                        : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                }
+            >
             {displayedFiles.map((file, index) => {
                 const isSelected = selectedFileIds.has(file.id);
                 return (
@@ -605,15 +635,15 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
                     isPortfolio ? (
                         <img 
-                            src={getOptimizedImageUrl(file.file_url, 800, 1000, 70)}
+                            src={getOptimizedImageUrl(file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
                             alt="Portfolio item" 
-                            className="w-full h-full object-cover block transform transition-transform duration-[1.5s] md:group-hover:scale-[1.02] pointer-events-none will-change-transform"
+                            className={`w-full h-full object-cover block transform transition-transform duration-[1.5s] pointer-events-none will-change-transform ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'}`}
                             loading={index < 4 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
