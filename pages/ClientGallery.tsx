@@ -686,7 +686,18 @@ export const ClientGallery: React.FC = () => {
                         />
                     )
                 ) : (
-                    <video src={rewriteUrlToR2(file.file_url)} className="w-full h-auto max-h-[80vh] object-contain" controls controlsList="nodownload" preload="metadata" />
+                    <video 
+                        src={rewriteUrlToR2(file.file_url)} 
+                        className={`w-full h-full block object-cover transform transition-transform duration-[1.5s] ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'} ${isPortfolio ? 'pointer-events-none' : ''}`} 
+                        controls={!isPortfolio} 
+                        controlsList="nodownload" 
+                        preload="metadata"
+                        autoPlay={isPortfolio}
+                        muted={isPortfolio}
+                        loop={isPortfolio}
+                        playsInline={isPortfolio}
+                        onContextMenu={(e) => e.preventDefault()}
+                    />
                 )}
                 
                 {/* Desktop Hover Overlay */}
@@ -965,10 +976,12 @@ export const ClientGallery: React.FC = () => {
                     />
                 ) : (
                     <video 
-                        src={lightboxFile.file_url} 
+                        src={rewriteUrlToR2(lightboxFile.file_url)} 
                         className="max-w-full max-h-full object-contain" 
                         controls 
-                        controlsList="nodownload" 
+                        controlsList="nodownload"
+                        autoPlay
+                        playsInline
                     />
                 )}
             </div>
