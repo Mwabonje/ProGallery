@@ -153,8 +153,8 @@ export const Dashboard: React.FC = () => {
         alert("You have reached the maximum limit of 3 Client Deliveries. Please delete an existing delivery to create a new one.");
         return;
     }
-    if (isPortfolio && portfolioCount >= 8) {
-        alert("You have reached the maximum limit of 8 Portfolio Collections. Please delete an existing collection to create a new one.");
+    if (isPortfolio && portfolioCount >= 50) {
+        alert("You have reached the maximum limit of 50 Portfolio Collections. Please delete an existing collection to create a new one.");
         return;
     }
     
@@ -480,7 +480,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 
                 {/* Create New Portfolio Collection */}
-                {galleries.filter(g => g.category && g.category.trim() !== '').length < 8 && (
+                {galleries.filter(g => g.category && g.category.trim() !== '').length < 50 && (
                 <div 
                     onClick={() => {
                         setNewCategory('Wedding'); // Pre-fill with a suggestion since it's portfolio

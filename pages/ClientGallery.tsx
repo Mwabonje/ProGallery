@@ -478,7 +478,7 @@ export const ClientGallery: React.FC = () => {
   // A gallery is considered a public portfolio collection if it has a category
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait'));
-  const isFilmGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('film') || gallery?.category?.toLowerCase().includes('film') || gallery?.category?.toLowerCase().includes('video'));
+  const isFilmGallery = isPortfolio && files.some(f => f.file_type === 'video');
   const isHorizontalLayout = isPortraitGallery || isFilmGallery;
   
   // Selection mode is not relevant for portfolio collections
