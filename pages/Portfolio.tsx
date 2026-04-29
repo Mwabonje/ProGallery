@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
@@ -18,6 +18,8 @@ export const Portfolio: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [photographerName, setPhotographerName] = useState<string>("My Portfolio");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const horizontalRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const fetchPortfolio = async () => {
@@ -68,6 +70,26 @@ export const Portfolio: React.FC = () => {
 
         fetchPortfolio();
     }, [photographerId]);
+
+    const isFilmsCategory = activeCategory.toLowerCase() === 'films' || activeCategory.toLowerCase() === 'video';
+
+    useEffect(() => {
+        const el = horizontalRef.current;
+        if (!el || !isFilmsCategory) return;
+        const onWheel = (e: WheelEvent) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                const isTrackpad = Math.abs(e.deltaY) < 40;
+                if (isTrackpad) {
+                    el.scrollLeft += e.deltaY;
+                } else {
+                    el.scrollBy({ left: Math.sign(e.deltaY) * 300, behavior: 'smooth' });
+                }
+            }
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [galleries, activeCategory, isFilmsCategory]);
 
     if (loading) {
         return (
@@ -216,13 +238,24 @@ export const Portfolio: React.FC = () => {
             </>
 
             {/* Main Content Gallery */}
-            <main className="max-w-[1400px] mx-auto p-1 md:p-2 overflow-y-auto w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2">
+            <main className={
+                isFilmsCategory 
+                ? "w-full overflow-hidden" 
+                : "max-w-[1400px] mx-auto p-1 md:p-2 overflow-y-auto w-full"
+            }>
+                <div 
+                    ref={isFilmsCategory ? horizontalRef : undefined}
+                    className={
+                        isFilmsCategory 
+                        ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-280px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${filteredGalleries.length === 1 ? 'justify-center' : ''}`
+                        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2"
+                    }
+                >
                     {filteredGalleries.map((gallery, index) => (
                         <Link 
                             to={`/g/${gallery.id}`} 
                             key={gallery.id}
-                            className="group block relative aspect-[4/5]"
+                            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'aspect-[4/5]'}`}
                         >
                             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                                 {gallery.coverType === 'video' ? (

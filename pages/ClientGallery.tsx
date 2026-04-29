@@ -478,7 +478,7 @@ export const ClientGallery: React.FC = () => {
   // A gallery is considered a public portfolio collection if it has a category
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait'));
-  const isFilmGallery = isPortfolio && files.some(f => f.file_type === 'video');
+  const isFilmGallery = isPortfolio && files.some(f => f.file_type === 'video' || (f.file_url && f.file_url.match(/\.(mp4|mov|webm|ogg)$/i)));
   const isHorizontalLayout = isPortraitGallery || isFilmGallery;
   
   // Selection mode is not relevant for portfolio collections
@@ -637,10 +637,10 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full snap-center bg-black/5' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                    className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
-                {file.file_type === 'image' ? (
+                {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                     isPortfolio ? (
                         <img 
                             src={getOptimizedImageUrl(file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
