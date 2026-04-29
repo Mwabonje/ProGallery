@@ -268,21 +268,21 @@ export const Portfolio: React.FC = () => {
             
             {/* Footer */}
             <footer className="w-full py-12 flex flex-col items-center justify-center gap-6 border-t border-slate-100 mt-12 text-[#0a192f]">
-                <div className="flex flex-wrap justify-center gap-8 items-center text-xs font-bold tracking-widest">
-                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                        <Instagram className="w-4 h-4" /> INSTAGRAM
+                <div className="flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 items-center text-[10px] sm:text-xs font-bold tracking-widest px-4">
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 sm:gap-2 hover:opacity-70 transition-opacity">
+                        <Instagram className="w-3 h-3 sm:w-4 sm:h-4" /> INSTAGRAM
                     </a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                        <Video className="w-4 h-4" /> TIK TOK
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 sm:gap-2 hover:opacity-70 transition-opacity">
+                        <Video className="w-3 h-3 sm:w-4 sm:h-4" /> TIK TOK
                     </a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                        <Youtube className="w-4 h-4" /> YOUTUBE
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 sm:gap-2 hover:opacity-70 transition-opacity">
+                        <Youtube className="w-3 h-3 sm:w-4 sm:h-4" /> YOUTUBE
                     </a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                        <MessageCircle className="w-4 h-4" /> WHATSAPP
+                    <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 sm:gap-2 hover:opacity-70 transition-opacity">
+                        <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" /> WHATSAPP
                     </a>
                 </div>
-                <p className="text-sm font-normal text-slate-400">
+                <p className="text-xs sm:text-sm font-normal text-slate-400 text-center px-4">
                     © 2026 Mwabonje Photography, All Rights Reserved
                 </p>
             </footer>
