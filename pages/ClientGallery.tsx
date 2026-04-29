@@ -598,14 +598,14 @@ export const ClientGallery: React.FC = () => {
                 return (
                 <div 
                     key={file.id} 
-                    onClick={() => (isSelectionMode || isPortfolio) && setLightboxFile(file)}
+                    onClick={() => isSelectionMode && setLightboxFile(file)}
                     onContextMenu={(e) => {
                         e.preventDefault();
                         if (!isPortfolio) {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode || isPortfolio ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
+                    className={`group relative ${isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
