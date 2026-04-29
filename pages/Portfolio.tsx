@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
@@ -13,9 +13,18 @@ interface PortfolioGallery extends Gallery {
 
 export const Portfolio: React.FC = () => {
     const { photographerId } = useParams<{ photographerId: string }>();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeCategory, setActiveCategory] = useState<string>('All');
+    const activeCategory = searchParams.get('category') || 'All';
+    const setActiveCategory = (cat: string) => {
+        if (cat === 'All') {
+            searchParams.delete('category');
+            setSearchParams(searchParams);
+        } else {
+            setSearchParams({ category: cat });
+        }
+    };
     const [photographerName, setPhotographerName] = useState<string>("My Portfolio");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
