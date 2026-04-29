@@ -478,6 +478,8 @@ export const ClientGallery: React.FC = () => {
   // A gallery is considered a public portfolio collection if it has a category
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait'));
+  const isFilmGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('film') || gallery?.category?.toLowerCase().includes('film') || gallery?.category?.toLowerCase().includes('video'));
+  const isHorizontalLayout = isPortraitGallery || isFilmGallery;
   
   // Selection mode is not relevant for portfolio collections
   const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
@@ -582,7 +584,7 @@ export const ClientGallery: React.FC = () => {
       </header>
 
       {/* Grid */}
-      <main className={isPortraitGallery ? "w-full overflow-hidden" : "max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8"}>
+      <main className={isHorizontalLayout ? "w-full overflow-hidden" : "max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8"}>
         {isSelectionMode && !showFavoritesOnly && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
                 <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
@@ -615,9 +617,9 @@ export const ClientGallery: React.FC = () => {
             </div>
         ) : (
             <div 
-                ref={isPortraitGallery ? horizontalRef : undefined}
-                className={isPortraitGallery 
-                    ? "flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-140px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                ref={isHorizontalLayout ? horizontalRef : undefined}
+                className={isHorizontalLayout 
+                    ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-140px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${displayedFiles.length === 1 ? 'justify-center' : ''}`
                     : isPortfolio 
                         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" 
                         : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
@@ -635,7 +637,7 @@ export const ClientGallery: React.FC = () => {
                              setShowScreenshotWarning(true);
                         }
                     }}
-                    className={`group relative ${isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                    className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full snap-center bg-black/5' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                     style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                 >
                 {file.file_type === 'image' ? (
@@ -688,12 +690,12 @@ export const ClientGallery: React.FC = () => {
                 ) : (
                     <video 
                         src={rewriteUrlToR2(file.file_url)} 
-                        className={`w-full h-full block object-cover transform transition-transform duration-[1.5s] ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'} ${isPortfolio ? 'pointer-events-none' : ''}`} 
-                        controls={!isPortfolio} 
+                        className={`block transform transition-transform duration-[1.5s] ${isFilmGallery ? 'w-auto h-full max-w-[90vw] object-contain mx-auto' : 'w-full h-full object-cover'} ${isHorizontalLayout ? '' : 'md:group-hover:scale-[1.02]'} ${isFilmGallery ? '' : isPortfolio ? 'pointer-events-none' : ''}`} 
+                        controls={isFilmGallery || !isPortfolio} 
                         controlsList="nodownload" 
                         preload="metadata"
-                        autoPlay={isPortfolio}
-                        muted={isPortfolio}
+                        autoPlay={isPortfolio && !isFilmGallery}
+                        muted={isPortfolio && !isFilmGallery}
                         loop={isPortfolio}
                         playsInline={isPortfolio}
                         onContextMenu={(e) => e.preventDefault()}
