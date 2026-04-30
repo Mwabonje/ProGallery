@@ -98,34 +98,34 @@ export const Prints: React.FC = () => {
                         <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Prints...</div>
                     </div>
                 ) : prints.length > 0 ? (
-                    <div className="columns-1 sm:columns-2 gap-8 md:gap-16 pt-4 md:pt-8 w-full">
+                    <div className="flex flex-wrap justify-center items-center gap-12 lg:gap-20 pt-4 md:pt-8 w-full max-w-[1600px] mx-auto">
                         {prints.map((print) => (
                             <div 
                                 key={print.id}
-                                className="block relative p-4 break-inside-avoid mb-8"
+                                className="block relative flex flex-col items-center w-full md:w-auto px-4 md:px-0"
                             >
-                                <div className="bg-white border-[8px] md:border-[16px] border-[#151515] relative w-full shadow-2xl flex items-center justify-center p-[4%] md:p-[6%]">
-                                    <div className="w-full relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
+                                <div className="bg-white border-[6px] md:border-[16px] border-[#151515] relative shadow-2xl flex items-center justify-center p-4 md:p-6 lg:p-8 w-fit shrink-0">
+                                    <div className="relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
                                         {print.file_type === 'video' ? (
                                             <video 
                                                 src={rewriteUrlToR2(print.file_url)} 
-                                                className="w-full h-auto block"
+                                                className="h-[40vh] lg:h-[45vh] w-auto max-w-[85vw] block object-contain shadow-sm"
                                                 muted playsInline loop autoPlay preload="metadata"
                                             />
                                         ) : print.file_url ? (
                                             <img 
                                                 src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
                                                 alt={print.client_name}
-                                                className="w-full h-auto block"
+                                                className="h-[40vh] lg:h-[45vh] w-auto max-w-[85vw] block object-contain shadow-sm"
                                                 loading="lazy"
                                             />
                                         ) : null}
                                     </div>
                                 </div>
-                                {print.caption && (
-                                    <div className="mt-6 md:mt-8 text-left">
-                                        <p className="text-sm md:text-base text-slate-600 leading-relaxed font-light">
-                                            {print.caption}
+                                {print.caption?.trim() && (
+                                    <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
+                                        <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
+                                            {print.caption.trim()}
                                         </p>
                                     </div>
                                 )}
