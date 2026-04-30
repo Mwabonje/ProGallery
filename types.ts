@@ -28,6 +28,7 @@ export interface GalleryFile {
   expires_at: string;
   download_count: number;
   is_edited: boolean;
+  caption?: string; // New: Description/caption for each specific file (e.g., Print details)
 }
 
 export interface Selection {

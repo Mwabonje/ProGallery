@@ -10,6 +10,8 @@ interface PrintItem {
     file_url: string;
     file_type: string;
     client_name: string;
+    title: string;
+    caption?: string;
 }
 
 export const Prints: React.FC = () => {
@@ -23,7 +25,7 @@ export const Prints: React.FC = () => {
                 // Fetch public galleries with category 'Prints'
                 const { data: galleriesData, error } = await supabase
                     .from('galleries')
-                    .select('id, client_name')
+                    .select('id, client_name, title')
                     .ilike('category', 'prints')
                     .order('created_at', { ascending: false });
 
@@ -36,17 +38,20 @@ export const Prints: React.FC = () => {
                     
                     const { data: files } = await supabase
                         .from('files')
-                        .select('id, file_url, file_type, gallery_id')
+                        .select('*')
                         .in('gallery_id', galleryIds)
                         .order('created_at', { ascending: false });
                         
                     if (files) {
                         const galleryNameMap = new Map(galleriesData.map(g => [g.id, g.client_name]));
+                        const galleryTitleMap = new Map(galleriesData.map(g => [g.id, g.title]));
                         allPrints = files.map(f => ({
                             id: f.id,
                             file_url: f.file_url,
                             file_type: f.file_type,
-                            client_name: galleryNameMap.get(f.gallery_id) || 'Print'
+                            client_name: galleryNameMap.get(f.gallery_id) || 'Print',
+                            title: galleryTitleMap.get(f.gallery_id) || '',
+                            caption: f.caption
                         }));
                     }
                 }
@@ -117,11 +122,13 @@ export const Prints: React.FC = () => {
                                         ) : null}
                                     </div>
                                 </div>
-                                <div className="mt-4 md:mt-6 text-center pb-2">
-                                    <h2 className="text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-800">
-                                        {print.client_name}
-                                    </h2>
-                                </div>
+                                {print.caption && (
+                                    <div className="mt-6 md:mt-8 text-left">
+                                        <p className="text-sm md:text-base text-slate-600 leading-relaxed font-light">
+                                            {print.caption}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

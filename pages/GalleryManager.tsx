@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
@@ -27,6 +27,10 @@ export const GalleryManager: React.FC = () => {
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [editClientName, setEditClientName] = useState('');
+  const [editTitle, setEditTitle] = useState('');
   
   // UI States
   const [viewFilter, setViewFilter] = useState<'all' | 'selected'>('all');
@@ -89,6 +93,8 @@ export const GalleryManager: React.FC = () => {
     setGallery(galData);
     setAgreedAmount(galData.agreed_balance);
     setPaid(galData.amount_paid);
+    setEditClientName(galData.client_name);
+    setEditTitle(galData.title);
 
     // Get Files
     let allFiles: GalleryFile[] = [];
@@ -270,6 +276,45 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const updateMeta = async () => {
+    if (!gallery) return;
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ client_name: editClientName, title: editTitle })
+        .eq('id', gallery.id);
+      
+      if (error) throw error;
+
+      await supabase.from('activity_logs').insert({
+        gallery_id: gallery.id,
+        action: `Updated gallery details`
+      });
+
+      setIsEditingMeta(false);
+      fetchGalleryData();
+    } catch (error) {
+      console.error('Error updating metadata:', error);
+      alert('Failed to update details.');
+    }
+  };
+
+  const updateFileCaption = async (fileId: string, newCaption: string) => {
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ caption: newCaption })
+        .eq('id', fileId);
+        
+      if (error) throw error;
+      
+      setFiles(files.map(f => f.id === fileId ? { ...f, caption: newCaption } : f));
+    } catch (error: any) {
+      console.error('Error updating caption:', error);
+      alert('Failed to update caption. You might need to run: ALTER TABLE files ADD COLUMN caption text; in your Supabase SQL Editor. Error: ' + (error?.message || ''));
+    }
+  };
+
   const toggleStatus = async () => {
     if (!gallery) return;
 
@@ -412,9 +457,60 @@ export const GalleryManager: React.FC = () => {
         </button>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words">{gallery.client_name}</h1>
-            <p className="text-slate-500 text-sm">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
+            <div className="flex-1">
+                {isEditingMeta ? (
+                    <div className="space-y-3 w-full max-w-xl">
+                        <input
+                            type="text"
+                            value={editClientName}
+                            onChange={(e) => setEditClientName(e.target.value)}
+                            placeholder="Gallery Name / Client Name"
+                            className="w-full text-2xl md:text-3xl font-bold text-slate-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
+                        />
+                        <textarea
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="Description or Subtitle (e.g., Print Details)"
+                            rows={2}
+                            className="w-full text-slate-600 border border-slate-200 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none resize-none"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={updateMeta}
+                                className="px-3 py-1 bg-slate-900 text-white rounded text-sm hover:bg-slate-800"
+                            >
+                                Save Details
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditingMeta(false);
+                                    setEditClientName(gallery.client_name);
+                                    setEditTitle(gallery.title);
+                                }}
+                                className="px-3 py-1 bg-slate-100 text-slate-600 rounded text-sm hover:bg-slate-200"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="group flex items-start gap-3">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words">{gallery.client_name}</h1>
+                            {gallery.title && gallery.title !== `${gallery.client_name}'s Gallery` && (
+                                <p className="text-slate-600 mt-1 max-w-2xl">{gallery.title}</p>
+                            )}
+                            <p className="text-slate-500 text-sm mt-1">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
+                        </div>
+                        <button
+                            onClick={() => setIsEditingMeta(true)}
+                            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-all mt-1"
+                            title="Edit Details"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </div>
             
             <div className="flex flex-wrap items-center gap-2">
@@ -850,6 +946,21 @@ export const GalleryManager: React.FC = () => {
                                                 <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
                                                     {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
                                                 </p>
+                                            )}
+                                            {isPortfolio && gallery?.category?.toLowerCase() === 'prints' && (
+                                                <div className="mt-2">
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Print Description / Details (Optional)" 
+                                                        defaultValue={file.caption || ''} 
+                                                        onBlur={(e) => {
+                                                            if (e.target.value !== (file.caption || '')) {
+                                                                updateFileCaption(file.id, e.target.value);
+                                                            }
+                                                        }}
+                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full max-w-sm focus:outline-none focus:border-slate-400"
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     </div>
