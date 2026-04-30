@@ -184,7 +184,7 @@ export const Portfolio: React.FC = () => {
                     })}
                     <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
                     <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="py-4 hover:text-slate-900 transition-colors duration-300">CONTACT</a>
-                    <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
+                    <Link to="/prints" className="py-4 hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                 </nav>
             </header>
 
@@ -233,7 +233,7 @@ export const Portfolio: React.FC = () => {
                         <div className="h-px w-8 bg-slate-100 my-2" />
                         <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
                         <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
-                        <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">BOOKS & PRINTS</a>
+                        <Link to="/prints" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                     </nav>
 
                     <div className="mt-auto pt-8">
