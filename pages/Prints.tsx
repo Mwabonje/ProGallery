@@ -18,6 +18,16 @@ export const Prints: React.FC = () => {
     const navigate = useNavigate();
     const [prints, setPrints] = useState<PrintItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+
+    const handleMediaLoad = (id: string, width: number, height: number) => {
+        if (width && height && !aspectRatios[id]) {
+            setAspectRatios(prev => ({
+                ...prev,
+                [id]: width / height
+            }));
+        }
+    };
 
     useEffect(() => {
         const fetchPrints = async () => {
@@ -98,39 +108,70 @@ export const Prints: React.FC = () => {
                         <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Prints...</div>
                     </div>
                 ) : prints.length > 0 ? (
-                    <div className="flex flex-wrap justify-center items-center gap-12 lg:gap-20 pt-4 md:pt-8 w-full max-w-[1600px] mx-auto">
-                        {prints.map((print) => (
-                            <div 
-                                key={print.id}
-                                className="block relative flex flex-col items-center w-full md:w-auto px-4 md:px-0"
-                            >
-                                <div className="bg-white border-[6px] md:border-[16px] border-[#151515] relative shadow-2xl flex items-center justify-center p-4 md:p-6 lg:p-8 w-fit shrink-0">
-                                    <div className="relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
-                                        {print.file_type === 'video' ? (
-                                            <video 
-                                                src={rewriteUrlToR2(print.file_url)} 
-                                                className="h-[40vh] lg:h-[45vh] w-auto max-w-[85vw] block object-contain shadow-sm"
-                                                muted playsInline loop autoPlay preload="metadata"
-                                            />
-                                        ) : print.file_url ? (
-                                            <img 
-                                                src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
-                                                alt={print.client_name}
-                                                className="h-[40vh] lg:h-[45vh] w-auto max-w-[85vw] block object-contain shadow-sm"
-                                                loading="lazy"
-                                            />
-                                        ) : null}
+                    <div className="flex flex-wrap justify-center items-stretch gap-12 lg:gap-20 pt-4 md:pt-8 w-full max-w-[1600px] mx-auto">
+                        {[]
+                            .concat(prints.filter(p => aspectRatios[p.id] && aspectRatios[p.id] > 1))
+                            .concat(prints.filter(p => aspectRatios[p.id] && aspectRatios[p.id] <= 1))
+                            .concat(prints.filter(p => !aspectRatios[p.id]))
+                            .map((print) => {
+                            const aspect = aspectRatios[print.id];
+                            
+                            let mediaClass = "max-h-[40vh] lg:max-h-[45vh] max-w-[75vw] md:max-w-[45vw] lg:max-w-[30vw] xl:max-w-[25vw] w-auto h-auto block object-contain shadow-sm transition-opacity duration-300";
+                            
+                            if (aspect) {
+                                const isLandscape = aspect > 1;
+                                if (isLandscape) {
+                                    mediaClass = "w-[75vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw] aspect-[3/2] object-cover block shadow-sm transition-opacity duration-300";
+                                } else {
+                                    mediaClass = "w-[60vw] md:w-[25vw] lg:w-[20vw] xl:w-[16vw] aspect-[2/3] object-cover block shadow-sm transition-opacity duration-300";
+                                }
+                            }
+
+                            return (
+                                <div 
+                                    key={print.id}
+                                    className="block relative flex flex-col items-center w-full md:w-auto px-4 md:px-0"
+                                >
+                                    <div className="bg-white border-[6px] md:border-[16px] border-[#151515] relative shadow-2xl flex items-center justify-center p-4 md:p-6 lg:p-8 w-fit shrink-0">
+                                        <div className="relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
+                                            {print.file_type === 'video' ? (
+                                                <video 
+                                                    src={rewriteUrlToR2(print.file_url)} 
+                                                    className={mediaClass}
+                                                    muted playsInline loop autoPlay preload="metadata"
+                                                    onLoadedMetadata={(e) => handleMediaLoad(print.id, e.currentTarget.videoWidth, e.currentTarget.videoHeight)}
+                                                    ref={(video) => {
+                                                        if (video && video.readyState >= 1 && video.videoWidth) {
+                                                            handleMediaLoad(print.id, video.videoWidth, video.videoHeight);
+                                                        }
+                                                    }}
+                                                />
+                                            ) : print.file_url ? (
+                                                <img 
+                                                    src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
+                                                    alt={print.client_name}
+                                                    className={mediaClass}
+                                                    loading="lazy"
+                                                    onLoad={(e) => handleMediaLoad(print.id, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)}
+                                                    ref={(img) => {
+                                                        if (img && img.complete && img.naturalWidth) {
+                                                            handleMediaLoad(print.id, img.naturalWidth, img.naturalHeight);
+                                                        }
+                                                    }}
+                                                />
+                                            ) : null}
+                                        </div>
                                     </div>
+                                    {print.caption?.trim() && (
+                                        <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
+                                            <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
+                                                {print.caption.trim()}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-                                {print.caption?.trim() && (
-                                    <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
-                                        <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
-                                            {print.caption.trim()}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="h-[20vh] flex flex-col items-center justify-center text-center mt-12">
