@@ -77,19 +77,29 @@ export const Prints: React.FC = () => {
                 </div>
             </header>
 
-            <main className="flex-1 max-w-[1400px] mx-auto w-full p-2 md:p-4">
+            <main className="flex-1 max-w-[1400px] mx-auto w-full p-6 md:p-12">
+                <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-16">
+                    <h1 className="text-2xl md:text-4xl font-serif tracking-widest uppercase text-slate-800 mb-4 font-bold">
+                        Fine Art Prints
+                    </h1>
+                    <p className="max-w-xl text-slate-500 leading-relaxed text-sm md:text-base">
+                        A curated collection of archival quality prints from my portfolio collections. 
+                        Each piece is printed on museum-grade cotton rag paper to ensure longevity and exceptional color reproduction.
+                    </p>
+                </div>
+
                 {loading ? (
-                    <div className="h-[60vh] flex items-center justify-center">
+                    <div className="h-[40vh] flex items-center justify-center">
                         <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Prints...</div>
                     </div>
                 ) : prints.length > 0 ? (
-                    <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 md:gap-8 pt-4 md:pt-8 w-full">
+                    <div className="columns-1 sm:columns-2 gap-8 md:gap-16 pt-4 md:pt-8 w-full">
                         {prints.map((print) => (
                             <div 
                                 key={print.id}
-                                className="block relative p-4 md:p-8 break-inside-avoid mb-4"
+                                className="block relative p-4 break-inside-avoid mb-8"
                             >
-                                <div className="bg-white border-[6px] md:border-[10px] border-[#151515] relative w-full shadow-2xl flex items-center justify-center p-[8%] md:p-[12%]">
+                                <div className="bg-white border-[8px] md:border-[16px] border-[#151515] relative w-full shadow-2xl flex items-center justify-center p-[4%] md:p-[6%]">
                                     <div className="w-full relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
                                         {print.file_type === 'video' ? (
                                             <video 
@@ -116,14 +126,7 @@ export const Prints: React.FC = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="h-[60vh] flex flex-col items-center justify-center text-center">
-                        <h1 className="text-2xl md:text-4xl font-serif tracking-widest uppercase text-slate-800 mb-4 font-bold">
-                            Fine Art Prints
-                        </h1>
-                        <p className="max-w-xl text-slate-500 leading-relaxed text-sm md:text-base mb-8">
-                            A curated collection of archival quality prints from my portfolio collections. 
-                            Each piece is printed on museum-grade cotton rag paper to ensure longevity and exceptional color reproduction.
-                        </p>
+                    <div className="h-[20vh] flex flex-col items-center justify-center text-center mt-12">
                         <div className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-sm">
                             <p className="text-slate-400 tracking-[0.2em] text-[10px] uppercase font-bold">No prints available yet</p>
                         </div>
