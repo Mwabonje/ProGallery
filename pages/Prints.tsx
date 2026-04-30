@@ -1,9 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../services/supabase';
+import { Gallery } from '../types';
+import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+
+interface PrintItem {
+    id: string;
+    file_url: string;
+    file_type: string;
+    client_name: string;
+}
 
 export const Prints: React.FC = () => {
     const navigate = useNavigate();
+    const [prints, setPrints] = useState<PrintItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPrints = async () => {
+            try {
+                // Fetch public galleries with category 'Prints'
+                const { data: galleriesData, error } = await supabase
+                    .from('galleries')
+                    .select('id, client_name')
+                    .ilike('category', 'prints')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                let allPrints: PrintItem[] = [];
+
+                if (galleriesData && galleriesData.length > 0) {
+                    const galleryIds = galleriesData.map(g => g.id);
+                    
+                    const { data: files } = await supabase
+                        .from('files')
+                        .select('id, file_url, file_type, gallery_id')
+                        .in('gallery_id', galleryIds)
+                        .order('created_at', { ascending: false });
+                        
+                    if (files) {
+                        const galleryNameMap = new Map(galleriesData.map(g => [g.id, g.client_name]));
+                        allPrints = files.map(f => ({
+                            id: f.id,
+                            file_url: f.file_url,
+                            file_type: f.file_type,
+                            client_name: galleryNameMap.get(f.gallery_id) || 'Print'
+                        }));
+                    }
+                }
+
+                setPrints(allPrints);
+            } catch (error) {
+                console.error("Error loading prints:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPrints();
+    }, []);
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col">
@@ -20,17 +77,58 @@ export const Prints: React.FC = () => {
                 </div>
             </header>
 
-            <main className="flex-1 max-w-[1400px] mx-auto w-full p-6 md:p-12 flex flex-col items-center justify-center text-center">
-                <h1 className="text-3xl md:text-5xl font-serif tracking-widest uppercase text-slate-900 mb-6 font-bold">
-                    Fine Art Prints
-                </h1>
-                <p className="max-w-2xl text-slate-600 leading-relaxed md:text-lg mb-12">
-                    Coming soon. A curated collection of archival quality prints from my portfolio collections. 
-                    Each piece is printed on museum-grade cotton rag paper to ensure longevity and exceptional color reproduction.
-                </p>
-                <div className="bg-slate-50 w-full max-w-lg aspect-[3/4] flex items-center justify-center rounded-sm border border-slate-100">
-                    <p className="text-slate-400 tracking-[0.2em] text-xs uppercase font-medium">Available Soon</p>
-                </div>
+            <main className="flex-1 max-w-[1400px] mx-auto w-full p-2 md:p-4">
+                {loading ? (
+                    <div className="h-[60vh] flex items-center justify-center">
+                        <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Prints...</div>
+                    </div>
+                ) : prints.length > 0 ? (
+                    <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 md:gap-8 pt-4 md:pt-8 w-full">
+                        {prints.map((print) => (
+                            <div 
+                                key={print.id}
+                                className="block relative p-4 md:p-8 break-inside-avoid mb-4"
+                            >
+                                <div className="bg-white border-[6px] md:border-[10px] border-[#151515] relative w-full shadow-2xl flex items-center justify-center p-[8%] md:p-[12%]">
+                                    <div className="w-full relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
+                                        {print.file_type === 'video' ? (
+                                            <video 
+                                                src={rewriteUrlToR2(print.file_url)} 
+                                                className="w-full h-auto block"
+                                                muted playsInline loop autoPlay preload="metadata"
+                                            />
+                                        ) : print.file_url ? (
+                                            <img 
+                                                src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
+                                                alt={print.client_name}
+                                                className="w-full h-auto block"
+                                                loading="lazy"
+                                            />
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <div className="mt-4 md:mt-6 text-center pb-2">
+                                    <h2 className="text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-800">
+                                        {print.client_name}
+                                    </h2>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="h-[60vh] flex flex-col items-center justify-center text-center">
+                        <h1 className="text-2xl md:text-4xl font-serif tracking-widest uppercase text-slate-800 mb-4 font-bold">
+                            Fine Art Prints
+                        </h1>
+                        <p className="max-w-xl text-slate-500 leading-relaxed text-sm md:text-base mb-8">
+                            A curated collection of archival quality prints from my portfolio collections. 
+                            Each piece is printed on museum-grade cotton rag paper to ensure longevity and exceptional color reproduction.
+                        </p>
+                        <div className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-sm">
+                            <p className="text-slate-400 tracking-[0.2em] text-[10px] uppercase font-bold">No prints available yet</p>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

@@ -109,7 +109,7 @@ export const Portfolio: React.FC = () => {
     }
 
     // Extract unique categories (defaulting heavily to un-categorized if not set)
-    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(Boolean)))];
+    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints')))];
     
     const homeKeywords = ["rafiki", "lamu", "kilele"];
     
