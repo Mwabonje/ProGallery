@@ -19,6 +19,7 @@ export const Prints: React.FC = () => {
     const [prints, setPrints] = useState<PrintItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+    const [photographerId, setPhotographerId] = useState<string | null>(null);
 
     const handleMediaLoad = (id: string, width: number, height: number) => {
         if (width && height && !aspectRatios[id]) {
@@ -35,7 +36,7 @@ export const Prints: React.FC = () => {
                 // Fetch public galleries with category 'Prints'
                 const { data: galleriesData, error } = await supabase
                     .from('galleries')
-                    .select('id, client_name, title')
+                    .select('id, client_name, title, photographer_id')
                     .ilike('category', 'prints')
                     .order('created_at', { ascending: false });
 
@@ -44,6 +45,7 @@ export const Prints: React.FC = () => {
                 let allPrints: PrintItem[] = [];
 
                 if (galleriesData && galleriesData.length > 0) {
+                    setPhotographerId(galleriesData[0].photographer_id);
                     const galleryIds = galleriesData.map(g => g.id);
                     
                     const { data: files } = await supabase
@@ -81,7 +83,15 @@ export const Prints: React.FC = () => {
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col">
             <header className="w-full flex items-center justify-between p-4 md:p-8 bg-white border-b border-slate-100 sticky top-0 z-50 transition-all duration-300">
                 <button 
-                    onClick={() => navigate(-1)}
+                    onClick={() => {
+                        if (window.history.state && window.history.state.idx > 0) {
+                            navigate(-1);
+                        } else if (photographerId) {
+                            navigate(`/p/${photographerId}`);
+                        } else {
+                            navigate('/');
+                        }
+                    }}
                     className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-xs tracking-widest font-bold"
                 >
                     <ArrowLeft className="w-4 h-4" />
