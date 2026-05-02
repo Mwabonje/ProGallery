@@ -854,7 +854,7 @@ export const GalleryManager: React.FC = () => {
                             ref={fileInputRef}
                             onChange={handleFileUpload}
                             className="hidden"
-                            accept="image/*,video/*"
+                            accept="image/*,video/*,.cr2,.cr3,.nef,.arw,.dng,.raf,.orf,.rw2,.srw,.raw"
                         />
                         
                         {isUploadingThisGallery ? (
@@ -910,14 +910,14 @@ export const GalleryManager: React.FC = () => {
                                         <div className="relative w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
                                             {file.file_type === 'image' ? (
                                                 <img 
-                                                  src={getOptimizedImageUrl(file.file_url, 100, 100)} 
+                                                  src={file.thumbnail_url ? getOptimizedImageUrl(file.thumbnail_url, 100, 100) : getOptimizedImageUrl(file.file_url, 100, 100)} 
                                                   alt="Thumbnail" 
                                                   className="w-full h-full object-cover" 
                                                   onError={(e) => {
                                                     const target = e.target as HTMLImageElement;
                                                     if (!target.dataset.retried) {
                                                         target.dataset.retried = 'true';
-                                                        target.src = rewriteUrlToR2(file.file_url);
+                                                        target.src = file.thumbnail_url ? rewriteUrlToR2(file.thumbnail_url) : rewriteUrlToR2(file.file_url);
                                                     }
                                                   }}
                                                 />

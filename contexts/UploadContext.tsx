@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { supabase, supabaseUrl, supabaseKey } from '../services/supabase';
 import * as tus from 'tus-js-client';
+import exifr from 'exifr';
 
 interface UploadContextType {
   uploading: boolean;
@@ -29,6 +30,9 @@ const getMimeType = (file: File) => {
     if (ext === 'png') return 'image/png';
     if (ext === 'gif') return 'image/gif';
     if (ext === 'webp') return 'image/webp';
+    if (ext === 'heic') return 'image/heic';
+    if (ext === 'heif') return 'image/heif';
+    if (['cr2', 'cr3', 'nef', 'arw', 'dng', 'raf', 'orf', 'rw2', 'srw', 'raw'].includes(ext || '')) return `image/x-${ext}`;
     
     return 'application/octet-stream';
 };
@@ -156,7 +160,39 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     xhr.send(file);
                 });
 
-                // 3. Insert Record into DB
+                // 3. Extract Thumbnail for RAW files
+                let thumbPublicUrl: string | undefined = undefined;
+                let thumbFilePath: string | undefined = undefined;
+                if (mimeType.toLowerCase().startsWith('image/x-')) {
+                    try {
+                        const thumbDataUrl = await exifr.thumbnailUrl(file);
+                        if (thumbDataUrl) {
+                            const thumbRes = await fetch(thumbDataUrl);
+                            const thumbBlob = await thumbRes.blob();
+                            URL.revokeObjectURL(thumbDataUrl);
+                            const thumbPresignRes = await fetch('/api/upload-url', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fileName: 'thumb_' + file.name + '.jpg', fileType: 'image/jpeg' })
+                            });
+
+                            if (thumbPresignRes.ok) {
+                                const { presignedUrl: thumbPresignedUrl, publicUrl: tpUrl, filePath: tpPath } = await thumbPresignRes.json();
+                                await fetch(thumbPresignedUrl, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'image/jpeg' },
+                                    body: thumbBlob
+                                });
+                                thumbPublicUrl = tpUrl;
+                                thumbFilePath = tpPath;
+                            }
+                        }
+                    } catch (e) {
+                         console.error("Failed to extract or upload thumbnail", e);
+                    }
+                }
+
+                // 4. Insert Record into DB
                 const expiresAt = new Date();
                 expiresAt.setTime(expiresAt.getTime() + expiryHours * 60 * 60 * 1000);
 
@@ -170,7 +206,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         file_url: publicUrl,
                         file_path: filePath,
                         file_type: dbFileType,
-                        expires_at: expiresAt.toISOString()
+                        expires_at: expiresAt.toISOString(),
+                        thumbnail_url: thumbPublicUrl,
+                        thumbnail_path: thumbFilePath
                     }]);
 
                 if (dbError) throw dbError;

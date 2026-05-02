@@ -29,6 +29,8 @@ export interface GalleryFile {
   download_count: number;
   is_edited: boolean;
   caption?: string; // New: Description/caption for each specific file (e.g., Print details)
+  thumbnail_url?: string;
+  thumbnail_path?: string;
 }
 
 export interface Selection {

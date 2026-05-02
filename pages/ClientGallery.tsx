@@ -643,7 +643,7 @@ export const ClientGallery: React.FC = () => {
                 {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                     isPortfolio ? (
                         <img 
-                            src={getOptimizedImageUrl(file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
+                            src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
                             alt="Portfolio item" 
                             className={`w-full h-full object-cover block transform transition-transform duration-[1.5s] pointer-events-none will-change-transform ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'}`}
                             loading={index < 4 ? "eager" : "lazy"}
@@ -654,19 +654,19 @@ export const ClientGallery: React.FC = () => {
                                 const target = e.target as HTMLImageElement;
                                 if (!target.dataset.retried) {
                                     target.dataset.retried = 'true';
-                                    target.src = rewriteUrlToR2(file.file_url) || '';
+                                    target.src = rewriteUrlToR2(file.thumbnail_url || file.file_url) || '';
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
                         />
                     ) : (
                         <img 
-                            src={getOptimizedImageUrl(file.file_url, 400, 400, 30)}
+                            src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, 400, 400, 30)}
                             srcSet={`
-                                ${getOptimizedImageUrl(file.file_url, 150, 150, 25)} 150w,
-                                ${getOptimizedImageUrl(file.file_url, 300, 300, 30)} 300w,
-                                ${getOptimizedImageUrl(file.file_url, 600, 600, 40)} 600w,
-                                ${getOptimizedImageUrl(file.file_url, 900, 900, 50)} 900w
+                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 25)} 150w,
+                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 300, 300, 30)} 300w,
+                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 600, 600, 40)} 600w,
+                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 900, 900, 50)} 900w
                             `}
                             sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                             alt="Gallery item" 
@@ -674,14 +674,14 @@ export const ClientGallery: React.FC = () => {
                             loading={index < 8 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
-                            fetchPriority={index < 4 ? "high" : "auto"}
+                            fetchPriority={index < 8 ? "high" : "auto"}
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.removeAttribute('srcset');
                                 target.removeAttribute('sizes');
                                 if (!target.dataset.retried) {
                                     target.dataset.retried = 'true';
-                                    target.src = rewriteUrlToR2(file.file_url) || '';
+                                    target.src = rewriteUrlToR2(file.thumbnail_url || file.file_url) || '';
                                 }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
@@ -966,7 +966,7 @@ export const ClientGallery: React.FC = () => {
             >
                 {lightboxFile.file_type === 'image' ? (
                     <img 
-                        src={getOptimizedImageUrl(lightboxFile.file_url, 1920, undefined, 85)}
+                        src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, 1920, undefined, 85)}
                         alt="Gallery item preview" 
                         className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
                         onContextMenu={(e) => {
