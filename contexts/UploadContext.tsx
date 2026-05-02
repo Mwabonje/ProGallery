@@ -51,13 +51,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
     }
 
-    // Validate file sizes (Max 250MB)
-    const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB in bytes
-    const oversizedFiles = filesToUpload.filter(file => file.size > MAX_FILE_SIZE);
+    // Validate total upload size (Max 5GB)
+    const MAX_TOTAL_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+    const totalSize = filesToUpload.reduce((acc, f) => acc + f.size, 0);
     
-    if (oversizedFiles.length > 0) {
-        const fileList = oversizedFiles.map(f => `- ${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join('\n');
-        alert(`Upload Cancelled.\n\nThe following files exceed the 250MB limit:\n${fileList}\n\nPlease remove them or compress them before uploading.`);
+    if (totalSize > MAX_TOTAL_SIZE) {
+        alert(`Upload Cancelled.\n\nThe total size of the files selected (${(totalSize / (1024 * 1024 * 1024)).toFixed(2)} GB) exceeds the 5GB limit.\n\nPlease select fewer files or compress them before uploading.`);
         return;
     }
 
