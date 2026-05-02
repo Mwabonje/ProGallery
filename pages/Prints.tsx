@@ -59,7 +59,7 @@ export const Prints: React.FC = () => {
                         const galleryTitleMap = new Map(galleriesData.map(g => [g.id, g.title]));
                         allPrints = files.map(f => ({
                             id: f.id,
-                            file_url: f.thumbnail_url || f.file_url,
+                            file_url: f.file_url,
                             file_type: f.file_type,
                             client_name: galleryNameMap.get(f.gallery_id) || 'Print',
                             title: galleryTitleMap.get(f.gallery_id) || '',

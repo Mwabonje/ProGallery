@@ -55,14 +55,14 @@ export const Portfolio: React.FC = () => {
                     portfolioItems.map(async (gallery) => {
                         const { data: files } = await supabase
                             .from('files')
-                            .select('file_url, file_type, thumbnail_url')
+                            .select('file_url, file_type')
                             .eq('gallery_id', gallery.id)
                             .order('created_at', { ascending: false })
                             .limit(1);
 
                         return {
                             ...gallery,
-                            coverUrl: files && files.length > 0 ? (files[0].thumbnail_url || files[0].file_url) : null,
+                            coverUrl: files && files.length > 0 ? files[0].file_url : null,
                             coverType: files && files.length > 0 ? files[0].file_type : null,
                         };
                     })
