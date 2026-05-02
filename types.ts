@@ -28,6 +28,7 @@ export interface GalleryFile {
   expires_at: string;
   download_count: number;
   is_edited: boolean;
+  is_cover?: boolean;
   caption?: string; // New: Description/caption for each specific file (e.g., Print details)
   thumbnail_url?: string;
   thumbnail_path?: string;

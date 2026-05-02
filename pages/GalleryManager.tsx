@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2 } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star } from 'lucide-react';
+
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
@@ -370,6 +371,31 @@ export const GalleryManager: React.FC = () => {
       alert('Failed to update edited status: ' + (error?.message || JSON.stringify(error)));
     }
   };
+
+  const handleSetCover = async (fileId: string) => {
+    if (!gallery) return;
+    try {
+      // Unset previous covers for this gallery
+      await supabase
+        .from('files')
+        .update({ is_cover: false })
+        .eq('gallery_id', gallery.id)
+        .eq('is_cover', true);
+        
+      const { error } = await supabase
+        .from('files')
+        .update({ is_cover: true })
+        .eq('id', fileId);
+        
+      if (error) throw error;
+      
+      setFiles(files.map(f => ({ ...f, is_cover: f.id === fileId })));
+    } catch (error: any) {
+      console.error('Error setting cover:', error);
+      alert(`Database Error: ${error.message || 'Error setting cover'}. Please add the 'is_cover' boolean column to the 'files' table.`);
+    }
+  };
+
 
   const handleExportCSV = () => {
     if (!files || files.length === 0) return;
@@ -979,11 +1005,21 @@ export const GalleryManager: React.FC = () => {
                                             <Download className="w-3 h-3" />
                                             {file.download_count}
                                         </div>
-                                        <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-3 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors">
+                                        <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-3 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors title='View Original'">
                                             <Eye className="w-5 h-5 md:w-4 md:h-4" />
                                         </a>
+                                        {isPortfolio && (
+                                            <button
+                                                onClick={() => handleSetCover(file.id)}
+                                                className={`p-3 md:p-2 rounded-full transition-colors ${file.is_cover ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                title={file.is_cover ? "Current Cover" : "Set as Cover"}
+                                            >
+                                                <Star className={`w-5 h-5 md:w-4 md:h-4 ${file.is_cover ? 'fill-current' : ''}`} />
+                                            </button>
+                                        )}
                                         <button 
                                             onClick={() => deleteFile(file.id, file.file_path)}
+
                                             className="p-3 md:p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
                                         >
                                             <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
