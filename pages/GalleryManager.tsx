@@ -375,24 +375,22 @@ export const GalleryManager: React.FC = () => {
   const handleSetCover = async (fileId: string) => {
     if (!gallery) return;
     try {
-      // Unset previous covers for this gallery
-      await supabase
-        .from('files')
-        .update({ is_cover: false })
-        .eq('gallery_id', gallery.id)
-        .eq('is_cover', true);
-        
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from('files')
-        .update({ is_cover: true })
+        .update({ created_at: now })
         .eq('id', fileId);
         
       if (error) throw error;
       
-      setFiles(files.map(f => ({ ...f, is_cover: f.id === fileId })));
+      const updatedFiles = files.map(f => f.id === fileId ? { ...f, created_at: now } : f);
+      // Sort in descending order to match database sort
+      updatedFiles.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      setFiles(updatedFiles);
     } catch (error: any) {
       console.error('Error setting cover:', error);
-      alert(`Database Error: ${error.message || 'Error setting cover'}. Please add the 'is_cover' boolean column to the 'files' table.`);
+      alert(`Database Error: ${error.message || 'Error setting cover'}`);
     }
   };
 
@@ -1011,10 +1009,10 @@ export const GalleryManager: React.FC = () => {
                                         {isPortfolio && (
                                             <button
                                                 onClick={() => handleSetCover(file.id)}
-                                                className={`p-3 md:p-2 rounded-full transition-colors ${file.is_cover ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
-                                                title={file.is_cover ? "Current Cover" : "Set as Cover"}
+                                                className={`p-3 md:p-2 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
                                             >
-                                                <Star className={`w-5 h-5 md:w-4 md:h-4 ${file.is_cover ? 'fill-current' : ''}`} />
+                                                <Star className={`w-5 h-5 md:w-4 md:h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
                                             </button>
                                         )}
                                         <button 

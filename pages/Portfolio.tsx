@@ -53,38 +53,18 @@ export const Portfolio: React.FC = () => {
 
                 const enrichedGalleries = await Promise.all(
                     portfolioItems.map(async (gallery) => {
-                        let fileToUse = null;
-
-                        // Try to fetch explicitly set cover file first
-                        const { data: coverFiles, error: coverError } = await supabase
+                        // The cover is defined as the most recently updated file (by created_at)
+                        const { data: files } = await supabase
                             .from('files')
                             .select('file_url, file_type')
                             .eq('gallery_id', gallery.id)
-                            .eq('is_cover', true)
                             .order('created_at', { ascending: false })
                             .limit(1);
 
-                        // Note: If is_cover column does not exist yet (error), fall back to checking without it.
-                        if (!coverError && coverFiles && coverFiles.length > 0) {
-                            fileToUse = coverFiles[0];
-                        } else {
-                            // Fallback to most recent file if no cover explicitly set
-                            const { data: latestFiles } = await supabase
-                                .from('files')
-                                .select('file_url, file_type')
-                                .eq('gallery_id', gallery.id)
-                                .order('created_at', { ascending: false })
-                                .limit(1);
-                                
-                            if (latestFiles && latestFiles.length > 0) {
-                                fileToUse = latestFiles[0];
-                            }
-                        }
-
                         return {
                             ...gallery,
-                            coverUrl: fileToUse ? fileToUse.file_url : null,
-                            coverType: fileToUse ? fileToUse.file_type : null,
+                            coverUrl: files && files.length > 0 ? files[0].file_url : null,
+                            coverType: files && files.length > 0 ? files[0].file_type : null,
                         };
                     })
                 );
