@@ -8,6 +8,7 @@ interface UploadContextType {
   progress: number;
   activeGalleryId: string | null;
   uploadFiles: (galleryId: string, files: File[], expiryHours: number) => Promise<void>;
+  cancelUpload: () => void;
 }
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
@@ -44,6 +45,18 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // We use a Ref to track progress of individual files without triggering re-renders for every byte
   const fileProgressMap = useRef<number[]>([]);
+  
+  const abortControllersRef = useRef<AbortController[]>([]);
+  const isCancelledRef = useRef<boolean>(false);
+
+  const cancelUpload = useCallback(() => {
+    isCancelledRef.current = true;
+    abortControllersRef.current.forEach(controller => controller.abort());
+    abortControllersRef.current = [];
+    setUploading(false);
+    setProgress(0);
+    setActiveGalleryId(null);
+  }, []);
 
   const uploadFiles = useCallback(async (galleryId: string, filesToUpload: File[], expiryHours: number) => {
     if (uploading) {
@@ -63,6 +76,8 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setUploading(true);
     setActiveGalleryId(galleryId);
     setProgress(0);
+    isCancelledRef.current = false;
+    abortControllersRef.current = [];
 
     const totalBytes = filesToUpload.reduce((acc, f) => acc + f.size, 0);
     // Initialize progress map with 0 for each file index
@@ -71,6 +86,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Global ticker to update the React state from the Refs
     const uiInterval = setInterval(() => {
+        if (isCancelledRef.current) return;
         const totalUploaded = fileProgressMap.current.reduce((a, b) => a + b, 0);
         const percentage = totalBytes > 0 ? Math.round((totalUploaded / totalBytes) * 100) : 0;
         // Cap visual progress at 95% until everything is truly resolved
@@ -83,6 +99,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const ret: Promise<void>[] = [];
             const executing = new Set<Promise<void>>();
             for (let i = 0; i < array.length; i++) {
+                if (isCancelledRef.current) break;
                 const item = array[i];
                 const p = Promise.resolve().then(() => iteratorFn(item, i));
                 ret.push(p);
@@ -98,6 +115,11 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // Limit to 3 concurrent uploads to prevent "Failed to fetch" network errors
         await asyncPool(3, filesToUpload, async (file, index) => {
+            if (isCancelledRef.current) return;
+            
+            const controller = new AbortController();
+            abortControllersRef.current.push(controller);
+
             // Adaptive Simulation:
             // For small files (<5MB), we simulate fast.
             // For large files (>50MB), we simulate slower but realistic.
@@ -124,7 +146,8 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const presignRes = await fetch('/api/upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileName: file.name, fileType: mimeType })
+                    body: JSON.stringify({ fileName: file.name, fileType: mimeType }),
+                    signal: controller.signal
                 });
 
                 if (!presignRes.ok) {
@@ -136,6 +159,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 clearInterval(simulationInterval);
                 await new Promise<void>((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
+                    
+                    controller.signal.addEventListener('abort', () => {
+                        xhr.abort();
+                        reject(new Error("Upload Cancelled"));
+                    });
+
                     xhr.upload.addEventListener("progress", (e) => {
                         if (e.lengthComputable) {
                             fileProgressMap.current[index] = e.loaded;
@@ -172,7 +201,8 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             const thumbPresignRes = await fetch('/api/upload-url', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fileName: 'thumb_' + file.name + '.jpg', fileType: 'image/jpeg' })
+                                body: JSON.stringify({ fileName: 'thumb_' + file.name + '.jpg', fileType: 'image/jpeg' }),
+                                signal: controller.signal
                             });
 
                             if (thumbPresignRes.ok) {
@@ -180,7 +210,8 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                                 await fetch(thumbPresignedUrl, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'image/jpeg' },
-                                    body: thumbBlob
+                                    body: thumbBlob,
+                                    signal: controller.signal
                                 });
                                 thumbPublicUrl = tpUrl;
                                 thumbFilePath = tpPath;
@@ -211,26 +242,42 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 if (dbError) throw dbError;
 
             } catch (err: any) {
-                console.error(`Failed to upload ${file.name}`, err);
-                let msg = err.message || 'Unknown error';
-                
-                // Enhance error message for common Supabase limits
-                if (msg.includes('maximum allowed size') || msg.includes('Entity Too Large')) {
-                    msg = 'File exceeds server size limit. Please check Supabase Bucket settings.';
+                if (isCancelledRef.current || err.message === "Upload Cancelled" || err.name === 'AbortError') {
+                     // Upload was cancelled, ignore error
+                } else {
+                    console.error(`Failed to upload ${file.name}`, err);
+                    let msg = err.message || 'Unknown error';
+                    
+                    // Enhance error message for common Supabase limits
+                    if (msg.includes('maximum allowed size') || msg.includes('Entity Too Large')) {
+                        msg = 'File exceeds server size limit. Please check Supabase Bucket settings.';
+                    }
+                    
+                    uploadErrors.push(`${file.name}: ${msg}`);
                 }
-                
-                uploadErrors.push(`${file.name}: ${msg}`);
             } finally {
                 clearInterval(simulationInterval);
                 // Snap this file's progress to 100%
-                fileProgressMap.current[index] = file.size;
+                if (!isCancelledRef.current) {
+                    fileProgressMap.current[index] = file.size;
+                }
+                const cIdx = abortControllersRef.current.indexOf(controller);
+                if (cIdx !== -1) abortControllersRef.current.splice(cIdx, 1);
             }
         });
     } catch (error) {
-        console.error("Batch upload critical error", error);
-        uploadErrors.push("Batch process failed critically.");
+        if (!isCancelledRef.current) {
+            console.error("Batch upload critical error", error);
+            uploadErrors.push("Batch process failed critically.");
+        }
     } finally {
         clearInterval(uiInterval);
+        
+        if (isCancelledRef.current) {
+             // Let the cancelUpload method handle resetting state
+             return;
+        }
+        
         setProgress(100);
         
         if (uploadErrors.length > 0) {
@@ -239,6 +286,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // Reset state
         setTimeout(() => {
+            if (isCancelledRef.current) return;
             setUploading(false);
             setActiveGalleryId(null);
             setProgress(0);
@@ -248,7 +296,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [uploading]);
 
   return (
-    <UploadContext.Provider value={{ uploading, progress, activeGalleryId, uploadFiles }}>
+    <UploadContext.Provider value={{ uploading, progress, activeGalleryId, uploadFiles, cancelUpload }}>
       {children}
     </UploadContext.Provider>
   );

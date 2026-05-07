@@ -11,7 +11,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { uploading, progress } = useUpload();
+  const { uploading, progress, cancelUpload } = useUpload();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -88,12 +88,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </span>
                     <span className="text-xs text-emerald-400 font-bold">{progress}%</span>
                 </div>
-                <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden mb-3">
                     <div 
                         className="h-full bg-emerald-500 transition-all duration-300 ease-out"
                         style={{ width: `${progress}%` }}
                     />
                 </div>
+                <button 
+                  onClick={cancelUpload}
+                  className="w-full text-xs text-center text-rose-400 hover:text-rose-300 font-medium py-1 hover:bg-slate-700 rounded transition-colors"
+                >
+                  Cancel Upload
+                </button>
             </div>
           )}
 
