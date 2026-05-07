@@ -30,34 +30,7 @@ export const Dashboard: React.FC = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const initDashboard = async () => {
-        try {
-            // Find any expired files in the database first
-            const { data: expiredFiles } = await supabase
-              .from('files')
-              .select('id, file_path')
-              .lt('expires_at', new Date().toISOString());
-
-            if (expiredFiles && expiredFiles.length > 0) {
-              const paths = expiredFiles.map(f => f.file_path);
-              const ids = expiredFiles.map(f => f.id);
-              
-              // Ask the backend to physically delete them from Cloudflare R2
-              await fetch('/api/delete-file', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ filePaths: paths })
-              });
-
-              // Safely remove them from the database now that they are physically gone
-              await supabase.from('files').delete().in('id', ids);
-            }
-        } catch (e) {
-            console.error("Failed to run cleanup routine", e);
-        }
-        fetchData();
-    };
-    initDashboard();
+    fetchData();
   }, []);
 
   const fetchData = async () => {
