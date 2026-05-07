@@ -19,6 +19,7 @@ export const ClientGallery: React.FC = () => {
   const [showPayModal, setShowPayModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
+  const [acceptedExtras, setAcceptedExtras] = useState(false);
   
   // Selection Mode State
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
@@ -226,6 +227,18 @@ export const ClientGallery: React.FC = () => {
     if (!gallery?.selection_enabled || selectionSubmitted) return;
 
     const isSelected = selectedFileIds.has(file.id);
+    
+    if (!isSelected && gallery.selection_limit && gallery.selection_limit > 0) {
+        if (selectedFileIds.size >= gallery.selection_limit && !acceptedExtras) {
+            const confirmExtras = window.confirm(`You have reached the agreed limit of ${gallery.selection_limit} photos.\n\nDo you want to proceed with selecting extras?`);
+            if (confirmExtras) {
+                setAcceptedExtras(true);
+            } else {
+                return;
+            }
+        }
+    }
+
     const newSet = new Set(selectedFileIds);
     
     // Optimistic UI Update

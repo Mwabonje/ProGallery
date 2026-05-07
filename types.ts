@@ -15,6 +15,7 @@ export interface Gallery {
   link_enabled: boolean;
   selection_enabled: boolean; // New: Toggle selection mode
   selection_status: 'pending' | 'submitted' | 'completed'; // New: Workflow status
+  selection_limit?: number; // New: Agreed number of photos
   created_at: string;
 }
 

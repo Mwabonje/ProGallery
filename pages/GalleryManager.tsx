@@ -13,7 +13,7 @@ export const GalleryManager: React.FC = () => {
   const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
-  const [clientSelections, setClientSelections] = useState<Set<string>>(new Set());
+  const [clientSelections, setClientSelections] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Use Global Upload Context
@@ -129,10 +129,11 @@ export const GalleryManager: React.FC = () => {
     const { data: selectionData } = await supabase
         .from('selections')
         .select('file_id')
-        .eq('gallery_id', id);
+        .eq('gallery_id', id)
+        .order('created_at', { ascending: true }); // Important for counting extras
     
     if (selectionData) {
-        setClientSelections(new Set(selectionData.map(s => s.file_id)));
+        setClientSelections(selectionData.map(s => s.file_id));
     }
   };
 
@@ -355,6 +356,21 @@ export const GalleryManager: React.FC = () => {
       }
   };
 
+  const updateSelectionLimit = async (limit: number) => {
+      if (!gallery) return;
+      try {
+          const { error } = await supabase
+            .from('galleries')
+            .update({ selection_limit: limit })
+            .eq('id', gallery.id);
+          if (error) throw error;
+          setGallery({ ...gallery, selection_limit: limit });
+      } catch (error: any) {
+          console.error('Error updating selection limit:', error);
+          alert('Failed to update: ' + (error?.message || 'Database column selection_limit might be missing.'));
+      }
+  };
+
   const handleToggleEdited = async (fileId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -397,12 +413,12 @@ export const GalleryManager: React.FC = () => {
 
   const handleExportCSV = () => {
     if (!files || files.length === 0) return;
-    if (clientSelections.size === 0) {
+    if (clientSelections.length === 0) {
         alert('No photos selected yet.');
         return;
     }
     
-    const selectedFiles = files.filter(f => clientSelections.has(f.id));
+    const selectedFiles = files.filter(f => clientSelections.includes(f.id));
     
     // Create CSV content definition
     const rows = [
@@ -468,7 +484,7 @@ export const GalleryManager: React.FC = () => {
 
   // Filter files based on view
   const visibleFiles = viewFilter === 'selected' 
-     ? files.filter(f => clientSelections.has(f.id))
+     ? files.filter(f => clientSelections.includes(f.id))
      : files;
 
   return (
@@ -593,7 +609,7 @@ export const GalleryManager: React.FC = () => {
                   </div>
                   <div>
                       <p className="font-semibold text-rose-900">Client Selection Submitted</p>
-                      <p className="text-sm text-rose-700">The client has finished selecting {clientSelections.size} photos.</p>
+                      <p className="text-sm text-rose-700">The client has finished selecting {clientSelections.length} photos.</p>
                   </div>
               </div>
               <button 
@@ -722,6 +738,26 @@ export const GalleryManager: React.FC = () => {
                          <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
                      </button>
                  </div>
+                 {gallery.selection_enabled && (
+                     <div className="mt-4 pt-4 border-t border-slate-100">
+                         <label className="block text-sm text-slate-700 font-medium mb-1">Agreed Number of Photos</label>
+                         <div className="flex gap-2">
+                             <input 
+                                 type="number" 
+                                 className="w-full text-sm p-2 border border-slate-200 rounded-md bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                                 defaultValue={gallery.selection_limit || 0}
+                                 min="0"
+                                 onBlur={(e) => {
+                                     const val = parseInt(e.target.value);
+                                     if (!isNaN(val) && val !== gallery.selection_limit) {
+                                         updateSelectionLimit(val);
+                                     }
+                                 }}
+                             />
+                         </div>
+                         <p className="text-xs text-slate-500 mt-1">Set to 0 for unlimited. If greater than 0, clients will be asked to confirm before selecting more (extras).</p>
+                     </div>
+                 )}
               </div>
 
               {/* Stats Card */}
@@ -734,7 +770,14 @@ export const GalleryManager: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <span>Selected by Client</span>
-                        <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.size}</span>
+                        <div className="flex items-center gap-2">
+                            {gallery.selection_limit && gallery.selection_limit > 0 && clientSelections.length > gallery.selection_limit && (
+                                <span className="font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-[10px] hidden sm:inline">
+                                    {clientSelections.length - gallery.selection_limit} Extras
+                                </span>
+                            )}
+                            <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.length}</span>
+                        </div>
                     </div>
                     <div className="flex justify-between items-center">
                         <span>Total Downloads</span>
@@ -742,7 +785,7 @@ export const GalleryManager: React.FC = () => {
                     </div>
                 </div>
                 
-                {clientSelections.size > 0 && (
+                {clientSelections.length > 0 && (
                   <button 
                     onClick={handleExportCSV}
                     className="w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
@@ -824,7 +867,7 @@ export const GalleryManager: React.FC = () => {
                                   className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
                               >
                                   <Heart className="w-3 h-3" />
-                                  Selected ({clientSelections.size})
+                                  Selected ({clientSelections.length})
                               </button>
                           </div>
                         )}
@@ -927,7 +970,14 @@ export const GalleryManager: React.FC = () => {
                     <div className="divide-y divide-slate-100">
                         {visibleFiles.map((file) => {
                             const isExpired = new Date(file.expires_at) < new Date();
-                            const isSelected = clientSelections.has(file.id);
+                            const isSelected = clientSelections.includes(file.id);
+                            let isExtra = false;
+                            if (isSelected && gallery.selection_limit && gallery.selection_limit > 0) {
+                                const index = clientSelections.indexOf(file.id);
+                                if (index >= gallery.selection_limit) {
+                                    isExtra = true;
+                                }
+                            }
                             return (
                                 <div key={file.id} className={`p-4 flex items-center justify-between hover:bg-slate-50 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
                                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
@@ -962,7 +1012,14 @@ export const GalleryManager: React.FC = () => {
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-2">
                                                 {file.file_path.split('/').pop()}
-                                                {!isPortfolio && isSelected && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>}
+                                                {!isPortfolio && isSelected && (
+                                                    <>
+                                                        <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">SELECTED</span>
+                                                        {isExtra && (
+                                                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">EXTRA</span>
+                                                        )}
+                                                    </>
+                                                )}
                                                 {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">EDITED</span>}
                                             </p>
                                             <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>

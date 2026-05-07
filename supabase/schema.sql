@@ -29,6 +29,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='category') THEN
         ALTER TABLE public.galleries ADD COLUMN category text;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_limit') THEN
+        ALTER TABLE public.galleries ADD COLUMN selection_limit integer DEFAULT 0;
+    END IF;
 END $$;
 
 -- Create files table
