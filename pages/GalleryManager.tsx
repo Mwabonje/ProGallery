@@ -34,7 +34,7 @@ export const GalleryManager: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   
   // UI States
-  const [viewFilter, setViewFilter] = useState<'all' | 'selected'>('all');
+  const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
 
   // Expiration settings (in hours)
   const [expiryHours, setExpiryHours] = useState<number>(24);
@@ -482,10 +482,14 @@ export const GalleryManager: React.FC = () => {
   const remainingBalance = Math.max(0, agreedAmount - paid);
   const isVolunteer = agreedAmount === 0;
 
-  // Filter files based on view
-  const visibleFiles = viewFilter === 'selected' 
-     ? files.filter(f => clientSelections.includes(f.id))
-     : files;
+  const limit = gallery?.selection_limit || 0;
+  const mainSelections = limit > 0 ? clientSelections.slice(0, limit) : clientSelections;
+  const extraSelections = limit > 0 ? clientSelections.slice(limit) : [];
+
+  let visibleFiles = files;
+  if (viewFilter === 'selected') visibleFiles = files.filter(f => clientSelections.includes(f.id));
+  if (viewFilter === 'main') visibleFiles = files.filter(f => mainSelections.includes(f.id));
+  if (viewFilter === 'extras') visibleFiles = files.filter(f => extraSelections.includes(f.id));
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10">
@@ -855,7 +859,7 @@ export const GalleryManager: React.FC = () => {
                         <h2 className="text-lg font-semibold">Gallery Content</h2>
                         {/* Filter Tabs */}
                         {!isPortfolio && (
-                          <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
+                          <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium flex-wrap gap-1">
                               <button 
                                   onClick={() => setViewFilter('all')}
                                   className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
@@ -869,6 +873,22 @@ export const GalleryManager: React.FC = () => {
                                   <Heart className="w-3 h-3" />
                                   Selected ({clientSelections.length})
                               </button>
+                              {gallery?.selection_limit && gallery.selection_limit > 0 && clientSelections.length > 0 && (
+                                <>
+                                  <button 
+                                      onClick={() => setViewFilter('main')}
+                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'main' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                                  >
+                                      Main ({mainSelections.length})
+                                  </button>
+                                  <button 
+                                      onClick={() => setViewFilter('extras')}
+                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-amber-600'}`}
+                                  >
+                                      Extras ({extraSelections.length})
+                                  </button>
+                                </>
+                              )}
                           </div>
                         )}
                     </div>
