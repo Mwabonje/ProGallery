@@ -322,14 +322,23 @@ export const GalleryManager: React.FC = () => {
 
     try {
       const newStatus = !gallery.link_enabled;
+      
+      const updatePayload: any = { link_enabled: newStatus };
+      
+      if (newStatus && gallery.selection_status === 'submitted') {
+          if (window.confirm("The client has already submitted their selection. Do you also want to reopen the selection allowing them to edit/add their selections?")) {
+              updatePayload.selection_status = 'pending';
+          }
+      }
+      
       const { error } = await supabase
         .from('galleries')
-        .update({ link_enabled: newStatus })
+        .update(updatePayload)
         .eq('id', gallery.id);
       
       if (error) throw error;
       
-      setGallery({ ...gallery, link_enabled: newStatus });
+      setGallery({ ...gallery, ...updatePayload });
     } catch (error: any) {
       console.error('Error toggling status:', error);
       alert('Failed to update gallery status: ' + (error?.message || JSON.stringify(error)));
@@ -616,15 +625,36 @@ export const GalleryManager: React.FC = () => {
                       <p className="text-sm text-rose-700">The client has finished selecting {clientSelections.length} photos.</p>
                   </div>
               </div>
-              <button 
-                onClick={() => {
-                  setViewFilter('selected');
-                  document.getElementById('gallery-content')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-sm font-medium text-rose-700 hover:text-rose-900 underline"
-              >
-                  View Selection
-              </button>
+              <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => {
+                      setViewFilter('selected');
+                      document.getElementById('gallery-content')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="text-sm font-medium text-rose-700 hover:text-rose-900 underline"
+                  >
+                      View Selection
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (!confirm("Are you sure you want to reopen the selection? This will allow the client to select photos again, and will reactivate the link.")) return;
+                      try {
+                        const { error } = await supabase
+                          .from('galleries')
+                          .update({ selection_status: 'pending', link_enabled: true })
+                          .eq('id', gallery.id);
+                        if (error) throw error;
+                        setGallery({ ...gallery, selection_status: 'pending', link_enabled: true });
+                        alert("Selection reopened! The link is active again.");
+                      } catch (err: any) {
+                        alert("Error reopening selection: " + (err?.message || JSON.stringify(err)));
+                      }
+                    }}
+                    className="text-sm font-medium text-slate-500 hover:text-slate-700 underline"
+                  >
+                      Reopen Selection
+                  </button>
+              </div>
           </div>
       )}
 
