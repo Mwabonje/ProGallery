@@ -17,6 +17,7 @@ export const ClientGallery: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   const [acceptedExtras, setAcceptedExtras] = useState(false);
@@ -25,7 +26,7 @@ export const ClientGallery: React.FC = () => {
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [submittingSelection, setSubmittingSelection] = useState(false);
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
 
@@ -60,7 +61,7 @@ export const ClientGallery: React.FC = () => {
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [files, showFavoritesOnly]); // re-run when content renders
+  }, [files, viewFilter]); // re-run when content renders
 
 
   // Network Optimization: Preconnect to Supabase Storage
@@ -208,10 +209,17 @@ export const ClientGallery: React.FC = () => {
         const { data: selectionData } = await supabase
             .from('selections')
             .select('file_id')
-            .eq('gallery_id', galleryId);
+            .eq('gallery_id', galleryId)
+            .order('created_at', { ascending: true }); // Important for counting extras
         
         if (selectionData) {
             setSelectedFileIds(new Set(selectionData.map(s => s.file_id)));
+            if (selectionData.length === 0 && galData.selection_limit > 0 && galData.selection_status !== 'submitted' && galData.selection_status !== 'completed') {
+                setShowWelcomeModal(true);
+            }
+            if (galData.selection_limit > 0 && selectionData.length >= galData.selection_limit) {
+                setAcceptedExtras(true); // Don't prompt randomly if they already accepted
+            }
         }
       }
 
@@ -497,9 +505,15 @@ export const ClientGallery: React.FC = () => {
   // Selection mode is not relevant for portfolio collections
   const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
 
-  const displayedFiles = showFavoritesOnly 
-    ? files.filter(f => selectedFileIds.has(f.id))
-    : files;
+  const limit = gallery?.selection_limit || 0;
+  const selectedArray = Array.from(selectedFileIds);
+  const mainSelections = limit > 0 ? selectedArray.slice(0, limit) : selectedArray;
+  const extraSelections = limit > 0 ? selectedArray.slice(limit) : [];
+
+  let displayedFiles = files;
+  if (viewFilter === 'selected') displayedFiles = files.filter(f => selectedFileIds.has(f.id));
+  if (viewFilter === 'main') displayedFiles = files.filter(f => mainSelections.includes(f.id));
+  if (viewFilter === 'extras') displayedFiles = files.filter(f => extraSelections.includes(f.id));
 
   return (
     <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
@@ -508,8 +522,8 @@ export const ClientGallery: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
             <h1 className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? 'text-slate-900 tracking-widest uppercase font-serif' : 'text-slate-900'}`}>
-                {showFavoritesOnly ? (
-                    <button onClick={() => setShowFavoritesOnly(false)} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">
+                {viewFilter !== 'all' ? (
+                    <button onClick={() => setViewFilter('all')} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                 ) : isPortfolio ? (
@@ -517,7 +531,7 @@ export const ClientGallery: React.FC = () => {
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                 ) : null}
-                {showFavoritesOnly ? "My Selection" : gallery?.client_name}
+                {viewFilter === 'selected' ? "My Selection" : viewFilter === 'main' ? "Main Photos" : viewFilter === 'extras' ? "Extra Photos" : gallery?.client_name}
             </h1>
             <p className={`text-xs md:text-sm flex items-center gap-2 ${isPortfolio ? 'text-slate-500 tracking-[0.2em] uppercase mt-1' : 'text-slate-500'}`}>
                 {displayedFiles.length} items 
@@ -598,7 +612,7 @@ export const ClientGallery: React.FC = () => {
 
       {/* Grid */}
       <main className={isHorizontalLayout ? "w-full overflow-hidden" : "max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8"}>
-        {isSelectionMode && !showFavoritesOnly && (
+        {isSelectionMode && viewFilter === 'all' && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
                 <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-rose-800">
@@ -609,16 +623,16 @@ export const ClientGallery: React.FC = () => {
 
         {displayedFiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                {showFavoritesOnly ? (
+                {viewFilter !== 'all' ? (
                     <>
                         <Heart className="w-16 h-16 text-slate-200 mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-600">No Favorites Yet</h3>
+                        <h3 className="text-lg font-semibold text-slate-600">No Photos Selected Yet</h3>
                         <p className="text-sm mb-6 max-w-xs text-center">Tap the heart icon on photos to add them to your selection.</p>
                         <button 
-                            onClick={() => setShowFavoritesOnly(false)}
+                            onClick={() => setViewFilter('all')}
                             className="text-rose-600 font-medium hover:underline"
                         >
-                            Browse Photos
+                            Browse All Photos
                         </button>
                     </>
                 ) : (
@@ -638,22 +652,36 @@ export const ClientGallery: React.FC = () => {
                         : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
                 }
             >
-            {displayedFiles.map((file, index) => {
-                const isSelected = selectedFileIds.has(file.id);
-                return (
-                <div 
-                    key={file.id} 
-                    onClick={() => isSelectionMode && setLightboxFile(file)}
-                    onContextMenu={(e) => {
-                        e.preventDefault();
-                        if (!isPortfolio) {
-                             setShowScreenshotWarning(true);
-                        }
-                    }}
-                    className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
-                    style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
-                >
-                {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+            {(() => {
+                const selectedArray = Array.from(selectedFileIds);
+                return displayedFiles.map((file, index) => {
+                    const isSelected = selectedFileIds.has(file.id);
+                    let isExtra = false;
+                    if (isSelected && gallery?.selection_limit && gallery.selection_limit > 0) {
+                        const selIndex = selectedArray.indexOf(file.id);
+                        if (selIndex >= gallery.selection_limit) isExtra = true;
+                    }
+                    return (
+                    <div 
+                        key={file.id} 
+                        onClick={() => isSelectionMode && setLightboxFile(file)}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            if (!isPortfolio) {
+                                 setShowScreenshotWarning(true);
+                            }
+                        }}
+                        className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                        style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
+                    >
+                    {/* Badges */}
+                    {isSelectionMode && isSelected && !isPortfolio && (
+                        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none">
+                            <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">SELECTED</span>
+                            {isExtra && <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">EXTRA</span>}
+                        </div>
+                    )}
+                    {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                     isPortfolio ? (
                         <img 
                             src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
@@ -775,7 +803,9 @@ export const ClientGallery: React.FC = () => {
                     )}
                 </div>
                 </div>
-            )})}
+                );
+            })
+            })()}
             </div>
         )}
       </main>
@@ -787,27 +817,59 @@ export const ClientGallery: React.FC = () => {
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <div 
                         className="flex items-center gap-2 cursor-pointer group"
-                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                        onClick={() => setViewFilter(viewFilter === 'all' ? 'selected' : 'all')}
                     >
-                        <div className={`p-2 rounded-full transition-colors ${showFavoritesOnly ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'}`}>
-                            <Heart className={`w-5 h-5 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                        <div className={`p-2 rounded-full transition-colors ${viewFilter !== 'all' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                            <Heart className={`w-5 h-5 ${viewFilter !== 'all' ? 'fill-current' : ''}`} />
                         </div>
                         <div>
-                            <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors">{selectedFileIds.size} Selected</p>
+                            <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors flex items-center gap-2">
+                                {selectedFileIds.size} Selected
+                                {limit > 0 && selectedFileIds.size > limit && (
+                                    <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+                                        {selectedFileIds.size - limit} Extras
+                                    </span>
+                                )}
+                            </p>
                             <p className="text-xs text-slate-500 hidden sm:inline-block">
-                                {showFavoritesOnly ? "Showing favorites" : "Tap heart to select"}
+                                {viewFilter !== 'all' ? "Showing favorites" : "Tap heart to select"}
                             </p>
                         </div>
                     </div>
                 </div>
                 
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <button 
-                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                        className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm transition-colors"
-                    >
-                        {showFavoritesOnly ? "Browse All" : "Review"}
-                    </button>
+                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden items-center pb-1 sm:pb-0">
+                    <div className="flex bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                        <button 
+                            onClick={() => setViewFilter('all')}
+                            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            All
+                        </button>
+                        <button 
+                            onClick={() => setViewFilter('selected')}
+                            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                        >
+                            <Heart className="w-3 h-3" />
+                            Selected
+                        </button>
+                        {limit > 0 && selectedFileIds.size > 0 && (
+                            <>
+                                <button 
+                                    onClick={() => setViewFilter('main')}
+                                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'main' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                                >
+                                    Main ({mainSelections.length})
+                                </button>
+                                <button 
+                                    onClick={() => setViewFilter('extras')}
+                                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-amber-600'}`}
+                                >
+                                    Extras ({extraSelections.length})
+                                </button>
+                            </>
+                        )}
+                    </div>
 
                     {selectionSubmitted ? (
                         <div className="flex gap-2 w-full sm:w-auto">
@@ -848,6 +910,31 @@ export const ClientGallery: React.FC = () => {
                 {toast.type === 'success' ? <Heart className="w-4 h-4 fill-current" /> : <Heart className="w-4 h-4" />}
                 {toast.message}
             </div>
+        </div>
+      )}
+
+      {/* Welcome/Instructions Modal */}
+      {showWelcomeModal && gallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="w-6 h-6 text-rose-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Welcome to your Gallery</h3>
+            <p className="text-slate-600 mb-6 text-sm">
+              Please select your agreed number of <strong>{gallery?.selection_limit} photos</strong> first.
+              <br/><br/>
+              If you wish to select more than {gallery?.selection_limit}, you will be asked to confirm before selecting extras.
+            </p>
+            <div className="space-y-3">
+                <button 
+                    onClick={() => setShowWelcomeModal(false)}
+                    className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                >
+                    Get Started
+                </button>
+            </div>
+          </div>
         </div>
       )}
 
