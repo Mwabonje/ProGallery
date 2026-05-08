@@ -32,6 +32,7 @@ export const GalleryManager: React.FC = () => {
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editClientName, setEditClientName] = useState('');
   const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('');
   
   // UI States
   const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
@@ -96,6 +97,7 @@ export const GalleryManager: React.FC = () => {
     setPaid(galData.amount_paid);
     setEditClientName(galData.client_name);
     setEditTitle(galData.title);
+    setEditCategory(galData.category || '');
 
     // Get Files
     let allFiles: GalleryFile[] = [];
@@ -283,7 +285,7 @@ export const GalleryManager: React.FC = () => {
     try {
       const { error } = await supabase
         .from('galleries')
-        .update({ client_name: editClientName, title: editTitle })
+        .update({ client_name: editClientName, title: editTitle, category: editCategory })
         .eq('id', gallery.id);
       
       if (error) throw error;
@@ -527,6 +529,19 @@ export const GalleryManager: React.FC = () => {
                             rows={2}
                             className="w-full text-slate-600 border border-slate-200 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none resize-none"
                         />
+                        <input
+                            type="text"
+                            list="gallery-category-options"
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            placeholder="Category (e.g. Wedding, Portraits...)"
+                            className="w-full text-slate-700 border border-slate-200 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
+                        />
+                        <datalist id="gallery-category-options">
+                            {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
+                                <option key={cat} value={cat} />
+                            ))}
+                        </datalist>
                         <div className="flex gap-2">
                             <button
                                 onClick={updateMeta}
@@ -539,6 +554,7 @@ export const GalleryManager: React.FC = () => {
                                     setIsEditingMeta(false);
                                     setEditClientName(gallery.client_name);
                                     setEditTitle(gallery.title);
+                                    setEditCategory(gallery.category || '');
                                 }}
                                 className="px-3 py-1 bg-slate-100 text-slate-600 rounded text-sm hover:bg-slate-200"
                             >
@@ -549,7 +565,14 @@ export const GalleryManager: React.FC = () => {
                 ) : (
                     <div className="group flex items-start gap-3">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words">{gallery.client_name}</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words flex items-center gap-3">
+                                {gallery.client_name}
+                                {gallery.category && (
+                                    <span className="text-xs font-bold tracking-widest uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded">
+                                        {gallery.category}
+                                    </span>
+                                )}
+                            </h1>
                             {gallery.title && gallery.title !== `${gallery.client_name}'s Gallery` && (
                                 <p className="text-slate-600 mt-1 max-w-2xl">{gallery.title}</p>
                             )}
