@@ -709,32 +709,50 @@ export const ClientGallery: React.FC = () => {
                             onContextMenu={(e) => e.preventDefault()}
                         />
                     ) : (
-                        <img 
-                            src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, 400, 400, 30)}
-                            srcSet={`
-                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 25)} 150w,
-                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 300, 300, 30)} 300w,
-                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 600, 600, 40)} 600w,
-                                ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 900, 900, 50)} 900w
-                            `}
-                            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
-                            alt="Gallery item" 
-                            className="w-full h-full block object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
-                            loading={index < 8 ? "eager" : "lazy"}
-                            decoding="async"
-                            // @ts-ignore
-                            fetchPriority={index < 8 ? "high" : "auto"}
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.removeAttribute('srcset');
-                                target.removeAttribute('sizes');
-                                if (!target.dataset.retried) {
-                                    target.dataset.retried = 'true';
-                                    target.src = rewriteUrlToR2(file.thumbnail_url || file.file_url) || '';
-                                }
-                            }}
-                            onContextMenu={(e) => e.preventDefault()}
-                        />
+                        <>
+                            <img 
+                                src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, isLocked ? 200 : 400, isLocked ? 200 : 400, isLocked ? 15 : 30)}
+                                srcSet={!isLocked ? `
+                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 25)} 150w,
+                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 300, 300, 30)} 300w,
+                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 600, 600, 40)} 600w,
+                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 900, 900, 50)} 900w
+                                ` : undefined}
+                                sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+                                alt="Gallery item" 
+                                className="w-full h-full block object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
+                                loading={index < 8 ? "eager" : "lazy"}
+                                decoding="async"
+                                // @ts-ignore
+                                fetchPriority={index < 8 ? "high" : "auto"}
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.removeAttribute('srcset');
+                                    target.removeAttribute('sizes');
+                                    if (!target.dataset.retried) {
+                                        target.dataset.retried = 'true';
+                                        target.src = rewriteUrlToR2(file.thumbnail_url || file.file_url) || '';
+                                    }
+                                }}
+                                onContextMenu={(e) => e.preventDefault()}
+                            />
+                            {isLocked && !isPortfolio && (
+                                <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-[0.15] mix-blend-overlay">
+                                    <div className="transform -rotate-45 text-white font-black text-2xl md:text-3xl tracking-[0.2em] whitespace-nowrap drop-shadow-md select-none">
+                                        PREVIEW ONLY 
+                                    </div>
+                                </div>
+                            )}
+                            <div className="absolute inset-0 z-[5]" 
+                                 onContextMenu={(e) => {
+                                     e.preventDefault();
+                                     if (!isPortfolio) {
+                                         setShowScreenshotWarning(true);
+                                     }
+                                 }}
+                                 onDragStart={(e) => e.preventDefault()}
+                            />
+                        </>
                     )
                 ) : (
                     <video 
@@ -1073,17 +1091,36 @@ export const ClientGallery: React.FC = () => {
                 }}
             >
                 {lightboxFile.file_type === 'image' ? (
-                    <img 
-                        src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, 1920, undefined, 85)}
-                        alt="Gallery item preview" 
-                        className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
-                        onContextMenu={(e) => {
-                            e.preventDefault();
-                            if (!isPortfolio) {
-                                setShowScreenshotWarning(true);
-                            }
-                        }}
-                    />
+                    <div className="relative max-w-full max-h-full">
+                        <img 
+                            src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, isLocked ? 1000 : 1920, undefined, isLocked ? 60 : 85)}
+                            alt="Gallery item preview" 
+                            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                if (!isPortfolio) {
+                                    setShowScreenshotWarning(true);
+                                }
+                            }}
+                        />
+                        {isLocked && !isPortfolio && (
+                            <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-[0.15] mix-blend-overlay">
+                                <div className="transform -rotate-45 text-white font-black text-4xl sm:text-6xl md:text-8xl tracking-[0.2em] whitespace-nowrap drop-shadow-lg select-none">
+                                    PREVIEW ONLY • PREVIEW ONLY • PREVIEW ONLY
+                                </div>
+                            </div>
+                        )}
+                        {/* Protection overlay to catch right-clicks / drag-and-drops from extensions */}
+                        <div className="absolute inset-0 z-10" 
+                             onContextMenu={(e) => {
+                                 e.preventDefault();
+                                 if (!isPortfolio) {
+                                     setShowScreenshotWarning(true);
+                                 }
+                             }} 
+                             onDragStart={(e) => e.preventDefault()}
+                        />
+                    </div>
                 ) : (
                     <video 
                         src={rewriteUrlToR2(lightboxFile.file_url)} 
