@@ -552,15 +552,15 @@ export const ClientGallery: React.FC = () => {
              {!isPortfolio && gallery?.photographer_id && (
                  <button 
                      onClick={() => navigate(`/p/${gallery.photographer_id}`)}
-                     className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-[#1a1a1a] text-white rounded font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black transition-colors"
+                     className="flex items-center gap-1.5 px-4 h-10 bg-[#161616] text-white/90 rounded-md font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black hover:text-white transition-all shadow-sm group active:scale-[0.98]"
                  >
-                     PORTFOLIO <ArrowUpRight className="w-3.5 h-3.5" />
+                     PORTFOLIO <ArrowUpRight className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
                  </button>
              )}
              {isSelectionMode ? (
                  // Selection Mode Header Content
                  <div className="flex items-center gap-3">
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-200 text-xs md:text-sm animate-in fade-in">
+                     <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
                         <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
                         <span>Selection Mode Active</span>
                      </div>
@@ -572,12 +572,12 @@ export const ClientGallery: React.FC = () => {
                     <button
                         onClick={handleDownloadAll}
                         disabled={downloadingAll || files.length === 0}
-                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium transition-all text-sm shadow-sm ${
                             isLocked 
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                            ? 'bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed' 
                             : downloadingAll 
-                                ? 'bg-slate-100 text-slate-600 cursor-wait'
-                                : 'bg-slate-900 text-white hover:bg-slate-800'
+                                ? 'bg-[#0f1423] border border-white/5 text-slate-400 cursor-wait opacity-80'
+                                : 'bg-[#0f1423] border border-white/5 text-white hover:bg-[#161d30] hover:shadow-md active:scale-[0.98]'
                         }`}
                     >
                         {downloadingAll ? (
@@ -587,27 +587,27 @@ export const ClientGallery: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <FolderDown className="w-4 h-4" />
+                                <FolderDown className="w-4 h-4 text-slate-200" />
                                 <span>Download All</span>
                             </>
                         )}
                     </button>
 
                     {isLocked ? (
-                        <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
-                            <div className="flex flex-col text-right">
-                                <span className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Balance Due</span>
-                                <span className="font-bold text-amber-700 text-sm leading-tight">{formatCurrency(balanceDue)}</span>
+                        <div className="flex items-center gap-2 bg-amber-50 px-4 h-10 rounded-lg border border-amber-100 shadow-sm">
+                            <div className="flex flex-col text-right justify-center">
+                                <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">Balance Due</span>
+                                <span className="font-bold text-amber-700 text-sm leading-none">{formatCurrency(balanceDue)}</span>
                             </div>
                             <Lock className="w-4 h-4 text-amber-600" />
                         </div>
                     ) : agreedAmount === 0 ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-200 text-xs md:text-sm">
+                        <div className="flex items-center gap-2.5 px-4 h-10 bg-[#f4f6ff] text-indigo-700 rounded-full font-medium border border-indigo-100 shadow-sm text-sm">
                             <Heart className="w-4 h-4 text-indigo-600" />
                             <span>Collaboration</span>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 text-xs md:text-sm">
+                        <div className="flex items-center gap-2.5 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-100 shadow-sm text-sm">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Paid in Full</span>
                         </div>
