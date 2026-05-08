@@ -573,6 +573,7 @@ export const Dashboard: React.FC = () => {
                   {Array.from(new Set([
                     "Wedding", 
                     "Portraits", 
+                    "Couples",
                     "Commercial", 
                     "Events", 
                     "Maternity", 
