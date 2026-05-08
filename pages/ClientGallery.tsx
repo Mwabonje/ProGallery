@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2 } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2, ArrowUpRight } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
@@ -548,7 +548,15 @@ export const ClientGallery: React.FC = () => {
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
+          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
+             {!isPortfolio && gallery?.photographer_id && (
+                 <button 
+                     onClick={() => navigate(`/p/${gallery.photographer_id}`)}
+                     className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-[#1a1a1a] text-white rounded font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black transition-colors"
+                 >
+                     PORTFOLIO <ArrowUpRight className="w-3.5 h-3.5" />
+                 </button>
+             )}
              {isSelectionMode ? (
                  // Selection Mode Header Content
                  <div className="flex items-center gap-3">
