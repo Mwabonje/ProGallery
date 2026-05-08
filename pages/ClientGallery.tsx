@@ -711,13 +711,13 @@ export const ClientGallery: React.FC = () => {
                     ) : (
                         <>
                             <img 
-                                src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, isLocked ? 200 : 400, isLocked ? 200 : 400, isLocked ? 15 : 30)}
-                                srcSet={!isLocked ? `
+                                src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, 400, 400, 30)}
+                                srcSet={`
                                     ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 25)} 150w,
                                     ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 300, 300, 30)} 300w,
                                     ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 600, 600, 40)} 600w,
                                     ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 900, 900, 50)} 900w
-                                ` : undefined}
+                                `}
                                 sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                                 alt="Gallery item" 
                                 className="w-full h-full block object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
@@ -1093,7 +1093,7 @@ export const ClientGallery: React.FC = () => {
                 {lightboxFile.file_type === 'image' ? (
                     <div className="relative max-w-full max-h-full">
                         <img 
-                            src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, isLocked ? 1000 : 1920, undefined, isLocked ? 60 : 85)}
+                            src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, 1920, undefined, 85)}
                             alt="Gallery item preview" 
                             className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
                             onContextMenu={(e) => {
