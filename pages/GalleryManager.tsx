@@ -28,6 +28,7 @@ export const GalleryManager: React.FC = () => {
   const [paid, setPaid] = useState<number>(0);
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [schemaMissing, setSchemaMissing] = useState(false);
   
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editClientName, setEditClientName] = useState('');
@@ -79,6 +80,14 @@ export const GalleryManager: React.FC = () => {
 
   const fetchGalleryData = async () => {
     if (!id) return;
+    
+    // Check if new Print columns exist
+    const { error: schemaErr } = await supabase.from('files').select('price').limit(1);
+    if (schemaErr && schemaErr.message.includes('column')) {
+        setSchemaMissing(true);
+    } else {
+        setSchemaMissing(false);
+    }
     
     // Get Gallery
     const { data: galData, error: galError } = await supabase
@@ -504,6 +513,24 @@ export const GalleryManager: React.FC = () => {
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10">
+      {schemaMissing && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700">
+          <h3 className="font-bold text-lg">Database Schema Update Required</h3>
+          <p className="mt-1">
+             The prints features cannot be saved correctly because some database columns are missing.
+             To fix this, please run the following SQL command in your <strong>Supabase SQL Editor</strong>:
+          </p>
+          <pre className="bg-red-100 p-3 rounded mt-2 text-xs font-mono text-red-900 border border-red-200 overflow-x-auto">
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS title text;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS description text;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;{'\n'}
+            -- Note: If you get a "column already exists" error or "syntax error", it means you might have partially run it. Make sure you use "IF NOT EXISTS" as shown above.
+          </pre>
+          <p className="mt-2 text-sm italic">After running this command, refresh this page so that the data saves successfully.</p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col gap-4">
         {/* Back Button (Mobile only) */}
