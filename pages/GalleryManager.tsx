@@ -520,13 +520,12 @@ export const GalleryManager: React.FC = () => {
              The prints features cannot be saved correctly because some database columns are missing.
              To fix this, please run the following SQL command in your <strong>Supabase SQL Editor</strong>:
           </p>
-          <pre className="bg-red-100 p-3 rounded mt-2 text-xs font-mono text-red-900 border border-red-200 overflow-x-auto">
+          <pre className="bg-red-100 p-3 rounded mt-2 text-[10px] sm:text-xs font-mono text-red-900 border border-red-200 overflow-x-auto whitespace-pre-wrap">
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS title text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS description text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;{'\n'}
-            -- Note: If you get a "column already exists" error or "syntax error", it means you might have partially run it. Make sure you use "IF NOT EXISTS" as shown above.
           </pre>
           <p className="mt-2 text-sm italic">After running this command, refresh this page so that the data saves successfully.</p>
         </div>
@@ -1128,7 +1127,7 @@ export const GalleryManager: React.FC = () => {
                                                     {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
                                                 </p>
                                             )}
-                                            {isPortfolio && gallery?.category?.toLowerCase() === 'prints' && (
+                                            {isPortfolio && (
                                                 <div className="mt-2 space-y-2 max-w-sm">
                                                     <input 
                                                         type="text" 

@@ -680,7 +680,7 @@ export const ClientGallery: React.FC = () => {
                                  setShowScreenshotWarning(true);
                             }
                         }}
-                        className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                         style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                     >
                     {/* Badges */}
@@ -831,8 +831,8 @@ export const ClientGallery: React.FC = () => {
                 </div>
                 
                 {/* Print Details Banner */}
-                {isPrintsGallery && (file.title || file.description || file.caption || file.print_size || file.material || file.price) && (
-                    <div className="bg-white px-2 py-4 flex flex-col gap-1 border-t border-slate-100 mt-2">
+                {(file.title || file.description || file.caption || file.print_size || file.material || file.price) && (
+                    <div className={`px-2 py-4 flex flex-col gap-1 border-t mt-2 w-full ${isPrintsGallery ? 'bg-white border-slate-100' : 'bg-transparent border-slate-200'}`}>
                         {file.title && <h3 className="font-serif text-lg font-medium text-slate-900">{file.title}</h3>}
                         {(file.description || file.caption) && (
                             <p className="text-sm text-slate-600 leading-relaxed italic">
@@ -1157,7 +1157,7 @@ export const ClientGallery: React.FC = () => {
             </div>
 
             {/* Print Info in Lightbox */}
-            {isPrintsGallery && (lightboxFile.title || lightboxFile.description || lightboxFile.caption || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
+            {(lightboxFile.title || lightboxFile.description || lightboxFile.caption || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
                 <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
                     {lightboxFile.title && <h3 className="font-serif text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
                     {(lightboxFile.description || lightboxFile.caption) && (
