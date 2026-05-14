@@ -181,7 +181,7 @@ export const Prints: React.FC = () => {
                                         </div>
                                     </div>
                                     {(print.title?.trim() || (print.description ?? print.caption)?.trim() || print.print_size?.trim() || print.material?.trim() || print.price?.trim()) ? (
-                                        <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
+                                        <div className="mt-5 md:mt-6 text-center w-0 min-w-full break-words">
                                             {print.title?.trim() && <h3 className="font-serif text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
                                             {(print.description ?? print.caption)?.trim() && (
                                                 <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
