@@ -34,13 +34,11 @@ BEGIN
     END IF;
     
     -- Add files columns for Prints
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='files' AND column_name='title') THEN
-        ALTER TABLE public.files ADD COLUMN title text;
-        ALTER TABLE public.files ADD COLUMN description text;
-        ALTER TABLE public.files ADD COLUMN print_size text;
-        ALTER TABLE public.files ADD COLUMN material text;
-        ALTER TABLE public.files ADD COLUMN price text;
-    END IF;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS title text;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS description text;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;
 END $$;
 
 -- Create files table

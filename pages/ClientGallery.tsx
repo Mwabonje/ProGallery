@@ -695,7 +695,7 @@ export const ClientGallery: React.FC = () => {
                         <img 
                             src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, isPortraitGallery ? 1200 : 800, isPortraitGallery ? 1500 : 1000, 75)}
                             alt="Portfolio item" 
-                            className={`w-full h-full object-cover block transform transition-transform duration-[1.5s] pointer-events-none will-change-transform ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'}`}
+                            className={`w-full object-cover block transform transition-transform duration-[1.5s] pointer-events-none will-change-transform ${isPrintsGallery ? 'h-auto' : 'h-full'} ${isPortraitGallery ? '' : 'md:group-hover:scale-[1.02]'}`}
                             loading={index < 4 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
