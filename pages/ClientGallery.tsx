@@ -387,75 +387,94 @@ export const ClientGallery: React.FC = () => {
 
     setDownloadingAll(true);
     setDownloadProgress(0);
-    setDownloadStatusText('Preparing list...');
+    setDownloadStatusText('Preparing download...');
     abortControllerRef.current = new AbortController();
 
+    const CHUNK_SIZE = 25; // Number of files per zip chunk to prevent browser memory crashes
+    const chunks = [];
+    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+        chunks.push(files.slice(i, i + CHUNK_SIZE));
+    }
+
     try {
-      const zip = new JSZip();
-      let processed = 0;
+      let globalProcessed = 0;
       const total = files.length;
-      
-      // We process files in batches (Concurrency Limit) to avoid choking the browser/network
-      const CONCURRENCY_LIMIT = 3;
-      const queue = [...files];
-      const activePromises: Promise<void>[] = [];
-      const signal = abortControllerRef.current.signal;
-
-      const processFile = async (file: GalleryFile) => {
-        if (signal.aborted) return;
-        
-        try {
-          const response = await fetch(rewriteUrlToR2(file.file_url), { signal });
-          if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
-          const blob = await response.blob();
-          const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
-          zip.file(fileName, blob);
-        } catch (error: any) {
-          if (error.name !== 'AbortError') {
-             console.error(`Error downloading file: ${file.id}`, error);
-          }
-        } finally {
-          processed++;
-          setDownloadProgress(Math.round((processed / total) * 100));
-          setDownloadStatusText(`Fetching files (${processed}/${total})...`);
-        }
-      };
-
-      // Helper to manage concurrency
-      const next = async (): Promise<void> => {
-        if (queue.length === 0) return;
-        const file = queue.shift();
-        if (file) {
-           await processFile(file);
-           await next();
-        }
-      };
-
-      // Start initial batch
-      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, files.length); i++) {
-         activePromises.push(next());
-      }
-      
-      await Promise.all(activePromises);
-
-      if (signal.aborted) return;
-
-      setDownloadStatusText('Packaging... (almost done)');
-      
-      // Use STORE compression (no compression) which is MUCH faster for images/videos
-      const content = await zip.generateAsync({ 
-          type: "blob", 
-          compression: "STORE" 
-      });
-      
-      if (signal.aborted) return;
-
       const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      saveAs(content, `${galleryName}_photos.zip`);
 
-    } catch (error) {
-      console.error('Error creating zip:', error);
-      alert('Failed to download all files. Please try downloading individually.');
+      for (let c = 0; c < chunks.length; c++) {
+          if (abortControllerRef.current?.signal.aborted) return;
+          
+          const chunkFiles = chunks[c];
+          const zip = new JSZip();
+          
+          setDownloadStatusText(chunks.length > 1 ? `Preparing Part ${c + 1} of ${chunks.length}...` : 'Preparing list...');
+          
+          const CONCURRENCY_LIMIT = 3;
+          const queue = [...chunkFiles];
+          const activePromises: Promise<void>[] = [];
+          
+          const processFile = async (file: GalleryFile) => {
+              if (abortControllerRef.current?.signal.aborted) return;
+              try {
+                  const response = await fetch(rewriteUrlToR2(file.file_url), { signal: abortControllerRef.current.signal });
+                  if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
+                  const blob = await response.blob();
+                  const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
+                  zip.file(fileName, blob);
+              } catch (error: any) {
+                  if (error.name !== 'AbortError') {
+                      console.error(`Error downloading file: ${file.id}`, error);
+                  }
+              } finally {
+                  globalProcessed++;
+                  setDownloadProgress(Math.round((globalProcessed / total) * 100));
+                  setDownloadStatusText(chunks.length > 1 ? `Fetching Part ${c + 1}/${chunks.length} (${globalProcessed}/${total})...` : `Fetching files (${globalProcessed}/${total})...`);
+              }
+          };
+          
+          const next = async (): Promise<void> => {
+              if (queue.length === 0) return;
+              const file = queue.shift();
+              if (file) {
+                  await processFile(file);
+                  await next();
+              }
+          };
+          
+          for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, chunkFiles.length); i++) {
+              activePromises.push(next());
+          }
+          
+          await Promise.all(activePromises);
+          
+          if (abortControllerRef.current?.signal.aborted) return;
+          
+          setDownloadStatusText(chunks.length > 1 ? `Packaging Part ${c + 1}... (almost done)` : 'Packaging... (almost done)');
+          
+          const content = await zip.generateAsync({ 
+              type: "blob", 
+              compression: "STORE" 
+          });
+          
+          if (abortControllerRef.current?.signal.aborted) return;
+          
+          const zipName = chunks.length > 1 
+              ? `${galleryName}_part_${c + 1}.zip` 
+              : `${galleryName}_photos.zip`;
+              
+          saveAs(content, zipName);
+          
+          // Clear variables and wait briefly to allow garbage collection
+          if (c < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+      }
+
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+         console.error('Error creating zip:', error);
+         alert(chunks.length > 1 ? 'Failed to download some zip parts due to memory limits. Remaining files should be downloaded individually.' : 'Failed to download all files due to memory limits. Please try downloading individually.');
+      }
     } finally {
       setDownloadingAll(false);
       setDownloadProgress(0);
