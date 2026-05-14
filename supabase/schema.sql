@@ -32,6 +32,15 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_limit') THEN
         ALTER TABLE public.galleries ADD COLUMN selection_limit integer DEFAULT 0;
     END IF;
+    
+    -- Add files columns for Prints
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='files' AND column_name='title') THEN
+        ALTER TABLE public.files ADD COLUMN title text;
+        ALTER TABLE public.files ADD COLUMN description text;
+        ALTER TABLE public.files ADD COLUMN print_size text;
+        ALTER TABLE public.files ADD COLUMN material text;
+        ALTER TABLE public.files ADD COLUMN price text;
+    END IF;
 END $$;
 
 -- Create files table
@@ -44,7 +53,12 @@ CREATE TABLE IF NOT EXISTS public.files (
   created_at timestamptz DEFAULT now(),
   expires_at timestamptz NOT NULL,
   download_count integer DEFAULT 0,
-  is_edited boolean DEFAULT false
+  is_edited boolean DEFAULT false,
+  title text,
+  description text,
+  print_size text,
+  material text,
+  price text
 );
 
 -- Create selections table (Junction table)

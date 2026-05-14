@@ -303,19 +303,19 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
-  const updateFileCaption = async (fileId: string, newCaption: string) => {
+  const updateFileDetails = async (fileId: string, updates: Partial<GalleryFile>) => {
     try {
       const { error } = await supabase
         .from('files')
-        .update({ caption: newCaption })
+        .update(updates)
         .eq('id', fileId);
         
       if (error) throw error;
       
-      setFiles(files.map(f => f.id === fileId ? { ...f, caption: newCaption } : f));
+      setFiles(files.map(f => f.id === fileId ? { ...f, ...updates } : f));
     } catch (error: any) {
-      console.error('Error updating caption:', error);
-      alert('Failed to update caption. You might need to run: ALTER TABLE files ADD COLUMN caption text; in your Supabase SQL Editor. Error: ' + (error?.message || ''));
+      console.error('Error updating file details:', error);
+      alert('Failed to update details. You might need to update your database schema in Supabase SQL Editor. Error: ' + (error?.message || ''));
     }
   };
 
@@ -1102,17 +1102,63 @@ export const GalleryManager: React.FC = () => {
                                                 </p>
                                             )}
                                             {isPortfolio && gallery?.category?.toLowerCase() === 'prints' && (
-                                                <div className="mt-2">
+                                                <div className="mt-2 space-y-2 max-w-sm">
                                                     <input 
                                                         type="text" 
-                                                        placeholder="Print Description / Details (Optional)" 
-                                                        defaultValue={file.caption || ''} 
+                                                        placeholder="Title (e.g. The Fisherman)" 
+                                                        defaultValue={file.title || ''} 
                                                         onBlur={(e) => {
-                                                            if (e.target.value !== (file.caption || '')) {
-                                                                updateFileCaption(file.id, e.target.value);
+                                                            if (e.target.value !== (file.title || '')) {
+                                                                updateFileDetails(file.id, { title: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full max-w-sm focus:outline-none focus:border-slate-400"
+                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
+                                                    />
+                                                    <textarea 
+                                                        placeholder="Description" 
+                                                        defaultValue={file.description || file.caption || ''} 
+                                                        rows={2}
+                                                        onBlur={(e) => {
+                                                            if (e.target.value !== (file.description || file.caption || '')) {
+                                                                updateFileDetails(file.id, { description: e.target.value });
+                                                            }
+                                                        }}
+                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Size (e.g. A2 Landscape)" 
+                                                            defaultValue={file.print_size || ''} 
+                                                            onBlur={(e) => {
+                                                                if (e.target.value !== (file.print_size || '')) {
+                                                                    updateFileDetails(file.id, { print_size: e.target.value });
+                                                                }
+                                                            }}
+                                                            className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                        />
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Material (e.g. Canvas)" 
+                                                            defaultValue={file.material || ''} 
+                                                            onBlur={(e) => {
+                                                                if (e.target.value !== (file.material || '')) {
+                                                                    updateFileDetails(file.id, { material: e.target.value });
+                                                                }
+                                                            }}
+                                                            className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                        />
+                                                    </div>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Price/Details (e.g. KES 25,000)" 
+                                                        defaultValue={file.price || ''} 
+                                                        onBlur={(e) => {
+                                                            if (e.target.value !== (file.price || '')) {
+                                                                updateFileDetails(file.id, { price: e.target.value });
+                                                            }
+                                                        }}
+                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-amber-700"
                                                     />
                                                 </div>
                                             )}

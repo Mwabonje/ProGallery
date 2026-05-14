@@ -499,6 +499,7 @@ export const ClientGallery: React.FC = () => {
   // A gallery is considered a public portfolio collection if it has a category
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait') || gallery?.client_name.toLowerCase().includes('couple') || gallery?.category?.toLowerCase().includes('couple'));
+  const isPrintsGallery = isPortfolio && gallery?.category?.toLowerCase() === 'prints';
   const isFilmGallery = isPortfolio && files.some(f => f.file_type === 'video' || (f.file_url && f.file_url.match(/\.(mp4|mov|webm|ogg)$/i)));
   const isHorizontalLayout = isPortraitGallery || isFilmGallery;
   
@@ -679,7 +680,7 @@ export const ClientGallery: React.FC = () => {
                                  setShowScreenshotWarning(true);
                             }
                         }}
-                        className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                        className={`group relative ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center flex justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-[4/5] w-full block' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                         style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                     >
                     {/* Badges */}
@@ -828,6 +829,28 @@ export const ClientGallery: React.FC = () => {
                         </button>
                     )}
                 </div>
+                
+                {/* Print Details Banner */}
+                {isPrintsGallery && (file.title || file.description || file.caption || file.print_size || file.material || file.price) && (
+                    <div className="bg-white px-2 py-4 flex flex-col gap-1 border-t border-slate-100 mt-2">
+                        {file.title && <h3 className="font-serif text-lg font-medium text-slate-900">{file.title}</h3>}
+                        {(file.description || file.caption) && (
+                            <p className="text-sm text-slate-600 leading-relaxed italic">
+                                {file.description || file.caption}
+                            </p>
+                        )}
+                        {(file.print_size || file.material) && (
+                            <div className="text-xs text-slate-500 uppercase tracking-widest mt-2 flex flex-wrap items-center gap-2">
+                                {file.print_size && <span>{file.print_size}</span>}
+                                {file.print_size && file.material && <span className="opacity-50">|</span>}
+                                {file.material && <span>{file.material}</span>}
+                            </div>
+                        )}
+                        {file.price && (
+                            <p className="text-md font-bold text-amber-700 mt-1">{file.price}</p>
+                        )}
+                    </div>
+                )}
                 </div>
                 );
             })
@@ -1132,6 +1155,28 @@ export const ClientGallery: React.FC = () => {
                     />
                 )}
             </div>
+
+            {/* Print Info in Lightbox */}
+            {isPrintsGallery && (lightboxFile.title || lightboxFile.description || lightboxFile.caption || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
+                <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
+                    {lightboxFile.title && <h3 className="font-serif text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
+                    {(lightboxFile.description || lightboxFile.caption) && (
+                        <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
+                            {lightboxFile.description || lightboxFile.caption}
+                        </p>
+                    )}
+                    {(lightboxFile.print_size || lightboxFile.material) && (
+                        <div className="text-xs text-slate-400 uppercase tracking-widest mt-2 flex flex-wrap items-center gap-2">
+                            {lightboxFile.print_size && <span>{lightboxFile.print_size}</span>}
+                            {lightboxFile.print_size && lightboxFile.material && <span className="opacity-50">|</span>}
+                            {lightboxFile.material && <span>{lightboxFile.material}</span>}
+                        </div>
+                    )}
+                    {lightboxFile.price && (
+                        <p className="text-lg font-bold text-amber-500 mt-2">{lightboxFile.price}</p>
+                    )}
+                </div>
+            )}
 
             {/* Selection toggle in lightbox */}
             {isSelectionMode && (

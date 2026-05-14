@@ -30,6 +30,11 @@ export interface GalleryFile {
   download_count: number;
   is_edited: boolean;
   caption?: string; // New: Description/caption for each specific file (e.g., Print details)
+  title?: string; // Print Title
+  description?: string; // Print Description
+  print_size?: string; // Print Size
+  material?: string; // Print Material
+  price?: string; // Print Price
   thumbnail_url?: string;
   thumbnail_path?: string;
 }
