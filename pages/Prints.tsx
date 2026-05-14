@@ -66,7 +66,7 @@ export const Prints: React.FC = () => {
                             file_url: f.file_url,
                             file_type: f.file_type,
                             client_name: galleryNameMap.get(f.gallery_id) || 'Print',
-                            title: f.title ?? galleryTitleMap.get(f.gallery_id) ?? '',
+                            title: f.title || '',
                             caption: f.caption,
                             description: f.description,
                             print_size: f.print_size,
@@ -180,26 +180,26 @@ export const Prints: React.FC = () => {
                                             ) : null}
                                         </div>
                                     </div>
-                                    {(print.title || print.description || print.caption || print.print_size || print.material || print.price) && (
+                                    {(print.title?.trim() || (print.description ?? print.caption)?.trim() || print.print_size?.trim() || print.material?.trim() || print.price?.trim()) ? (
                                         <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
-                                            {print.title && <h3 className="font-serif text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
+                                            {print.title?.trim() && <h3 className="font-serif text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
                                             {(print.description ?? print.caption)?.trim() && (
                                                 <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
                                                     {(print.description ?? print.caption ?? '').trim()}
                                                 </p>
                                             )}
-                                            {(print.print_size || print.material) && (
+                                            {(print.print_size?.trim() || print.material?.trim()) && (
                                                 <div className="text-xs text-slate-400 uppercase tracking-widest mt-3 flex flex-wrap justify-center items-center gap-2">
-                                                    {print.print_size && <span>{print.print_size}</span>}
-                                                    {print.print_size && print.material && <span className="opacity-50">|</span>}
-                                                    {print.material && <span>{print.material}</span>}
+                                                    {print.print_size?.trim() && <span>{print.print_size}</span>}
+                                                    {print.print_size?.trim() && print.material?.trim() && <span className="opacity-50">|</span>}
+                                                    {print.material?.trim() && <span>{print.material}</span>}
                                                 </div>
                                             )}
-                                            {print.price && (
+                                            {print.price?.trim() && (
                                                 <p className="text-md font-bold text-amber-700 mt-2">{print.price}</p>
                                             )}
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             );
                         })}

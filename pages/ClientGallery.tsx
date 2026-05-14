@@ -831,26 +831,26 @@ export const ClientGallery: React.FC = () => {
                 </div>
                 
                 {/* Print Details Banner */}
-                {(file.title || (file.description ?? file.caption) || file.print_size || file.material || file.price) && (
+                {(file.title?.trim() || (file.description ?? file.caption)?.trim() || file.print_size?.trim() || file.material?.trim() || file.price?.trim()) ? (
                     <div className={`px-2 py-4 flex flex-col gap-1 border-t mt-2 w-full ${isPrintsGallery ? 'bg-white border-slate-100' : 'bg-transparent border-slate-200'}`}>
-                        {file.title && <h3 className="font-serif text-lg font-medium text-slate-900">{file.title}</h3>}
-                        {(file.description ?? file.caption) && (
+                        {file.title?.trim() && <h3 className="font-serif text-lg font-medium text-slate-900">{file.title}</h3>}
+                        {(file.description ?? file.caption)?.trim() && (
                             <p className="text-sm text-slate-600 leading-relaxed italic">
                                 {file.description ?? file.caption}
                             </p>
                         )}
-                        {(file.print_size || file.material) && (
+                        {(file.print_size?.trim() || file.material?.trim()) && (
                             <div className="text-xs text-slate-500 uppercase tracking-widest mt-2 flex flex-wrap items-center gap-2">
-                                {file.print_size && <span>{file.print_size}</span>}
-                                {file.print_size && file.material && <span className="opacity-50">|</span>}
-                                {file.material && <span>{file.material}</span>}
+                                {file.print_size?.trim() && <span>{file.print_size}</span>}
+                                {file.print_size?.trim() && file.material?.trim() && <span className="opacity-50">|</span>}
+                                {file.material?.trim() && <span>{file.material}</span>}
                             </div>
                         )}
-                        {file.price && (
+                        {file.price?.trim() && (
                             <p className="text-md font-bold text-amber-700 mt-1">{file.price}</p>
                         )}
                     </div>
-                )}
+                ) : null}
                 </div>
                 );
             })
@@ -1157,26 +1157,26 @@ export const ClientGallery: React.FC = () => {
             </div>
 
             {/* Print Info in Lightbox */}
-            {(lightboxFile.title || (lightboxFile.description ?? lightboxFile.caption) || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
+            {(lightboxFile.title?.trim() || (lightboxFile.description ?? lightboxFile.caption)?.trim() || lightboxFile.print_size?.trim() || lightboxFile.material?.trim() || lightboxFile.price?.trim()) ? (
                 <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
-                    {lightboxFile.title && <h3 className="font-serif text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
-                    {(lightboxFile.description ?? lightboxFile.caption) && (
+                    {lightboxFile.title?.trim() && <h3 className="font-serif text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
+                    {(lightboxFile.description ?? lightboxFile.caption)?.trim() && (
                         <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
                             {lightboxFile.description ?? lightboxFile.caption}
                         </p>
                     )}
-                    {(lightboxFile.print_size || lightboxFile.material) && (
+                    {(lightboxFile.print_size?.trim() || lightboxFile.material?.trim()) && (
                         <div className="text-xs text-slate-400 uppercase tracking-widest mt-2 flex flex-wrap items-center gap-2">
-                            {lightboxFile.print_size && <span>{lightboxFile.print_size}</span>}
-                            {lightboxFile.print_size && lightboxFile.material && <span className="opacity-50">|</span>}
-                            {lightboxFile.material && <span>{lightboxFile.material}</span>}
+                            {lightboxFile.print_size?.trim() && <span>{lightboxFile.print_size}</span>}
+                            {lightboxFile.print_size?.trim() && lightboxFile.material?.trim() && <span className="opacity-50">|</span>}
+                            {lightboxFile.material?.trim() && <span>{lightboxFile.material}</span>}
                         </div>
                     )}
-                    {lightboxFile.price && (
+                    {lightboxFile.price?.trim() && (
                         <p className="text-lg font-bold text-amber-500 mt-2">{lightboxFile.price}</p>
                     )}
                 </div>
-            )}
+            ) : null}
 
             {/* Selection toggle in lightbox */}
             {isSelectionMode && (
