@@ -157,6 +157,8 @@ export const Prints: React.FC = () => {
                                                     src={rewriteUrlToR2(print.file_url)} 
                                                     className={mediaClass}
                                                     muted playsInline loop autoPlay preload="metadata"
+                                                    onContextMenu={(e) => e.preventDefault()}
+                                                    style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
                                                     onLoadedMetadata={(e) => handleMediaLoad(print.id, e.currentTarget.videoWidth, e.currentTarget.videoHeight)}
                                                     ref={(video) => {
                                                         if (video && video.readyState >= 1 && video.videoWidth) {
@@ -168,7 +170,10 @@ export const Prints: React.FC = () => {
                                                 <img 
                                                     src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
                                                     alt={print.client_name}
-                                                    className={mediaClass}
+                                                    className={`${mediaClass} pointer-events-none`}
+                                                    draggable={false}
+                                                    onContextMenu={(e) => e.preventDefault()}
+                                                    style={{ WebkitTouchCallout: 'none', userSelect: 'none', pointerEvents: 'none' }}
                                                     loading="lazy"
                                                     onLoad={(e) => handleMediaLoad(print.id, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)}
                                                     ref={(img) => {
