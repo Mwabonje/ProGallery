@@ -12,6 +12,10 @@ interface PrintItem {
     client_name: string;
     title: string;
     caption?: string;
+    description?: string;
+    print_size?: string;
+    material?: string;
+    price?: string;
 }
 
 export const Prints: React.FC = () => {
@@ -62,8 +66,12 @@ export const Prints: React.FC = () => {
                             file_url: f.file_url,
                             file_type: f.file_type,
                             client_name: galleryNameMap.get(f.gallery_id) || 'Print',
-                            title: galleryTitleMap.get(f.gallery_id) || '',
-                            caption: f.caption
+                            title: f.title ?? galleryTitleMap.get(f.gallery_id) ?? '',
+                            caption: f.caption,
+                            description: f.description,
+                            print_size: f.print_size,
+                            material: f.material,
+                            price: f.price
                         }));
                     }
                 }
@@ -172,11 +180,24 @@ export const Prints: React.FC = () => {
                                             ) : null}
                                         </div>
                                     </div>
-                                    {print.caption?.trim() && (
+                                    {(print.title || print.description || print.caption || print.print_size || print.material || print.price) && (
                                         <div className="mt-6 md:mt-8 text-center px-4 max-w-lg md:max-w-xl">
-                                            <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
-                                                {print.caption.trim()}
-                                            </p>
+                                            {print.title && <h3 className="font-serif text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
+                                            {(print.description ?? print.caption)?.trim() && (
+                                                <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
+                                                    {(print.description ?? print.caption ?? '').trim()}
+                                                </p>
+                                            )}
+                                            {(print.print_size || print.material) && (
+                                                <div className="text-xs text-slate-400 uppercase tracking-widest mt-3 flex flex-wrap justify-center items-center gap-2">
+                                                    {print.print_size && <span>{print.print_size}</span>}
+                                                    {print.print_size && print.material && <span className="opacity-50">|</span>}
+                                                    {print.material && <span>{print.material}</span>}
+                                                </div>
+                                            )}
+                                            {print.price && (
+                                                <p className="text-md font-bold text-amber-700 mt-2">{print.price}</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
