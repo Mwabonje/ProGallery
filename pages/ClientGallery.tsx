@@ -831,12 +831,12 @@ export const ClientGallery: React.FC = () => {
                 </div>
                 
                 {/* Print Details Banner */}
-                {(file.title || file.description || file.caption || file.print_size || file.material || file.price) && (
+                {(file.title || (file.description ?? file.caption) || file.print_size || file.material || file.price) && (
                     <div className={`px-2 py-4 flex flex-col gap-1 border-t mt-2 w-full ${isPrintsGallery ? 'bg-white border-slate-100' : 'bg-transparent border-slate-200'}`}>
                         {file.title && <h3 className="font-serif text-lg font-medium text-slate-900">{file.title}</h3>}
-                        {(file.description || file.caption) && (
+                        {(file.description ?? file.caption) && (
                             <p className="text-sm text-slate-600 leading-relaxed italic">
-                                {file.description || file.caption}
+                                {file.description ?? file.caption}
                             </p>
                         )}
                         {(file.print_size || file.material) && (
@@ -1157,12 +1157,12 @@ export const ClientGallery: React.FC = () => {
             </div>
 
             {/* Print Info in Lightbox */}
-            {(lightboxFile.title || lightboxFile.description || lightboxFile.caption || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
+            {(lightboxFile.title || (lightboxFile.description ?? lightboxFile.caption) || lightboxFile.print_size || lightboxFile.material || lightboxFile.price) && (
                 <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
                     {lightboxFile.title && <h3 className="font-serif text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
-                    {(lightboxFile.description || lightboxFile.caption) && (
+                    {(lightboxFile.description ?? lightboxFile.caption) && (
                         <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
-                            {lightboxFile.description || lightboxFile.caption}
+                            {lightboxFile.description ?? lightboxFile.caption}
                         </p>
                     )}
                     {(lightboxFile.print_size || lightboxFile.material) && (

@@ -1142,12 +1142,12 @@ export const GalleryManager: React.FC = () => {
                                                     />
                                                     <textarea 
                                                         placeholder="Description" 
-                                                        defaultValue={file.description !== undefined && file.description !== null ? file.description : (file.caption || '')} 
+                                                        defaultValue={file.description ?? file.caption ?? ''} 
                                                         rows={2}
                                                         onBlur={(e) => {
-                                                            const currentVal = file.description !== undefined && file.description !== null ? file.description : (file.caption || '');
+                                                            const currentVal = file.description ?? file.caption ?? '';
                                                             if (e.target.value !== currentVal) {
-                                                                updateFileDetails(file.id, { description: e.target.value, caption: e.target.value });
+                                                                updateFileDetails(file.id, { description: e.target.value });
                                                             }
                                                         }}
                                                         className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
