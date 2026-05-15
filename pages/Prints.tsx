@@ -26,6 +26,8 @@ export const Prints: React.FC = () => {
     const [photographerId, setPhotographerId] = useState<string | null>(null);
     const [cart, setCart] = useState<PrintItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
     const addToCart = (print: PrintItem) => {
         if (!cart.find(item => item.id === print.id)) {
@@ -35,6 +37,43 @@ export const Prints: React.FC = () => {
 
     const removeFromCart = (id: string) => {
         setCart(cart.filter(item => item.id !== id));
+    };
+
+    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                setIsSuccess(true);
+                setCart([]); // Clear cart on success
+                setTimeout(() => {
+                    setIsSuccess(false);
+                    setIsCartOpen(false);
+                }, 3000);
+            } else {
+                const data = await response.json();
+                if (Object.hasOwn(data, 'errors')) {
+                    alert(data["errors"].map((error: any) => error["message"]).join(", "));
+                } else {
+                    alert("Oops! There was a problem submitting your form");
+                }
+            }
+        } catch (error) {
+            alert("Oops! There was a problem submitting your form");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleMediaLoad = (id: string, width: number, height: number) => {
@@ -327,20 +366,34 @@ export const Prints: React.FC = () => {
 
                         {cart.length > 0 && (
                             <div className="p-5 md:p-6 border-t border-slate-200 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)] shrink-0">
-                                <form action="https://formspree.io/f/mzdolwql" method="POST" className="space-y-4">
-                                    <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
-                                    
-                                    <div className="space-y-3">
-                                        <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <textarea name="notes" placeholder="Delivery Address & Additional Notes" rows={3} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm resize-none" />
+                                {isSuccess ? (
+                                    <div className="text-center py-6">
+                                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <Check className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-1">Request Sent!</h3>
+                                        <p className="text-sm text-slate-500">We'll get back to you shortly.</p>
                                     </div>
-                                    
-                                    <button type="submit" className="w-full bg-slate-900 text-white font-medium py-3.5 rounded-md hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm shadow-md mt-2 flex justify-center items-center gap-2">
-                                        Submit Request
-                                    </button>
-                                </form>
+                                ) : (
+                                    <form action="https://formspree.io/f/mzdolwql" method="POST" onSubmit={handleFormSubmit} className="space-y-4">
+                                        <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
+                                        
+                                        <div className="space-y-3">
+                                            <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                            <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                            <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                            <textarea name="notes" placeholder="Delivery Address & Additional Notes" rows={3} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm resize-none" />
+                                        </div>
+                                        
+                                        <button 
+                                            type="submit" 
+                                            disabled={isSubmitting}
+                                            className="w-full bg-slate-900 text-white font-medium py-3.5 rounded-md hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm shadow-md mt-2 flex justify-center items-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting ? 'Sending Request...' : 'Submit Request'}
+                                        </button>
+                                    </form>
+                                )}
                             </div>
                         )}
                     </div>
