@@ -155,14 +155,14 @@ export const Prints: React.FC = () => {
                     <ArrowLeft className="w-4 h-4" />
                     BACK
                 </button>
-                <div className="font-serif tracking-widest uppercase text-xl font-bold flex-1 text-center pr-16 md:pr-[70px]">
+                <div className="font-sans tracking-widest uppercase text-xl font-bold flex-1 text-center pr-16 md:pr-[70px]">
                     PRINTS
                 </div>
             </header>
 
             <main className="flex-1 max-w-[1400px] mx-auto w-full p-6 md:p-12">
                 <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-16">
-                    <h1 className="text-2xl md:text-4xl font-serif tracking-widest uppercase text-slate-800 mb-4 font-bold">
+                    <h1 className="text-2xl md:text-4xl font-sans tracking-widest uppercase text-slate-800 mb-4 font-bold">
                         Fine Art Prints
                     </h1>
                     <p className="max-w-xl text-slate-500 leading-relaxed text-sm md:text-base">
@@ -237,9 +237,9 @@ export const Prints: React.FC = () => {
                                     </div>
                                     {(print.title?.trim() || (print.description ?? print.caption)?.trim() || print.print_size?.trim() || print.material?.trim() || print.price?.trim()) ? (
                                         <div className="mt-5 md:mt-6 text-center w-0 min-w-full break-words">
-                                            {print.title?.trim() && <h3 className="font-serif text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
+                                            {print.title?.trim() && <h3 className="font-sans text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
                                             {(print.description ?? print.caption)?.trim() && (
-                                                <p className="text-sm md:text-base text-slate-600 leading-relaxed font-serif italic">
+                                                <p className="text-sm md:text-base text-slate-600 leading-relaxed font-sans italic">
                                                     {(print.description ?? print.caption ?? '').trim()}
                                                 </p>
                                             )}
@@ -302,7 +302,7 @@ export const Prints: React.FC = () => {
                 <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex justify-end">
                     <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right overflow-hidden">
                         <div className="p-5 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                            <h2 className="font-serif text-2xl font-bold text-slate-900 flex items-center gap-3">
+                            <h2 className="font-sans text-2xl font-bold text-slate-900 flex items-center gap-3">
                                 <ShoppingCart className="w-6 h-6" />
                                 Your Cart
                             </h2>
@@ -319,7 +319,7 @@ export const Prints: React.FC = () => {
                                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
                                     <Check className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">Request Submitted!</h3>
+                                <h3 className="text-xl font-sans font-bold text-slate-900 mb-2">Request Submitted!</h3>
                                 <p className="text-slate-600 text-sm mb-6">We have received your print request and will get back to you shortly.</p>
                                 <button 
                                     onClick={() => {
@@ -365,7 +365,7 @@ export const Prints: React.FC = () => {
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                                                        <h4 className="font-serif font-medium text-slate-900 truncate">{item.title || item.client_name}</h4>
+                                                        <h4 className="font-sans font-medium text-slate-900 truncate">{item.title || item.client_name}</h4>
                                                         <p className="text-xs text-slate-500 mt-1 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
                                                         <p className="font-bold text-amber-700 mt-1.5">{item.price || 'Price on request'}</p>
                                                     </div>
@@ -383,23 +383,34 @@ export const Prints: React.FC = () => {
                                 </div>
 
                                 {cart.length > 0 && (
-                                    <div className="p-5 md:p-6 border-t border-slate-200 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)] shrink-0">
+                                    <div className="p-6 md:p-8 bg-white border-t border-slate-100 shadow-[0_-20px_40px_rgba(0,0,0,0.03)] shrink-0">
+                                        <div className="mb-5">
+                                            <h3 className="font-sans text-lg text-slate-900">Request Details</h3>
+                                        </div>
                                         {submitError && (
-                                            <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-sm rounded-md border border-rose-100">
+                                            <div className="mb-5 p-3 bg-rose-50 text-rose-700 text-xs border border-rose-100 tracking-wide rounded-sm">
                                                 {submitError}
                                             </div>
                                         )}
-                                        <form onSubmit={handleFormSubmit} className="space-y-4">
+                                        <form onSubmit={handleFormSubmit} className="space-y-6">
                                             <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
                                             
-                                            <div className="space-y-3">
-                                                <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                                <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                                <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                                <textarea name="notes" placeholder="Delivery Address & Additional Notes" rows={3} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm resize-none" />
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <input type="text" name="name" required placeholder="Full Name" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
+                                                </div>
+                                                <div>
+                                                    <input type="email" name="email" required placeholder="Email Address" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
+                                                </div>
+                                                <div>
+                                                    <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
+                                                </div>
+                                                <div>
+                                                    <textarea name="notes" placeholder="Delivery Address & Notes" rows={2} className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm resize-none" />
+                                                </div>
                                             </div>
                                             
-                                            <button disabled={isSubmitting} type="submit" className={`w-full bg-slate-900 text-white font-medium py-3.5 rounded-md hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm shadow-md mt-2 flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                                            <button disabled={isSubmitting} type="submit" className={`w-full bg-[#111] text-white py-4 hover:bg-black transition-all uppercase tracking-[0.15em] text-[11px] font-medium mt-2 flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>
                                                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
                                             </button>
                                         </form>
