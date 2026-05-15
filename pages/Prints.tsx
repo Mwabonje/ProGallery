@@ -26,6 +26,44 @@ export const Prints: React.FC = () => {
     const [photographerId, setPhotographerId] = useState<string | null>(null);
     const [cart, setCart] = useState<PrintItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch("https://formspree.io/f/mzdolwql", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    Accept: "application/json",
+                },
+            });
+
+            if (response.ok) {
+                setSubmitSuccess(true);
+                setCart([]); // Optional: clear cart after success
+            } else {
+                const data = await response.json();
+                if (Object.hasOwn(data, 'errors')) {
+                    setSubmitError(data["errors"].map((error: any) => error["message"]).join(", "));
+                } else {
+                    setSubmitError("Oops! There was a problem submitting your request.");
+                }
+            }
+        } catch (error) {
+            setSubmitError("Oops! There was a problem submitting your request.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const addToCart = (print: PrintItem) => {
         if (!cart.find(item => item.id === print.id)) {
@@ -276,72 +314,98 @@ export const Prints: React.FC = () => {
                             </button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
-                            {cart.length === 0 ? (
-                                <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center h-full">
-                                    <ShoppingCart className="w-12 h-12 text-slate-200 mb-4" />
-                                    <p className="font-medium">Your cart is empty</p>
-                                    <button 
-                                        onClick={() => setIsCartOpen(false)}
-                                        className="mt-4 text-sm text-slate-400 hover:text-slate-700 underline underline-offset-4"
-                                    >   
-                                        Continue browsing prints
-                                    </button>
+                        {submitSuccess ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-emerald-50 h-full">
+                                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                                    <Check className="w-8 h-8" />
                                 </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {cart.map(item => (
-                                        <div key={item.id} className="flex gap-4 border border-slate-100 p-3 rounded-lg bg-slate-50 relative group">
-                                            <div className="shrink-0">
-                                                {item.file_type === 'video' ? (
-                                                    <video 
-                                                        src={rewriteUrlToR2(item.file_url)} 
-                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200"
-                                                        muted playsInline
-                                                    />
-                                                ) : (
-                                                    <img 
-                                                        src={getOptimizedImageUrl(item.file_url, 200, undefined, 80)} 
-                                                        alt={item.title || 'Print'} 
-                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200" 
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                                                <h4 className="font-serif font-medium text-slate-900 truncate">{item.title || item.client_name}</h4>
-                                                <p className="text-xs text-slate-500 mt-1 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
-                                                <p className="font-bold text-amber-700 mt-1.5">{item.price || 'Price on request'}</p>
-                                            </div>
+                                <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">Request Submitted!</h3>
+                                <p className="text-slate-600 text-sm mb-6">We have received your print request and will get back to you shortly.</p>
+                                <button 
+                                    onClick={() => {
+                                        setSubmitSuccess(false);
+                                        setIsCartOpen(false);
+                                    }}
+                                    className="px-6 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors text-sm font-medium"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
+                                    {cart.length === 0 ? (
+                                        <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center h-full">
+                                            <ShoppingCart className="w-12 h-12 text-slate-200 mb-4" />
+                                            <p className="font-medium">Your cart is empty</p>
                                             <button 
-                                                onClick={() => removeFromCart(item.id)} 
-                                                className="absolute top-2 right-2 p-1.5 bg-white shadow-sm border border-slate-100 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-100 md:opacity-0 group-hover:opacity-100" 
-                                                title="Remove Item"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
+                                                onClick={() => setIsCartOpen(false)}
+                                                className="mt-4 text-sm text-slate-400 hover:text-slate-700 underline underline-offset-4"
+                                            >   
+                                                Continue browsing prints
                                             </button>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {cart.map(item => (
+                                                <div key={item.id} className="flex gap-4 border border-slate-100 p-3 rounded-lg bg-slate-50 relative group">
+                                                    <div className="shrink-0">
+                                                        {item.file_type === 'video' ? (
+                                                            <video 
+                                                                src={rewriteUrlToR2(item.file_url)} 
+                                                                className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200"
+                                                                muted playsInline
+                                                            />
+                                                        ) : (
+                                                            <img 
+                                                                src={getOptimizedImageUrl(item.file_url, 200, undefined, 80)} 
+                                                                alt={item.title || 'Print'} 
+                                                                className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200" 
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
+                                                        <h4 className="font-serif font-medium text-slate-900 truncate">{item.title || item.client_name}</h4>
+                                                        <p className="text-xs text-slate-500 mt-1 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
+                                                        <p className="font-bold text-amber-700 mt-1.5">{item.price || 'Price on request'}</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => removeFromCart(item.id)} 
+                                                        className="absolute top-2 right-2 p-1.5 bg-white shadow-sm border border-slate-100 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-100 md:opacity-0 group-hover:opacity-100" 
+                                                        title="Remove Item"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {cart.length > 0 && (
-                            <div className="p-5 md:p-6 border-t border-slate-200 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)] shrink-0">
-                                <form action="https://formspree.io/f/mzdolwql" method="POST" className="space-y-4">
-                                    <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
-                                    
-                                    <div className="space-y-3">
-                                        <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
-                                        <textarea name="notes" placeholder="Delivery Address & Additional Notes" rows={3} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm resize-none" />
+                                {cart.length > 0 && (
+                                    <div className="p-5 md:p-6 border-t border-slate-200 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)] shrink-0">
+                                        {submitError && (
+                                            <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-sm rounded-md border border-rose-100">
+                                                {submitError}
+                                            </div>
+                                        )}
+                                        <form onSubmit={handleFormSubmit} className="space-y-4">
+                                            <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
+                                            
+                                            <div className="space-y-3">
+                                                <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                                <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                                <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm" />
+                                                <textarea name="notes" placeholder="Delivery Address & Additional Notes" rows={3} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-slate-900 focus:bg-white transition-colors text-sm resize-none" />
+                                            </div>
+                                            
+                                            <button disabled={isSubmitting} type="submit" className={`w-full bg-slate-900 text-white font-medium py-3.5 rounded-md hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm shadow-md mt-2 flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                                                {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                                            </button>
+                                        </form>
                                     </div>
-                                    
-                                    <button type="submit" className="w-full bg-slate-900 text-white font-medium py-3.5 rounded-md hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm shadow-md mt-2 flex justify-center items-center gap-2">
-                                        Submit Request
-                                    </button>
-                                </form>
-                            </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
