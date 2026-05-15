@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ShoppingCart, X, Check } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, X, Check, Minus, Plus, Trash2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
@@ -18,17 +18,28 @@ interface PrintItem {
     price?: string;
 }
 
+interface CartItem extends PrintItem {
+    quantity: number;
+}
+
 export const Prints: React.FC = () => {
     const navigate = useNavigate();
     const [prints, setPrints] = useState<PrintItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
     const [photographerId, setPhotographerId] = useState<string | null>(null);
-    const [cart, setCart] = useState<PrintItem[]>([]);
+    const [cart, setCart] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const computedSubtotal = cart.reduce((sum, item) => {
+        const rawPrice = item.price || '';
+        const cleanStr = rawPrice.replace(/[^\d.]/g, '');
+        const price = cleanStr ? parseFloat(cleanStr) : 0;
+        return sum + (price * item.quantity);
+    }, 0);
 
     const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -66,13 +77,26 @@ export const Prints: React.FC = () => {
     };
 
     const addToCart = (print: PrintItem) => {
-        if (!cart.find(item => item.id === print.id)) {
-            setCart([...cart, print]);
-        }
+        setCart(prev => {
+            const existing = prev.find(item => item.id === print.id);
+            if (existing) {
+                return prev.map(item => item.id === print.id ? { ...item, quantity: item.quantity + 1 } : item);
+            }
+            return [...prev, { ...print, quantity: 1 }];
+        });
     };
 
     const removeFromCart = (id: string) => {
-        setCart(cart.filter(item => item.id !== id));
+        setCart(prev => prev.filter(item => item.id !== id));
+    };
+
+    const updateQuantity = (id: string, delta: number) => {
+        setCart(prev => prev.map(item => {
+            if (item.id === id) {
+                return { ...item, quantity: Math.max(1, item.quantity + delta) };
+            }
+            return item;
+        }));
     };
 
     const handleMediaLoad = (id: string, width: number, height: number) => {
@@ -300,15 +324,12 @@ export const Prints: React.FC = () => {
             {/* Cart Modal / Sidebar */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex justify-end">
-                    <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right overflow-hidden">
-                        <div className="p-5 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                            <h2 className="font-sans text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                <ShoppingCart className="w-6 h-6" />
-                                Your Cart
-                            </h2>
+                    <div className="bg-[#f3f4f6] w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right overflow-hidden">
+                        <div className="px-6 py-5 flex items-center justify-between shrink-0">
+                            <h2 className="font-sans text-xl font-bold text-slate-800">Your Cart</h2>
                             <button 
                                 onClick={() => setIsCartOpen(false)} 
-                                className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors"
+                                className="p-2 bg-white rounded-full text-slate-400 hover:text-slate-800 transition-colors shadow-sm"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -326,16 +347,16 @@ export const Prints: React.FC = () => {
                                         setSubmitSuccess(false);
                                         setIsCartOpen(false);
                                     }}
-                                    className="px-6 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors text-sm font-medium"
+                                    className="px-6 py-3 bg-slate-900 text-white rounded-[16px] hover:bg-slate-800 transition-colors text-sm font-medium"
                                 >
                                     Close
                                 </button>
                             </div>
                         ) : (
                             <>
-                                <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
+                                <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 scrollbar-hide flex flex-col gap-4">
                                     {cart.length === 0 ? (
-                                        <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center h-full">
+                                        <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center h-full bg-white rounded-[24px]">
                                             <ShoppingCart className="w-12 h-12 text-slate-200 mb-4" />
                                             <p className="font-medium">Your cart is empty</p>
                                             <button 
@@ -346,74 +367,93 @@ export const Prints: React.FC = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
-                                            {cart.map(item => (
-                                                <div key={item.id} className="flex gap-4 border border-slate-100 p-3 rounded-lg bg-slate-50 relative group">
-                                                    <div className="shrink-0">
-                                                        {item.file_type === 'video' ? (
-                                                            <video 
-                                                                src={rewriteUrlToR2(item.file_url)} 
-                                                                className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200"
-                                                                muted playsInline
-                                                            />
-                                                        ) : (
-                                                            <img 
-                                                                src={getOptimizedImageUrl(item.file_url, 200, undefined, 80)} 
-                                                                alt={item.title || 'Print'} 
-                                                                className="w-20 h-20 md:w-24 md:h-24 object-cover rounded shadow-sm bg-slate-200" 
-                                                            />
-                                                        )}
+                                        <>
+                                            <div className="bg-white rounded-[24px] p-2 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                                {cart.map((item, index) => (
+                                                    <div key={item.id}>
+                                                        <div className="flex gap-4 p-3 relative group items-center">
+                                                            <div className="shrink-0">
+                                                                {item.file_type === 'video' ? (
+                                                                    <video 
+                                                                        src={rewriteUrlToR2(item.file_url)} 
+                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100"
+                                                                        muted playsInline
+                                                                    />
+                                                                ) : (
+                                                                    <img 
+                                                                        src={getOptimizedImageUrl(item.file_url, 200, undefined, 80)} 
+                                                                        alt={item.title || 'Print'} 
+                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100" 
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
+                                                                <h4 className="font-sans font-bold text-slate-800 text-sm truncate">{item.title || item.client_name}</h4>
+                                                                <p className="text-[11px] font-medium text-slate-400 mt-0.5 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
+                                                                <p className="font-bold text-slate-900 mt-1.5 text-sm">{item.price || 'Price on request'}</p>
+                                                                
+                                                                <div className="flex items-center gap-3 mt-3">
+                                                                    <button type="button" onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors">
+                                                                        <Minus className="w-3 h-3" />
+                                                                    </button>
+                                                                    <span className="text-xs font-bold text-slate-700 w-3 text-center">{item.quantity}</span>
+                                                                    <button type="button" onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm">
+                                                                        <Plus className="w-3 h-3" />
+                                                                    </button>
+
+                                                                    <button 
+                                                                        onClick={() => removeFromCart(item.id)} 
+                                                                        className="ml-auto p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors" 
+                                                                        title="Remove Item"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {index < cart.length - 1 && <div className="h-px bg-slate-50 mx-4" />}
                                                     </div>
-                                                    <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                                                        <h4 className="font-sans font-medium text-slate-900 truncate">{item.title || item.client_name}</h4>
-                                                        <p className="text-xs text-slate-500 mt-1 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
-                                                        <p className="font-bold text-amber-700 mt-1.5">{item.price || 'Price on request'}</p>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => removeFromCart(item.id)} 
-                                                        className="absolute top-2 right-2 p-1.5 bg-white shadow-sm border border-slate-100 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-100 md:opacity-0 group-hover:opacity-100" 
-                                                        title="Remove Item"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
+                                                ))}
+                                            </div>
+                                            
+                                            <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                                <h3 className="font-sans font-bold text-slate-800 mb-4 text-sm">Contact & Delivery</h3>
+                                                <div className="space-y-3">
+                                                    <input form="cart-form" type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
+                                                    <input form="cart-form" type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
+                                                    <input form="cart-form" type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
+                                                    <textarea form="cart-form" name="notes" placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 resize-none font-medium text-slate-800" />
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
 
                                 {cart.length > 0 && (
-                                    <div className="p-6 md:p-8 bg-white border-t border-slate-100 shadow-[0_-20px_40px_rgba(0,0,0,0.03)] shrink-0">
-                                        <div className="mb-5">
-                                            <h3 className="font-sans text-lg text-slate-900">Request Details</h3>
-                                        </div>
+                                    <div className="bg-white rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] shrink-0 pb-8">
                                         {submitError && (
-                                            <div className="mb-5 p-3 bg-rose-50 text-rose-700 text-xs border border-rose-100 tracking-wide rounded-sm">
+                                            <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-xs border border-rose-100 rounded-xl font-medium">
                                                 {submitError}
                                             </div>
                                         )}
-                                        <form onSubmit={handleFormSubmit} className="space-y-6">
-                                            <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nID: ${item.id}\n---`).join('\n')} />
-                                            
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <input type="text" name="name" required placeholder="Full Name" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
-                                                </div>
-                                                <div>
-                                                    <input type="email" name="email" required placeholder="Email Address" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
-                                                </div>
-                                                <div>
-                                                    <input type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm" />
-                                                </div>
-                                                <div>
-                                                    <textarea name="notes" placeholder="Delivery Address & Notes" rows={2} className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder:text-slate-400 placeholder:font-light focus:ring-0 focus:border-slate-900 focus:outline-none transition-colors text-sm resize-none" />
-                                                </div>
-                                            </div>
-                                            
-                                            <button disabled={isSubmitting} type="submit" className={`w-full bg-[#111] text-white py-4 hover:bg-black transition-all uppercase tracking-[0.15em] text-[11px] font-medium mt-2 flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>
-                                                {isSubmitting ? 'Submitting...' : 'Submit Request'}
-                                            </button>
+                                        <form id="cart-form" onSubmit={handleFormSubmit}>
+                                            <input type="hidden" name="Order Details" value={cart.map(item => `Item: ${item.title || item.client_name}\nSize: ${item.print_size || 'N/A'}\nMaterial: ${item.material || 'N/A'}\nPrice: ${item.price || 'N/A'}\nQuantity: ${item.quantity}\nID: ${item.id}\n---`).join('\n')} />
                                         </form>
+
+                                        <div className="space-y-3 mb-6 text-sm">
+                                            <div className="flex justify-between items-center text-slate-800 font-bold pt-1">
+                                                <span className="text-base">Total</span>
+                                                <span className="text-lg">
+                                                    {computedSubtotal > 0 
+                                                        ? `${cart.find(c => Boolean(c.price))?.price?.replace(/[\d.,\s]/g, '') || '$'}${computedSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                                                        : 'On Request'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button disabled={isSubmitting} type="submit" form="cart-form" className={`w-full bg-slate-900 text-white py-4 rounded-[16px] hover:bg-slate-800 transition-all font-bold text-[15px] shadow-sm flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>
+                                            {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                                        </button>
                                     </div>
                                 )}
                             </>
