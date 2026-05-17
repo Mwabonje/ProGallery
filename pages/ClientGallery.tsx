@@ -790,7 +790,7 @@ export const ClientGallery: React.FC = () => {
                 )}
                 
                 {/* Desktop Hover Overlay */}
-                <div className={`hidden md:flex absolute inset-0 ${isPortfolio ? 'bg-black/10' : 'bg-black/40'} opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3 pointer-events-none`}>
+                <div className={`hidden md:flex absolute inset-0 z-10 ${isPortfolio ? 'bg-black/10' : 'bg-black/40'} opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-3 pointer-events-none`}>
                     {isSelectionMode ? (
                         <button
                             onClick={(e) => {
@@ -818,7 +818,7 @@ export const ClientGallery: React.FC = () => {
                 </div>
 
                 {/* Mobile Actions */}
-                <div className="md:hidden absolute bottom-2 right-2 flex gap-2">
+                <div className="md:hidden absolute bottom-2 right-2 flex gap-2 z-10">
                     {isSelectionMode && (
                         <button
                             onClick={(e) => {
@@ -1197,9 +1197,9 @@ export const ClientGallery: React.FC = () => {
                 </div>
             ) : null}
 
-            {/* Selection toggle in lightbox */}
-            {isSelectionMode && (
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+            {/* Action buttons in lightbox */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4">
+                {isSelectionMode ? (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -1215,8 +1215,24 @@ export const ClientGallery: React.FC = () => {
                         <Heart className={`w-5 h-5 ${selectedFileIds.has(lightboxFile.id) ? 'fill-current' : ''}`} />
                         <span>{selectedFileIds.has(lightboxFile.id) ? 'Selected' : 'Select Photo'}</span>
                     </button>
-                </div>
-            )}
+                ) : !isPortfolio && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(lightboxFile);
+                        }}
+                        disabled={downloadingId === lightboxFile.id}
+                        className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
+                            isLocked 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : 'bg-white text-slate-900 hover:bg-slate-100'
+                        }`}
+                    >
+                        {downloadingId === lightboxFile.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                        <span>{downloadingId === lightboxFile.id ? 'Loading...' : isLocked ? 'Locked' : 'Download Photo'}</span>
+                    </button>
+                )}
+            </div>
         </div>
       )}
     </div>
