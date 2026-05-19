@@ -36,6 +36,7 @@ export const ClientGallery: React.FC = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatusText, setDownloadStatusText] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [singleDownloadProgress, setSingleDownloadProgress] = useState<number | null>(null);
 
   const horizontalRef = useRef<HTMLDivElement | null>(null);
 
@@ -357,12 +358,46 @@ export const ClientGallery: React.FC = () => {
     }
 
     setDownloadingId(file.id);
+    setSingleDownloadProgress(0);
 
     try {
       await supabase.rpc('increment_download', { row_id: file.id });
       
       const response = await fetch(rewriteUrlToR2(file.file_url));
-      const blob = await response.blob();
+      
+      if (!response.body) {
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = file.file_path.split('/').pop() || 'download';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      let loaded = 0;
+
+      const reader = response.body.getReader();
+      const chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        chunks.push(value);
+        loaded += value.length;
+
+        if (total) {
+          setSingleDownloadProgress(Math.round((loaded / total) * 100));
+        }
+      }
+
+      const blob = new Blob(chunks, { type: response.headers.get('content-type') || '' });
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -378,6 +413,7 @@ export const ClientGallery: React.FC = () => {
       alert('Download failed. Please check your internet connection.');
     } finally {
       setDownloadingId(null);
+      setSingleDownloadProgress(null);
     }
   };
 
@@ -821,7 +857,7 @@ export const ClientGallery: React.FC = () => {
                             className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                         >
                             {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                            <span>{downloadingId === file.id ? 'Loading...' : (isLocked ? 'Locked' : 'Download')}</span>
+                            <span>{downloadingId === file.id ? (singleDownloadProgress !== null ? `Downloading ${singleDownloadProgress}%` : 'Loading...') : (isLocked ? 'Locked' : 'Download')}</span>
                         </button>
                     )}
                 </div>
@@ -847,13 +883,18 @@ export const ClientGallery: React.FC = () => {
                                 handleDownload(file);
                             }}
                             disabled={downloadingId === file.id}
-                            className={`p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                            className={`relative p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
                                     ? 'bg-amber-100/90 text-amber-700' 
                                     : 'bg-white/90 text-slate-900'
                                 }`}
                         >
                             {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                            {downloadingId === file.id && singleDownloadProgress !== null && (
+                                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                    {singleDownloadProgress}%
+                                </span>
+                            )}
                         </button>
                     )}
                 </div>
@@ -1268,7 +1309,7 @@ export const ClientGallery: React.FC = () => {
                         }`}
                     >
                         {downloadingId === lightboxFile.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-                        <span>{downloadingId === lightboxFile.id ? 'Loading...' : isLocked ? 'Locked' : 'Download Photo'}</span>
+                        <span>{downloadingId === lightboxFile.id ? (singleDownloadProgress !== null ? `Downloading ${singleDownloadProgress}%` : 'Loading...') : isLocked ? 'Locked' : 'Download Photo'}</span>
                     </button>
                 )}
             </div>
