@@ -18,6 +18,7 @@ export const ClientGallery: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showBalanceWarningModal, setShowBalanceWarningModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   const [acceptedExtras, setAcceptedExtras] = useState(false);
@@ -165,6 +166,15 @@ export const ClientGallery: React.FC = () => {
       }
 
       setGallery(galData);
+      
+      const agreedAmount = galData.agreed_balance || 0;
+      const amountPaid = galData.amount_paid || 0;
+      const balanceDue = Math.max(0, agreedAmount - amountPaid);
+      
+      if (balanceDue > 0) {
+        setShowBalanceWarningModal(true);
+      }
+
       if (galData.selection_status === 'submitted' || galData.selection_status === 'completed') {
         setSelectionSubmitted(true);
       }
@@ -1001,6 +1011,35 @@ export const ClientGallery: React.FC = () => {
                     className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
                 >
                     Get Started
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Balance Warning Modal */}
+      {showBalanceWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl animate-in fade-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setShowBalanceWarningModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Notice</h3>
+            <p className="text-slate-600 mb-6 text-sm">
+              Once the balance has been cleared, you will be able to download high-res images and videos.
+            </p>
+            <div className="space-y-3">
+                <button 
+                    onClick={() => setShowBalanceWarningModal(false)}
+                    className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                >
+                    View Preview
                 </button>
             </div>
           </div>
