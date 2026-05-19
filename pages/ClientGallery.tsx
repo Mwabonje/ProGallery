@@ -779,7 +779,8 @@ export const ClientGallery: React.FC = () => {
                         src={rewriteUrlToR2(file.file_url)} 
                         className={`block transform transition-transform duration-[1.5s] ${isFilmGallery ? 'w-auto h-full max-w-[90vw] object-contain mx-auto' : 'w-full h-full object-cover'} ${isHorizontalLayout ? '' : 'md:group-hover:scale-[1.02]'} ${isFilmGallery ? '' : isPortfolio ? 'pointer-events-none' : ''}`} 
                         controls={isFilmGallery || !isPortfolio} 
-                        controlsList="nodownload" 
+                        controlsList={isLocked ? "nodownload nofullscreen" : "nodownload"}
+                        disablePictureInPicture={isLocked}
                         preload="metadata"
                         autoPlay={isPortfolio && !isFilmGallery}
                         muted={isPortfolio && !isFilmGallery}
@@ -1168,7 +1169,8 @@ export const ClientGallery: React.FC = () => {
                         src={rewriteUrlToR2(lightboxFile.file_url)} 
                         className="max-w-full max-h-full object-contain" 
                         controls 
-                        controlsList="nodownload"
+                        controlsList={isLocked ? "nodownload nofullscreen" : "nodownload"}
+                        disablePictureInPicture={isLocked}
                         autoPlay
                         playsInline
                     />
