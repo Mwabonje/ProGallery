@@ -883,7 +883,7 @@ export const ClientGallery: React.FC = () => {
                                 handleDownload(file);
                             }}
                             disabled={downloadingId === file.id}
-                            className={`relative p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                            className={`flex items-center gap-1.5 ${downloadingId === file.id && singleDownloadProgress !== null ? 'px-3 py-2 text-sm' : 'p-3'} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
                                     ? 'bg-amber-100/90 text-amber-700' 
                                     : 'bg-white/90 text-slate-900'
@@ -891,9 +891,7 @@ export const ClientGallery: React.FC = () => {
                         >
                             {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
                             {downloadingId === file.id && singleDownloadProgress !== null && (
-                                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                    {singleDownloadProgress}%
-                                </span>
+                                <span className="font-semibold">{singleDownloadProgress}%</span>
                             )}
                         </button>
                     )}
