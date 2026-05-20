@@ -36,7 +36,7 @@ export const ClientGallery: React.FC = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatusText, setDownloadStatusText] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [singleDownloadProgress, setSingleDownloadProgress] = useState<number | null>(null);
+  const [singleDownloadStats, setSingleDownloadStats] = useState<{loaded: number, total: number} | null>(null);
 
   const horizontalRef = useRef<HTMLDivElement | null>(null);
 
@@ -358,7 +358,7 @@ export const ClientGallery: React.FC = () => {
     }
 
     setDownloadingId(file.id);
-    setSingleDownloadProgress(0);
+    setSingleDownloadStats({ loaded: 0, total: 0 });
 
     try {
       await supabase.rpc('increment_download', { row_id: file.id });
@@ -380,6 +380,7 @@ export const ClientGallery: React.FC = () => {
       const contentLength = response.headers.get('content-length');
       const total = contentLength ? parseInt(contentLength, 10) : 0;
       let loaded = 0;
+      setSingleDownloadStats({ loaded, total });
 
       const reader = response.body.getReader();
       const chunks = [];
@@ -392,9 +393,7 @@ export const ClientGallery: React.FC = () => {
         chunks.push(value);
         loaded += value.length;
 
-        if (total) {
-          setSingleDownloadProgress(Math.round((loaded / total) * 100));
-        }
+        setSingleDownloadStats({ loaded, total });
       }
 
       const blob = new Blob(chunks, { type: response.headers.get('content-type') || '' });
@@ -413,7 +412,7 @@ export const ClientGallery: React.FC = () => {
       alert('Download failed. Please check your internet connection.');
     } finally {
       setDownloadingId(null);
-      setSingleDownloadProgress(null);
+      setSingleDownloadStats(null);
     }
   };
 
@@ -857,7 +856,7 @@ export const ClientGallery: React.FC = () => {
                             className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                         >
                             {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                            <span>{downloadingId === file.id ? (singleDownloadProgress !== null ? `Downloading ${singleDownloadProgress}%` : 'Loading...') : (isLocked ? 'Locked' : 'Download')}</span>
+                            <span>{downloadingId === file.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Downloading ${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `Downloading ${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB`) : 'Loading...') : (isLocked ? 'Locked' : 'Download')}</span>
                         </button>
                     )}
                 </div>
@@ -883,15 +882,17 @@ export const ClientGallery: React.FC = () => {
                                 handleDownload(file);
                             }}
                             disabled={downloadingId === file.id}
-                            className={`flex items-center gap-1.5 ${downloadingId === file.id && singleDownloadProgress !== null ? 'px-3 py-2 text-sm' : 'p-3'} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                            className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? 'px-3 py-2 text-sm max-w-[120px]' : 'p-3'} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
                                     ? 'bg-amber-100/90 text-amber-700' 
                                     : 'bg-white/90 text-slate-900'
                                 }`}
                         >
-                            {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-                            {downloadingId === file.id && singleDownloadProgress !== null && (
-                                <span className="font-semibold">{singleDownloadProgress}%</span>
+                            {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin shrink-0" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                            {downloadingId === file.id && singleDownloadStats && (
+                                <span className="font-semibold truncate">
+                                    {singleDownloadStats.total ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}M`}
+                                </span>
                             )}
                         </button>
                     )}
@@ -1307,7 +1308,7 @@ export const ClientGallery: React.FC = () => {
                         }`}
                     >
                         {downloadingId === lightboxFile.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-                        <span>{downloadingId === lightboxFile.id ? (singleDownloadProgress !== null ? `Downloading ${singleDownloadProgress}%` : 'Loading...') : isLocked ? 'Locked' : 'Download Photo'}</span>
+                        <span>{downloadingId === lightboxFile.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Downloading ${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `Downloading ${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB`) : 'Loading...') : isLocked ? 'Locked' : 'Download Photo'}</span>
                     </button>
                 )}
             </div>
