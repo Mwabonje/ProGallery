@@ -42,6 +42,15 @@ export const ClientGallery: React.FC = () => {
 
   // Ref to cancel download if needed
   const abortControllerRef = useRef<AbortController | null>(null);
+  const singleAbortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelSingleDownload = () => {
+      if (singleAbortControllerRef.current) {
+          singleAbortControllerRef.current.abort();
+          setDownloadingId(null);
+          setSingleDownloadStats(null);
+      }
+  };
 
   useEffect(() => {
     if (galleryId) loadGallery();
@@ -359,11 +368,15 @@ export const ClientGallery: React.FC = () => {
 
     setDownloadingId(file.id);
     setSingleDownloadStats({ loaded: 0, total: 0 });
+    
+    singleAbortControllerRef.current = new AbortController();
 
     try {
       await supabase.rpc('increment_download', { row_id: file.id });
       
-      const response = await fetch(rewriteUrlToR2(file.file_url));
+      const response = await fetch(rewriteUrlToR2(file.file_url), {
+          signal: singleAbortControllerRef.current.signal
+      });
       
       if (!response.body) {
         const blob = await response.blob();
@@ -407,9 +420,13 @@ export const ClientGallery: React.FC = () => {
       
       // Short timeout to allow the download to start before removing spinner
       await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (e) {
-      console.error('Download failed', e);
-      alert('Download failed. Please check your internet connection.');
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+          console.log('Download cancelled');
+      } else {
+          console.error('Download failed', e);
+          alert('Download failed. Please check your internet connection.');
+      }
     } finally {
       setDownloadingId(null);
       setSingleDownloadStats(null);
@@ -850,13 +867,17 @@ export const ClientGallery: React.FC = () => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload(file);
+                                if (downloadingId === file.id) {
+                                    cancelSingleDownload();
+                                } else {
+                                    handleDownload(file);
+                                }
                             }}
-                            disabled={downloadingId === file.id}
+                            disabled={downloadingId !== null && downloadingId !== file.id}
                             className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                         >
-                            {downloadingId === file.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isLocked ? <Lock className="w-3 h-3" /> : <Download className="w-3 h-3" />}
-                            <span>{downloadingId === file.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Downloading ${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `Downloading ${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB`) : 'Loading...') : (isLocked ? 'Locked' : 'Download')}</span>
+                            {downloadingId === file.id ? <X className="w-4 h-4 text-red-500" /> : isLocked ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                            <span className={downloadingId === file.id ? "text-red-600" : ""}>{downloadingId === file.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)` : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`) : 'Cancel') : (isLocked ? 'Locked' : 'Download')}</span>
                         </button>
                     )}
                 </div>
@@ -879,16 +900,22 @@ export const ClientGallery: React.FC = () => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload(file);
+                                if (downloadingId === file.id) {
+                                    cancelSingleDownload();
+                                } else {
+                                    handleDownload(file);
+                                }
                             }}
-                            disabled={downloadingId === file.id}
+                            disabled={downloadingId !== null && downloadingId !== file.id}
                             className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? 'px-3 py-2 text-sm max-w-[120px]' : 'p-3'} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
                                     ? 'bg-amber-100/90 text-amber-700' 
                                     : 'bg-white/90 text-slate-900'
-                                }`}
+                                }
+                                ${downloadingId === file.id ? '!bg-red-50 !text-red-600 !border-red-200' : ''}
+                                `}
                         >
-                            {downloadingId === file.id ? <Loader2 className="w-5 h-5 animate-spin shrink-0" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                            {downloadingId === file.id ? <X className="w-5 h-5 shrink-0" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
                             {downloadingId === file.id && singleDownloadStats && (
                                 <span className="font-semibold truncate">
                                     {singleDownloadStats.total ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}M`}
@@ -1298,17 +1325,23 @@ export const ClientGallery: React.FC = () => {
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(lightboxFile);
+                            if (downloadingId === lightboxFile.id) {
+                                cancelSingleDownload();
+                            } else {
+                                handleDownload(lightboxFile);
+                            }
                         }}
-                        disabled={downloadingId === lightboxFile.id}
+                        disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
                         className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
                             isLocked 
                                 ? 'bg-amber-100 text-amber-800' 
-                                : 'bg-white text-slate-900 hover:bg-slate-100'
+                                : downloadingId === lightboxFile.id 
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
+                                    : 'bg-white text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        {downloadingId === lightboxFile.id ? <Loader2 className="w-5 h-5 animate-spin" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-                        <span>{downloadingId === lightboxFile.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Downloading ${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%` : `Downloading ${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB`) : 'Loading...') : isLocked ? 'Locked' : 'Download Photo'}</span>
+                        {downloadingId === lightboxFile.id ? <X className="w-5 h-5" /> : isLocked ? <Lock className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                        <span>{downloadingId === lightboxFile.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)` : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`) : 'Cancel') : isLocked ? 'Locked' : 'Download Photo'}</span>
                     </button>
                 )}
             </div>
