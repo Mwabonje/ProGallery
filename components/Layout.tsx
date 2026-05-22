@@ -27,7 +27,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
         <div className="flex items-center space-x-2">
            <Camera className="w-6 h-6 text-emerald-400" />
-           <span className="text-xl font-bold tracking-tight">ProGallery</span>
+           <span className="text-xl font-bold tracking-tight">Mwabonje</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
@@ -55,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div>
           <div className="p-6 hidden md:flex items-center space-x-3 border-b border-slate-700">
             <Camera className="w-6 h-6 text-emerald-400" />
-            <span className="text-xl font-bold tracking-tight">ProGallery</span>
+            <span className="text-xl font-bold tracking-tight">Mwabonje</span>
           </div>
           
           <nav className="mt-6 px-4 space-y-2">

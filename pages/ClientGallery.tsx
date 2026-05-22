@@ -565,7 +565,7 @@ export const ClientGallery: React.FC = () => {
             <h1 className="text-xl font-bold text-slate-900 mb-3">Gallery Unavailable</h1>
             <p className="text-slate-600 mb-8 leading-relaxed">{error}</p>
             <div className="pt-6 border-t border-slate-100">
-                <p className="text-sm text-slate-400">ProGallery</p>
+                <p className="text-sm text-slate-400">Mwabonje</p>
             </div>
         </div>
       </div>
