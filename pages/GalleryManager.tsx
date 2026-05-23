@@ -512,7 +512,7 @@ export const GalleryManager: React.FC = () => {
   if (viewFilter === 'extras') visibleFiles = files.filter(f => extraSelections.includes(f.id));
 
   return (
-    <div className="space-y-6 md:space-y-8 pb-10">
+    <div className="space-y-8 md:space-y-10 pb-12">
       {schemaMissing && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700">
           <h3 className="font-bold text-lg">Database Schema Update Required</h3>
@@ -533,7 +533,7 @@ export const GalleryManager: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         {/* Back Button (Mobile only) */}
-        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-slate-500 hover:text-slate-900 mb-2 py-2 -ml-2 px-2">
+        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-zinc-500 hover:text-zinc-900 mb-2 py-2 -ml-2 px-2">
             <ArrowLeft className="w-5 h-5 mr-1" /> Back to Dashboard
         </button>
 
@@ -546,14 +546,14 @@ export const GalleryManager: React.FC = () => {
                             value={editClientName}
                             onChange={(e) => setEditClientName(e.target.value)}
                             placeholder="Gallery Name / Client Name"
-                            className="w-full text-2xl md:text-3xl font-bold text-slate-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
+                            className="w-full text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 text-zinc-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
                         />
                         <textarea
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
                             placeholder="Description or Subtitle (e.g., Print Details)"
                             rows={2}
-                            className="w-full text-slate-600 border border-slate-200 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none resize-none"
+                            className="w-full text-zinc-600 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none resize-none"
                         />
                         <input
                             type="text"
@@ -561,7 +561,7 @@ export const GalleryManager: React.FC = () => {
                             value={editCategory}
                             onChange={(e) => setEditCategory(e.target.value)}
                             placeholder="Category (e.g. Wedding, Portraits...)"
-                            className="w-full text-slate-700 border border-slate-200 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
+                            className="w-full text-zinc-700 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
                         />
                         <datalist id="gallery-category-options">
                             {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
@@ -582,7 +582,7 @@ export const GalleryManager: React.FC = () => {
                                     setEditTitle(gallery.title);
                                     setEditCategory(gallery.category || '');
                                 }}
-                                className="px-3 py-1 bg-slate-100 text-slate-600 rounded text-sm hover:bg-slate-200"
+                                className="px-3 py-1 bg-slate-100 text-zinc-600 rounded text-sm hover:bg-slate-200"
                             >
                                 Cancel
                             </button>
@@ -591,22 +591,22 @@ export const GalleryManager: React.FC = () => {
                 ) : (
                     <div className="group flex items-start gap-3">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 break-words flex items-center gap-3">
+                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 text-zinc-900 break-words flex items-center gap-3">
                                 {gallery.client_name}
                                 {gallery.category && (
-                                    <span className="text-xs font-bold tracking-widest uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded">
+                                    <span className="text-xs font-bold tracking-widest uppercase bg-slate-100 text-zinc-500 px-2 py-1 rounded">
                                         {gallery.category}
                                     </span>
                                 )}
                             </h1>
                             {gallery.title && gallery.title !== `${gallery.client_name}'s Gallery` && (
-                                <p className="text-slate-600 mt-1 max-w-2xl">{gallery.title}</p>
+                                <p className="text-zinc-600 mt-1 max-w-2xl">{gallery.title}</p>
                             )}
-                            <p className="text-slate-500 text-sm mt-1">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
+                            <p className="text-zinc-500 text-sm mt-1">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
                         </div>
                         <button
                             onClick={() => setIsEditingMeta(true)}
-                            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-all mt-1"
+                            className="p-1.5 text-slate-400 hover:text-zinc-900 hover:bg-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-all mt-1"
                             title="Edit Details"
                         >
                             <Edit2 className="w-4 h-4" />
@@ -618,7 +618,7 @@ export const GalleryManager: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
                 <button
                 onClick={handleCopyLink}
-                className="flex-1 md:flex-none justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-all active:scale-95 text-sm font-medium shadow-sm"
+                className="flex-1 md:flex-none justify-center px-4 py-2 bg-white border border-zinc-200/60 text-zinc-700 rounded-xl shadow-sm active:scale-[0.98] hover:bg-zinc-50/80 flex items-center gap-2 transition-all active:scale-95 text-sm font-medium shadow-sm"
                 >
                 {linkCopied ? (
                     <>
@@ -638,7 +638,7 @@ export const GalleryManager: React.FC = () => {
                 href={`/#/g/${gallery.id}`}
                 target="_blank" 
                 rel="noreferrer"
-                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap ${
+                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-xl flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap ${
                   isPortfolio 
                     ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700' 
                     : 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800'
@@ -652,7 +652,7 @@ export const GalleryManager: React.FC = () => {
                 <button
                 onClick={toggleStatus}
                 className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg flex items-center gap-2 text-white transition-colors text-sm font-medium shadow-sm ${
-                    gallery.link_enabled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'
+                    gallery.link_enabled ? 'bg-black hover:bg-zinc-800' : 'bg-red-500 hover:bg-red-600'
                 }`}
                 >
                 {gallery.link_enabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
@@ -699,7 +699,7 @@ export const GalleryManager: React.FC = () => {
                         alert("Error reopening selection: " + (err?.message || JSON.stringify(err)));
                       }
                     }}
-                    className="text-sm font-medium text-slate-500 hover:text-slate-700 underline"
+                    className="text-sm font-medium text-zinc-500 hover:text-zinc-700 underline"
                   >
                       Reopen Selection
                   </button>
@@ -712,14 +712,14 @@ export const GalleryManager: React.FC = () => {
         {!isPortfolio ? (
             <div className="lg:col-span-1 space-y-6">
               {/* Payment Card */}
-              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-slate-500" />
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-slate-400" />
                   Payment & Access
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
                         Total Agreed Amount
                         <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 for volunteer)</span>
                     </label>
@@ -729,28 +729,28 @@ export const GalleryManager: React.FC = () => {
                         type="number" 
                         value={agreedAmount}
                         onChange={(e) => setAgreedAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
                         placeholder="0"
                         />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Amount Paid</label>
                     <div className="relative">
                         <span className="absolute left-3 top-2 text-slate-400">KES</span>
                         <input 
                         type="number" 
                         value={paid}
                         onChange={(e) => setPaid(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
                         placeholder="0"
                         />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Remaining Balance</label>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Remaining Balance</label>
                     <div className="relative">
                         <span className="absolute left-3 top-2 text-slate-400">KES</span>
                         <input 
@@ -764,7 +764,7 @@ export const GalleryManager: React.FC = () => {
                                 setPaid((Number(agreedAmount) || 0) - newBalance);
                             }
                         }}
-                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
                         placeholder="0"
                         />
                         <div className="absolute right-3 top-2.5">
@@ -789,10 +789,10 @@ export const GalleryManager: React.FC = () => {
                   <button 
                     onClick={updatePayment}
                     disabled={paymentUpdated}
-                    className={`w-full py-2.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
+                    className={`w-full py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
                       paymentUpdated 
                         ? 'bg-emerald-600 text-white' 
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                        : 'bg-black text-white hover:bg-zinc-800 active:scale-[0.98]'
                     }`}
                   >
                     {paymentUpdated ? (
@@ -811,14 +811,14 @@ export const GalleryManager: React.FC = () => {
               </div>
 
               {/* Settings Card */}
-              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                 <h2 className="text-lg font-semibold mb-4">Gallery Settings</h2>
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
+                 <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Gallery Settings</h2>
                  
                  {/* Selection Mode Toggle */}
                  <div className="flex items-center justify-between mb-2">
                      <div>
-                         <p className="font-medium text-slate-900">Client Selection</p>
-                         <p className="text-xs text-slate-500 max-w-[200px]">
+                         <p className="font-medium text-zinc-900">Client Selection</p>
+                         <p className="text-xs text-zinc-500 max-w-[200px]">
                              When enabled, clients can favorite photos but <strong>cannot download them</strong>.
                          </p>
                      </div>
@@ -830,12 +830,12 @@ export const GalleryManager: React.FC = () => {
                      </button>
                  </div>
                  {gallery.selection_enabled && (
-                     <div className="mt-4 pt-4 border-t border-slate-100">
-                         <label className="block text-sm text-slate-700 font-medium mb-1">Agreed Number of Photos</label>
+                     <div className="mt-4 pt-4 border-t border-zinc-200/40">
+                         <label className="block text-sm text-zinc-700 font-medium mb-1">Agreed Number of Photos</label>
                          <div className="flex gap-2">
                              <input 
                                  type="number" 
-                                 className="w-full text-sm p-2 border border-slate-200 rounded-md bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
                                  defaultValue={gallery.selection_limit || 0}
                                  min="0"
                                  onBlur={(e) => {
@@ -846,20 +846,20 @@ export const GalleryManager: React.FC = () => {
                                  }}
                              />
                          </div>
-                         <p className="text-xs text-slate-500 mt-1">Set to 0 for unlimited. If greater than 0, clients will be asked to confirm before selecting more (extras).</p>
+                         <p className="text-xs text-zinc-500 mt-1">Set to 0 for unlimited. If greater than 0, clients will be asked to confirm before selecting more (extras).</p>
                      </div>
                  )}
               </div>
 
               {/* Stats Card */}
-              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 className="text-lg font-semibold mb-4">Gallery Stats</h2>
-                <div className="space-y-3 text-sm text-slate-600 mb-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Gallery Stats</h2>
+                <div className="space-y-3 text-sm text-zinc-600 mb-4">
+                    <div className="flex justify-between items-center border-b border-zinc-200/40 pb-2">
                         <span>Total Files</span>
-                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
+                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <div className="flex justify-between items-center border-b border-zinc-200/40 pb-2">
                         <span>Selected by Client</span>
                         <div className="flex items-center gap-2">
                             {gallery.selection_limit && gallery.selection_limit > 0 && clientSelections.length > gallery.selection_limit && (
@@ -872,14 +872,14 @@ export const GalleryManager: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center">
                         <span>Total Downloads</span>
-                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
+                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
                     </div>
                 </div>
                 
                 {clientSelections.length > 0 && (
                   <button 
                     onClick={handleExportCSV}
-                    className="w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
+                    className="w-full py-3 bg-slate-100 text-zinc-700 hover:bg-slate-200 border-none text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
                   >
                     <FileDown className="w-4 h-4" />
                     <span>Export Selections (CSV)</span>
@@ -891,14 +891,14 @@ export const GalleryManager: React.FC = () => {
             <div className="lg:col-span-1 space-y-6">
               {/* Portfolio Detail Card */}
               <div className="bg-slate-900 text-white p-6 rounded-xl shadow-md border border-slate-800">
-                <h2 className="text-lg font-semibold mb-4">Portfolio Details</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Portfolio Details</h2>
                 <div className="space-y-4 text-sm text-slate-300">
                     <div>
-                        <span className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Category</span>
+                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Category</span>
                         <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category}</span>
                     </div>
                     <div>
-                        <span className="block text-xs uppercase tracking-wider text-slate-500 mb-1 text-left">Visibility</span>
+                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Visibility</span>
                         <span className="font-medium text-emerald-400 flex items-center gap-2">
                             <Eye className="w-4 h-4" /> Visible on Public Site
                         </span>
@@ -907,15 +907,15 @@ export const GalleryManager: React.FC = () => {
               </div>
 
               {/* Stats Card */}
-              <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 className="text-lg font-semibold mb-4">Collection Stats</h2>
-                <div className="space-y-3 text-sm text-slate-600 mb-4">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Collection Stats</h2>
+                <div className="space-y-3 text-sm text-zinc-600 mb-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-zinc-200/40">
                         <span>Total Items</span>
-                        <span className="font-medium text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
+                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
                     </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+                <p className="text-xs text-zinc-500 mt-4 leading-relaxed">
                     Portfolio collections are public indefinitely. You don't need to set an expiration time for these items.
                 </p>
               </div>
@@ -925,8 +925,8 @@ export const GalleryManager: React.FC = () => {
         {/* Right Column: Content */}
         <div className={!isPortfolio ? "lg:col-span-2" : "lg:col-span-3"} id="gallery-content">
             <div 
-                className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-colors relative ${
-                    isDragging ? 'border-emerald-500 bg-emerald-50/30 border-2 border-dashed' : 'border-slate-200'
+                className={`bg-white rounded-2xl shadow-sm border border-zinc-200/40 overflow-hidden transition-colors relative ${
+                    isDragging ? 'border-emerald-500 bg-emerald-50/30 border-2 border-dashed' : 'border-zinc-200/60'
                 }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -941,7 +941,7 @@ export const GalleryManager: React.FC = () => {
                         </div>
                     </div>
                 )}
-                <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div className="p-4 md:p-6 border-b border-zinc-200/60 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-lg font-semibold">Gallery Content</h2>
                         {/* Filter Tabs */}
@@ -949,13 +949,13 @@ export const GalleryManager: React.FC = () => {
                           <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium flex-wrap gap-1">
                               <button 
                                   onClick={() => setViewFilter('all')}
-                                  className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                                  className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
                               >
                                   All ({files.length})
                               </button>
                               <button 
                                   onClick={() => setViewFilter('selected')}
-                                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-zinc-500 hover:text-rose-600'}`}
                               >
                                   <Heart className="w-3 h-3" />
                                   Selected ({clientSelections.length})
@@ -964,13 +964,13 @@ export const GalleryManager: React.FC = () => {
                                 <>
                                   <button 
                                       onClick={() => setViewFilter('main')}
-                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'main' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}
+                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'main' ? 'bg-white shadow-sm text-rose-600' : 'text-zinc-500 hover:text-rose-600'}`}
                                   >
                                       Main ({mainSelections.length})
                                   </button>
                                   <button 
                                       onClick={() => setViewFilter('extras')}
-                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-amber-600'}`}
+                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-zinc-500 hover:text-amber-600'}`}
                                   >
                                       Extras ({extraSelections.length})
                                   </button>
@@ -983,12 +983,12 @@ export const GalleryManager: React.FC = () => {
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
                         {!isPortfolio && (
                             <>
-                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 flex-1 sm:flex-none">
-                                   <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                                <div className="flex items-center gap-2 bg-zinc-50/80 px-3 py-2.5 rounded-lg border border-zinc-200/60 flex-1 sm:flex-none">
+                                   <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                                    <select 
                                      value={expiryHours}
                                      onChange={(e) => setExpiryHours(Number(e.target.value))}
-                                     className="bg-transparent text-sm text-slate-700 outline-none cursor-pointer w-full sm:w-auto"
+                                     className="bg-transparent text-sm text-zinc-700 outline-none cursor-pointer w-full sm:w-auto"
                                      title="Content Expiration"
                                      disabled={uploading}
                                    >
@@ -1032,10 +1032,10 @@ export const GalleryManager: React.FC = () => {
                         />
                         
                         {isUploadingThisGallery ? (
-                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 flex-1 sm:flex-none">
+                          <div className="flex items-center gap-3 bg-zinc-50/80 px-4 py-2 rounded-lg border border-zinc-200/60 flex-1 sm:flex-none">
                              <div className="flex flex-col w-full sm:w-32">
                                 <div className="flex justify-between text-xs mb-1">
-                                   <span className="text-slate-600 font-medium">Uploading...</span>
+                                   <span className="text-zinc-600 font-medium">Uploading...</span>
                                    <span className="text-emerald-600 font-bold">{progress}%</span>
                                 </div>
                                 <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -1060,7 +1060,7 @@ export const GalleryManager: React.FC = () => {
                 </div>
 
                 {visibleFiles.length === 0 ? (
-                    <div className="p-12 text-center text-slate-500">
+                    <div className="p-12 text-center text-zinc-500">
                         {!isPortfolio && viewFilter === 'selected' ? (
                             <>
                                 <Heart className="w-12 h-12 mx-auto mb-4 text-slate-300" />
@@ -1086,9 +1086,9 @@ export const GalleryManager: React.FC = () => {
                                 }
                             }
                             return (
-                                <div key={file.id} className={`p-4 flex items-center justify-between hover:bg-slate-50 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
+                                <div key={file.id} className={`p-4 flex items-center justify-between hover:bg-zinc-50/80 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
                                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                                        <div className="relative w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
+                                        <div className="relative w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-200/60">
                                             {file.file_type === 'image' ? (
                                                 <img 
                                                   src={file.thumbnail_url ? getOptimizedImageUrl(file.thumbnail_url, 100, 100) : getOptimizedImageUrl(file.file_url, 100, 100)} 
@@ -1117,7 +1117,7 @@ export const GalleryManager: React.FC = () => {
                                             )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-slate-900 truncate flex items-center gap-2">
+                                            <p className="text-sm font-medium text-zinc-900 truncate flex items-center gap-2">
                                                 {file.file_path.split('/').pop()}
                                                 {!isPortfolio && isSelected && (
                                                     <>
@@ -1129,9 +1129,9 @@ export const GalleryManager: React.FC = () => {
                                                 )}
                                                 {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">EDITED</span>}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
+                                            <p className="text-xs text-zinc-500 mt-0.5">Uploaded: {formatDate(file.created_at)}</p>
                                             {!isPortfolio && (
-                                                <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
+                                                <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-zinc-500'}`}>
                                                     {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
                                                 </p>
                                             )}
@@ -1146,7 +1146,7 @@ export const GalleryManager: React.FC = () => {
                                                                 updateFileDetails(file.id, { title: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
+                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
                                                     />
                                                     <textarea 
                                                         placeholder="Description" 
@@ -1158,7 +1158,7 @@ export const GalleryManager: React.FC = () => {
                                                                 updateFileDetails(file.id, { description: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
+                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
                                                     />
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <input 
@@ -1170,7 +1170,7 @@ export const GalleryManager: React.FC = () => {
                                                                     updateFileDetails(file.id, { print_size: e.target.value });
                                                                 }
                                                             }}
-                                                            className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                            className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
                                                         />
                                                         <input 
                                                             type="text" 
@@ -1181,7 +1181,7 @@ export const GalleryManager: React.FC = () => {
                                                                     updateFileDetails(file.id, { material: e.target.value });
                                                                 }
                                                             }}
-                                                            className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                            className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
                                                         />
                                                     </div>
                                                     <input 
@@ -1193,7 +1193,7 @@ export const GalleryManager: React.FC = () => {
                                                                 updateFileDetails(file.id, { price: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-amber-700"
+                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-amber-700"
                                                     />
                                                 </div>
                                             )}
@@ -1208,7 +1208,7 @@ export const GalleryManager: React.FC = () => {
                                                 className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
                                                 id={`edited-${file.id}`}
                                             />
-                                            <label htmlFor={`edited-${file.id}`} className="text-xs font-medium text-slate-600 cursor-pointer hidden sm:block">Edited</label>
+                                            <label htmlFor={`edited-${file.id}`} className="text-xs font-medium text-zinc-600 cursor-pointer hidden sm:block">Edited</label>
                                         </div>
                                         <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
                                             <Download className="w-3 h-3" />

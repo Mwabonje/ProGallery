@@ -24,14 +24,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
+      <div className="md:hidden bg-[#09090b] text-slate-50 p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
         <div className="flex items-center space-x-2">
            <Camera className="w-6 h-6 text-emerald-400" />
            <span className="text-xl font-bold tracking-tight">Mwabonje</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="p-2 -mr-2 rounded-md hover:bg-slate-800 transition-colors"
+          className="p-2 -mr-2 rounded-md hover:bg-white/5 transition-colors"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -48,7 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out shadow-xl
+        fixed inset-y-0 left-0 z-40 w-64 bg-[#09090b] text-slate-50 transform transition-transform duration-300 ease-in-out shadow-xl
         md:relative md:translate-x-0 md:shadow-none flex flex-col justify-between
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -67,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive('/dashboard') 
                   ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
               <LayoutDashboard className="w-5 h-5" />
@@ -105,7 +105,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="w-full flex items-center space-x-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
