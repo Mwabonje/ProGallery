@@ -24,8 +24,8 @@ export const GalleryManager: React.FC = () => {
   const prevUploadingRef = useRef(uploading);
 
   // Edit states
-  const [agreedAmount, setAgreedAmount] = useState<number>(0);
-  const [paid, setPaid] = useState<number>(0);
+  const [agreedAmount, setAgreedAmount] = useState<number | ''>('');
+  const [paid, setPaid] = useState<number | ''>('');
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [schemaMissing, setSchemaMissing] = useState(false);
@@ -102,8 +102,8 @@ export const GalleryManager: React.FC = () => {
     }
     
     setGallery(galData);
-    setAgreedAmount(galData.agreed_balance);
-    setPaid(galData.amount_paid);
+    setAgreedAmount(galData.agreed_balance === 0 ? '' : galData.agreed_balance);
+    setPaid(galData.amount_paid === 0 ? '' : galData.amount_paid);
     setEditClientName(galData.client_name);
     setEditTitle(galData.title);
     setEditCategory(galData.category || '');
@@ -268,7 +268,7 @@ export const GalleryManager: React.FC = () => {
     try {
       const { error } = await supabase
         .from('galleries')
-        .update({ agreed_balance: agreedAmount, amount_paid: paid })
+        .update({ agreed_balance: Number(agreedAmount) || 0, amount_paid: Number(paid) || 0 })
         .eq('id', gallery.id);
       
       if (error) throw error;
@@ -276,7 +276,7 @@ export const GalleryManager: React.FC = () => {
       // Log activity
       await supabase.from('activity_logs').insert({
         gallery_id: gallery.id,
-        action: `Payment updated: Agreed ${agreedAmount}, Paid ${paid}`
+        action: `Payment updated: Agreed ${Number(agreedAmount) || 0}, Paid ${Number(paid) || 0}`
       });
 
       setPaymentUpdated(true);
@@ -499,8 +499,8 @@ export const GalleryManager: React.FC = () => {
 
   if (!gallery) return <div className="p-8">Loading...</div>;
 
-  const remainingBalance = Math.max(0, agreedAmount - paid);
-  const isVolunteer = agreedAmount === 0;
+  const remainingBalance = Math.max(0, Number(agreedAmount || 0) - Number(paid || 0));
+  const isVolunteer = Number(agreedAmount || 0) === 0;
 
   const limit = gallery?.selection_limit || 0;
   const mainSelections = limit > 0 ? clientSelections.slice(0, limit) : clientSelections;
@@ -728,9 +728,9 @@ export const GalleryManager: React.FC = () => {
                         <input 
                         type="number" 
                         value={agreedAmount}
-                        onChange={(e) => setAgreedAmount(Number(e.target.value))}
+                        onChange={(e) => setAgreedAmount(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        placeholder="Total amount"
+                        placeholder="0"
                         />
                     </div>
                   </div>
@@ -742,22 +742,30 @@ export const GalleryManager: React.FC = () => {
                         <input 
                         type="number" 
                         value={paid}
-                        onChange={(e) => setPaid(Number(e.target.value))}
+                        onChange={(e) => setPaid(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        placeholder="Amount received"
+                        placeholder="0"
                         />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Remaining Balance</label>
-                    <div className="relative bg-slate-50 rounded-lg">
+                    <div className="relative">
                         <span className="absolute left-3 top-2 text-slate-400">KES</span>
                         <input 
-                        type="text" 
-                        value={formatCurrency(remainingBalance).replace('KES', '').trim()}
-                        disabled
-                        className="w-full pl-12 pr-4 py-2 border border-slate-300 bg-slate-100 text-slate-500 rounded-lg outline-none cursor-not-allowed"
+                        type="number" 
+                        value={remainingBalance === 0 ? '' : remainingBalance}
+                        onChange={(e) => {
+                            if (e.target.value === '') {
+                                setPaid(Number(agreedAmount) || 0);
+                            } else {
+                                const newBalance = Number(e.target.value);
+                                setPaid((Number(agreedAmount) || 0) - newBalance);
+                            }
+                        }}
+                        className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        placeholder="0"
                         />
                         <div className="absolute right-3 top-2.5">
                           <Calculator className="w-4 h-4 text-slate-400" />
