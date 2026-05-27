@@ -9,6 +9,8 @@ import { ClientGallery } from './pages/ClientGallery';
 import { Session } from '@supabase/supabase-js';
 import { UploadProvider } from './contexts/UploadContext';
 
+import { Toaster } from 'sonner';
+
 import { Portfolio } from './pages/Portfolio';
 import { Prints } from './pages/Prints';
 
@@ -48,6 +50,7 @@ const App: React.FC = () => {
 
   return (
     <UploadProvider>
+      <Toaster position="top-center" richColors />
       <Router>
         <Routes>
           {/* Public Routes */}

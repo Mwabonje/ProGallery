@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
+import { toast } from 'sonner';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -152,6 +153,7 @@ export const Dashboard: React.FC = () => {
         .single();
 
       if (error) throw error;
+      toast.success(`Gallery "${newClientName}" created successfully!`);
       setIsCreateModalOpen(false);
       navigate(`/gallery/${data.id}`);
     } catch (error: any) {

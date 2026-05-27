@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogOut, Camera, LayoutDashboard, Loader2, Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
+import { toast } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,45 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { uploading, progress, cancelUpload } = useUpload();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Listen to gallery updates to show real-time notifications
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'galleries',
+          filter: `photographer_id=eq.${userId}`
+        },
+        (payload) => {
+          const newGallery = payload.new;
+          const oldGallery = payload.old;
+          
+          if (oldGallery && oldGallery.selection_status !== 'submitted' && newGallery.selection_status === 'submitted') {
+            toast.success(`Client ${newGallery.client_name} submitted their photo selection!`, {
+              duration: 6000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
