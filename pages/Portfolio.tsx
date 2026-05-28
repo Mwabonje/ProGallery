@@ -110,7 +110,7 @@ export const Portfolio: React.FC = () => {
     }
 
     // Extract unique categories (defaulting heavily to un-categorized if not set)
-    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints')))];
+    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints' && c?.toLowerCase() !== 'about')))];
     
     const homeKeywords = ["rafiki", "lamu", "kilele"];
     
@@ -183,7 +183,7 @@ export const Portfolio: React.FC = () => {
                             </div>
                         );
                     })}
-                    <a href="#" onClick={(e) => e.preventDefault()} className="py-4 hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
+                    <button onClick={() => setActiveCategory('ABOUT')} className={`py-4 hover:text-slate-900 transition-colors duration-300 font-semibold tracking-[0.15em] uppercase text-[10px] md:text-xs ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
                     <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="py-4 hover:text-slate-900 transition-colors duration-300">CONTACT</a>
                     <Link to="/prints" className="py-4 hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                 </nav>
@@ -232,7 +232,7 @@ export const Portfolio: React.FC = () => {
                             );
                         })}
                         <div className="h-px w-8 bg-slate-100 my-2" />
-                        <a href="#" onClick={(e) => e.preventDefault()} className="hover:text-slate-900 transition-colors duration-300 cursor-default">ABOUT</a>
+                        <button onClick={() => { setActiveCategory('ABOUT'); setIsMobileMenuOpen(false); }} className={`text-left hover:text-slate-900 transition-colors duration-300 font-semibold tracking-[0.15em] uppercase text-[11px] ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
                         <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
                         <Link to="/prints" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                     </nav>
@@ -248,6 +248,35 @@ export const Portfolio: React.FC = () => {
             </>
 
             {/* Main Content Gallery */}
+            {activeCategory === 'ABOUT' ? (() => {
+                const aboutData = galleries.find(g => g.category?.toUpperCase() === 'ABOUT');
+                const defaultImage = "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=2940&auto=format&fit=crop";
+                const displayImage = aboutData?.coverUrl || defaultImage;
+                const rawText = aboutData?.title || "I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.\n\nFor me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.\n\nAvailable for travel worldwide. Let's create something beautiful together.";
+                
+                return (
+                <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-24 items-center animate-in fade-in duration-1000">
+                    <div className="aspect-[3/4] relative bg-slate-100 overflow-hidden">
+                        <img 
+                            src={displayImage} 
+                            alt="Photographer Portrait" 
+                            className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-6 md:gap-8 justify-center text-center md:text-left">
+                        <h2 className="text-3xl lg:text-5xl font-bold tracking-wider text-slate-900 md:leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                            Capturing the<br className="hidden md:block" /> Essence of the<br className="hidden md:block" /> Moment.
+                        </h2>
+                        <div className="w-12 h-px bg-slate-900 mx-auto md:mx-0"></div>
+                        <div className="text-slate-600 leading-relaxed text-sm md:text-base font-light">
+                            {rawText.split('\n').map((paragraph, index) => (
+                                <p key={index} className="pb-4 whitespace-pre-wrap">{paragraph}</p>
+                            ))}
+                        </div>
+                    </div>
+                </main>
+                );
+            })() : (
             <main className={
                 isFilmsCategory 
                 ? "w-full overflow-hidden" 
@@ -308,6 +337,7 @@ export const Portfolio: React.FC = () => {
                     </div>
                 )}
             </main>
+            )}
             
             {/* Footer */}
             <footer className="w-full py-6 md:py-12 flex flex-col items-center justify-center gap-2 md:gap-3 border-t border-slate-100 mt-6 md:mt-12 text-[#0a192f]">

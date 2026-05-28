@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { toast } from 'sonner';
+import { AboutSettingsModal } from '../components/AboutSettingsModal';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -24,6 +25,7 @@ export const Dashboard: React.FC = () => {
   const [activities, setActivities] = useState<EnrichedActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
   const [isCreating, setIsCreating] = useState(false);
@@ -121,7 +123,7 @@ export const Dashboard: React.FC = () => {
 
     const isPortfolio = newCategory.trim() !== '';
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
-    const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '').length;
+    const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
     if (!isPortfolio && deliveriesCount >= 3) {
         alert("You have reached the maximum limit of 3 Client Deliveries. Please delete an existing delivery to create a new one.");
@@ -253,6 +255,14 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="flex flex-wrap w-full sm:w-auto gap-3 mt-4 sm:mt-0">
               {userId && userEmail === 'ringa.michael@gmail.com' && (
+                <>
+                <button
+                  onClick={() => setIsAboutModalOpen(true)}
+                  className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium">Edit About Me</span>
+                </button>
                 <button
                   onClick={() => window.open(`#/p/${userId}`, '_blank')}
                   className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
@@ -260,6 +270,7 @@ export const Dashboard: React.FC = () => {
                   <Globe className="w-4 h-4" />
                   <span className="text-sm font-medium">Live Portfolio</span>
                 </button>
+                </>
               )}
               <button
               onClick={handleOpenCreateModal}
@@ -392,7 +403,7 @@ export const Dashboard: React.FC = () => {
         <div className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Portfolio Collections</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {galleries.filter(g => g.category && g.category.trim() !== '').map((gallery) => (
+                {galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map((gallery) => (
                 <div 
                     key={gallery.id} 
                     onClick={() => navigate(`/gallery/${gallery.id}`)}
@@ -455,7 +466,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 
                 {/* Create New Portfolio Collection */}
-                {galleries.filter(g => g.category && g.category.trim() !== '').length < 50 && (
+                {galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length < 50 && (
                 <div 
                     onClick={() => {
                         setNewCategory('Wedding'); // Pre-fill with a suggestion since it's portfolio
@@ -581,7 +592,7 @@ export const Dashboard: React.FC = () => {
                     "Maternity", 
                     "Boudoir", 
                     "Fine Art",
-                    ...galleries.map(g => g.category).filter(Boolean)
+                    ...galleries.map(g => g.category).filter(c => Boolean(c) && c !== 'ABOUT')
                   ])).map(cat => (
                     <option key={cat as string} value={cat as string} />
                   ))}
@@ -610,6 +621,14 @@ export const Dashboard: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* About Settings Modal */}
+      {isAboutModalOpen && userId && (
+         <AboutSettingsModal 
+            userId={userId} 
+            onClose={() => setIsAboutModalOpen(false)} 
+         />
       )}
     </div>
   );
