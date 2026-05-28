@@ -11,12 +11,17 @@ export const AboutSettingsModal = ({
     onClose: () => void,
     userId: string
 }) => {
-    const { uploadFiles, uploading } = useUpload();
+    const { uploadFiles, uploading, cancelUpload } = useUpload();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [galleryId, setGalleryId] = useState<string | null>(null);
     const [aboutText, setAboutText] = useState("");
     const [coverUrl, setCoverUrl] = useState<string | null>(null);
+    
+    // Auto-save setup
+    const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+    const lastSavedTextRef = useRef<string>("");
+    
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -36,6 +41,7 @@ export const AboutSettingsModal = ({
                     const gal = data[0];
                     setGalleryId(gal.id);
                     setAboutText(gal.title || "");
+                    lastSavedTextRef.current = gal.title || "";
 
                     // fetch cover
                     const { data: files } = await supabase
@@ -73,6 +79,7 @@ export const AboutSettingsModal = ({
                     if (insertErr) throw insertErr;
                     setGalleryId(newGal.id);
                     setAboutText(newGal.title);
+                    lastSavedTextRef.current = newGal.title;
                 }
             } catch (err: any) {
                 toast.error("Failed to load About settings: " + err.message);
@@ -83,8 +90,39 @@ export const AboutSettingsModal = ({
         init();
     }, [userId]);
 
+    useEffect(() => {
+        if (!galleryId || aboutText === lastSavedTextRef.current || loading) {
+            return;
+        }
+
+        setAutoSaveStatus("saving");
+        const timer = setTimeout(async () => {
+            try {
+                const { error } = await supabase
+                    .from('galleries')
+                    .update({ title: aboutText, link_enabled: true })
+                    .eq('id', galleryId);
+                
+                if (error) throw error;
+                lastSavedTextRef.current = aboutText;
+                setAutoSaveStatus("saved");
+                setTimeout(() => setAutoSaveStatus("idle"), 2000);
+            } catch (err: any) {
+                console.error("Auto-save failed:", err.message);
+                setAutoSaveStatus("error");
+            }
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, [aboutText, galleryId, loading]);
+
     const handleSave = async () => {
         if (!galleryId) return;
+        if (aboutText === lastSavedTextRef.current) {
+            onClose();
+            return;
+        }
+
         setSaving(true);
         try {
             const { error } = await supabase
@@ -93,6 +131,7 @@ export const AboutSettingsModal = ({
                 .eq('id', galleryId);
 
             if (error) throw error;
+            lastSavedTextRef.current = aboutText;
             toast.success("About text updated!");
             onClose();
         } catch (err: any) {
@@ -170,9 +209,20 @@ export const AboutSettingsModal = ({
                                 )}
                                 
                                 {uploading && (
-                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">
                                        <Loader2 className="w-6 h-6 text-slate-600 animate-spin mb-2" />
-                                       <span className="text-sm font-medium text-slate-600">Uploading...</span>
+                                       <span className="text-sm font-medium text-slate-600 mb-3">Uploading...</span>
+                                       <button 
+                                           type="button"
+                                           onClick={(e) => {
+                                               e.preventDefault();
+                                               e.stopPropagation();
+                                               cancelUpload();
+                                           }}
+                                           className="px-3 py-1.5 bg-white border border-slate-200 shadow-sm rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                       >
+                                           Cancel Upload
+                                       </button>
                                     </div>
                                 )}
                             </div>
@@ -211,22 +261,35 @@ export const AboutSettingsModal = ({
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-200 border border-transparent rounded-lg transition-colors"
-                        disabled={saving || uploading}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving || uploading}
-                        className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center gap-2"
-                    >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <div className="text-sm text-slate-500 flex items-center gap-2">
+                        {autoSaveStatus === 'saving' && (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Auto-saving...</>
+                        )}
+                        {autoSaveStatus === 'saved' && (
+                            <><span className="text-green-600 font-medium">✓ Saved</span></>
+                        )}
+                        {autoSaveStatus === 'error' && (
+                            <><span className="text-red-500 font-medium">Auto-save failed</span></>
+                        )}
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-200 border border-transparent rounded-lg transition-colors"
+                            disabled={saving || uploading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={saving || uploading}
+                            className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center gap-2"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {saving ? (lastSavedTextRef.current === aboutText ? 'Close' : 'Saving...') : (lastSavedTextRef.current === aboutText ? 'Close' : 'Save Changes')}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
