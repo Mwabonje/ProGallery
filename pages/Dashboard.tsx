@@ -253,33 +253,13 @@ export const Dashboard: React.FC = () => {
                <h1 className="text-2xl font-bold text-slate-900">Galleries</h1>
                <p className="text-slate-500 text-sm">Manage your client galleries</p>
             </div>
-            <div className="flex flex-wrap w-full sm:w-auto gap-3 mt-4 sm:mt-0">
-              {userId && userEmail === 'ringa.michael@gmail.com' && (
-                <>
-                <button
-                  onClick={() => setIsAboutModalOpen(true)}
-                  className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="text-sm font-medium">Edit About Me</span>
-                </button>
-                <button
-                  onClick={() => window.open(`#/p/${userId}`, '_blank')}
-                  className="flex-[1_1_45%] sm:flex-none border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span className="text-sm font-medium">Live Portfolio</span>
-                </button>
-                </>
-              )}
-              <button
-              onClick={handleOpenCreateModal}
-              className="flex-[1_1_100%] sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-lg active:scale-95"
-              >
-              <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">New Gallery</span>
-              </button>
-            </div>
+            <button
+               onClick={handleOpenCreateModal}
+               className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center transition-all shadow-lg active:scale-95"
+            >
+               <Plus className="w-5 h-5 mr-2" />
+               <span className="text-sm font-medium">New Gallery</span>
+            </button>
         </div>
 
         {/* Private Client Deliveries Section */}
@@ -497,7 +477,27 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Sidebar: Recent Activity */}
-      <div className="w-full lg:w-80 shrink-0">
+      <div className="w-full lg:w-80 shrink-0 space-y-6">
+        
+        {userId && userEmail === 'ringa.michael@gmail.com' && (
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
+            <button
+               onClick={() => setIsAboutModalOpen(true)}
+               className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+            >
+               <User className="w-4 h-4" />
+               <span className="text-sm font-medium">Edit About Me</span>
+            </button>
+            <button
+               onClick={() => window.open(`#/p/${userId}`, '_blank')}
+               className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+            >
+               <Globe className="w-4 h-4" />
+               <span className="text-sm font-medium">Live Portfolio</span>
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                 <Bell className="w-5 h-5 text-slate-500" />
