@@ -48,6 +48,14 @@ export const AboutSettingsModal = ({
                     if (files && files.length > 0) {
                         setCoverUrl(files[0].file_url);
                     }
+
+                    // Auto-fix link_enabled if false
+                    if (gal.link_enabled === false) {
+                        await supabase
+                            .from('galleries')
+                            .update({ link_enabled: true })
+                            .eq('id', gal.id);
+                    }
                 } else {
                     // Create it if not exists
                     const { data: newGal, error: insertErr } = await supabase
@@ -57,7 +65,7 @@ export const AboutSettingsModal = ({
                             client_name: '__ABOUT__',
                             category: 'ABOUT',
                             title: "I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.\n\nFor me, photography is more than just clicking a button; it is about preserving fleeting moments.\n\nAvailable for travel worldwide. Let's create something beautiful together.",
-                            link_enabled: false
+                            link_enabled: true
                         }])
                         .select()
                         .single();
@@ -81,7 +89,7 @@ export const AboutSettingsModal = ({
         try {
             const { error } = await supabase
                 .from('galleries')
-                .update({ title: aboutText })
+                .update({ title: aboutText, link_enabled: true })
                 .eq('id', galleryId);
 
             if (error) throw error;
