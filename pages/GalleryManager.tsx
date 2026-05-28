@@ -1330,10 +1330,14 @@ export const GalleryManager: React.FC = () => {
                                                 )}
                                                 {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold shrink-0">EDITED</span>}
                                             </div>
-                                            <p className="text-xs text-zinc-500 mt-0.5 truncate">Uploaded: {formatDate(file.created_at)}</p>
+                                            <p className={`text-xs text-zinc-500 mt-0.5 leading-tight ${layoutView === 'grid' ? '' : 'truncate'}`}>
+                                                <span className={layoutView === 'grid' ? 'block text-[10px] text-zinc-400 uppercase tracking-wider' : 'hidden'}>Uploaded</span>
+                                                <span className={layoutView === 'grid' ? 'hidden' : ''}>Uploaded: </span>{formatDate(file.created_at)}
+                                            </p>
                                             {!isPortfolio && (
-                                                <p className={`text-xs mt-0.5 truncate ${isExpired ? 'text-red-600 font-bold' : 'text-zinc-500'}`}>
-                                                    {isExpired ? 'Expired: ' : 'Expires: '} {formatDate(file.expires_at)}
+                                                <p className={`text-xs mt-1 leading-tight ${isExpired ? 'text-red-600 font-bold' : 'text-zinc-500'} ${layoutView === 'grid' ? '' : 'truncate'}`}>
+                                                    <span className={layoutView === 'grid' ? 'block text-[10px] uppercase tracking-wider opacity-70' : 'hidden'}>{isExpired ? 'Expired' : 'Expires'}</span>
+                                                    <span className={layoutView === 'grid' ? 'hidden' : ''}>{isExpired ? 'Expired: ' : 'Expires: '}</span>{formatDate(file.expires_at)}
                                                 </p>
                                             )}
                                             {isPortfolio && (
@@ -1400,13 +1404,13 @@ export const GalleryManager: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className={layoutView === 'grid' ? "flex items-center justify-between gap-1 px-3 py-2 border-t border-zinc-100 bg-zinc-50/80 mt-auto" : "flex items-center gap-1 md:gap-3 pl-2 shrink-0"}>
-                                        <div className={`flex items-center gap-1.5 ${layoutView === 'grid' ? 'px-1.5 mr-0' : 'px-2 mr-1 md:mr-3'} bg-slate-100 py-1 rounded-md shrink-0`}>
+                                    <div className={layoutView === 'grid' ? "flex items-center justify-between gap-1 px-2.5 py-2 border-t border-zinc-100 bg-zinc-50/80 mt-auto" : "flex items-center gap-1 md:gap-3 pl-2 shrink-0"}>
+                                        <div className={`flex items-center ${layoutView === 'grid' ? 'gap-1 px-1.5 mr-0' : 'gap-1.5 px-2 mr-1 md:mr-3'} bg-slate-100 py-1 rounded-md shrink-0`}>
                                             <input 
                                                 type="checkbox" 
                                                 checked={file.is_edited || false}
                                                 onChange={() => handleToggleEdited(file.id, file.is_edited || false)}
-                                                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
                                                 id={`edited-${file.id}`}
                                             />
                                             <label htmlFor={`edited-${file.id}`} className={layoutView === 'grid' ? "text-[10px] sm:text-xs font-medium text-zinc-600 cursor-pointer" : "text-xs font-medium text-zinc-600 cursor-pointer hidden sm:block"}>Edited</label>
@@ -1418,23 +1422,30 @@ export const GalleryManager: React.FC = () => {
                                                     {file.download_count}
                                                 </div>
                                             )}
-                                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-1.5 md:p-2 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors" title="View Original">
-                                                <Eye className="w-4 h-4" />
+                                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-1 md:p-1.5 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors" title="View Original">
+                                                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            </a>
+                                            <a href={rewriteUrlToR2(file.file_url)} download target="_blank" rel="noreferrer" onClick={(e) => {
+                                              // e.stopPropagation();
+                                              // optional: increment download count locally if we want
+                                            }} className="p-1 md:p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition-colors" title="Download">
+                                                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                             </a>
                                             {isPortfolio && (
                                                 <button
                                                     onClick={() => handleSetCover(file.id)}
-                                                    className={`p-1.5 md:p-2 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                    className={`p-1 md:p-1.5 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
                                                     title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
                                                 >
-                                                    <Star className={`w-4 h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
+                                                    <Star className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
                                                 </button>
                                             )}
                                             <button 
                                                 onClick={() => deleteFile(file.id, file.file_path)}
-                                                className="p-1.5 md:p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                                className="p-1 md:p-1.5 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                                title="Delete"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                             </button>
                                         </div>
                                     </div>
