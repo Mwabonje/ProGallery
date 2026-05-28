@@ -255,7 +255,7 @@ export const Portfolio: React.FC = () => {
                 const rawText = aboutData?.title || "I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.\n\nFor me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.\n\nAvailable for travel worldwide. Let's create something beautiful together.";
                 
                 return (
-                <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-24 items-center animate-in fade-in duration-1000">
+                <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-6 md:pt-4 md:pb-24 grid md:grid-cols-2 gap-8 md:gap-24 items-center animate-in fade-in duration-1000">
                     <div className="aspect-[3/4] relative bg-slate-100 overflow-hidden">
                         <img 
                             src={displayImage} 
