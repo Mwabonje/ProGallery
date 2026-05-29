@@ -11,6 +11,7 @@ import { AboutSettingsModal } from '../components/AboutSettingsModal';
 interface DashboardGallery extends Gallery {
   coverUrl: string | null;
   itemCount: number;
+  viewCount: number;
 }
 
 interface EnrichedActivityLog extends ActivityLog {
@@ -61,6 +62,13 @@ export const Dashboard: React.FC = () => {
             .select('*', { count: 'exact', head: true })
             .eq('gallery_id', gallery.id);
 
+          // Get view count
+          const { count: viewCount } = await supabase
+            .from('activity_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('gallery_id', gallery.id)
+            .eq('action', 'gallery_view');
+
           // Get latest file for cover
           const { data: files, error: filesError } = await supabase
             .from('files')
@@ -74,6 +82,7 @@ export const Dashboard: React.FC = () => {
           return {
             ...gallery,
             itemCount: count || 0,
+            viewCount: viewCount || 0,
             coverUrl: files && files.length > 0 ? files[0].file_url : null,
             coverType: files && files.length > 0 ? files[0].file_type : null,
           };
@@ -353,6 +362,11 @@ export const Dashboard: React.FC = () => {
                         <span className="text-slate-500">
                         {gallery.itemCount} {gallery.itemCount === 1 ? 'item' : 'items'}
                         </span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-500 flex items-center gap-1" title="Unique visitor views">
+                            <Eye className="w-3 h-3" />
+                            {gallery.viewCount}
+                        </span>
                     </div>
                     </div>
                 </div>
@@ -425,8 +439,12 @@ export const Dashboard: React.FC = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
                         
                         <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider block mb-1">
-                                {gallery.category}
+                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider block mb-1 flex items-center justify-between">
+                                <span>{gallery.category}</span>
+                                <span className="flex items-center gap-1 opacity-80" title="Unique visitor views">
+                                    <Eye className="w-3 h-3" />
+                                    {gallery.viewCount}
+                                </span>
                             </span>
                             <h3 className="font-medium text-white line-clamp-1">
                                 {gallery.client_name}
