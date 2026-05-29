@@ -5,11 +5,105 @@ import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { Instagram, Globe, Mail, Menu, X, Youtube, Video, MessageCircle } from 'lucide-react';
 
+// --- Analytics Tracking ---
+const trackedImpressions = new Set<string>();
+let impressionTimeout: any = null;
+const pendingImpressions = new Set<string>();
+
+const flushImpressions = () => {
+    if (pendingImpressions.size === 0) return;
+    const ids = Array.from(pendingImpressions);
+    pendingImpressions.clear();
+    
+    Promise.all(ids.map(id => fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ galleryId: id, event: 'view' })
+    }))).catch(console.warn);
+};
+
+const trackImpression = (galleryId: string) => {
+    if (trackedImpressions.has(galleryId)) return;
+    trackedImpressions.add(galleryId);
+    pendingImpressions.add(galleryId);
+    if (!impressionTimeout) {
+        impressionTimeout = setTimeout(() => {
+            flushImpressions();
+            impressionTimeout = null;
+        }, 1500); 
+    }
+};
+
+const trackClick = (galleryId: string) => {
+    fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ galleryId, event: 'click' })
+    }).catch(console.warn);
+};
+
 interface PortfolioGallery extends Gallery {
   coverUrl?: string | null;
   coverType?: string | null;
   itemCount?: number;
 }
+
+const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGallery, index: number, isFilmsCategory: boolean }) => {
+    const linkRef = useRef<HTMLAnchorElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                trackImpression(gallery.id);
+                observer.disconnect();
+            }
+        }, { threshold: 0.1 });
+        if (linkRef.current) observer.observe(linkRef.current);
+        return () => observer.disconnect();
+    }, [gallery.id]);
+
+    return (
+        <Link 
+            ref={linkRef}
+            to={`/g/${gallery.id}`} 
+            key={gallery.id}
+            onClick={() => trackClick(gallery.id)}
+            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'aspect-[4/5]'}`}
+        >
+            <div className="bg-slate-50 overflow-hidden relative w-full h-full">
+                {gallery.coverType === 'video' ? (
+                    <video 
+                        src={rewriteUrlToR2(gallery.coverUrl!)} 
+                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
+                        muted playsInline loop preload="metadata"
+                        onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
+                        onMouseOut={(e) => {
+                            const v = e.target as HTMLVideoElement;
+                            v.pause();
+                            v.currentTime = 0;
+                        }}
+                    />
+                ) : (
+                    <img 
+                        src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 70)}
+                        alt={gallery.client_name}
+                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
+                        loading={index < 4 ? "eager" : "lazy"}
+                    />
+                )}
+                
+                {/* Title Overlay */}
+                <div className="absolute inset-x-0 bottom-10 md:bottom-16 pointer-events-none z-10 transition-transform duration-700 md:group-hover:-translate-y-3 flex justify-center">
+                    <h3 className="text-base md:text-xl font-bold tracking-[0.2em] uppercase text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] text-center px-4">
+                        {gallery.client_name}
+                    </h3>
+                </div>
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/0 group-hover:from-black/60 transition-colors duration-700 pointer-events-none" />
+            </div>
+        </Link>
+    );
+};
 
 export const Portfolio: React.FC = () => {
     const { photographerId } = useParams<{ photographerId: string }>();
@@ -295,43 +389,12 @@ export const Portfolio: React.FC = () => {
                     }
                 >
                     {filteredGalleries.map((gallery, index) => (
-                        <Link 
-                            to={`/g/${gallery.id}`} 
-                            key={gallery.id}
-                            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'aspect-[4/5]'}`}
-                        >
-                            <div className="bg-slate-50 overflow-hidden relative w-full h-full">
-                                {gallery.coverType === 'video' ? (
-                                    <video 
-                                        src={rewriteUrlToR2(gallery.coverUrl!)} 
-                                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
-                                        muted playsInline loop preload="metadata"
-                                        onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
-                                        onMouseOut={(e) => {
-                                            const v = e.target as HTMLVideoElement;
-                                            v.pause();
-                                            v.currentTime = 0;
-                                        }}
-                                    />
-                                ) : (
-                                    <img 
-                                        src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 70)}
-                                        alt={gallery.client_name}
-                                        className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
-                                        loading={index < 4 ? "eager" : "lazy"}
-                                    />
-                                )}
-                                
-                                {/* Title Overlay */}
-                                <div className="absolute inset-x-0 bottom-10 md:bottom-16 pointer-events-none z-10 transition-transform duration-700 md:group-hover:-translate-y-3 flex justify-center">
-                                    <h3 className="text-base md:text-xl font-bold tracking-[0.2em] uppercase text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] text-center px-4">
-                                        {gallery.client_name}
-                                    </h3>
-                                </div>
-                                
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/0 group-hover:from-black/60 transition-colors duration-700 pointer-events-none" />
-                            </div>
-                        </Link>
+                        <GalleryCard 
+                            key={gallery.id} 
+                            gallery={gallery} 
+                            index={index} 
+                            isFilmsCategory={isFilmsCategory} 
+                        />
                     ))}
                 </div>
 

@@ -177,60 +177,113 @@ async function startServer() {
   // We'll instruct the user.
 
   // --- Analytics APIs ---
-  let cachedViews: Record<string, number> | null = null;
-  const VIEWS_FILE = "analytics/views.json";
+  interface AnalyticsData {
+      galleries: Record<string, {
+          views: number;
+          clicks: number;
+          daily: Record<string, { views: number; clicks: number }>;
+      }>;
+  }
+  let cachedAnalytics: AnalyticsData | null = null;
+  const ANALYTICS_FILE = "analytics/data_v2.json";
 
-  const getViews = async (): Promise<Record<string, number>> => {
-      if (!s3 || !isR2Configured) return {};
-      if (cachedViews !== null) return cachedViews;
+  const getAnalytics = async (): Promise<AnalyticsData> => {
+      if (!s3 || !isR2Configured) return { galleries: {} };
+      if (cachedAnalytics !== null) return cachedAnalytics;
       try {
-          const command = new GetObjectCommand({ Bucket: R2_BUCKET_NAME!, Key: VIEWS_FILE });
+          const command = new GetObjectCommand({ Bucket: R2_BUCKET_NAME!, Key: ANALYTICS_FILE });
           const response = await s3.send(command);
           const str = await response.Body?.transformToString();
-          cachedViews = str ? JSON.parse(str) : {};
-          return cachedViews!;
+          cachedAnalytics = str ? JSON.parse(str) : { galleries: {} };
+          return cachedAnalytics!;
       } catch (e: any) {
-          // If file doesn't exist, return empty
           if (e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404) {
-              cachedViews = {};
-              return cachedViews;
+              cachedAnalytics = { galleries: {} };
+              return cachedAnalytics;
           }
-          console.error("Error reading views:", e);
-          return {};
+          console.error("Error reading analytics:", e);
+          return { galleries: {} };
       }
   };
 
-  const saveViews = async (views: Record<string, number>) => {
+  const saveAnalytics = async (data: AnalyticsData) => {
       if (!s3 || !isR2Configured) return;
       try {
           const command = new PutObjectCommand({
               Bucket: R2_BUCKET_NAME!,
-              Key: VIEWS_FILE,
-              Body: JSON.stringify(views),
+              Key: ANALYTICS_FILE,
+              Body: JSON.stringify(data),
               ContentType: "application/json"
           });
           await s3.send(command);
       } catch (e) {
-          console.error("Error saving views:", e);
+          console.error("Error saving analytics:", e);
       }
   };
 
+  app.get("/api/analytics", async (req, res) => {
+      const data = await getAnalytics();
+      res.json(data);
+  });
+
+  app.post("/api/analytics/track", async (req, res) => {
+      const { galleryId, event } = req.body; // event: 'view' | 'click'
+      if (!galleryId || !event) return res.status(400).json({ error: "missing galleryId or event" });
+      
+      const data = await getAnalytics();
+      const dateStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+      if (!data.galleries) data.galleries = {};
+      if (!data.galleries[galleryId]) {
+          data.galleries[galleryId] = { views: 0, clicks: 0, daily: {} };
+      }
+      if (!data.galleries[galleryId].daily[dateStr]) {
+          data.galleries[galleryId].daily[dateStr] = { views: 0, clicks: 0 };
+      }
+
+      const galData = data.galleries[galleryId];
+
+      if (event === 'view') {
+          galData.views++;
+          galData.daily[dateStr].views++;
+      } else if (event === 'click') {
+          galData.clicks++;
+          galData.daily[dateStr].clicks++;
+      }
+
+      cachedAnalytics = data;
+      saveAnalytics(data).catch(console.error);
+      
+      res.json({ success: true, count: galData[event === 'click' ? 'clicks' : 'views'] });
+  });
+
+  // Backwards compatibility for the dashboard
   app.get("/api/views", async (req, res) => {
-      const views = await getViews();
-      res.json(views);
+      const data = await getAnalytics();
+      const viewsOnly: Record<string, number> = {};
+      Object.keys(data.galleries || {}).forEach(gid => {
+          viewsOnly[gid] = data.galleries[gid].views;
+      });
+      res.json(viewsOnly);
   });
 
   app.post("/api/track-view", async (req, res) => {
       const { galleryId } = req.body;
       if (!galleryId) return res.status(400).json({ error: "missing galleryId" });
-      const views = await getViews();
-      views[galleryId] = (views[galleryId] || 0) + 1;
-      cachedViews = views; // Update memory cache instantly
       
-      // Fire and forget save to R2
-      saveViews(views).catch(console.error);
-      
-      res.json({ success: true, count: views[galleryId] });
+      const data = await getAnalytics();
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      if (!data.galleries) data.galleries = {};
+      if (!data.galleries[galleryId]) data.galleries[galleryId] = { views: 0, clicks: 0, daily: {} };
+      if (!data.galleries[galleryId].daily[dateStr]) data.galleries[galleryId].daily[dateStr] = { views: 0, clicks: 0 };
+
+      data.galleries[galleryId].views++;
+      data.galleries[galleryId].daily[dateStr].views++;
+
+      cachedAnalytics = data;
+      saveAnalytics(data).catch(console.error);
+      res.json({ success: true, count: data.galleries[galleryId].views });
   });
 
   // --- VITE FRONTEND MIDDLEWARE ---
