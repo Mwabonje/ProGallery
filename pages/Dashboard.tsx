@@ -67,7 +67,7 @@ export const Dashboard: React.FC = () => {
       // 1.5 Fetch analytics from API
       let analyticsData: any = { galleries: {} };
       try {
-          const resp = await fetch('/api/analytics');
+          const resp = await fetch('/api/sys/state');
           if (resp.ok) {
               analyticsData = await resp.json();
           }

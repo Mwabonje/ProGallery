@@ -188,7 +188,8 @@ export const ClientGallery: React.FC = () => {
                      await fetch('/api/track-view', {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ galleryId })
+                         body: JSON.stringify({ galleryId }),
+                         keepalive: true
                      });
                  } catch (e) {
                      console.warn('Failed to track view:', e);

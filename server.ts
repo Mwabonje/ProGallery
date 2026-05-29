@@ -221,12 +221,15 @@ async function startServer() {
       }
   };
 
-  app.get("/api/analytics", async (req, res) => {
+  app.get("/api/sys/state", async (req, res) => {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
       const data = await getAnalytics();
       res.json(data);
   });
 
-  app.post("/api/analytics/track", async (req, res) => {
+  app.post("/api/sys/interaction", async (req, res) => {
       const { galleryId, event } = req.body; // event: 'view' | 'click'
       if (!galleryId || !event) return res.status(400).json({ error: "missing galleryId or event" });
       

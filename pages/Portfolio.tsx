@@ -15,10 +15,11 @@ const flushImpressions = () => {
     const ids = Array.from(pendingImpressions);
     pendingImpressions.clear();
     
-    Promise.all(ids.map(id => fetch('/api/analytics/track', {
+    Promise.all(ids.map(id => fetch('/api/sys/interaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ galleryId: id, event: 'view' })
+        body: JSON.stringify({ galleryId: id, event: 'view' }),
+        keepalive: true
     }))).catch(console.warn);
 };
 
@@ -35,10 +36,11 @@ const trackImpression = (galleryId: string) => {
 };
 
 const trackClick = (galleryId: string) => {
-    fetch('/api/analytics/track', {
+    fetch('/api/sys/interaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ galleryId, event: 'click' })
+        body: JSON.stringify({ galleryId, event: 'click' }),
+        keepalive: true
     }).catch(console.warn);
 };
 
