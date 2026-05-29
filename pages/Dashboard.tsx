@@ -53,6 +53,17 @@ export const Dashboard: React.FC = () => {
 
       if (error) throw error;
 
+      // 1.5 Fetch view counts from API
+      let viewsData: Record<string, number> = {};
+      try {
+          const resp = await fetch('/api/views');
+          if (resp.ok) {
+              viewsData = await resp.json() as Record<string, number>;
+          }
+      } catch (err) {
+          console.warn("Failed to fetch views from API", err);
+      }
+
       // 2. Fetch details for each gallery (Cover Image & Count)
       const enrichedGalleries = await Promise.all(
         (galleriesData || []).map(async (gallery) => {
@@ -62,12 +73,8 @@ export const Dashboard: React.FC = () => {
             .select('*', { count: 'exact', head: true })
             .eq('gallery_id', gallery.id);
 
-          // Get view count
-          const { count: viewCount } = await supabase
-            .from('activity_logs')
-            .select('*', { count: 'exact', head: true })
-            .eq('gallery_id', gallery.id)
-            .eq('action', 'gallery_view');
+          // Get view count from API
+          const viewCount = viewsData[gallery.id] || 0;
 
           // Get latest file for cover
           const { data: files, error: filesError } = await supabase

@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { S3Client, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createServer as createViteServer } from "vite";
 
@@ -175,6 +175,63 @@ async function startServer() {
   // Actually, R2 supports CORS. But it's easier to just fetch proxy if needed, though for large zips it's bad.
   // Given we are downloading photos locally to browser to zip, we MUST have CORS on Cloudflare R2.
   // We'll instruct the user.
+
+  // --- Analytics APIs ---
+  let cachedViews: Record<string, number> | null = null;
+  const VIEWS_FILE = "analytics/views.json";
+
+  const getViews = async (): Promise<Record<string, number>> => {
+      if (!s3 || !isR2Configured) return {};
+      if (cachedViews !== null) return cachedViews;
+      try {
+          const command = new GetObjectCommand({ Bucket: R2_BUCKET_NAME!, Key: VIEWS_FILE });
+          const response = await s3.send(command);
+          const str = await response.Body?.transformToString();
+          cachedViews = str ? JSON.parse(str) : {};
+          return cachedViews!;
+      } catch (e: any) {
+          // If file doesn't exist, return empty
+          if (e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404) {
+              cachedViews = {};
+              return cachedViews;
+          }
+          console.error("Error reading views:", e);
+          return {};
+      }
+  };
+
+  const saveViews = async (views: Record<string, number>) => {
+      if (!s3 || !isR2Configured) return;
+      try {
+          const command = new PutObjectCommand({
+              Bucket: R2_BUCKET_NAME!,
+              Key: VIEWS_FILE,
+              Body: JSON.stringify(views),
+              ContentType: "application/json"
+          });
+          await s3.send(command);
+      } catch (e) {
+          console.error("Error saving views:", e);
+      }
+  };
+
+  app.get("/api/views", async (req, res) => {
+      const views = await getViews();
+      res.json(views);
+  });
+
+  app.post("/api/track-view", async (req, res) => {
+      const { galleryId } = req.body;
+      if (!galleryId) return res.status(400).json({ error: "missing galleryId" });
+      const views = await getViews();
+      views[galleryId] = (views[galleryId] || 0) + 1;
+      cachedViews = views; // Update memory cache instantly
+      
+      // Fire and forget save to R2
+      saveViews(views).catch(console.error);
+      
+      res.json({ success: true, count: views[galleryId] });
+  });
 
   // --- VITE FRONTEND MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {

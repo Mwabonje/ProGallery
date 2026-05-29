@@ -177,17 +177,22 @@ export const ClientGallery: React.FC = () => {
 
       setGallery(galData);
       
-      // Track Analytics View
+      // Track Analytics View via R2 backend
       const trackView = async () => {
           const viewedKey = `viewed_${galleryId}`;
           if (!localStorage.getItem(viewedKey)) {
               // Check session to exclude photographer
               const { data: { session } } = await supabase.auth.getSession();
               if (!session || session.user.id !== galData.photographer_id) {
-                 await supabase.from('activity_logs').insert({ 
-                      gallery_id: galleryId, 
-                      action: 'gallery_view' 
-                  });
+                 try {
+                     await fetch('/api/track-view', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ galleryId })
+                     });
+                 } catch (e) {
+                     console.warn('Failed to track view:', e);
+                 }
               }
               // Mark as viewed regardless of whether they are photographer or client
               localStorage.setItem(viewedKey, 'true');
