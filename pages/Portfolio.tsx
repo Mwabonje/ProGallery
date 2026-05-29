@@ -32,14 +32,18 @@ export const Portfolio: React.FC = () => {
 
     useEffect(() => {
         const fetchPortfolio = async () => {
-            if (!photographerId) return;
             try {
-                // Fetch public galleries for this photographer
-                const { data: galleriesData, error } = await supabase
+                // Fetch public galleries (if photographerId is provided, filter by it, otherwise fetch all)
+                let query = supabase
                     .from('galleries')
                     .select('*')
-                    .eq('photographer_id', photographerId)
                     .order('created_at', { ascending: false });
+                    
+                if (photographerId) {
+                    query = query.eq('photographer_id', photographerId);
+                }
+                
+                const { data: galleriesData, error } = await query;
 
                 if (error) throw error;
 

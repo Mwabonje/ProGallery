@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
@@ -54,7 +54,9 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<Portfolio />} />
           <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/admin" element={!session ? <Navigate to="/login" /> : <Navigate to="/dashboard" />} />
           <Route path="/g/:galleryId" element={<ClientGallery />} />
           <Route path="/p/:photographerId" element={<Portfolio />} />
           <Route path="/prints" element={<Prints />} />
