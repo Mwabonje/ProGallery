@@ -147,7 +147,7 @@ export const Portfolio: React.FC = () => {
                 </div>
 
                 {/* Desktop Navigation Links */}
-                <nav className="hidden md:flex flex-wrap justify-center items-center gap-6 md:gap-12 text-[10px] md:text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
+                <nav className="hidden md:flex flex-wrap justify-center items-center gap-x-6 gap-y-0 lg:gap-x-10 text-[10px] lg:text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 max-w-5xl mx-auto px-4">
                     {categories.length > 0 && categories.map((cat) => {
                         const isAll = cat === 'All';
                         const catGalleries = galleries.filter(g => g.category === cat);
@@ -159,7 +159,7 @@ export const Portfolio: React.FC = () => {
                             <div key={cat as string} className="relative group">
                                 <button
                                     onClick={() => setActiveCategory(cat as string)}
-                                    className={`py-4 flex items-center hover:text-slate-900 transition-colors duration-300 ${
+                                    className={`py-2 lg:py-4 flex items-center hover:text-slate-900 transition-colors duration-300 ${
                                         activeCategory === cat 
                                         ? 'text-slate-900' 
                                         : ''
@@ -187,9 +187,9 @@ export const Portfolio: React.FC = () => {
                             </div>
                         );
                     })}
-                    <button onClick={() => setActiveCategory('ABOUT')} className={`py-4 hover:text-slate-900 transition-colors duration-300 font-semibold tracking-[0.15em] uppercase text-[10px] md:text-xs ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
-                    <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="py-4 hover:text-slate-900 transition-colors duration-300">CONTACT</a>
-                    <Link to="/prints" className="py-4 hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
+                    <button onClick={() => setActiveCategory('ABOUT')} className={`py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300 ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
+                    <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300">CONTACT</a>
+                    <Link to="/prints" className="py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                 </nav>
             </header>
 
