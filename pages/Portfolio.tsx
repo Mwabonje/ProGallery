@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { generateSlug } from '../utils/slug';
 import { Instagram, Globe, Mail, Menu, X, Youtube, Video, MessageCircle } from 'lucide-react';
 
 // --- Analytics Tracking ---
@@ -69,7 +70,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
     return (
         <Link 
             ref={linkRef}
-            to={`/g/${gallery.id}`} 
+            to={`/${generateSlug(gallery.client_name)}`} 
             key={gallery.id}
             onClick={() => trackClick(gallery.id)}
             className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'aspect-[4/5]'}`}
@@ -273,7 +274,7 @@ export const Portfolio: React.FC = () => {
                                             {catGalleries.map(g => (
                                                 <Link 
                                                     key={g.id} 
-                                                    to={`/g/${g.id}`}
+                                                    to={`/${generateSlug(g.client_name)}`}
                                                     className="text-[10px] md:text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap text-left block w-full"
                                                 >
                                                     {g.client_name.toUpperCase()}

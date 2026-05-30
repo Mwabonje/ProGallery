@@ -5,6 +5,7 @@ import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Downl
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { generateSlug } from '../utils/slug';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
@@ -478,7 +479,9 @@ export const GalleryManager: React.FC = () => {
 
   const handleCopyLink = async () => {
     if (!gallery) return;
-    const url = `${window.location.origin}/g/${gallery.id}`;
+    const slug = generateSlug(gallery.client_name);
+    // If it's the netlify app domain, just use the origin + slug.
+    const url = `${window.location.origin}/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
@@ -772,7 +775,7 @@ export const GalleryManager: React.FC = () => {
                 </button>
                 
                 <a 
-                href={`/g/${gallery.id}`}
+                href={`/${generateSlug(gallery.client_name)}`}
                 target="_blank" 
                 rel="noreferrer"
                 className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-xl flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap ${

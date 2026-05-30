@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2, ArrowUpRight } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
+import { generateSlug } from '../utils/slug';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 // @ts-ignore
 import JSZip from 'jszip';
@@ -157,17 +158,41 @@ export const ClientGallery: React.FC = () => {
     try {
       if (!galleryId) return;
 
-      const { data: galData, error: galError } = await supabase
-        .from('galleries')
-        .select('*')
-        .eq('id', galleryId)
-        .single();
+      let galData: Gallery | null = null;
+      let galError: any = null;
+
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(galleryId);
+
+      if (isUUID) {
+          const { data, error } = await supabase
+            .from('galleries')
+            .select('*')
+            .eq('id', galleryId)
+            .single();
+          galData = data;
+          galError = error;
+      } else {
+          // It's a slug, fetch active galleries and find the matching one
+          const { data, error } = await supabase
+            .from('galleries')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (data) {
+             galData = data.find(g => generateSlug(g.client_name) === galleryId) || null;
+          }
+          if (!galData && !error) {
+             galError = new Error('Gallery not found');
+          }
+      }
 
       if (galError || !galData) {
         setError('Gallery not found or accessed denied.');
         setLoading(false);
         return;
       }
+
+      const activeGalleryId = galData.id;
 
       if (!galData.link_enabled) {
         setError('This gallery is currently unavailable. Please contact the photographer.');
@@ -179,17 +204,17 @@ export const ClientGallery: React.FC = () => {
       
       // Track Analytics View via R2 backend
       const trackView = async () => {
-          const viewedKey = `viewed_${galleryId}`;
+          const viewedKey = `viewed_${activeGalleryId}`;
           if (!localStorage.getItem(viewedKey)) {
               // Check session to exclude photographer
               const { data: { session } } = await supabase.auth.getSession();
-              if (!session || session.user.id !== galData.photographer_id) {
+              if (!session || session.user.id !== galData!.photographer_id) {
                  try {
                      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
                      await fetch(isNetlify ? '/.netlify/functions/sys-interaction' : '/api/sys/interaction', {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ galleryId: galleryId, event: 'view' }),
+                         body: JSON.stringify({ galleryId: activeGalleryId, event: 'view' }),
                          keepalive: true
                      });
                  } catch (e) {
@@ -224,7 +249,7 @@ export const ClientGallery: React.FC = () => {
         const { data: fileData, error: fileError } = await supabase
           .from('files')
           .select('*')
-          .eq('gallery_id', galleryId)
+          .eq('gallery_id', activeGalleryId)
           .gt('expires_at', new Date().toISOString()) 
           .order('expires_at', { ascending: true })
           .range(offset, offset + limit - 1);
@@ -254,7 +279,7 @@ export const ClientGallery: React.FC = () => {
         const { data: selectionData } = await supabase
             .from('selections')
             .select('file_id')
-            .eq('gallery_id', galleryId)
+            .eq('gallery_id', activeGalleryId)
             .order('created_at', { ascending: true }); // Important for counting extras
         
         if (selectionData) {

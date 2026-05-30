@@ -78,6 +78,9 @@ const App: React.FC = () => {
             ) : <Navigate to="/login" />
           } />
 
+          {/* Vanity URL for Galleries (must be last before catch-all) */}
+          <Route path="/:galleryId" element={<ClientGallery />} />
+
           {/* Default */}
           <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
         </Routes>
