@@ -657,7 +657,7 @@ export const ClientGallery: React.FC = () => {
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                 ) : isPortfolio ? (
-                    <button onClick={() => navigate(`/p/${gallery?.photographer_id}`)} className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
+                    <button onClick={() => navigate(`/`)} className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                 ) : null}
@@ -681,7 +681,7 @@ export const ClientGallery: React.FC = () => {
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
              {!isPortfolio && gallery?.photographer_id && (
                  <button 
-                     onClick={() => navigate(`/p/${gallery.photographer_id}`)}
+                     onClick={() => navigate(`/`)}
                      className="flex items-center gap-1.5 px-4 h-10 bg-[#161616] text-white/90 rounded-md font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black hover:text-white transition-all shadow-sm group active:scale-[0.98]"
                  >
                      PORTFOLIO <ArrowUpRight className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />

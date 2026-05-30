@@ -168,8 +168,6 @@ export const Prints: React.FC = () => {
                     onClick={() => {
                         if (window.history.state && window.history.state.idx > 0) {
                             navigate(-1);
-                        } else if (photographerId) {
-                            navigate(`/p/${photographerId}`);
                         } else {
                             navigate('/');
                         }

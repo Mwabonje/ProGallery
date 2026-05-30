@@ -616,7 +616,7 @@ export const Dashboard: React.FC = () => {
                <span className="text-sm font-medium">Edit About Me</span>
             </button>
             <button
-               onClick={() => window.open(`/p/${userId}`, '_blank')}
+               onClick={() => window.open(`/`, '_blank')}
                className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
             >
                <Globe className="w-4 h-4" />
