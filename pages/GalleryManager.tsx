@@ -559,7 +559,8 @@ export const GalleryManager: React.FC = () => {
       
       // Delete from storage
       for (const file of filesToDelete) {
-         await fetch('/api/delete-file', {
+         const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+         await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filePath: file.file_path })
@@ -618,7 +619,8 @@ export const GalleryManager: React.FC = () => {
 
     try {
       // Delete from storage
-      await fetch('/api/delete-file', {
+      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+      await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filePath })

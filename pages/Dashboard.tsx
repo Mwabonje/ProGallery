@@ -67,7 +67,8 @@ export const Dashboard: React.FC = () => {
       // 1.5 Fetch analytics from API
       let analyticsData: any = { galleries: {} };
       try {
-          const resp = await fetch('/api/sys/state');
+          const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+          const resp = await fetch(isNetlify ? '/.netlify/functions/sys-state' : '/api/sys/state');
           if (resp.ok) {
               analyticsData = await resp.json();
           }
@@ -225,7 +226,8 @@ export const Dashboard: React.FC = () => {
 
     try {
         // Delete all files in the gallery prefix from Cloudflare R2
-        await fetch('/api/delete-folder', {
+        const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+        await fetch(isNetlify ? '/.netlify/functions/delete-folder' : '/api/delete-folder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ folderPath: galleryId })
@@ -268,7 +270,8 @@ export const Dashboard: React.FC = () => {
             
         if (filesData && filesData.length > 0) {
             const paths = filesData.map(f => f.file_path);
-            await fetch('/api/delete-file', {
+            const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+            await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filePaths: paths })

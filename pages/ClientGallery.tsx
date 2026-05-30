@@ -185,10 +185,11 @@ export const ClientGallery: React.FC = () => {
               const { data: { session } } = await supabase.auth.getSession();
               if (!session || session.user.id !== galData.photographer_id) {
                  try {
-                     await fetch('/api/track-view', {
+                     const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+                     await fetch(isNetlify ? '/.netlify/functions/sys-interaction' : '/api/sys/interaction', {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ galleryId }),
+                         body: JSON.stringify({ galleryId: galleryId, event: 'view' }),
                          keepalive: true
                      });
                  } catch (e) {

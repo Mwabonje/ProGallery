@@ -15,7 +15,8 @@ const flushImpressions = () => {
     const ids = Array.from(pendingImpressions);
     pendingImpressions.clear();
     
-    Promise.all(ids.map(id => fetch('/api/sys/interaction', {
+    const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+    Promise.all(ids.map(id => fetch(isNetlify ? '/.netlify/functions/sys-interaction' : '/api/sys/interaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ galleryId: id, event: 'view' }),
@@ -36,7 +37,8 @@ const trackImpression = (galleryId: string) => {
 };
 
 const trackClick = (galleryId: string) => {
-    fetch('/api/sys/interaction', {
+    const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+    fetch(isNetlify ? '/.netlify/functions/sys-interaction' : '/api/sys/interaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ galleryId, event: 'click' }),

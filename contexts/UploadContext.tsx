@@ -142,8 +142,11 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             try {
                 const mimeType = getMimeType(file);
 
+                const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+                const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
+                
                 // 1. Get Presigned URL from Backend
-                const presignRes = await fetch('/api/upload-url', {
+                const presignRes = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileName: file.name, fileType: mimeType }),
@@ -198,7 +201,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             const thumbRes = await fetch(thumbDataUrl);
                             const thumbBlob = await thumbRes.blob();
                             URL.revokeObjectURL(thumbDataUrl);
-                            const thumbPresignRes = await fetch('/api/upload-url', {
+                            const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+                            const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
+                            const thumbPresignRes = await fetch(apiUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ fileName: 'thumb_' + file.name + '.jpg', fileType: 'image/jpeg' }),
