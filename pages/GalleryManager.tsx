@@ -478,7 +478,7 @@ export const GalleryManager: React.FC = () => {
 
   const handleCopyLink = async () => {
     if (!gallery) return;
-    const url = `${window.location.origin}/#/g/${gallery.id}`;
+    const url = `${window.location.origin}/g/${gallery.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);

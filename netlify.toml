@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [[headers]]
   for = "/*"
@@ -15,6 +16,21 @@
 [[redirects]]
   from = "/api/delete-file"
   to = "/.netlify/functions/delete-file"
+  status = 200
+
+[[redirects]]
+  from = "/api/delete-folder"
+  to = "/.netlify/functions/delete-folder"
+  status = 200
+
+[[redirects]]
+  from = "/api/sys/state"
+  to = "/.netlify/functions/sys-state"
+  status = 200
+
+[[redirects]]
+  from = "/api/sys/interaction"
+  to = "/.netlify/functions/sys-interaction"
   status = 200
 
 [[redirects]]

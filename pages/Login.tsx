@@ -71,8 +71,8 @@ export const Login: React.FC = () => {
       if (view === 'signup') {
         // Construct the redirect URL to point explicitly to the login page
         // We use window.location.origin to get the base domain (e.g. localhost:5173)
-        // And append /#/login because we are using HashRouter
-        const redirectUrl = `${window.location.origin}/#/login`;
+        // And append /login because we are using BrowserRouter
+        const redirectUrl = `${window.location.origin}/login`;
 
         const { error } = await supabase.auth.signUp({
           email,
@@ -105,7 +105,7 @@ export const Login: React.FC = () => {
     clearMessages();
 
     try {
-      const redirectUrl = `${window.location.origin}/#/login`;
+      const redirectUrl = `${window.location.origin}/login`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
@@ -126,7 +126,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     clearMessages();
     try {
-        const redirectUrl = `${window.location.origin}/#/login`;
+        const redirectUrl = `${window.location.origin}/login`;
         const { error } = await supabase.auth.resend({
             type: 'signup',
             email: email,
