@@ -421,7 +421,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Global Analytics Overview */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                     <div className="bg-slate-800 p-2 rounded-lg"><Eye className="w-5 h-5 text-emerald-400" /></div>
