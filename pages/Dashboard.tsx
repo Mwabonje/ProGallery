@@ -451,89 +451,44 @@ export const Dashboard: React.FC = () => {
             </div>
         )}
 
-        {/* Global Analytics Overview (New Design) */}
-        <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 text-white shadow-xl border border-slate-800/10">
-            <h2 className="text-3xl font-bold mb-2 tracking-tight">Analytics</h2>
-            <p className="text-[#6A8B6F] mb-8 text-lg font-medium">Track your audience engagement over time.</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Total Views Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="bg-[#1C3625] p-3 rounded-2xl">
-                            <Eye className="w-5 h-5 text-[#567BE6]" />
-                        </div>
-                        <span className="text-[#E65656] flex items-center font-bold text-sm bg-transparent">
-                           <TrendingUp className="w-4 h-4 mr-1" /> 0%
-                        </span>
-                    </div>
-                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Total Views</h3>
-                    <p className="text-4xl font-bold">{globalViews}</p>
-                </div>
-                {/* Clicks Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="bg-[#1C3625] p-3 rounded-2xl">
-                            <MousePointerClick className="w-5 h-5 text-[#A37CE6]" />
-                        </div>
-                        <span className="text-[#E65656] flex items-center font-bold text-sm bg-transparent">
-                           <TrendingUp className="w-4 h-4 mr-1" /> 0%
-                        </span>
-                    </div>
-                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Clicks</h3>
-                    <p className="text-4xl font-bold">{globalClicks}</p>
-                </div>
-                {/* CTR Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="bg-[#1C3625] p-3 rounded-2xl">
-                            <TrendingUp className="w-5 h-5 text-[#DE9B35]" />
-                        </div>
-                        <span className="text-[#648B69] font-medium text-sm">Avg. CTR</span>
-                    </div>
-                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Avg. CTR</h3>
-                    <p className="text-4xl font-bold">{globalCtr}%</p>
-                </div>
-            </div>
-
-            {/* Chart Area */}
-            <div className="bg-[#132A1B] rounded-2xl p-6 md:p-8 shadow-sm">
-                <h3 className="font-bold text-xl mb-8">Audience Overview</h3>
-                <div className="h-[280px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
-                                    <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
-                            <XAxis 
-                                dataKey="date" 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }} 
-                                dy={15}
-                                interval="preserveStartEnd"
-                                minTickGap={30}
-                            />
-                            <YAxis 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }}
-                                dx={-5}
-                                tickCount={5}
-                            />
-                            <Tooltip 
-                                contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px' }}
-                                itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
-                            />
-                            <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
+        {/* Chart Area (New Design) */}
+        <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 shadow-xl border border-slate-800/10 text-white overflow-hidden">
+            <h2 className="text-2xl font-bold mb-1 tracking-tight">Audience Overview</h2>
+            <p className="text-[#6A8B6F] mb-6 font-medium text-sm">Engagement over the selected period</p>
+            <div className="h-[280px] w-full bg-[#132A1B] rounded-2xl p-4 md:p-6 shadow-sm">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
+                                <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
+                        <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }} 
+                            dy={15}
+                            interval="preserveStartEnd"
+                            minTickGap={30}
+                        />
+                        <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }}
+                            dx={-5}
+                            tickCount={5}
+                        />
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px' }}
+                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                            labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
+                        />
+                        <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </div>
 
@@ -800,41 +755,81 @@ export const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Sidebar: Recent Activity */}
-      <div className="w-full lg:w-80 shrink-0 space-y-6">
+      {/* Sidebar: Metrics & Recent Activity */}
+      <div className="w-full lg:w-80 xl:w-96 shrink-0 space-y-6">
+
+        {/* Global Analytics Metrics */}
+        <div className="bg-[#09150E] rounded-3xl p-6 shadow-xl border border-slate-800/10 text-white">
+            <h3 className="text-xl font-bold mb-5 tracking-tight">Performance</h3>
+            
+            <div className="space-y-4">
+                {/* Total Views Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
+                    <div>
+                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Total Views</h4>
+                        <p className="text-3xl font-bold text-white">{globalViews}</p>
+                    </div>
+                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#567BE6] group-hover:text-white transition-colors">
+                        <Eye className="w-6 h-6" />
+                    </div>
+                </div>
+                
+                {/* Clicks Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
+                    <div>
+                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Clicks</h4>
+                        <p className="text-3xl font-bold text-white">{globalClicks}</p>
+                    </div>
+                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#A37CE6] group-hover:text-white transition-colors">
+                        <MousePointerClick className="w-6 h-6" />
+                    </div>
+                </div>
+
+                {/* CTR Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
+                    <div>
+                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Avg. CTR</h4>
+                        <p className="text-3xl font-bold text-white">{globalCtr}%</p>
+                    </div>
+                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#DE9B35] group-hover:text-white transition-colors">
+                        <TrendingUp className="w-6 h-6" />
+                    </div>
+                </div>
+            </div>
+        </div>
         
         {userId && userEmail === 'ringa.michael@gmail.com' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                <div>
                    <h3 className="text-sm font-semibold text-slate-900">About Page</h3>
                    <p className="text-xs text-slate-500 mt-0.5">Profile views</p>
                </div>
-               <div className="bg-slate-50 flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-100">
-                   <Eye className="w-4 h-4 text-emerald-500 mr-1.5" />
+               <div className="bg-slate-50 flex items-center justify-center px-4 py-2 rounded-xl border border-slate-100">
+                   <Eye className="w-4 h-4 text-emerald-500 mr-2" />
                    <span className="font-bold text-sm text-slate-800">{aboutViews}</span>
                </div>
             </div>
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 mt-1">
               <button
                  onClick={() => setIsAboutModalOpen(true)}
-                 className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+                 className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
               >
                  <User className="w-4 h-4" />
                  <span className="text-sm font-medium">Edit About Me</span>
               </button>
               <button
                  onClick={() => window.open(`/`, '_blank')}
-                 className="flex-1 border border-slate-200 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+                 className="flex-1 border border-slate-800 bg-[#09150E] hover:bg-[#132A1B] text-white px-5 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
               >
-                 <Globe className="w-4 h-4 text-white/70" />
+                 <Globe className="w-4 h-4 text-[#6A8B6F]" />
                  <span className="text-sm font-medium">Live Portfolio</span>
               </button>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-24">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                 <Bell className="w-5 h-5 text-slate-500" />
                 Recent Activity
