@@ -57,6 +57,14 @@ export const Prints: React.FC = () => {
             return;
         }
 
+        const phone = formData.get('phone') as string;
+        const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+        if (phone && !phoneRegex.test(phone)) {
+            setSubmitError("Please enter a valid phone number.");
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const response = await fetch("https://formspree.io/f/mzdolwql", {
                 method: "POST",
@@ -427,8 +435,8 @@ export const Prints: React.FC = () => {
                                                 <div className="space-y-3">
                                                     <input form="cart-form" type="text" name="name" required pattern="^\s*\S+\s+\S+.*$" title="Please enter your first and last name" placeholder="First and Last Name" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
                                                     <input form="cart-form" type="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address" placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <input form="cart-form" type="tel" name="phone" required placeholder="Phone Number" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <textarea form="cart-form" name="notes" placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 resize-none font-medium text-slate-800" />
+                                                    <input form="cart-form" type="tel" name="phone" required pattern="^\+?[0-9\s\-()]{7,20}$" title="Please enter a valid phone number" placeholder="Phone Number" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
+                                                    <textarea form="cart-form" name="notes" required placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 resize-none font-medium text-slate-800" />
                                                 </div>
                                             </div>
                                         </>
