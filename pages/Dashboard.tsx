@@ -451,46 +451,6 @@ export const Dashboard: React.FC = () => {
             </div>
         )}
 
-        {/* Chart Area (New Design) */}
-        <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 shadow-xl border border-slate-800/10 text-white overflow-hidden">
-            <h2 className="text-2xl font-bold mb-1 tracking-tight">Audience Overview</h2>
-            <p className="text-[#6A8B6F] mb-6 font-medium text-sm">Engagement over the selected period</p>
-            <div className="h-[280px] w-full bg-[#132A1B] rounded-2xl p-4 md:p-6 shadow-sm">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                        <defs>
-                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
-                                <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
-                        <XAxis 
-                            dataKey="date" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }} 
-                            dy={15}
-                            interval="preserveStartEnd"
-                            minTickGap={30}
-                        />
-                        <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }}
-                            dx={-5}
-                            tickCount={5}
-                        />
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px' }}
-                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                            labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
-                        />
-                        <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
 
         {/* Private Client Deliveries Section */}
         <div className="mb-12">
@@ -762,7 +722,7 @@ export const Dashboard: React.FC = () => {
         <div className="bg-[#09150E] rounded-3xl p-6 shadow-xl border border-slate-800/10 text-white">
             <h3 className="text-xl font-bold mb-5 tracking-tight">Performance</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
                 {/* Total Views Card */}
                 <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
                     <div>
@@ -795,6 +755,44 @@ export const Dashboard: React.FC = () => {
                         <TrendingUp className="w-6 h-6" />
                     </div>
                 </div>
+            </div>
+
+            <h3 className="text-xl font-bold mb-2 tracking-tight">Audience Overview</h3>
+            <p className="text-[#6A8B6F] mb-4 font-medium text-xs">Engagement over the selected period</p>
+            <div className="h-[200px] w-full bg-[#132A1B] rounded-2xl p-3 shadow-sm">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
+                                <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
+                        <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#648B69', fontSize: 10, fontWeight: 500 }} 
+                            dy={10}
+                            interval="preserveStartEnd"
+                            minTickGap={30}
+                        />
+                        <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#648B69', fontSize: 10, fontWeight: 500 }}
+                            dx={-5}
+                            tickCount={5}
+                        />
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px', fontSize: '12px' }}
+                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                            labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
+                        />
+                        <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </div>
         
