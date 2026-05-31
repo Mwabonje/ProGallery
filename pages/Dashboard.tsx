@@ -352,10 +352,14 @@ export const Dashboard: React.FC = () => {
 
   let globalViews = 0;
   let globalClicks = 0;
+  let aboutViews = 0;
   galleries.forEach(g => {
       const { v, c } = getCardMetrics(g);
       globalViews += v;
       globalClicks += c;
+      if (g.category?.toUpperCase() === 'ABOUT') {
+          aboutViews += v;
+      }
   });
   const globalCtr = globalViews > 0 ? ((globalClicks / globalViews) * 100).toFixed(1) : '0.0';
 
@@ -708,21 +712,33 @@ export const Dashboard: React.FC = () => {
       <div className="w-full lg:w-80 shrink-0 space-y-6">
         
         {userId && userEmail === 'ringa.michael@gmail.com' && (
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-            <button
-               onClick={() => setIsAboutModalOpen(true)}
-               className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
-            >
-               <User className="w-4 h-4" />
-               <span className="text-sm font-medium">Edit About Me</span>
-            </button>
-            <button
-               onClick={() => window.open(`/`, '_blank')}
-               className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
-            >
-               <Globe className="w-4 h-4" />
-               <span className="text-sm font-medium">Live Portfolio</span>
-            </button>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+               <div>
+                   <h3 className="text-sm font-semibold text-slate-900">About Page</h3>
+                   <p className="text-xs text-slate-500 mt-0.5">Profile views</p>
+               </div>
+               <div className="bg-slate-50 flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-100">
+                   <Eye className="w-4 h-4 text-emerald-500 mr-1.5" />
+                   <span className="font-bold text-sm text-slate-800">{aboutViews}</span>
+               </div>
+            </div>
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
+              <button
+                 onClick={() => setIsAboutModalOpen(true)}
+                 className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+              >
+                 <User className="w-4 h-4" />
+                 <span className="text-sm font-medium">Edit About Me</span>
+              </button>
+              <button
+                 onClick={() => window.open(`/`, '_blank')}
+                 className="flex-1 border border-slate-200 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-95"
+              >
+                 <Globe className="w-4 h-4 text-white/70" />
+                 <span className="text-sm font-medium">Live Portfolio</span>
+              </button>
+            </div>
           </div>
         )}
 
