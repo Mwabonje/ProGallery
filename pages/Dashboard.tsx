@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -48,6 +49,7 @@ export const Dashboard: React.FC = () => {
   const [bulkAction, setBulkAction] = useState<'extend' | 'enable' | 'disable'>('extend');
   const [bulkExpiryHours, setBulkExpiryHours] = useState<number>(24);
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
+  const [chartData, setChartData] = useState<any[]>([]);
 
   const toggleGallerySelection = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
@@ -123,6 +125,35 @@ export const Dashboard: React.FC = () => {
       } catch (err) {
           console.warn("Failed to fetch analytics from API", err);
       }
+
+      const aggregatedDaily: Record<string, { views: number, clicks: number }> = {};
+      Object.keys(analyticsData.galleries || {}).forEach(galId => {
+          const daily = analyticsData.galleries[galId]?.daily || {};
+          Object.keys(daily).forEach(dateStr => {
+              if (!aggregatedDaily[dateStr]) aggregatedDaily[dateStr] = { views: 0, clicks: 0 };
+              aggregatedDaily[dateStr].views += daily[dateStr].views || 0;
+              aggregatedDaily[dateStr].clicks += daily[dateStr].clicks || 0;
+          });
+      });
+
+      const sortedDates = Object.keys(aggregatedDaily).sort();
+      const chartArr = sortedDates.map(date => {
+          const d = new Date(date);
+          const formattedDate = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+          return {
+              date: formattedDate,
+              views: aggregatedDaily[date].views,
+              clicks: aggregatedDaily[date].clicks,
+          };
+      });
+
+      if (chartArr.length === 0) {
+          const today = new Date();
+          const p = new Date(today); p.setDate(today.getDate() - 1);
+          chartArr.push({ date: p.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), views: 0, clicks: 0 });
+          chartArr.push({ date: today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), views: 0, clicks: 0 });
+      }
+      setChartData(chartArr);
 
       // 2. Fetch details for each gallery (Cover Image & Count)
       const enrichedGalleries = await Promise.all(
@@ -420,28 +451,89 @@ export const Dashboard: React.FC = () => {
             </div>
         )}
 
-        {/* Global Analytics Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="bg-slate-800 p-2 rounded-lg"><Eye className="w-5 h-5 text-emerald-400" /></div>
+        {/* Global Analytics Overview (New Design) */}
+        <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 text-white shadow-xl border border-slate-800/10">
+            <h2 className="text-3xl font-bold mb-2 tracking-tight">Analytics</h2>
+            <p className="text-[#6A8B6F] mb-8 text-lg font-medium">Track your audience engagement over time.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Total Views Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="bg-[#1C3625] p-3 rounded-2xl">
+                            <Eye className="w-5 h-5 text-[#567BE6]" />
+                        </div>
+                        <span className="text-[#E65656] flex items-center font-bold text-sm bg-transparent">
+                           <TrendingUp className="w-4 h-4 mr-1" /> 0%
+                        </span>
+                    </div>
+                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Total Views</h3>
+                    <p className="text-4xl font-bold">{globalViews}</p>
                 </div>
-                <h3 className="text-slate-400 text-sm font-medium">Total Views</h3>
-                <p className="text-3xl font-bold mt-1">{globalViews}</p>
+                {/* Clicks Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="bg-[#1C3625] p-3 rounded-2xl">
+                            <MousePointerClick className="w-5 h-5 text-[#A37CE6]" />
+                        </div>
+                        <span className="text-[#E65656] flex items-center font-bold text-sm bg-transparent">
+                           <TrendingUp className="w-4 h-4 mr-1" /> 0%
+                        </span>
+                    </div>
+                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Clicks</h3>
+                    <p className="text-4xl font-bold">{globalClicks}</p>
+                </div>
+                {/* CTR Card */}
+                <div className="bg-[#132A1B] rounded-2xl p-6 relative shadow-sm">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="bg-[#1C3625] p-3 rounded-2xl">
+                            <TrendingUp className="w-5 h-5 text-[#DE9B35]" />
+                        </div>
+                        <span className="text-[#648B69] font-medium text-sm">Avg. CTR</span>
+                    </div>
+                    <h3 className="text-[#648B69] font-medium text-sm mb-1 uppercase tracking-wider">Avg. CTR</h3>
+                    <p className="text-4xl font-bold">{globalCtr}%</p>
+                </div>
             </div>
-            <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="bg-slate-800 p-2 rounded-lg"><MousePointerClick className="w-5 h-5 text-indigo-400" /></div>
+
+            {/* Chart Area */}
+            <div className="bg-[#132A1B] rounded-2xl p-6 md:p-8 shadow-sm">
+                <h3 className="font-bold text-xl mb-8">Audience Overview</h3>
+                <div className="h-[280px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
+                                    <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
+                            <XAxis 
+                                dataKey="date" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }} 
+                                dy={15}
+                                interval="preserveStartEnd"
+                                minTickGap={30}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#648B69', fontSize: 12, fontWeight: 500 }}
+                                dx={-5}
+                                tickCount={5}
+                            />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px' }}
+                                itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
+                            />
+                            <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
-                <h3 className="text-slate-400 text-sm font-medium">Clicks</h3>
-                <p className="text-3xl font-bold mt-1">{globalClicks}</p>
-            </div>
-            <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="bg-slate-800 p-2 rounded-lg"><TrendingUp className="w-5 h-5 text-amber-400" /></div>
-                </div>
-                <h3 className="text-slate-400 text-sm font-medium">Avg. CTR</h3>
-                <p className="text-3xl font-bold mt-1">{globalCtr}%</p>
             </div>
         </div>
 
