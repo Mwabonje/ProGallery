@@ -48,6 +48,14 @@ export const Prints: React.FC = () => {
 
         const form = e.currentTarget;
         const formData = new FormData(form);
+        
+        const email = formData.get('email') as string;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (email && !emailRegex.test(email)) {
+            setSubmitError("Please enter a valid email address.");
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
             const response = await fetch("https://formspree.io/f/mzdolwql", {
@@ -418,7 +426,7 @@ export const Prints: React.FC = () => {
                                                 <h3 className="font-sans font-bold text-slate-800 mb-4 text-sm">Contact & Delivery</h3>
                                                 <div className="space-y-3">
                                                     <input form="cart-form" type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <input form="cart-form" type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
+                                                    <input form="cart-form" type="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address" placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
                                                     <input form="cart-form" type="tel" name="phone" placeholder="Phone Number (Optional)" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 font-medium text-slate-800" />
                                                     <textarea form="cart-form" name="notes" placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-sm placeholder:text-slate-400 resize-none font-medium text-slate-800" />
                                                 </div>
