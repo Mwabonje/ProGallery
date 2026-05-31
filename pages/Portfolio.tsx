@@ -204,6 +204,16 @@ export const Portfolio: React.FC = () => {
         return () => el.removeEventListener('wheel', onWheel);
     }, [galleries, activeCategory, isFilmsCategory]);
 
+    // Track "ABOUT" page impression
+    useEffect(() => {
+        if (activeCategory === 'ABOUT') {
+            const aboutData = galleries.find(g => g.category?.toUpperCase() === 'ABOUT');
+            if (aboutData?.id) {
+                trackImpression(aboutData.id);
+            }
+        }
+    }, [activeCategory, galleries]);
+
     if (loading) {
         return (
             <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
