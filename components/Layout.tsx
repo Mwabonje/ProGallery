@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Camera, LayoutDashboard, Loader2, Menu, X } from 'lucide-react';
+import { LogOut, Camera, LayoutDashboard, Loader2, Menu, X, Users, TrendingUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
@@ -105,7 +105,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/dashboard') 
+                isActive('/dashboard') && !location.search.includes('view=')
                   ? 'bg-emerald-600 text-white' 
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
@@ -113,7 +113,34 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <LayoutDashboard className="w-5 h-5" />
               <span>Dashboard</span>
             </button>
-            {/* Future settings link could go here */}
+            <button
+              onClick={() => {
+                navigate('/dashboard?view=audience');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                location.search.includes('view=audience')
+                  ? 'bg-emerald-600 text-white' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span>Audience Overview</span>
+            </button>
+            <button
+              onClick={() => {
+                navigate('/dashboard?view=performance');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                location.search.includes('view=performance')
+                  ? 'bg-emerald-600 text-white' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>Performance</span>
+            </button>
           </nav>
         </div>
 

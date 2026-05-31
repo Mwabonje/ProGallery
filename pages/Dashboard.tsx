@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
@@ -33,6 +33,8 @@ interface EnrichedActivityLog extends ActivityLog {
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const currentView = searchParams.get('view') || 'dashboard';
   const [galleries, setGalleries] = useState<DashboardGallery[]>([]);
   const [activities, setActivities] = useState<EnrichedActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -399,54 +401,171 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       {/* Main Content */}
-      <div className="flex-1">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
-            <div>
-               <h1 className="text-2xl font-bold text-slate-900">Galleries & Analytics</h1>
-               <p className="text-slate-500 text-sm">Manage your collections and track performance</p>
-            </div>
-            <div className="flex items-center gap-3">
-                <select 
-                    value={timeFilter}
-                    onChange={(e) => setTimeFilter(e.target.value as any)}
-                    className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2.5 focus:ring-slate-900 focus:border-slate-900"
-                >
-                    <option value="today">Today</option>
-                    <option value="7d">Last 7 Days</option>
-                    <option value="30d">Last 30 Days</option>
-                    <option value="all">All Time</option>
-                </select>
-                <button
-                   onClick={handleOpenCreateModal}
-                   className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center transition-all shadow-lg active:scale-95"
-                >
-                   <Plus className="w-5 h-5 mr-2" />
-                   <span className="text-sm font-medium">New Gallery</span>
-                </button>
-            </div>
-        </div>
-
-        {/* Bulk Actions Toolbar */}
-        {selectedGalleries.length > 0 && (
-            <div className="bg-slate-900 rounded-xl p-4 mb-6 shadow-lg flex items-center justify-between text-white animate-in slide-in-from-top-2">
-                <div className="flex items-center gap-3">
-                    <span className="bg-slate-800 text-slate-100 px-3 py-1 rounded-md text-sm font-medium">
-                        {selectedGalleries.length} selected
-                    </span>
+      <div className="flex-1 w-full max-w-full overflow-hidden">
+        {currentView === 'dashboard' && (
+            <>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+                    <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Galleries & Deliveries</h1>
+                    <p className="text-slate-500 text-sm">Manage your collections and private client deliveries</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <select 
+                            value={timeFilter}
+                            onChange={(e) => setTimeFilter(e.target.value as any)}
+                            className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2.5 focus:ring-slate-900 focus:border-slate-900"
+                        >
+                            <option value="today">Today</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button
+                        onClick={handleOpenCreateModal}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full flex items-center transition-all shadow-lg active:scale-95"
+                        >
+                        <Plus className="w-5 h-5 mr-2" />
+                        <span className="text-sm font-medium">New Gallery</span>
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setSelectedGalleries([])}
-                        className="text-slate-400 hover:text-white px-3 py-2 text-sm transition-colors"
+
+                {/* Bulk Actions Toolbar */}
+                {selectedGalleries.length > 0 && (
+                    <div className="bg-slate-900 rounded-xl p-4 mb-6 shadow-lg flex items-center justify-between text-white animate-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <span className="bg-slate-800 text-slate-100 px-3 py-1 rounded-md text-sm font-medium">
+                                {selectedGalleries.length} selected
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setSelectedGalleries([])}
+                                className="text-slate-400 hover:text-white px-3 py-2 text-sm transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => setIsBulkModalOpen(true)}
+                                className="bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Bulk Update Link Settings
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </>
+        )}
+
+        {currentView === 'performance' && (
+            <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 shadow-xl border border-slate-800/10 text-white animate-in fade-in duration-500">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold mb-2 tracking-tight">Performance</h2>
+                        <p className="text-[#6A8B6F] text-lg font-medium">Global engagement metrics across all galleries.</p>
+                    </div>
+                    <select 
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value as any)}
+                        className="bg-[#132A1B] border border-slate-800 hover:border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:ring-[#81C387] focus:border-[#81C387] transition-colors outline-none cursor-pointer"
                     >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={() => setIsBulkModalOpen(true)}
-                        className="bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        <option value="today">Today</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Total Views Card */}
+                    <div className="bg-[#132A1B] rounded-3xl p-8 relative shadow-sm flex flex-col justify-between group transition-colors hover:bg-[#1A3824]">
+                        <div className="flex justify-between items-start mb-8">
+                            <h4 className="text-[#648B69] font-medium text-sm uppercase tracking-widest">Total Views</h4>
+                            <div className="bg-[#1C3625] p-4 rounded-full text-[#567BE6] group-hover:text-white transition-colors">
+                                <Eye className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <p className="text-5xl font-black text-white tracking-tight">{globalViews}</p>
+                    </div>
+                    
+                    {/* Clicks Card */}
+                    <div className="bg-[#132A1B] rounded-3xl p-8 relative shadow-sm flex flex-col justify-between group transition-colors hover:bg-[#1A3824]">
+                        <div className="flex justify-between items-start mb-8">
+                            <h4 className="text-[#648B69] font-medium text-sm uppercase tracking-widest">Clicks</h4>
+                            <div className="bg-[#1C3625] p-4 rounded-full text-[#A37CE6] group-hover:text-white transition-colors">
+                                <MousePointerClick className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <p className="text-5xl font-black text-white tracking-tight">{globalClicks}</p>
+                    </div>
+
+                    {/* CTR Card */}
+                    <div className="bg-[#132A1B] rounded-3xl p-8 relative shadow-sm flex flex-col justify-between group transition-colors hover:bg-[#1A3824]">
+                        <div className="flex justify-between items-start mb-8">
+                            <h4 className="text-[#648B69] font-medium text-sm uppercase tracking-widest">Avg. CTR</h4>
+                            <div className="bg-[#1C3625] p-4 rounded-full text-[#DE9B35] group-hover:text-white transition-colors">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <p className="text-5xl font-black text-white tracking-tight">{globalCtr}%</p>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {currentView === 'audience' && (
+            <div className="bg-[#09150E] rounded-3xl p-6 md:p-8 mb-10 shadow-xl border border-slate-800/10 text-white overflow-hidden animate-in fade-in duration-500 block w-full relative">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold mb-2 tracking-tight">Audience Overview</h2>
+                        <p className="text-[#6A8B6F] font-medium text-lg">Engagement trends over the selected period</p>
+                    </div>
+                    <select 
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value as any)}
+                        className="bg-[#132A1B] border border-slate-800 hover:border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:ring-[#81C387] focus:border-[#81C387] transition-colors outline-none cursor-pointer"
                     >
-                        Bulk Update Link Settings
-                    </button>
+                        <option value="today">Today</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div className="h-[400px] w-full min-w-0 flex-1 relative bg-[#132A1B] rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden block">
+                    <ResponsiveContainer width="99%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
+                                    <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
+                            <XAxis 
+                                dataKey="date" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#648B69', fontSize: 13, fontWeight: 500 }} 
+                                dy={15}
+                                interval="preserveStartEnd"
+                                minTickGap={30}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#648B69', fontSize: 13, fontWeight: 500 }}
+                                dx={-5}
+                                tickCount={6}
+                            />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '16px' }}
+                                itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
+                                cursor={{ stroke: '#2E4C38', strokeWidth: 1, strokeDasharray: '5 5' }}
+                            />
+                            <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={4} fillOpacity={1} fill="url(#colorViews)" />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         )}
@@ -715,87 +834,9 @@ export const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Sidebar: Metrics & Recent Activity */}
+      {currentView === 'dashboard' && (
       <div className="w-full lg:w-80 xl:w-96 shrink-0 space-y-6">
 
-        {/* Global Analytics Metrics */}
-        <div className="bg-[#09150E] rounded-3xl p-6 shadow-xl border border-slate-800/10 text-white">
-            <h3 className="text-xl font-bold mb-5 tracking-tight">Performance</h3>
-            
-            <div className="space-y-4 mb-8">
-                {/* Total Views Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
-                    <div>
-                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Total Views</h4>
-                        <p className="text-3xl font-bold text-white">{globalViews}</p>
-                    </div>
-                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#567BE6] group-hover:text-white transition-colors">
-                        <Eye className="w-6 h-6" />
-                    </div>
-                </div>
-                
-                {/* Clicks Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
-                    <div>
-                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Clicks</h4>
-                        <p className="text-3xl font-bold text-white">{globalClicks}</p>
-                    </div>
-                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#A37CE6] group-hover:text-white transition-colors">
-                        <MousePointerClick className="w-6 h-6" />
-                    </div>
-                </div>
-
-                {/* CTR Card */}
-                <div className="bg-[#132A1B] rounded-2xl p-5 relative shadow-sm flex items-center justify-between group transition-colors hover:bg-[#1A3824]">
-                    <div>
-                        <h4 className="text-[#648B69] font-semibold text-xs mb-1 uppercase tracking-wider">Avg. CTR</h4>
-                        <p className="text-3xl font-bold text-white">{globalCtr}%</p>
-                    </div>
-                    <div className="bg-[#1C3625] p-3 rounded-2xl text-[#DE9B35] group-hover:text-white transition-colors">
-                        <TrendingUp className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
-            <h3 className="text-xl font-bold mb-2 tracking-tight">Audience Overview</h3>
-            <p className="text-[#6A8B6F] mb-4 font-medium text-xs">Engagement over the selected period</p>
-            <div className="h-[200px] w-full bg-[#132A1B] rounded-2xl p-3 shadow-sm">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
-                        <defs>
-                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
-                                <stop offset="95%" stopColor="#81C387" stopOpacity={0}/>
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1C3625" />
-                        <XAxis 
-                            dataKey="date" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#648B69', fontSize: 10, fontWeight: 500 }} 
-                            dy={10}
-                            interval="preserveStartEnd"
-                            minTickGap={30}
-                        />
-                        <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#648B69', fontSize: 10, fontWeight: 500 }}
-                            dx={-5}
-                            tickCount={5}
-                        />
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: '#1C3625', borderColor: '#2E4C38', color: '#fff', borderRadius: '12px', padding: '12px', fontSize: '12px' }}
-                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                            labelStyle={{ color: '#6A8B6F', marginBottom: '8px' }}
-                        />
-                        <Area type="monotone" dataKey="views" stroke="#7BAB82" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-        
         {userId && userEmail === 'ringa.michael@gmail.com' && (
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -863,6 +904,7 @@ export const Dashboard: React.FC = () => {
             )}
         </div>
       </div>
+      )}
 
       {/* Create Gallery Modal */}
       {isCreateModalOpen && (
