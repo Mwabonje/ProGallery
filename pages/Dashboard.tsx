@@ -571,10 +571,12 @@ export const Dashboard: React.FC = () => {
         )}
 
 
-        {/* Private Client Deliveries Section */}
-        <div className="mb-12">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Client Deliveries</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {currentView === 'dashboard' && (
+        <>
+            {/* Private Client Deliveries Section */}
+            <div className="mb-12">
+                <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Client Deliveries</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleries.filter(g => !g.category || g.category.trim() === '').map((gallery) => (
                 <div 
                     key={gallery.id} 
@@ -831,6 +833,8 @@ export const Dashboard: React.FC = () => {
                 <p className="font-medium">Welcome to your studio dashboard.</p>
                 <p className="text-sm mt-1">Click "New Gallery" to create a private delivery or portfolio collection.</p>
             </div>
+        )}
+        </>
         )}
       </div>
 
