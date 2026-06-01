@@ -5,6 +5,7 @@ import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Instagram, Globe, Mail, Menu, X, Youtube, Video, MessageCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 // --- Analytics Tracking ---
 const trackedImpressions = new Set<string>();
@@ -233,6 +234,27 @@ export const Portfolio: React.FC = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
+            <Helmet>
+                <title>{photographerName} | Portfolio</title>
+                <meta name="description" content={`Explore the photography and film portfolio of ${photographerName}.`} />
+                <link rel="canonical" href={window.location.origin + window.location.pathname} />
+                <meta property="og:title" content={`${photographerName} | Portfolio`} />
+                <meta property="og:description" content={`Explore the photography and film portfolio of ${photographerName}.`} />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content={window.location.origin + window.location.pathname} />
+                {galleries.length > 0 && galleries[0].coverUrl && (
+                    <meta property="og:image" content={galleries[0].coverUrl} />
+                )}
+                {/* JSON-LD Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        "name": `${photographerName} Portfolio`,
+                        "url": window.location.href,
+                    })}
+                </script>
+            </Helmet>
             
             {/* Top Navigation Header */}
             <header className="w-full pt-8 pb-2 md:pt-16 md:pb-4 px-4 md:px-8 flex flex-col items-center relative">

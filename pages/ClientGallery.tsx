@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { generateSlug } from '../utils/slug';
 import { formatCurrency, getTimeRemaining, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { Helmet } from 'react-helmet-async';
 // @ts-ignore
 import JSZip from 'jszip';
 // @ts-ignore
@@ -647,6 +648,26 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
+      <Helmet>
+        <title>{gallery?.client_name || 'Client Gallery'}</title>
+        <meta name="description" content={`View photos for ${gallery?.client_name || 'Client Gallery'}`} />
+        <link rel="canonical" href={window.location.origin + window.location.pathname} />
+        <meta property="og:title" content={gallery?.client_name || 'Client Gallery'} />
+        <meta property="og:description" content={`View photos in the gallery for ${gallery?.client_name || 'Client gallery'}.`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={window.location.origin + window.location.pathname} />
+        {files.length > 0 && files[0].file_url && (
+            <meta property="og:image" content={files[0].file_url} />
+        )}
+        <script type="application/ld+json">
+            {JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "ImageGallery",
+                "name": gallery?.client_name || 'Gallery',
+                "url": window.location.href,
+            })}
+        </script>
+      </Helmet>
       {/* Header */}
       <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
