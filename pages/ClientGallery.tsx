@@ -997,9 +997,9 @@ export const ClientGallery: React.FC = () => {
                 </div>
                 
                 {/* Print Details Banner */}
-                {(file.title?.trim() || (file.description ?? file.caption)?.trim() || file.print_size?.trim() || file.material?.trim() || file.price?.trim()) ? (
+                {((isPrintsGallery && file.title?.trim()) || (file.description ?? file.caption)?.trim() || file.print_size?.trim() || file.material?.trim() || file.price?.trim()) ? (
                     <div className={`px-2 py-4 flex flex-col gap-1 border-t mt-2 w-full ${isPrintsGallery ? 'bg-white border-slate-100' : 'bg-transparent border-slate-200'}`}>
-                        {file.title?.trim() && <h3 className="font-sans text-lg font-medium text-slate-900">{file.title}</h3>}
+                        {file.title?.trim() && isPrintsGallery && <h3 className="font-sans text-lg font-medium text-slate-900">{file.title}</h3>}
                         {(file.description ?? file.caption)?.trim() && (
                             <p className="text-sm text-slate-600 leading-relaxed italic">
                                 {file.description ?? file.caption}
@@ -1353,9 +1353,9 @@ export const ClientGallery: React.FC = () => {
             </div>
 
             {/* Print Info in Lightbox */}
-            {(lightboxFile.title?.trim() || (lightboxFile.description ?? lightboxFile.caption)?.trim() || lightboxFile.print_size?.trim() || lightboxFile.material?.trim() || lightboxFile.price?.trim()) ? (
+            {((isPrintsGallery && lightboxFile.title?.trim()) || (lightboxFile.description ?? lightboxFile.caption)?.trim() || lightboxFile.print_size?.trim() || lightboxFile.material?.trim() || lightboxFile.price?.trim()) ? (
                 <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
-                    {lightboxFile.title?.trim() && <h3 className="font-sans text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
+                    {lightboxFile.title?.trim() && isPrintsGallery && <h3 className="font-sans text-2xl font-medium mb-1 drop-shadow-sm">{lightboxFile.title}</h3>}
                     {(lightboxFile.description ?? lightboxFile.caption)?.trim() && (
                         <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
                             {lightboxFile.description ?? lightboxFile.caption}
