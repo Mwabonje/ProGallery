@@ -75,6 +75,24 @@ export const ClientGallery: React.FC = () => {
   }, [galleryId]);
 
   useEffect(() => {
+    if (gallery?.seo_title) {
+        document.title = gallery.seo_title;
+    } else if (gallery?.client_name) {
+        document.title = `${gallery.client_name} - Gallery`;
+    }
+
+    if (gallery?.seo_description) {
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+            metaDesc = document.createElement('meta');
+            metaDesc.setAttribute('name', 'description');
+            document.head.appendChild(metaDesc);
+        }
+        metaDesc.setAttribute('content', gallery.seo_description);
+    }
+  }, [gallery]);
+
+  useEffect(() => {
     const el = horizontalRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {

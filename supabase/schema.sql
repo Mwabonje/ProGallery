@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.galleries (
   link_enabled boolean DEFAULT true,
   selection_enabled boolean DEFAULT false,
   selection_status text DEFAULT 'pending', -- 'pending', 'submitted', 'completed'
+  selection_limit integer DEFAULT 0,
+  seo_title text,
+  seo_description text,
   created_at timestamptz DEFAULT now()
 );
 
@@ -31,6 +34,12 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='selection_limit') THEN
         ALTER TABLE public.galleries ADD COLUMN selection_limit integer DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='seo_title') THEN
+        ALTER TABLE public.galleries ADD COLUMN seo_title text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='galleries' AND column_name='seo_description') THEN
+        ALTER TABLE public.galleries ADD COLUMN seo_description text;
     END IF;
     
     -- Add files columns for Prints

@@ -387,6 +387,20 @@ export const GalleryManager: React.FC = () => {
       }
   };
 
+  const updateSeoInfo = async (field: 'seo_title' | 'seo_description', value: string) => {
+      if (!gallery) return;
+      try {
+          const { error } = await supabase
+            .from('galleries')
+            .update({ [field]: value })
+            .eq('id', gallery.id);
+          if (error) throw error;
+          setGallery({ ...gallery, [field]: value });
+      } catch (error: any) {
+          console.error(`Error updating ${field}:`, error);
+      }
+  };
+
   const updateSelectionLimit = async (limit: number) => {
       if (!gallery) return;
       try {
@@ -989,6 +1003,39 @@ export const GalleryManager: React.FC = () => {
                          <p className="text-xs text-zinc-500 mt-1">Set to 0 for unlimited. If greater than 0, clients will be asked to confirm before selecting more (extras).</p>
                      </div>
                  )}
+                 <div className="mt-4 pt-4 border-t border-zinc-200/40">
+                     <h3 className="font-medium text-zinc-900 mb-3">SEO Details</h3>
+                     <div className="space-y-3">
+                         <div>
+                             <label className="block text-sm text-zinc-700 font-medium mb-1">Page Title</label>
+                             <input 
+                                 type="text" 
+                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                                 defaultValue={gallery.seo_title || ''}
+                                 onBlur={(e) => {
+                                     if (e.target.value !== gallery.seo_title) {
+                                         updateSeoInfo('seo_title', e.target.value);
+                                     }
+                                 }}
+                             />
+                             <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and search results.</p>
+                         </div>
+                         <div>
+                             <label className="block text-sm text-zinc-700 font-medium mb-1">Meta Description</label>
+                             <textarea 
+                                 rows={3}
+                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none"
+                                 defaultValue={gallery.seo_description || ''}
+                                 onBlur={(e) => {
+                                     if (e.target.value !== gallery.seo_description) {
+                                         updateSeoInfo('seo_description', e.target.value);
+                                     }
+                                 }}
+                             />
+                             <p className="text-xs text-zinc-500 mt-1">Brief summary for search engine results.</p>
+                         </div>
+                     </div>
+                 </div>
               </div>
 
               {/* Stats Card */}
