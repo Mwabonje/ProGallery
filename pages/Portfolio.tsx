@@ -278,7 +278,7 @@ export const Portfolio: React.FC = () => {
                 </div>
 
                 {/* Desktop Navigation Links */}
-                <nav className="hidden md:flex flex-wrap justify-center items-center gap-x-4 gap-y-2 lg:gap-x-8 xl:gap-x-10 lg:gap-y-4 text-[10px] xl:text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-4">
+                <nav className="hidden md:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-5 xl:gap-x-8 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.15em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
                     {categories.length > 0 && categories.map((cat) => {
                         const isAll = cat === 'All';
                         const catGalleries = galleries.filter(g => g.category === cat);
@@ -415,7 +415,7 @@ export const Portfolio: React.FC = () => {
             <main className={
                 isFilmsCategory 
                 ? "w-full overflow-hidden" 
-                : "max-w-[1400px] mx-auto p-1 md:p-2 overflow-y-auto w-full"
+                : "max-w-[1400px] mx-auto p-1 md:p-2 pb-8 md:pb-16 overflow-y-auto w-full"
             }>
                 <div 
                     ref={isFilmsCategory ? horizontalRef : undefined}
