@@ -918,7 +918,7 @@ export const GalleryManager: React.FC = () => {
                         ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
                         : remainingBalance <= 0 
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                            : 'bg-amber-50 text-amber-700 border border-amber-100'
+                            : 'bg-slate-50 text-slate-700 border border-slate-200'
                   }`}>
                     <span className="font-medium">
                         {isVolunteer ? 'Volunteer / Collaboration' : (remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance')}
@@ -1003,7 +1003,7 @@ export const GalleryManager: React.FC = () => {
                         <span>Selected by Client</span>
                         <div className="flex items-center gap-2">
                             {gallery.selection_limit && gallery.selection_limit > 0 && clientSelections.length > gallery.selection_limit && (
-                                <span className="font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-[10px] hidden sm:inline">
+                                <span className="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full text-[10px] hidden sm:inline">
                                     {clientSelections.length - gallery.selection_limit} Extras
                                 </span>
                             )}
@@ -1110,7 +1110,7 @@ export const GalleryManager: React.FC = () => {
                                   </button>
                                   <button 
                                       onClick={() => setViewFilter('extras')}
-                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-zinc-500 hover:text-amber-600'}`}
+                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-slate-800' : 'text-zinc-500 hover:text-slate-800'}`}
                                   >
                                       Extras ({extraSelections.length})
                                   </button>
@@ -1329,7 +1329,7 @@ export const GalleryManager: React.FC = () => {
                                                     <>
                                                         <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold shrink-0">SELECTED</span>
                                                         {isExtra && (
-                                                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold shrink-0">EXTRA</span>
+                                                            <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold shrink-0">EXTRA</span>
                                                         )}
                                                     </>
                                                 )}
@@ -1403,7 +1403,7 @@ export const GalleryManager: React.FC = () => {
                                                                 updateFileDetails(file.id, { price: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-amber-700"
+                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-slate-800"
                                                     />
                                                 </div>
                                             )}
@@ -1439,7 +1439,7 @@ export const GalleryManager: React.FC = () => {
                                             {isPortfolio && (
                                                 <button
                                                     onClick={() => handleSetCover(file.id)}
-                                                    className={`p-1 md:p-1.5 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                    className={`p-1 md:p-1.5 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'}`}
                                                     title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
                                                 >
                                                     <Star className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />

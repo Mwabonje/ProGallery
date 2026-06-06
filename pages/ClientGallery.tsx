@@ -11,6 +11,21 @@ import JSZip from 'jszip';
 // @ts-ignore
 import saveAs from 'file-saver';
 
+const WatermarkOverlay = () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="36" fill="rgba(255,255,255,0.25)" transform="rotate(-45 150 150)" letter-spacing="6">
+            MWABONJE
+        </text>
+    </svg>`;
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    return (
+        <div 
+            className="absolute inset-0 pointer-events-none z-[8] select-none mix-blend-overlay drop-shadow-md" 
+            style={{ backgroundImage: `url("${dataUrl}")`, backgroundRepeat: 'repeat', backgroundPosition: 'center', backgroundSize: '220px 220px' }} 
+        />
+    );
+};
+
 export const ClientGallery: React.FC = () => {
   const { galleryId } = useParams<{ galleryId: string }>();
   const navigate = useNavigate();
@@ -506,90 +521,72 @@ export const ClientGallery: React.FC = () => {
     setDownloadStatusText('Preparing download...');
     abortControllerRef.current = new AbortController();
 
-    const CHUNK_SIZE = 25; // Number of files per zip chunk to prevent browser memory crashes
-    const chunks = [];
-    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
-        chunks.push(files.slice(i, i + CHUNK_SIZE));
-    }
-
     try {
       let globalProcessed = 0;
       const total = files.length;
       const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-      for (let c = 0; c < chunks.length; c++) {
+      const zip = new JSZip();
+      
+      setDownloadStatusText('Preparing list...');
+      
+      const CONCURRENCY_LIMIT = 3;
+      const queue = [...files];
+      const activePromises: Promise<void>[] = [];
+      
+      const processFile = async (file: GalleryFile) => {
           if (abortControllerRef.current?.signal.aborted) return;
-          
-          const chunkFiles = chunks[c];
-          const zip = new JSZip();
-          
-          setDownloadStatusText(chunks.length > 1 ? `Preparing Part ${c + 1} of ${chunks.length}...` : 'Preparing list...');
-          
-          const CONCURRENCY_LIMIT = 3;
-          const queue = [...chunkFiles];
-          const activePromises: Promise<void>[] = [];
-          
-          const processFile = async (file: GalleryFile) => {
-              if (abortControllerRef.current?.signal.aborted) return;
-              try {
-                  const response = await fetch(rewriteUrlToR2(file.file_url), { signal: abortControllerRef.current.signal });
-                  if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
-                  const blob = await response.blob();
-                  const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
-                  zip.file(fileName, blob);
-              } catch (error: any) {
-                  if (error.name !== 'AbortError') {
-                      console.error(`Error downloading file: ${file.id}`, error);
-                  }
-              } finally {
-                  globalProcessed++;
-                  setDownloadProgress(Math.round((globalProcessed / total) * 100));
-                  setDownloadStatusText(chunks.length > 1 ? `Fetching Part ${c + 1}/${chunks.length} (${globalProcessed}/${total})...` : `Fetching files (${globalProcessed}/${total})...`);
+          try {
+              const response = await fetch(rewriteUrlToR2(file.file_url), { signal: abortControllerRef.current.signal });
+              if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
+              const blob = await response.blob();
+              const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
+              zip.file(fileName, blob);
+          } catch (error: any) {
+              if (error.name !== 'AbortError') {
+                  console.error(`Error downloading file: ${file.id}`, error);
               }
-          };
-          
-          const next = async (): Promise<void> => {
-              if (queue.length === 0) return;
-              const file = queue.shift();
-              if (file) {
-                  await processFile(file);
-                  await next();
-              }
-          };
-          
-          for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, chunkFiles.length); i++) {
-              activePromises.push(next());
+          } finally {
+              globalProcessed++;
+              setDownloadProgress(Math.round((globalProcessed / total) * 100));
+              setDownloadStatusText(`Fetching files (${globalProcessed}/${total})...`);
           }
-          
-          await Promise.all(activePromises);
-          
-          if (abortControllerRef.current?.signal.aborted) return;
-          
-          setDownloadStatusText(chunks.length > 1 ? `Packaging Part ${c + 1}... (almost done)` : 'Packaging... (almost done)');
-          
-          const content = await zip.generateAsync({ 
-              type: "blob", 
-              compression: "STORE" 
-          });
-          
-          if (abortControllerRef.current?.signal.aborted) return;
-          
-          const zipName = chunks.length > 1 
-              ? `${galleryName}_part_${c + 1}.zip` 
-              : `${galleryName}_photos.zip`;
-              
-          saveAs(content, zipName);
-          
-          // Clear variables and wait briefly to allow garbage collection
-          if (c < chunks.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+      };
+      
+      const next = async (): Promise<void> => {
+          if (queue.length === 0) return;
+          const file = queue.shift();
+          if (file) {
+              await processFile(file);
+              await next();
           }
+      };
+      
+      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, files.length); i++) {
+          activePromises.push(next());
       }
+      
+      await Promise.all(activePromises);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      setDownloadStatusText('Packaging... (almost done)');
+      
+      const content = await zip.generateAsync({ 
+          type: "blob", 
+          compression: "STORE" 
+      });
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      const zipName = `${galleryName}_photos.zip`;
+          
+      saveAs(content, zipName);
 
     } catch (error: any) {
       if (error.name !== 'AbortError') {
          console.error('Error creating zip:', error);
-         alert(chunks.length > 1 ? 'Failed to download some zip parts due to memory limits. Remaining files should be downloaded individually.' : 'Failed to download all files due to memory limits. Please try downloading individually.');
+         alert('Failed to download all files. Please try downloading individually.');
       }
     } finally {
       setDownloadingAll(false);
@@ -738,12 +735,12 @@ export const ClientGallery: React.FC = () => {
                     </button>
 
                     {isLocked ? (
-                        <div className="flex items-center gap-2 bg-amber-50 px-4 h-10 rounded-lg border border-amber-100 shadow-sm">
+                        <div className="flex items-center gap-2 bg-slate-50 px-4 h-10 rounded-lg border border-slate-200 shadow-sm">
                             <div className="flex flex-col text-right justify-center">
                                 <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">Balance Due</span>
-                                <span className="font-bold text-amber-700 text-sm leading-none">{formatCurrency(balanceDue)}</span>
+                                <span className="font-bold text-slate-800 text-sm leading-none">{formatCurrency(balanceDue)}</span>
                             </div>
-                            <Lock className="w-4 h-4 text-amber-600" />
+                            <Lock className="w-4 h-4 text-slate-500" />
                         </div>
                     ) : agreedAmount === 0 ? (
                         <div className="flex items-center gap-2.5 px-4 h-10 bg-[#f4f6ff] text-indigo-700 rounded-full font-medium border border-indigo-100 shadow-sm text-sm">
@@ -861,7 +858,7 @@ export const ClientGallery: React.FC = () => {
                     {isSelectionMode && isSelected && !isPortfolio && (
                         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none">
                             <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">SELECTED</span>
-                            {isExtra && <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">EXTRA</span>}
+                            {isExtra && <span className="bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">EXTRA</span>}
                         </div>
                     )}
                     {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
@@ -912,11 +909,7 @@ export const ClientGallery: React.FC = () => {
                                 onContextMenu={(e) => e.preventDefault()}
                             />
                             {isLocked && !isPortfolio && (
-                                <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-[0.15] mix-blend-overlay">
-                                    <div className="transform -rotate-45 text-white font-black text-2xl md:text-3xl tracking-[0.2em] whitespace-nowrap drop-shadow-md select-none">
-                                        PREVIEW ONLY 
-                                    </div>
-                                </div>
+                                <WatermarkOverlay />
                             )}
                             <div className="absolute inset-0 z-[5]" 
                                  onContextMenu={(e) => {
@@ -1004,7 +997,7 @@ export const ClientGallery: React.FC = () => {
                             disabled={downloadingId !== null && downloadingId !== file.id}
                             className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? 'px-3 py-2 text-sm max-w-[120px]' : 'p-3'} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${isLocked 
-                                    ? 'bg-amber-100/90 text-amber-700' 
+                                    ? 'bg-slate-100/90 text-slate-800' 
                                     : 'bg-white/90 text-slate-900'
                                 }
                                 ${downloadingId === file.id ? '!bg-red-50 !text-red-600 !border-red-200' : ''}
@@ -1037,7 +1030,7 @@ export const ClientGallery: React.FC = () => {
                             </div>
                         )}
                         {file.price?.trim() && (
-                            <p className="text-md font-bold text-amber-700 mt-1">{file.price}</p>
+                            <p className="text-md font-bold text-slate-700 mt-1">{file.price}</p>
                         )}
                     </div>
                 ) : null}
@@ -1065,7 +1058,7 @@ export const ClientGallery: React.FC = () => {
                             <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors flex items-center gap-2">
                                 {selectedFileIds.size} Selected
                                 {limit > 0 && selectedFileIds.size > limit && (
-                                    <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+                                    <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
                                         {selectedFileIds.size - limit} Extras
                                     </span>
                                 )}
@@ -1102,7 +1095,7 @@ export const ClientGallery: React.FC = () => {
                                 </button>
                                 <button 
                                     onClick={() => setViewFilter('extras')}
-                                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'extras' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-amber-600'}`}
+                                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'extras' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
                                 >
                                     Extras ({extraSelections.length})
                                 </button>
@@ -1187,8 +1180,8 @@ export const ClientGallery: React.FC = () => {
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-6 h-6 text-amber-600" />
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-6 h-6 text-slate-600" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Notice</h3>
             <p className="text-slate-600 mb-6 text-sm">
@@ -1210,8 +1203,8 @@ export const ClientGallery: React.FC = () => {
       {showPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-6 h-6 text-amber-600" />
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-6 h-6 text-slate-600" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Downloads Locked</h3>
             <p className="text-slate-600 mb-6 text-sm">
@@ -1346,11 +1339,7 @@ export const ClientGallery: React.FC = () => {
                             }}
                         />
                         {isLocked && !isPortfolio && (
-                            <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-[0.15] mix-blend-overlay">
-                                <div className="transform -rotate-45 text-white font-black text-4xl sm:text-6xl md:text-8xl tracking-[0.2em] whitespace-nowrap drop-shadow-lg select-none">
-                                    PREVIEW ONLY • PREVIEW ONLY • PREVIEW ONLY
-                                </div>
-                            </div>
+                            <WatermarkOverlay />
                         )}
                         {/* Protection overlay to catch right-clicks / drag-and-drops from extensions */}
                         <div className="absolute inset-0 z-10" 
@@ -1393,7 +1382,7 @@ export const ClientGallery: React.FC = () => {
                         </div>
                     )}
                     {lightboxFile.price?.trim() && (
-                        <p className="text-lg font-bold text-amber-500 mt-2">{lightboxFile.price}</p>
+                        <p className="text-lg font-bold text-slate-300 mt-2">{lightboxFile.price}</p>
                     )}
                 </div>
             ) : null}
@@ -1429,7 +1418,7 @@ export const ClientGallery: React.FC = () => {
                         disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
                         className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
                             isLocked 
-                                ? 'bg-amber-100 text-amber-800' 
+                                ? 'bg-slate-100 text-slate-800' 
                                 : downloadingId === lightboxFile.id 
                                     ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
                                     : 'bg-white text-slate-900 hover:bg-slate-100'

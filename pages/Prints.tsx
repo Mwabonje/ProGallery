@@ -289,7 +289,7 @@ export const Prints: React.FC = () => {
                                                 </div>
                                             )}
                                             {print.price?.trim() && (
-                                                <p className="text-md font-bold text-amber-700 mt-2">{print.price}</p>
+                                                <p className="text-md font-bold text-slate-700 mt-2">{print.price}</p>
                                             )}
                                             
                                             <div className="mt-5 flex justify-center">
