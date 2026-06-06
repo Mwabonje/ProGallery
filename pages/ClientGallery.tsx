@@ -672,28 +672,6 @@ export const ClientGallery: React.FC = () => {
       <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
-            {/* Breadcrumb Navigation */}
-            <nav className="flex text-[10px] md:text-xs text-slate-500 mb-1 lg:mb-2 uppercase tracking-wider" aria-label="Breadcrumb">
-                <ol className="inline-flex items-center space-x-1 md:space-x-2">
-                    <li className="inline-flex items-center">
-                        <Link to="/" className="hover:text-slate-900 transition-colors">Home</Link>
-                    </li>
-                    {isPortfolio && (
-                        <li>
-                            <div className="flex items-center">
-                                <span className="mx-1.5 md:mx-2 text-slate-300">/</span>
-                                <Link to="/" className="hover:text-slate-900 transition-colors">Portfolio</Link>
-                            </div>
-                        </li>
-                    )}
-                    <li aria-current="page">
-                        <div className="flex items-center">
-                            <span className="mx-1.5 md:mx-2 text-slate-300">/</span>
-                            <span className="text-slate-900 font-medium">{gallery?.client_name || 'Gallery'}</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
             <h1 className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? 'text-slate-900 tracking-widest uppercase font-sans' : 'text-slate-900'}`}>
                 {viewFilter !== 'all' ? (
                     <button onClick={() => setViewFilter('all')} className="md:hidden mr-1 p-2 -ml-2 text-slate-400">

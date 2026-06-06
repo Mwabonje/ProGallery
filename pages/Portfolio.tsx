@@ -444,7 +444,7 @@ export const Portfolio: React.FC = () => {
             )}
             
             {/* Footer */}
-            <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center gap-2 md:gap-3 border-t border-slate-100 mt-auto text-[#0a192f]">
+            <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center gap-2 md:gap-3 border-t border-slate-100 text-[#0a192f]">
                 <div className="flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 items-center text-[10px] sm:text-xs font-bold tracking-widest px-4">
                     <a href="https://www.instagram.com/mwabonje_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 sm:gap-2 hover:opacity-70 transition-opacity">
                         <Instagram className="w-3 h-3 sm:w-4 sm:h-4" /> INSTAGRAM
