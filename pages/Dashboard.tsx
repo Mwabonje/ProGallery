@@ -13,6 +13,7 @@ interface DashboardGallery extends Gallery {
   coverUrl: string | null;
   coverType: string | null;
   itemCount: number;
+  downloadCount: number;
   analytics: {
       views: number;
       clicks: number;
@@ -188,26 +189,29 @@ export const Dashboard: React.FC = () => {
               }
           });
 
-          // Get latest file for cover
-          const { data: files, error: filesError } = await supabase
+          // Get latest file for cover and calculate downloads
+          const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type')
+            .select('file_url, file_type, download_count, created_at')
             .eq('gallery_id', gallery.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
 
           if (filesError) console.error("Files query error for gallery", gallery.id, filesError);
+
+          const coverFile = allFiles && allFiles.length > 0 ? allFiles[0] : null;
+          const downloadCount = (allFiles || []).reduce((acc, f) => acc + (f.download_count || 0), 0);
 
           return {
             ...gallery,
             itemCount: count || 0,
+            downloadCount,
             analytics: {
                 views: ad.views || 0,
                 clicks: ad.clicks || 0,
                 viewToday, clickToday, view7d, click7d, view30d, click30d
             },
-            coverUrl: files && files.length > 0 ? files[0].file_url : null,
-            coverType: files && files.length > 0 ? files[0].file_type : null,
+            coverUrl: coverFile ? coverFile.file_url : null,
+            coverType: coverFile ? coverFile.file_type : null,
           };
         })
       );
@@ -871,6 +875,41 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-slate-500" />
+                Top Engagement
+            </h2>
+            
+            {galleries.length === 0 ? (
+                <div className="text-center py-6 text-slate-400">
+                    <p className="text-sm">No galleries yet</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {[...galleries].sort((a,b) => (b.analytics.views + b.downloadCount) - (a.analytics.views + a.downloadCount)).slice(0, 5).map((gallery) => (
+                        <div key={'perf-'+gallery.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-3 last:border-0 last:pb-0 group cursor-pointer" onClick={() => navigate(`/gallery/${gallery.id}`)}>
+                            <div className="flex-1 truncate pr-2">
+                                <p className="text-slate-900 font-medium truncate group-hover:text-slate-600 transition-colors">
+                                    {gallery.client_name}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs font-semibold">
+                                <div className="flex items-center gap-1 text-slate-500" title="Views">
+                                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                                    {gallery.analytics.views}
+                                </div>
+                                <div className="flex items-center gap-1 text-emerald-600" title="Downloads">
+                                    <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    {gallery.downloadCount}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">

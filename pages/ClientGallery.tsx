@@ -583,6 +583,16 @@ export const ClientGallery: React.FC = () => {
           
       saveAs(content, zipName);
 
+      // Log download all feature
+      try {
+          // You could optionally increment all files' download counters here if desired
+          // For now, logging the activity is sufficient
+          await supabase.from('activity_logs').insert({
+              gallery_id: id,
+              action: `Client downloaded all ${files.length} photos`
+          });
+      } catch (err) {}
+
     } catch (error: any) {
       if (error.name !== 'AbortError') {
          console.error('Error creating zip:', error);
