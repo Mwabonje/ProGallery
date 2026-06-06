@@ -415,7 +415,7 @@ export const Portfolio: React.FC = () => {
             <main className={
                 isFilmsCategory 
                 ? "w-full overflow-hidden" 
-                : "max-w-[1400px] mx-auto p-1 md:p-2 pb-8 md:pb-16 overflow-y-auto w-full"
+                : "w-full p-1 md:p-2 pb-8 md:pb-16 overflow-y-auto"
             }>
                 <div 
                     ref={isFilmsCategory ? horizontalRef : undefined}
