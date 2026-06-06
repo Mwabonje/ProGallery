@@ -74,7 +74,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
             to={`/${generateSlug(gallery.client_name)}`} 
             key={gallery.id}
             onClick={() => trackClick(gallery.id)}
-            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'aspect-[4/5]'}`}
+            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}
         >
             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                 {gallery.coverType === 'video' ? (
@@ -414,15 +414,15 @@ export const Portfolio: React.FC = () => {
             })() : (
             <main className={
                 isFilmsCategory 
-                ? "w-full overflow-hidden" 
-                : "w-full p-1 md:p-2 pb-8 md:pb-16 overflow-y-auto"
+                ? "w-full overflow-hidden flex-1 flex flex-col" 
+                : "w-full p-1 md:p-2 pb-2 md:pb-4 overflow-y-auto flex-1 flex flex-col justify-center"
             }>
                 <div 
                     ref={isFilmsCategory ? horizontalRef : undefined}
                     className={
                         isFilmsCategory 
                         ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-280px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${filteredGalleries.length === 1 ? 'justify-center' : ''}`
-                        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2"
+                        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 w-full"
                     }
                 >
                     {filteredGalleries.map((gallery, index) => (
