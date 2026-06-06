@@ -22,6 +22,7 @@ export const ClientGallery: React.FC = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showBalanceWarningModal, setShowBalanceWarningModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, minutes: number, seconds: number, expired: boolean} | null>(null);
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   const [acceptedExtras, setAcceptedExtras] = useState(false);
   
@@ -106,7 +107,9 @@ export const ClientGallery: React.FC = () => {
     const firstFile = files[0];
     
     const updateTimer = () => {
-        const { days, hours, minutes, expired } = getTimeRemaining(firstFile.expires_at);
+        const timeData = getTimeRemaining(firstFile.expires_at);
+        const { days, hours, minutes, seconds, expired } = timeData;
+        setTimeLeft(timeData);
         if (expired) {
             setTimeRemaining('Expired');
         } else if (days > 0) {
@@ -117,7 +120,7 @@ export const ClientGallery: React.FC = () => {
     };
 
     updateTimer(); 
-    const timer = setInterval(updateTimer, 60000); 
+    const timer = setInterval(updateTimer, 1000); 
 
     return () => clearInterval(timer);
   }, [files]);
@@ -686,16 +689,6 @@ export const ClientGallery: React.FC = () => {
             </h1>
             <p className={`text-xs md:text-sm flex items-center gap-2 ${isPortfolio ? 'text-slate-500 tracking-[0.2em] uppercase mt-1' : 'text-slate-500'}`}>
                 {displayedFiles.length} items 
-                {!isPortfolio && (
-                    <>
-                        <span className="text-slate-300">•</span>
-                        {timeRemaining === 'Expired' ? (
-                           <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded text-xs uppercase tracking-wide">Expired</span>
-                        ) : (
-                           <span>Expires in <span className="text-red-500 font-medium">{timeRemaining}</span></span>
-                        )}
-                    </>
-                )}
             </p>
           </div>
           
@@ -767,6 +760,37 @@ export const ClientGallery: React.FC = () => {
              ) : null}
           </div>
         </div>
+        
+        {/* Visual Countdown Banner */}
+        {timeLeft && !isPortfolio && (
+            <div className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-3 ${
+                timeLeft.expired 
+                ? 'bg-rose-600 text-white' 
+                : timeLeft.days === 0 && timeLeft.hours < 24 
+                    ? 'bg-amber-500 text-white' 
+                    : 'bg-[#0f1423] text-white'
+            }`}>
+                {timeLeft.expired ? (
+                    <>
+                        <AlertCircle className="w-3.5 h-3.5" /> GALLERY EXPIRED
+                    </>
+                ) : (
+                    <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Expires In:</span>
+                        <div className="flex items-center gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
+                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.days.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">D</span>
+                            <span className="text-white/40">:</span>
+                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.hours.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">H</span>
+                            <span className="text-white/40">:</span>
+                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.minutes.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">M</span>
+                            <span className="text-white/40">:</span>
+                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.seconds.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px]">S</span>
+                        </div>
+                    </>
+                )}
+            </div>
+        )}
       </header>
 
       {/* Grid */}
