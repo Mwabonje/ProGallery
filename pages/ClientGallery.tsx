@@ -452,7 +452,7 @@ export const ClientGallery: React.FC = () => {
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = file.file_path.split('/').pop() || 'download';
+        link.download = file.title || file.file_path.split('/').pop() || 'download';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -482,7 +482,7 @@ export const ClientGallery: React.FC = () => {
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = file.file_path.split('/').pop() || 'download';
+      link.download = file.title || file.file_path.split('/').pop() || 'download';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -540,7 +540,7 @@ export const ClientGallery: React.FC = () => {
               const response = await fetch(rewriteUrlToR2(file.file_url), { signal: abortControllerRef.current.signal });
               if (!response.ok) throw new Error(`Failed to fetch ${file.file_path}`);
               const blob = await response.blob();
-              const fileName = file.file_path.split('/').pop() || `file-${file.id}`;
+              const fileName = file.title || file.file_path.split('/').pop() || `file-${file.id}`;
               zip.file(fileName, blob);
           } catch (error: any) {
               if (error.name !== 'AbortError') {
