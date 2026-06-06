@@ -763,29 +763,29 @@ export const ClientGallery: React.FC = () => {
         
         {/* Visual Countdown Banner */}
         {timeLeft && !isPortfolio && (
-            <div className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-3 ${
+            <div className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-2 md:gap-3 ${
                 timeLeft.expired 
-                ? 'bg-rose-600 text-white' 
+                ? 'bg-slate-100 text-slate-500 border-b border-slate-200' 
                 : timeLeft.days === 0 && timeLeft.hours < 24 
-                    ? 'bg-amber-500 text-white' 
-                    : 'bg-[#0f1423] text-white'
+                    ? 'bg-slate-900 text-white' 
+                    : 'bg-slate-50 text-slate-500 border-b border-slate-200'
             }`}>
                 {timeLeft.expired ? (
                     <>
-                        <AlertCircle className="w-3.5 h-3.5" /> GALLERY EXPIRED
+                        <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4" /> GALLERY EXPIRED
                     </>
                 ) : (
                     <>
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Expires In:</span>
-                        <div className="flex items-center gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
-                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.days.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">D</span>
-                            <span className="text-white/40">:</span>
-                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.hours.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">H</span>
-                            <span className="text-white/40">:</span>
-                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.minutes.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px] mr-1">M</span>
-                            <span className="text-white/40">:</span>
-                            <span className="bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{timeLeft.seconds.toString().padStart(2, '0')}</span><span className="text-white/60 text-[9px]">S</span>
+                        <Clock className={`w-3.5 h-3.5 md:w-4 md:h-4 ${timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-400' : 'text-slate-400'}`} />
+                        <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-300' : 'text-slate-500'}>Expires In:</span>
+                        <div className="flex items-center gap-1 md:gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'bg-white/10 px-1.5 py-0.5 rounded' : 'bg-slate-200/50 px-1.5 py-0.5 rounded'}>{timeLeft.days.toString().padStart(2, '0')}</span><span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-400 text-[9px] mr-1' : 'text-slate-400 text-[9px] mr-1'}>D</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-600' : 'text-slate-300'}>:</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'bg-white/10 px-1.5 py-0.5 rounded' : 'bg-slate-200/50 px-1.5 py-0.5 rounded'}>{timeLeft.hours.toString().padStart(2, '0')}</span><span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-400 text-[9px] mr-1' : 'text-slate-400 text-[9px] mr-1'}>H</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-600' : 'text-slate-300'}>:</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'bg-white/10 px-1.5 py-0.5 rounded' : 'bg-slate-200/50 px-1.5 py-0.5 rounded'}>{timeLeft.minutes.toString().padStart(2, '0')}</span><span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-400 text-[9px] mr-1' : 'text-slate-400 text-[9px] mr-1'}>M</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-600' : 'text-slate-300'}>:</span>
+                            <span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'bg-white/10 px-1.5 py-0.5 rounded' : 'bg-slate-200/50 px-1.5 py-0.5 rounded'}>{timeLeft.seconds.toString().padStart(2, '0')}</span><span className={timeLeft.days === 0 && timeLeft.hours < 24 ? 'text-slate-400 text-[9px]' : 'text-slate-400 text-[9px]'}>S</span>
                         </div>
                     </>
                 )}
