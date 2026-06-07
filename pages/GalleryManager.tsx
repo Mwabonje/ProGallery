@@ -1078,10 +1078,10 @@ export const GalleryManager: React.FC = () => {
             <div className="lg:col-span-1 space-y-6">
               {/* Portfolio Detail Card */}
               <div className="bg-slate-900 text-white p-6 rounded-xl shadow-md border border-slate-800">
-                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Portfolio Details</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-white mb-5">Portfolio Details</h2>
                 <div className="space-y-4 text-sm text-slate-300">
                     <div>
-                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Category</span>
+                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Category</span>
                         <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category}</span>
                     </div>
                     <div>
@@ -1091,6 +1091,41 @@ export const GalleryManager: React.FC = () => {
                         </span>
                     </div>
                 </div>
+              </div>
+
+              {/* SEO Details Card for Portfolio */}
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
+                  <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">SEO Details</h2>
+                  <div className="space-y-3">
+                      <div>
+                          <label className="block text-sm text-zinc-700 font-medium mb-1">Page Title</label>
+                          <input 
+                              type="text" 
+                              className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                              defaultValue={gallery.seo_title || ''}
+                              onBlur={(e) => {
+                                  if (e.target.value !== gallery.seo_title) {
+                                      updateSeoInfo('seo_title', e.target.value);
+                                  }
+                              }}
+                          />
+                          <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and search results.</p>
+                      </div>
+                      <div>
+                          <label className="block text-sm text-zinc-700 font-medium mb-1">Meta Description</label>
+                          <textarea 
+                              rows={3}
+                              className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none"
+                              defaultValue={gallery.seo_description || ''}
+                              onBlur={(e) => {
+                                  if (e.target.value !== gallery.seo_description) {
+                                      updateSeoInfo('seo_description', e.target.value);
+                                  }
+                              }}
+                          />
+                          <p className="text-xs text-zinc-500 mt-1">Brief summary for search engine results.</p>
+                      </div>
+                  </div>
               </div>
 
               {/* Stats Card */}
