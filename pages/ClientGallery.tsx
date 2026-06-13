@@ -674,11 +674,11 @@ export const ClientGallery: React.FC = () => {
   if (viewFilter === 'main') displayedFiles = files.filter(f => mainSelections.includes(f.id));
   if (viewFilter === 'extras') displayedFiles = files.filter(f => extraSelections.includes(f.id));
 
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
-  const handlePrevLightbox = (e?: React.MouseEvent) => {
-      e?.stopPropagation();
+  const handlePrevLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
+      if (e && 'stopPropagation' in e) e.stopPropagation();
       if (!lightboxFile) return;
       const index = displayedFiles.findIndex(f => f.id === lightboxFile.id);
       if (index > 0) {
@@ -688,8 +688,8 @@ export const ClientGallery: React.FC = () => {
       }
   };
 
-  const handleNextLightbox = (e?: React.MouseEvent) => {
-      e?.stopPropagation();
+  const handleNextLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
+      if (e && 'stopPropagation' in e) e.stopPropagation();
       if (!lightboxFile) return;
       const index = displayedFiles.findIndex(f => f.id === lightboxFile.id);
       if (index !== -1 && index < displayedFiles.length - 1) {
@@ -700,17 +700,17 @@ export const ClientGallery: React.FC = () => {
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
-      setTouchEnd(null);
-      setTouchStart(e.targetTouches[0].clientX);
+      touchEndX.current = null;
+      touchStartX.current = e.targetTouches[0].clientX;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-      setTouchEnd(e.targetTouches[0].clientX);
+      touchEndX.current = e.targetTouches[0].clientX;
   };
 
   const onTouchEnd = () => {
-      if (!touchStart || !touchEnd) return;
-      const distance = touchStart - touchEnd;
+      if (!touchStartX.current || !touchEndX.current) return;
+      const distance = touchStartX.current - touchEndX.current;
       const isLeftSwipe = distance > 50;
       const isRightSwipe = distance < -50;
       if (isLeftSwipe) {
@@ -725,9 +725,9 @@ export const ClientGallery: React.FC = () => {
       const handleKeyDown = (e: KeyboardEvent) => {
           if (!lightboxFile) return;
           if (e.key === 'ArrowLeft') {
-              handlePrevLightbox();
+              handlePrevLightbox(e);
           } else if (e.key === 'ArrowRight') {
-              handleNextLightbox();
+              handleNextLightbox(e);
           } else if (e.key === 'Escape') {
               setLightboxFile(null);
           }
@@ -1436,11 +1436,12 @@ export const ClientGallery: React.FC = () => {
                 )}
 
                 {lightboxFile.file_type === 'image' ? (
-                    <div className="relative w-full h-full flex items-center justify-center">
+                    <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
                         <img 
+                            key={lightboxFile.id}
                             src={getOptimizedImageUrl(lightboxFile.file_url, 1920, undefined, 85)}
                             alt="Gallery item preview" 
-                            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
+                            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300"
                             onContextMenu={(e) => {
                                 e.preventDefault();
                                 if (!isPortfolio) {
@@ -1463,15 +1464,21 @@ export const ClientGallery: React.FC = () => {
                         />
                     </div>
                 ) : (
-                    <video 
-                        src={rewriteUrlToR2(lightboxFile.file_url)} 
-                        className="max-w-full max-h-full object-contain pointer-events-auto" 
-                        controls 
-                        controlsList={isLocked ? "nodownload nofullscreen" : "nodownload"}
-                        disablePictureInPicture={isLocked}
-                        autoPlay
-                        playsInline
-                    />
+                    <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+                        <video 
+                            key={lightboxFile.id}
+                            src={rewriteUrlToR2(lightboxFile.file_url)} 
+                            className="max-w-full max-h-full object-contain pointer-events-auto shadow-2xl animate-in fade-in duration-300" 
+                            controls 
+                            controlsList={isLocked ? "nodownload nofullscreen" : "nodownload"}
+                            disablePictureInPicture={isLocked}
+                            autoPlay
+                            playsInline
+                        />
+                        {isLocked && !isPortfolio && (
+                            <WatermarkOverlay />
+                        )}
+                    </div>
                 )}
             </div>
 
