@@ -194,6 +194,43 @@ export const ClientGallery: React.FC = () => {
     };
   }, []);
 
+  // Real-time synchronization for selections
+  useEffect(() => {
+    if (!gallery?.id || !gallery?.selection_enabled) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'selections',
+          filter: `gallery_id=eq.${gallery.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setSelectedFileIds(prev => {
+              const next = new Set(prev);
+              next.add(payload.new.file_id);
+              return next;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setSelectedFileIds(prev => {
+              const next = new Set(prev);
+              next.delete(payload.old.file_id);
+              return next;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gallery?.id, gallery?.selection_enabled]);
+
   const loadGallery = async () => {
     try {
       if (!galleryId) return;
