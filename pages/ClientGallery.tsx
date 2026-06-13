@@ -1146,7 +1146,7 @@ export const ClientGallery: React.FC = () => {
                         </div>
                         <div>
                             <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors flex items-center gap-2">
-                                {selectedFileIds.size} Selected
+                                {limit > 0 ? `${selectedFileIds.size} of ${limit} Selected` : `${selectedFileIds.size} Selected`}
                                 {limit > 0 && selectedFileIds.size > limit && (
                                     <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
                                         {selectedFileIds.size - limit} Extras
