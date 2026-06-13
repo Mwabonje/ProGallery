@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, ShoppingCart, X, Check, Minus, Plus, Trash2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -179,6 +180,23 @@ export const Prints: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col">
+            <Helmet>
+                <title>Fine Art Prints | Mwabonje</title>
+                <meta name="description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections. Each piece is printed on museum-grade cotton rag paper." />
+                <link rel="canonical" href={window.location.origin + window.location.pathname} />
+                <meta property="og:title" content="Fine Art Prints | Mwabonje" />
+                <meta property="og:description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections." />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content={window.location.origin + window.location.pathname} />
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        "name": "Fine Art Prints | Mwabonje",
+                        "url": window.location.href,
+                    })}
+                </script>
+            </Helmet>
             <header className="w-full flex items-center justify-between p-4 md:p-8 bg-white border-b border-slate-100 sticky top-0 z-50 transition-all duration-300">
                 <button 
                     onClick={() => {
