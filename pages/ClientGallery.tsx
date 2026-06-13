@@ -48,6 +48,9 @@ export const ClientGallery: React.FC = () => {
   const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
+  
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -632,25 +635,6 @@ export const ClientGallery: React.FC = () => {
       }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin h-8 w-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Clock className="w-8 h-8 text-slate-400" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 mb-3">Gallery Unavailable</h1>
-            <p className="text-slate-600 mb-8 leading-relaxed">{error}</p>
-            <div className="pt-6 border-t border-slate-100">
-                <p className="text-sm text-slate-400">Mwabonje</p>
-            </div>
-        </div>
-      </div>
-    );
-  }
-
   const agreedAmount = gallery?.agreed_balance || 0;
   const amountPaid = gallery?.amount_paid || 0;
   const balanceDue = Math.max(0, agreedAmount - amountPaid);
@@ -673,9 +657,6 @@ export const ClientGallery: React.FC = () => {
   if (viewFilter === 'selected') displayedFiles = files.filter(f => selectedFileIds.has(f.id));
   if (viewFilter === 'main') displayedFiles = files.filter(f => mainSelections.includes(f.id));
   if (viewFilter === 'extras') displayedFiles = files.filter(f => extraSelections.includes(f.id));
-
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
 
   const handlePrevLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
       if (e && 'stopPropagation' in e) e.stopPropagation();
@@ -735,6 +716,25 @@ export const ClientGallery: React.FC = () => {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxFile, displayedFiles]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin h-8 w-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
+        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-8 h-8 text-slate-400" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 mb-3">Gallery Unavailable</h1>
+            <p className="text-slate-600 mb-8 leading-relaxed">{error}</p>
+            <div className="pt-6 border-t border-slate-100">
+                <p className="text-sm text-slate-400">Mwabonje</p>
+            </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
