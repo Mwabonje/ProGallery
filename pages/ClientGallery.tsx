@@ -1344,7 +1344,7 @@ export const ClientGallery: React.FC = () => {
             </button>
             
             <div 
-                className="relative w-full h-full flex items-center justify-center"
+                className="relative w-full h-full flex items-center justify-center pb-20"
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => {
                     e.preventDefault();
@@ -1354,11 +1354,11 @@ export const ClientGallery: React.FC = () => {
                 }}
             >
                 {lightboxFile.file_type === 'image' ? (
-                    <div className="relative max-w-full max-h-full">
+                    <div className="relative w-full h-full flex items-center justify-center">
                         <img 
                             src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, 1920, undefined, 85)}
                             alt="Gallery item preview" 
-                            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
+                            className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
                             onContextMenu={(e) => {
                                 e.preventDefault();
                                 if (!isPortfolio) {
@@ -1383,7 +1383,7 @@ export const ClientGallery: React.FC = () => {
                 ) : (
                     <video 
                         src={rewriteUrlToR2(lightboxFile.file_url)} 
-                        className="max-w-full max-h-full object-contain" 
+                        className="w-full h-full object-contain" 
                         controls 
                         controlsList={isLocked ? "nodownload nofullscreen" : "nodownload"}
                         disablePictureInPicture={isLocked}
