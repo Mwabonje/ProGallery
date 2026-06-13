@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2, ArrowUpRight } from 'lucide-react';
+import { Download, Clock, Lock, AlertCircle, X, ShieldAlert, FolderDown, Loader2, Mail, CheckCircle2, Heart, FileImage, FileVideo, Send, Eye, ArrowLeft, Image as ImageIcon, Edit2, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { generateSlug } from '../utils/slug';
@@ -674,6 +674,28 @@ export const ClientGallery: React.FC = () => {
   if (viewFilter === 'main') displayedFiles = files.filter(f => mainSelections.includes(f.id));
   if (viewFilter === 'extras') displayedFiles = files.filter(f => extraSelections.includes(f.id));
 
+  const handlePrevLightbox = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!lightboxFile) return;
+      const index = displayedFiles.findIndex(f => f.id === lightboxFile.id);
+      if (index > 0) {
+          setLightboxFile(displayedFiles[index - 1]);
+      } else {
+          setLightboxFile(displayedFiles[displayedFiles.length - 1]);
+      }
+  };
+
+  const handleNextLightbox = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!lightboxFile) return;
+      const index = displayedFiles.findIndex(f => f.id === lightboxFile.id);
+      if (index !== -1 && index < displayedFiles.length - 1) {
+          setLightboxFile(displayedFiles[index + 1]);
+      } else {
+          setLightboxFile(displayedFiles[0]);
+      }
+  };
+
   return (
     <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
       <Helmet>
@@ -872,14 +894,14 @@ export const ClientGallery: React.FC = () => {
                     return (
                     <div 
                         key={file.id} 
-                        onClick={() => isSelectionMode && setLightboxFile(file)}
+                        onClick={() => setLightboxFile(file)}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             if (!isPortfolio) {
                                  setShowScreenshotWarning(true);
                             }
                         }}
-                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid ${isSelectionMode ? 'cursor-pointer shadow-sm hover:shadow-md transition-shadow' : ''} ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid cursor-pointer shadow-sm hover:shadow-md transition-shadow ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
                         style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                     >
                     {/* Badges */}
@@ -1353,10 +1375,27 @@ export const ClientGallery: React.FC = () => {
                     }
                 }}
             >
+                {displayedFiles.length > 1 && (
+                    <>
+                        <button 
+                            onClick={handlePrevLightbox}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 z-50 bg-black/50 hover:bg-black/80 rounded-full transition-all"
+                        >
+                            <ChevronLeft className="w-8 h-8" />
+                        </button>
+                        <button 
+                            onClick={handleNextLightbox}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 z-50 bg-black/50 hover:bg-black/80 rounded-full transition-all"
+                        >
+                            <ChevronRight className="w-8 h-8" />
+                        </button>
+                    </>
+                )}
+
                 {lightboxFile.file_type === 'image' ? (
                     <div className="relative w-full h-full flex items-center justify-center">
                         <img 
-                            src={getOptimizedImageUrl(lightboxFile.thumbnail_url || lightboxFile.file_url, 1920, undefined, 85)}
+                            src={getOptimizedImageUrl(lightboxFile.file_url, 1920, undefined, 85)}
                             alt="Gallery item preview" 
                             className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
                             onContextMenu={(e) => {
