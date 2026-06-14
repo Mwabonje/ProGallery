@@ -1389,6 +1389,7 @@ export const GalleryManager: React.FC = () => {
                                                         target.src = file.thumbnail_url ? rewriteUrlToR2(file.thumbnail_url) : rewriteUrlToR2(file.file_url);
                                                     }
                                                   }}
+                                                  onContextMenu={(e) => e.preventDefault()}
                                                 />
                                             ) : (
                                                 <video 
@@ -1396,6 +1397,7 @@ export const GalleryManager: React.FC = () => {
                                                     className="w-full h-full object-cover"
                                                     muted
                                                     preload="metadata"
+                                                    onContextMenu={(e) => e.preventDefault()}
                                                 />
                                             )}
                                             {!isPortfolio && isSelected && (

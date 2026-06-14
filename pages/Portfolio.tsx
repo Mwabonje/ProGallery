@@ -88,6 +88,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
                             v.pause();
                             v.currentTime = 0;
                         }}
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 ) : (
                     <img 
@@ -95,6 +96,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
                         alt={gallery.client_name}
                         className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                         loading={index < 4 ? "eager" : "lazy"}
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 )}
                 
@@ -396,6 +398,7 @@ export const Portfolio: React.FC = () => {
                             src={displayImage} 
                             alt="Photographer Portrait" 
                             className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                            onContextMenu={(e) => e.preventDefault()}
                         />
                     </div>
                     <div className="flex flex-col gap-6 md:gap-8 justify-center text-center md:text-left">
