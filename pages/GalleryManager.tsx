@@ -1431,14 +1431,14 @@ export const GalleryManager: React.FC = () => {
                                                 <div className="mt-2 space-y-2 max-w-sm">
                                                     <input 
                                                         type="text" 
-                                                        placeholder="Title (e.g. The Fisherman)" 
+                                                        placeholder="Title" 
                                                         defaultValue={file.title || ''} 
                                                         onBlur={(e) => {
                                                             if (e.target.value !== (file.title || '')) {
                                                                 updateFileDetails(file.id, { title: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
+                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
                                                     />
                                                     <textarea 
                                                         placeholder="Description" 
@@ -1450,48 +1450,48 @@ export const GalleryManager: React.FC = () => {
                                                                 updateFileDetails(file.id, { description: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
+                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
                                                     />
-                                                    <div className="grid grid-cols-2 gap-2">
+                                                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                                                         <input 
                                                             type="text" 
-                                                            placeholder="Size (e.g. A2 Landscape)" 
+                                                            placeholder="Size" 
                                                             defaultValue={file.print_size || ''} 
                                                             onBlur={(e) => {
                                                                 if (e.target.value !== (file.print_size || '')) {
                                                                     updateFileDetails(file.id, { print_size: e.target.value });
                                                                 }
                                                             }}
-                                                            className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                            className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
                                                         />
                                                         <input 
                                                             type="text" 
-                                                            placeholder="Material (e.g. Canvas)" 
+                                                            placeholder="Material" 
                                                             defaultValue={file.material || ''} 
                                                             onBlur={(e) => {
                                                                 if (e.target.value !== (file.material || '')) {
                                                                     updateFileDetails(file.id, { material: e.target.value });
                                                                 }
                                                             }}
-                                                            className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
+                                                            className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
                                                         />
                                                     </div>
                                                     <input 
                                                         type="text" 
-                                                        placeholder="Price/Details (e.g. KES 25,000)" 
+                                                        placeholder="Price/Details" 
                                                         defaultValue={file.price || ''} 
                                                         onBlur={(e) => {
                                                             if (e.target.value !== (file.price || '')) {
                                                                 updateFileDetails(file.id, { price: e.target.value });
                                                             }
                                                         }}
-                                                        className="text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-slate-800"
+                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-slate-800"
                                                     />
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    <div className={layoutView === 'grid' ? "flex items-center justify-between gap-1 px-2.5 py-2 border-t border-zinc-100 bg-zinc-50/80 mt-auto" : "flex items-center gap-1 md:gap-3 pl-2 shrink-0"}>
+                                    <div className={layoutView === 'grid' ? "flex items-center justify-between flex-wrap gap-x-0.5 gap-y-1.5 px-1.5 py-2 border-t border-zinc-100 bg-zinc-50/80 mt-auto" : "flex items-center gap-1 md:gap-3 pl-2 shrink-0"}>
                                         <div className={`flex items-center ${layoutView === 'grid' ? 'gap-1 px-1.5 mr-0' : 'gap-1.5 px-2 mr-1 md:mr-3'} bg-slate-100 py-1 rounded-md shrink-0`}>
                                             <input 
                                                 type="checkbox" 
@@ -1502,7 +1502,7 @@ export const GalleryManager: React.FC = () => {
                                             />
                                             <label htmlFor={`edited-${file.id}`} className={layoutView === 'grid' ? "text-[10px] sm:text-xs font-medium text-zinc-600 cursor-pointer" : "text-xs font-medium text-zinc-600 cursor-pointer hidden sm:block"}>Edited</label>
                                         </div>
-                                        <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+                                        <div className="flex items-center gap-0.5 ml-auto flex-wrap justify-end">
                                             {layoutView !== 'grid' && (
                                                 <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
                                                     <Download className="w-3 h-3" />
