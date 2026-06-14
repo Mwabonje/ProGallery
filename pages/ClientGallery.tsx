@@ -971,14 +971,18 @@ export const ClientGallery: React.FC = () => {
                     return (
                     <div 
                         key={file.id} 
-                        onClick={() => setLightboxFile(file)}
+                        onClick={() => {
+                            if (!isPortfolio) {
+                                setLightboxFile(file);
+                            }
+                        }}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             if (!isPortfolio) {
                                  setShowScreenshotWarning(true);
                             }
                         }}
-                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid cursor-pointer shadow-sm hover:shadow-md transition-shadow ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full`}
+                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-shadow ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full ${isPortfolio ? '' : 'cursor-pointer'}`}
                         style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                     >
                     {/* Badges */}
