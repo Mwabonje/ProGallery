@@ -651,7 +651,14 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
-  if (!gallery) return <div className="p-8">Loading...</div>;
+  if (!gallery) return (
+      <div className="p-8 flex justify-center items-center h-[50vh]">
+          <div className="w-8 h-8 relative flex items-center justify-center">
+              <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
+              <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
+          </div>
+      </div>
+  );
 
   const remainingBalance = Math.max(0, Number(agreedAmount || 0) - Number(paid || 0));
   const isVolunteer = Number(agreedAmount || 0) === 0;

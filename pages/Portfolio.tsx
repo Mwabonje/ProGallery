@@ -220,7 +220,10 @@ export const Portfolio: React.FC = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
-                <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Portfolio...</div>
+                <div className="w-8 h-8 relative flex items-center justify-center">
+                    <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
+                    <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
+                </div>
             </div>
         );
     }

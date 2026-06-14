@@ -229,7 +229,10 @@ export const Prints: React.FC = () => {
 
                 {loading ? (
                     <div className="h-[40vh] flex items-center justify-center">
-                        <div className="animate-pulse tracking-[0.2em] uppercase text-xs text-slate-400 font-medium">Loading Prints...</div>
+                        <div className="w-8 h-8 relative flex items-center justify-center">
+                            <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
+                            <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
+                        </div>
                     </div>
                 ) : prints.length > 0 ? (
                     <div className="flex flex-wrap justify-center items-stretch gap-12 lg:gap-20 pt-4 md:pt-8 w-full max-w-[1600px] mx-auto">

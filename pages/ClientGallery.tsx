@@ -754,7 +754,14 @@ export const ClientGallery: React.FC = () => {
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxFile, displayedFiles]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin h-8 w-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
+  if (loading) return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="w-8 h-8 relative flex items-center justify-center">
+              <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
+              <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
+          </div>
+      </div>
+  );
 
   if (error) {
     return (
