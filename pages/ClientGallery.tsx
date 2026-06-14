@@ -984,7 +984,7 @@ export const ClientGallery: React.FC = () => {
                                  setShowScreenshotWarning(true);
                             }
                         }}
-                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-shadow ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full ${isPortfolio ? '' : 'cursor-pointer'}`}
+                        className={`group relative flex flex-col ${isFilmGallery ? 'flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center' : isPortraitGallery ? 'flex-none h-full aspect-[4/5] snap-center bg-slate-50' : isPrintsGallery ? 'aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm' : isPortfolio ? 'aspect-auto w-full block bg-slate-50 relative' : 'aspect-square bg-slate-100'} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? 'ring-4 ring-rose-500' : ''} content-vis-auto max-w-full ${isPortfolio ? 'active:scale-[0.98] duration-300 md:active:scale-100' : 'cursor-pointer'}`}
                         style={{ contentVisibility: 'auto', WebkitTouchCallout: 'none', userSelect: 'none' }}
                     >
                     {/* Badges */}
