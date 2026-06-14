@@ -811,9 +811,11 @@ export const ClientGallery: React.FC = () => {
                 ) : null}
                 {viewFilter === 'selected' ? "My Selection" : viewFilter === 'main' ? "Main Photos" : viewFilter === 'extras' ? "Extra Photos" : gallery?.client_name}
             </h1>
-            <p className={`text-xs md:text-sm flex items-center gap-2 ${isPortfolio ? 'text-slate-500 tracking-[0.2em] uppercase mt-1' : 'text-slate-500'}`}>
-                {displayedFiles.length} items 
-            </p>
+            {!isPortfolio && (
+                <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500">
+                    {displayedFiles.length} items 
+                </p>
+            )}
           </div>
           
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
