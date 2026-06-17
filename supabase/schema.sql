@@ -48,6 +48,11 @@ BEGIN
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;
+
+    -- Add client_note to selections
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='selections' AND column_name='client_note') THEN
+        ALTER TABLE public.selections ADD COLUMN client_note text;
+    END IF;
 END $$;
 
 -- Create files table
@@ -72,6 +77,7 @@ CREATE TABLE IF NOT EXISTS public.files (
 CREATE TABLE IF NOT EXISTS public.selections (
   gallery_id uuid REFERENCES public.galleries(id) ON DELETE CASCADE NOT NULL,
   file_id uuid REFERENCES public.files(id) ON DELETE CASCADE NOT NULL,
+  client_note text,
   created_at timestamptz DEFAULT now(),
   PRIMARY KEY (gallery_id, file_id)
 );

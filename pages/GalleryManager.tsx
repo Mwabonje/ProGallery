@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare } from 'lucide-react';
 
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
@@ -16,6 +16,7 @@ export const GalleryManager: React.FC = () => {
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [clientSelections, setClientSelections] = useState<string[]>([]);
+  const [selectionNotes, setSelectionNotes] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Use Global Upload Context
@@ -150,12 +151,17 @@ export const GalleryManager: React.FC = () => {
     // Get Selections - Always fetch these so the photographer can see them even if they disabled the mode
     const { data: selectionData } = await supabase
         .from('selections')
-        .select('file_id')
+        .select('file_id, client_note')
         .eq('gallery_id', id)
         .order('created_at', { ascending: true }); // Important for counting extras
     
     if (selectionData) {
         setClientSelections(selectionData.map(s => s.file_id));
+        const notes: Record<string, string> = {};
+        selectionData.forEach(s => {
+            if (s.client_note) notes[s.file_id] = s.client_note;
+        });
+        setSelectionNotes(notes);
     }
   };
 
@@ -1430,6 +1436,15 @@ export const GalleryManager: React.FC = () => {
                                                 <span className={layoutView === 'grid' ? 'block text-[10px] text-zinc-400 uppercase tracking-wider' : 'hidden'}>Uploaded</span>
                                                 <span className={layoutView === 'grid' ? 'hidden' : ''}>Uploaded: </span>{formatDate(file.created_at)}
                                             </p>
+                                            {!isPortfolio && selectionNotes[file.id] && (
+                                                <div className="mt-2 bg-rose-50/50 border border-rose-100/50 rounded p-2 relative group">
+                                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                                                        <MessageSquare className="w-3 h-3" />
+                                                        Client Note
+                                                    </p>
+                                                    <p className="text-xs text-zinc-700 break-words whitespace-pre-wrap">{selectionNotes[file.id]}</p>
+                                                </div>
+                                            )}
                                             {!isPortfolio && (
                                                 <p className={`text-xs mt-1 leading-tight ${isExpired ? 'text-red-600 font-bold' : 'text-zinc-500'} ${layoutView === 'grid' ? '' : 'truncate'}`}>
                                                     <span className={layoutView === 'grid' ? 'block text-[10px] uppercase tracking-wider opacity-70' : 'hidden'}>{isExpired ? 'Expired' : 'Expires'}</span>

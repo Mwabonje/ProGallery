@@ -43,6 +43,7 @@ export const ClientGallery: React.FC = () => {
   
   // Selection Mode State
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [selectionNotes, setSelectionNotes] = useState<Record<string, string>>({});
   const [submittingSelection, setSubmittingSelection] = useState(false);
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
   const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
@@ -355,12 +356,17 @@ export const ClientGallery: React.FC = () => {
       if (galData.selection_enabled) {
         const { data: selectionData } = await supabase
             .from('selections')
-            .select('file_id')
+            .select('file_id, client_note')
             .eq('gallery_id', activeGalleryId)
             .order('created_at', { ascending: true }); // Important for counting extras
         
         if (selectionData) {
             setSelectedFileIds(new Set(selectionData.map(s => s.file_id)));
+            const notes: Record<string, string> = {};
+            selectionData.forEach(s => {
+                if (s.client_note) notes[s.file_id] = s.client_note;
+            });
+            setSelectionNotes(notes);
             if (selectionData.length === 0 && galData.selection_limit > 0 && galData.selection_status !== 'submitted' && galData.selection_status !== 'completed') {
                 setShowWelcomeModal(true);
             }
@@ -431,6 +437,27 @@ export const ClientGallery: React.FC = () => {
         setSelectedFileIds(selectedFileIds); // Revert to old state
         setToast({ message: 'Failed to update selection: ' + (err?.message || JSON.stringify(err)), type: 'info' });
     }
+  };
+
+  const updateSelectionNoteLocal = (fileId: string, note: string) => {
+      setSelectionNotes(prev => ({ ...prev, [fileId]: note }));
+  };
+
+  const saveSelectionNoteDb = async (fileId: string, note: string) => {
+      if (!gallery) return;
+      try {
+          const { error } = await supabase
+              .from('selections')
+              .update({ client_note: note })
+              .eq('gallery_id', gallery.id)
+              .eq('file_id', fileId);
+              
+          if (error) {
+              console.error("Failed to update note", error);
+          }
+      } catch (err) {
+          console.error("Error updating note", err);
+      }
   };
 
   const submitSelection = async () => {
@@ -999,6 +1026,7 @@ export const ClientGallery: React.FC = () => {
                         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none">
                             <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">SELECTED</span>
                             {isExtra && <span className="bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">EXTRA</span>}
+                            {selectionNotes[file.id] && <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">NOTE ADDED</span>}
                         </div>
                     )}
                     {file.file_type === 'image' && !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
@@ -1555,23 +1583,45 @@ export const ClientGallery: React.FC = () => {
             ) : null}
 
             {/* Action buttons in lightbox */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4">
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-4 w-[90%] max-w-sm">
                 {isSelectionMode ? (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelection(lightboxFile);
-                        }}
-                        disabled={selectionSubmitted}
-                        className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all ${
-                            selectedFileIds.has(lightboxFile.id) 
-                                ? 'bg-rose-500 text-white hover:bg-rose-600' 
-                                : 'bg-white text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <Heart className={`w-5 h-5 ${selectedFileIds.has(lightboxFile.id) ? 'fill-current' : ''}`} />
-                        <span>{selectedFileIds.has(lightboxFile.id) ? 'Selected' : 'Select Photo'}</span>
-                    </button>
+                    <>
+                        {selectedFileIds.has(lightboxFile.id) && (
+                            <div className="w-full bg-black/60 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 border border-white/20">
+                                <textarea
+                                    value={selectionNotes[lightboxFile.id] || ''}
+                                    placeholder="Add a note (e.g., Please crop this)..."
+                                    onChange={(e) => updateSelectionNoteLocal(lightboxFile.id, e.target.value)}
+                                    // Submit to DB when user finishes typing
+                                    onBlur={(e) => saveSelectionNoteDb(lightboxFile.id, e.target.value)}
+                                    // Make sure typing doesn't trigger lightbox shortcuts or close lightbox
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => {
+                                        e.stopPropagation();
+                                        // Allow using arrows without navigating photos
+                                    }}
+                                    disabled={selectionSubmitted}
+                                    className="w-full bg-transparent text-white placeholder-white/50 text-sm p-4 resize-none outline-none focus:bg-white/10 transition-colors"
+                                    rows={2}
+                                />
+                            </div>
+                        )}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelection(lightboxFile);
+                            }}
+                            disabled={selectionSubmitted}
+                            className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all ${
+                                selectedFileIds.has(lightboxFile.id) 
+                                    ? 'bg-rose-500 text-white hover:bg-rose-600' 
+                                    : 'bg-white text-slate-900 hover:bg-slate-100'
+                            }`}
+                        >
+                            <Heart className={`w-5 h-5 ${selectedFileIds.has(lightboxFile.id) ? 'fill-current' : ''}`} />
+                            <span>{selectedFileIds.has(lightboxFile.id) ? 'Selected' : 'Select Photo'}</span>
+                        </button>
+                    </>
                 ) : !isPortfolio && (
                     <button
                         onClick={(e) => {

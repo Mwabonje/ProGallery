@@ -44,6 +44,7 @@ export interface GalleryFile {
 export interface Selection {
   gallery_id: string;
   file_id: string;
+  client_note?: string;
   created_at: string;
 }
 
