@@ -1238,8 +1238,8 @@ export const ClientGallery: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden items-center pb-1 sm:pb-0">
-                    <div className="flex bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                <div className="flex flex-wrap sm:flex-nowrap gap-3 sm:gap-2 w-full sm:w-auto items-center">
+                    <div className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden bg-slate-100 p-1 rounded-lg text-xs font-medium w-full sm:w-auto">
                         <button 
                             onClick={() => setViewFilter('all')}
                             className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
@@ -1290,7 +1290,7 @@ export const ClientGallery: React.FC = () => {
                         <button 
                             onClick={submitSelection}
                             disabled={submittingSelection || selectedFileIds.size === 0}
-                            className="flex-1 sm:flex-none bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                            className="w-full sm:w-auto flex-1 sm:flex-none bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shrink-0"
                         >
                             {submittingSelection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                             <span>Submit Selection</span>
