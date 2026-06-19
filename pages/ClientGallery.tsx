@@ -704,7 +704,7 @@ export const ClientGallery: React.FC = () => {
   const balanceDue = Math.max(0, agreedAmount - amountPaid);
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isLocked = balanceDue > 0 && !isPortfolio;
-  const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait') || gallery?.client_name.toLowerCase().includes('couple') || gallery?.category?.toLowerCase().includes('couple'));
+  const isPortraitGallery = isPortfolio && Boolean(gallery?.client_name.toLowerCase().includes('portrait') || gallery?.category?.toLowerCase().includes('portrait') || gallery?.client_name.toLowerCase().includes('couple') || gallery?.category?.toLowerCase().includes('couple') || gallery?.client_name.toLowerCase().includes('detail') || gallery?.category?.toLowerCase().includes('detail'));
   const isPrintsGallery = isPortfolio && Boolean(gallery?.category?.toLowerCase().includes('print'));
   const isFilmGallery = isPortfolio && files.some(f => f.file_type === 'video' || (f.file_url && f.file_url.match(/\.(mp4|mov|webm|ogg)$/i)));
   const isHorizontalLayout = isPortraitGallery || isFilmGallery;
