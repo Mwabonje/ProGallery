@@ -48,6 +48,7 @@ BEGIN
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;
     ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;
+    ALTER TABLE public.files ADD COLUMN IF NOT EXISTS position integer DEFAULT 0;
 
     -- Add client_note to selections
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='selections' AND column_name='client_note') THEN
@@ -70,7 +71,8 @@ CREATE TABLE IF NOT EXISTS public.files (
   description text,
   print_size text,
   material text,
-  price text
+  price text,
+  position integer DEFAULT 0
 );
 
 -- Create selections table (Junction table)

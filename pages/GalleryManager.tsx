@@ -9,6 +9,9 @@ import { generateSlug } from '../utils/slug';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export const GalleryManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,6 +56,34 @@ export const GalleryManager: React.FC = () => {
   // Expiration settings (in hours)
   const [expiryHours, setExpiryHours] = useState<number>(24);
   const [isDragging, setIsDragging] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = files.findIndex(f => f.id === active.id);
+      const newIndex = files.findIndex(f => f.id === over.id);
+      
+      const newFiles = arrayMove(files, oldIndex, newIndex);
+      setFiles(newFiles);
+
+      try {
+        // Save new positions to the database
+        // In a real app with many files, you'd want an RPC for bulk update.
+        // Here we'll do individual updates to keep it simple, or only update what changed if possible.
+        const promises = newFiles.map((f, index) => 
+          supabase.from('files').update({ position: index }).eq('id', f.id)
+        );
+        await Promise.all(promises);
+      } catch (err) {
+         console.error('Failed to update sort order', err);
+      }
+    }
+  };
 
   // Load preference specific to this gallery ID
   useEffect(() => {
@@ -131,6 +162,7 @@ export const GalleryManager: React.FC = () => {
         .from('files')
         .select('*')
         .eq('gallery_id', id)
+        .order('position', { ascending: true })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
         
@@ -1368,6 +1400,8 @@ export const GalleryManager: React.FC = () => {
                             <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Select All</span>
                         </div>
                         <div className={layoutView === 'grid' ? "p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" : "divide-y divide-slate-100"}>
+                          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={visibleFiles.map(f => f.id)} strategy={layoutView === 'grid' ? rectSortingStrategy : verticalListSortingStrategy}>
                         {visibleFiles.map((file) => {
                             const isExpired = new Date(file.expires_at) < new Date();
                             const isSelected = clientSelections.includes(file.id);
@@ -1379,7 +1413,8 @@ export const GalleryManager: React.FC = () => {
                                 }
                             }
                             return (
-                                <div key={file.id} className={layoutView === 'grid' ? `relative group rounded-xl overflow-hidden border ${isSelected ? 'border-rose-300 ring-2 ring-rose-200' : 'border-zinc-200/60'} bg-white hover:shadow-md transition-all flex flex-col` : `p-4 flex items-center justify-between hover:bg-zinc-50/80 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
+                                <SortableItem key={file.id} id={file.id} disabled={viewFilter !== 'all'}>
+                                <div className={layoutView === 'grid' ? `relative group rounded-xl overflow-hidden border ${isSelected ? 'border-rose-300 ring-2 ring-rose-200' : 'border-zinc-200/60'} bg-white hover:shadow-md transition-all flex flex-col` : `p-4 flex items-center justify-between hover:bg-zinc-50/80 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
                                     <div className={layoutView === 'grid' ? "flex flex-col flex-1" : "flex items-center gap-3 md:gap-4 overflow-hidden"}>
                                         <div className={layoutView === 'grid' ? `absolute top-2 left-2 z-10 bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm transition-opacity ${checkedFiles.includes(file.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}` : "flex items-center"}>
                                             <input 
@@ -1561,10 +1596,13 @@ export const GalleryManager: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                                </SortableItem>
                             );
                         })}
+                            </SortableContext>
+                          </DndContext>
+                        </div>
                     </div>
-                  </div>
                 )}
             </div>
         </div>
@@ -1624,3 +1662,33 @@ export const GalleryManager: React.FC = () => {
     </div>
   );
 };
+
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}
+
+function SortableItem({ id, children, disabled }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
