@@ -4,6 +4,7 @@ import path from "path";
 import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createServer as createViteServer } from "vite";
+import rateLimit from "express-rate-limit";
 
 async function startServer() {
   const app = express();
@@ -288,6 +289,22 @@ async function startServer() {
       saveAnalytics(data).catch(console.error);
       res.json({ success: true, count: data.galleries[galleryId].views });
   });
+
+  // --- RATE LIMITING FOR GALLERY ACCESS ---
+  // Protect against brute-forcing gallery URLs by rate-limiting HTML page requests
+  const galleryLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 50, // limit each IP to 50 requests per windowMs
+    message: "Too many requests to access galleries from this IP, please try again after 5 minutes.",
+    skip: (req) => {
+      // Skip rate limiting for static assets and API routes
+      return req.path.startsWith('/assets/') || 
+             req.path.startsWith('/api/') || 
+             !!req.path.match(/\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i);
+    }
+  });
+
+  app.use(galleryLimiter);
 
   // --- VITE FRONTEND MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {
