@@ -241,6 +241,24 @@ BEGIN
 END;
 $$;
 
+-- Bulk increment download count
+CREATE OR REPLACE FUNCTION increment_downloads_bulk(file_ids uuid[])
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.files
+  SET download_count = download_count + 1
+  WHERE id = ANY(file_ids)
+  AND EXISTS (
+    SELECT 1 FROM public.galleries g
+    WHERE g.id = files.gallery_id
+    AND g.link_enabled = true
+  );
+END;
+$$;
+
 -- 1. SECURE ACTIVITY LOGS
 -- Revoke direct insert permission from anon (public)
 REVOKE INSERT ON public.activity_logs FROM anon;

@@ -611,6 +611,14 @@ export const ClientGallery: React.FC = () => {
       const total = files.length;
       const galleryName = gallery.client_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
+      // Bulk increment download counts for all files in the gallery
+      const fileIds = files.map(f => f.id);
+      const { error: bulkError } = await supabase.rpc('increment_downloads_bulk', { file_ids: fileIds });
+      if (bulkError) {
+          console.error("Failed to bulk increment downloads. Make sure the increment_downloads_bulk RPC exists.", bulkError);
+          // Optional: we could fallback to individual increments, but for large galleries it might trigger rate limits.
+      }
+
       const zip = new JSZip();
       
       setDownloadStatusText('Preparing list...');
