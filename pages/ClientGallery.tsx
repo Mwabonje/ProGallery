@@ -329,8 +329,7 @@ export const ClientGallery: React.FC = () => {
           .select('*')
           .eq('gallery_id', activeGalleryId)
           .gt('expires_at', new Date().toISOString()) 
-          .order('position', { ascending: true })
-          .order('created_at', { ascending: false })
+          .order('expires_at', { ascending: true })
           .range(offset, offset + limit - 1);
           
         if (fileError) throw fileError;

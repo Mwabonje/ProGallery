@@ -39,7 +39,6 @@ export interface GalleryFile {
   price?: string; // Print Price
   thumbnail_url?: string;
   thumbnail_path?: string;
-  position?: number;
 }
 
 export interface Selection {
