@@ -2,6 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { HelmetProvider } from 'react-helmet-async';
+import { registerSW } from 'virtual:pwa-register';
+
+// Register service worker for PWA and offline caching
+registerSW({
+  onOfflineReady() {
+    console.log('App is ready to work offline.');
+  },
+});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

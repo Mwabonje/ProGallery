@@ -537,7 +537,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <div className="h-[400px] w-full min-w-0 flex-1 relative bg-[#132A1B] rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden block">
                     <ResponsiveContainer width="99%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                             <defs>
                                 <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#81C387" stopOpacity={0.25}/>
