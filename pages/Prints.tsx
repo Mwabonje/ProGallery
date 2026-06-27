@@ -181,19 +181,31 @@ export const Prints: React.FC = () => {
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col">
             <Helmet>
-                <title>Fine Art Prints | Mwabonje</title>
-                <meta name="description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections. Each piece is printed on museum-grade cotton rag paper." />
+                <title>Fine Art Prints | Shop | Mwabonje</title>
+                <meta name="description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections. Each piece is printed on museum-grade cotton rag paper to preserve the visual storytelling." />
+                <meta name="keywords" content="fine art prints, photography prints, museum-grade prints, archival quality prints, Mwabonje, purchase photography, art gallery" />
                 <link rel="canonical" href={window.location.origin + window.location.pathname} />
-                <meta property="og:title" content="Fine Art Prints | Mwabonje" />
+                <meta property="og:title" content="Fine Art Prints | Shop | Mwabonje" />
                 <meta property="og:description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections." />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content={window.location.origin + window.location.pathname} />
+                {printsGalleries.length > 0 && printsGalleries[0].coverUrl && (
+                    <>
+                        <meta property="og:image" content={printsGalleries[0].coverUrl} />
+                        <meta property="og:image:alt" content="Mwabonje Fine Art Prints Collection" />
+                        <meta name="twitter:image" content={printsGalleries[0].coverUrl} />
+                    </>
+                )}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="Fine Art Prints | Shop | Mwabonje" />
+                <meta name="twitter:description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections." />
                 <script type="application/ld+json">
                     {JSON.stringify({
                         "@context": "https://schema.org",
-                        "@type": "WebSite",
+                        "@type": "CollectionPage",
                         "name": "Fine Art Prints | Mwabonje",
                         "url": window.location.href,
+                        "description": "A curated collection of archival quality prints from Mwabonje's portfolio collections."
                     })}
                 </script>
             </Helmet>

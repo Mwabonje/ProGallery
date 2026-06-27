@@ -818,22 +818,34 @@ export const ClientGallery: React.FC = () => {
   return (
     <div className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? 'pb-24' : ''}`}>
       <Helmet>
-        <title>{gallery?.client_name || 'Client Gallery'}</title>
-        <meta name="description" content={`View photos for ${gallery?.client_name || 'Client Gallery'}`} />
+        <title>{gallery ? `${gallery.client_name} | Mwabonje` : 'Gallery | Mwabonje'}</title>
+        <meta name="description" content={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.` : 'Explore professional photography galleries by Mwabonje.'} />
+        <meta name="keywords" content={`photography, gallery, Mwabonje, ${gallery?.client_name || ''}, ${gallery?.category || 'portraits'}, professional photographer, visual storytelling`} />
         <link rel="canonical" href={window.location.origin + window.location.pathname} />
-        <meta property="og:title" content={gallery?.client_name || 'Client Gallery'} />
-        <meta property="og:description" content={`View photos in the gallery for ${gallery?.client_name || 'Client gallery'}.`} />
+        <meta property="og:title" content={gallery ? `${gallery.client_name} | Mwabonje` : 'Gallery | Mwabonje'} />
+        <meta property="og:description" content={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje.` : 'Explore professional photography galleries by Mwabonje.'} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={window.location.origin + window.location.pathname} />
         {files.length > 0 && files[0].file_url && (
-            <meta property="og:image" content={files[0].file_url} />
+            <>
+                <meta property="og:image" content={files[0].file_url} />
+                <meta property="og:image:alt" content={gallery?.client_name || 'Gallery Image'} />
+                <meta name="twitter:image" content={files[0].file_url} />
+            </>
         )}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={gallery ? `${gallery.client_name} | Mwabonje` : 'Gallery | Mwabonje'} />
+        <meta name="twitter:description" content={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje.` : 'Explore professional photography galleries by Mwabonje.'} />
         <script type="application/ld+json">
             {JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "ImageGallery",
                 "name": gallery?.client_name || 'Gallery',
                 "url": window.location.href,
+                "author": {
+                    "@type": "Person",
+                    "name": "Mwabonje"
+                }
             })}
         </script>
       </Helmet>

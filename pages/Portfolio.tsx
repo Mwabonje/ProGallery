@@ -240,23 +240,33 @@ export const Portfolio: React.FC = () => {
     return (
         <div className="flex flex-col min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
             <Helmet>
-                <title>{photographerName} | Portfolio</title>
-                <meta name="description" content={`Explore the photography and film portfolio of ${photographerName}.`} />
+                <title>{photographerName} | Professional Photographer & Filmmaker</title>
+                <meta name="description" content={`Explore the photography and film portfolio of ${photographerName}. Specializing in hospitality, documentary, and portrait visual storytelling.`} />
+                <meta name="keywords" content={`photography portfolio, professional photographer, filmmaker, ${photographerName}, portraits, documentary photography, hospitality photography`} />
                 <link rel="canonical" href={window.location.origin + window.location.pathname} />
-                <meta property="og:title" content={`${photographerName} | Portfolio`} />
+                <meta property="og:title" content={`${photographerName} | Professional Photographer & Filmmaker`} />
                 <meta property="og:description" content={`Explore the photography and film portfolio of ${photographerName}.`} />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content={window.location.origin + window.location.pathname} />
                 {galleries.length > 0 && galleries[0].coverUrl && (
-                    <meta property="og:image" content={galleries[0].coverUrl} />
+                    <>
+                        <meta property="og:image" content={galleries[0].coverUrl} />
+                        <meta property="og:image:alt" content={`${photographerName} Portfolio Cover`} />
+                        <meta name="twitter:image" content={galleries[0].coverUrl} />
+                    </>
                 )}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={`${photographerName} | Professional Photographer & Filmmaker`} />
+                <meta name="twitter:description" content={`Explore the photography and film portfolio of ${photographerName}.`} />
                 {/* JSON-LD Structured Data */}
                 <script type="application/ld+json">
                     {JSON.stringify({
                         "@context": "https://schema.org",
-                        "@type": "WebSite",
-                        "name": `${photographerName} Portfolio`,
-                        "url": window.location.href,
+                        "@type": "Person",
+                        "name": photographerName,
+                        "url": window.location.origin,
+                        "jobTitle": "Professional Photographer",
+                        "description": "Specializing in hospitality, documentary, and portrait visual storytelling."
                     })}
                 </script>
             </Helmet>
