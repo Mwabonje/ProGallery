@@ -1505,6 +1505,7 @@ export const ClientGallery: React.FC = () => {
             
             <div 
                 className="relative w-full h-full flex items-center justify-center pb-20"
+                style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
                 onClick={(e) => e.stopPropagation()}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
@@ -1540,8 +1541,10 @@ export const ClientGallery: React.FC = () => {
                             src={getOptimizedImageUrl(lightboxFile.file_url, 1920, undefined, 85)}
                             alt="Gallery item preview" 
                             className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300"
+                            style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
                             onContextMenu={(e) => {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 if (!isPortfolio) {
                                     setShowScreenshotWarning(true);
                                 }
@@ -1552,8 +1555,10 @@ export const ClientGallery: React.FC = () => {
                         )}
                         {/* Protection overlay to catch right-clicks / drag-and-drops from extensions */}
                         <div className="absolute inset-0 z-10" 
+                             style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
                              onContextMenu={(e) => {
                                  e.preventDefault();
+                                 e.stopPropagation();
                                  if (!isPortfolio) {
                                      setShowScreenshotWarning(true);
                                  }
@@ -1572,6 +1577,12 @@ export const ClientGallery: React.FC = () => {
                             disablePictureInPicture={isLocked}
                             autoPlay
                             playsInline
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                if (!isPortfolio) {
+                                    setShowScreenshotWarning(true);
+                                }
+                            }}
                         />
                         {isLocked && !isPortfolio && (
                             <WatermarkOverlay />
