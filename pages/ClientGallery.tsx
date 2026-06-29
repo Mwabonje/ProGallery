@@ -826,7 +826,14 @@ export const ClientGallery: React.FC = () => {
           if (thumb) {
               thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           }
+          // Prevent body scroll when lightbox is open
+          document.body.style.overflow = 'hidden';
+      } else {
+          document.body.style.overflow = '';
       }
+      return () => {
+          document.body.style.overflow = '';
+      };
   }, [lightboxFile]);
 
   if (loading) return (
@@ -1733,7 +1740,17 @@ export const ClientGallery: React.FC = () => {
 
             {/* Thumbnail slider */}
             <div className="absolute bottom-4 left-0 right-0 z-50 px-4 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                <div id="lightbox-thumbnails-container" className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div 
+                    id="lightbox-thumbnails-container" 
+                    className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                    onWheel={(e) => {
+                        const container = e.currentTarget;
+                        if (e.deltaY !== 0) {
+                            e.preventDefault();
+                            container.scrollLeft += e.deltaY;
+                        }
+                    }}
+                >
                     {displayedFiles.map((file) => (
                         <button
                             key={file.id}
