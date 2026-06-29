@@ -66,6 +66,7 @@ export const ClientGallery: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const singleAbortControllerRef = useRef<AbortController | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWheelTime = useRef<number>(0);
 
   const cancelSingleDownload = () => {
       if (singleAbortControllerRef.current) {
@@ -772,6 +773,19 @@ export const ClientGallery: React.FC = () => {
       }
       if (isRightSwipe) {
           handlePrevLightbox();
+      }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+      const now = Date.now();
+      if (now - lastWheelTime.current < 400) return;
+      
+      if (e.deltaY > 10) {
+          handleNextLightbox();
+          lastWheelTime.current = now;
+      } else if (e.deltaY < -10) {
+          handlePrevLightbox();
+          lastWheelTime.current = now;
       }
   };
 
@@ -1536,6 +1550,7 @@ export const ClientGallery: React.FC = () => {
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
+                onWheel={handleWheel}
                 onContextMenu={(e) => {
                     e.preventDefault();
                     if (!isPortfolio) {
