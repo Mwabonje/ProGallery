@@ -117,6 +117,8 @@ export const ClientGallery: React.FC = () => {
   const singleAbortControllerRef = useRef<AbortController | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastWheelTime = useRef<number>(0);
+  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedDelta = useRef<number>(0);
 
   const cancelSingleDownload = () => {
     if (singleAbortControllerRef.current) {
@@ -944,16 +946,37 @@ export const ClientGallery: React.FC = () => {
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    const now = Date.now();
-    if (now - lastWheelTime.current < 400) return;
+    // Prevent native scrolling so it doesn't fight with our image transition and scrollIntoView
+    // Check if the event is cancelable before preventing default (React synthetic events might not need this, but good practice)
+    // Wait, e.preventDefault() in React WheelEvent is allowed if it's not a passive listener. 
+    // Just in case, if it throws a warning, it's fine, but let's prevent the default scroll.
+    e.preventDefault();
 
-    if (e.deltaY > 10) {
+    // Determine the primary scrolling direction (horizontal vs vertical)
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    
+    // Smooth scrolling for trackpads: Accumulate delta instead of time delay
+    accumulatedDelta.current += delta;
+
+    // Threshold determines how much scrolling is required to change an image
+    // A threshold of ~50-100 feels smooth on Mac trackpads
+    const threshold = 60;
+
+    if (accumulatedDelta.current > threshold) {
       handleNextLightbox();
-      lastWheelTime.current = now;
-    } else if (e.deltaY < -10) {
+      accumulatedDelta.current = 0;
+    } else if (accumulatedDelta.current < -threshold) {
       handlePrevLightbox();
-      lastWheelTime.current = now;
+      accumulatedDelta.current = 0;
     }
+
+    // Reset accumulated delta if the user stops scrolling for a short time
+    if (wheelTimeoutRef.current) {
+      clearTimeout(wheelTimeoutRef.current);
+    }
+    wheelTimeoutRef.current = setTimeout(() => {
+      accumulatedDelta.current = 0;
+    }, 150);
   };
 
   const handleLongPressStart = () => {
