@@ -997,11 +997,24 @@ export const ClientGallery: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!lightboxFile) return;
+
+      // Do not handle keyboard events if the user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+
       if (e.key === "ArrowLeft") {
+        e.preventDefault();
         handlePrevLightbox(e);
       } else if (e.key === "ArrowRight") {
+        e.preventDefault();
         handleNextLightbox(e);
       } else if (e.key === "Escape") {
+        e.preventDefault();
         setLightboxFile(null);
       }
     };
