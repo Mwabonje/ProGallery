@@ -805,6 +805,16 @@ export const ClientGallery: React.FC = () => {
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxFile, displayedFiles]);
 
+  // Scroll active thumbnail into view
+  useEffect(() => {
+      if (lightboxFile) {
+          const thumb = document.getElementById(`thumbnail-${lightboxFile.id}`);
+          if (thumb) {
+              thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+      }
+  }, [lightboxFile]);
+
   if (loading) return (
       <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="w-8 h-8 relative flex items-center justify-center">
@@ -1642,7 +1652,7 @@ export const ClientGallery: React.FC = () => {
             ) : null}
 
             {/* Action buttons in lightbox */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-4 w-[90%] max-w-sm">
+            <div className="absolute bottom-[90px] left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-4 w-[90%] max-w-sm">
                 {isSelectionMode ? (
                     <>
                         {selectedFileIds.has(lightboxFile.id) && (
@@ -1704,6 +1714,33 @@ export const ClientGallery: React.FC = () => {
                         <span>{downloadingId === lightboxFile.id ? (singleDownloadStats ? (singleDownloadStats.total ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)` : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`) : 'Cancel') : isLocked ? 'Locked' : 'Download Photo'}</span>
                     </button>
                 )}
+            </div>
+
+            {/* Thumbnail slider */}
+            <div className="absolute bottom-4 left-0 right-0 z-50 px-4 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <div id="lightbox-thumbnails-container" className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {displayedFiles.map((file) => (
+                        <button
+                            key={file.id}
+                            id={`thumbnail-${file.id}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxFile(file);
+                            }}
+                            className={`relative shrink-0 snap-center rounded-lg overflow-hidden transition-all duration-300 ${
+                                lightboxFile.id === file.id
+                                    ? 'w-16 h-16 border-2 border-white opacity-100 shadow-lg'
+                                    : 'w-12 h-12 border border-white/20 opacity-50 hover:opacity-100'
+                            }`}
+                        >
+                            <img
+                                src={getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 30)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                            />
+                        </button>
+                    ))}
+                </div>
             </div>
         </div>
       )}
