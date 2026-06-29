@@ -581,14 +581,15 @@ export const GalleryManager: React.FC = () => {
       const filesToDelete = files.filter(f => checkedFiles.includes(f.id));
       
       // Delete from storage
-      for (const file of filesToDelete) {
-         const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-         await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filePath: file.file_path })
-         });
-      }
+      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+      
+      const filePaths = filesToDelete.map(f => f.file_path);
+      
+      await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ filePaths })
+      });
       
       // Delete from DB
       await supabase.from('files').delete().in('id', checkedFiles);
