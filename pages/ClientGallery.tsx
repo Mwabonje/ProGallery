@@ -65,6 +65,7 @@ export const ClientGallery: React.FC = () => {
   // Ref to cancel download if needed
   const abortControllerRef = useRef<AbortController | null>(null);
   const singleAbortControllerRef = useRef<AbortController | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const cancelSingleDownload = () => {
       if (singleAbortControllerRef.current) {
@@ -771,6 +772,21 @@ export const ClientGallery: React.FC = () => {
       }
       if (isRightSwipe) {
           handlePrevLightbox();
+      }
+  };
+
+  const handleLongPressStart = () => {
+      longPressTimerRef.current = setTimeout(() => {
+          if (!isPortfolio) {
+              setShowScreenshotWarning(true);
+          }
+      }, 500); // 500ms for long press
+  };
+
+  const handleLongPressEnd = () => {
+      if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
       }
   };
 
@@ -1563,6 +1579,12 @@ export const ClientGallery: React.FC = () => {
                                      setShowScreenshotWarning(true);
                                  }
                              }} 
+                             onTouchStart={handleLongPressStart}
+                             onTouchEnd={handleLongPressEnd}
+                             onTouchMove={handleLongPressEnd}
+                             onMouseDown={handleLongPressStart}
+                             onMouseUp={handleLongPressEnd}
+                             onMouseLeave={handleLongPressEnd}
                              onDragStart={(e) => e.preventDefault()}
                         />
                     </div>
@@ -1577,6 +1599,12 @@ export const ClientGallery: React.FC = () => {
                             disablePictureInPicture={isLocked}
                             autoPlay
                             playsInline
+                            onTouchStart={handleLongPressStart}
+                            onTouchEnd={handleLongPressEnd}
+                            onTouchMove={handleLongPressEnd}
+                            onMouseDown={handleLongPressStart}
+                            onMouseUp={handleLongPressEnd}
+                            onMouseLeave={handleLongPressEnd}
                             onContextMenu={(e) => {
                                 e.preventDefault();
                                 if (!isPortfolio) {
