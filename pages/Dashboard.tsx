@@ -261,8 +261,8 @@ export const Dashboard: React.FC = () => {
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
-    if (!isPortfolio && deliveriesCount >= 3) {
-        alert("You have reached the maximum limit of 3 Client Deliveries. Please delete an existing delivery to create a new one.");
+    if (!isPortfolio && deliveriesCount >= 6) {
+        alert("You have reached the maximum limit of 6 Client Deliveries. Please delete an existing delivery to create a new one.");
         return;
     }
     if (isPortfolio && portfolioCount >= 50) {
@@ -700,7 +700,7 @@ export const Dashboard: React.FC = () => {
                 ))}
 
                 {/* Create New Gallery Card */}
-                {galleries.filter(g => !g.category || g.category.trim() === '').length < 3 && (
+                {galleries.filter(g => !g.category || g.category.trim() === '').length < 6 && (
                 <div 
                     onClick={() => {
                         setNewCategory(''); // Ensure category is blank for Deliveries
