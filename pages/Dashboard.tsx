@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -653,6 +653,20 @@ export const Dashboard: React.FC = () => {
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
                     
+                    {/* Copy Link Button */}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(`${window.location.origin}/gallery/${gallery.id}`);
+                            toast.success("Link copied!");
+                        }}
+                        className="absolute top-2 right-12 md:right-11 p-3 md:p-2 bg-white/90 rounded-full text-slate-400 hover:text-slate-900 hover:bg-white shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-100 md:scale-90 group-hover:scale-100 z-10"
+                        title="Copy Link"
+                    >
+                        <LinkIcon className="w-5 h-5 md:w-4 md:h-4" />
+                    </button>
+
                     {/* Delete Button */}
                     <button
                         onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
@@ -797,6 +811,20 @@ export const Dashboard: React.FC = () => {
                                 {gallery.client_name}
                             </h3>
                         </div>
+
+                        {/* Copy Link Button */}
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(`${window.location.origin}/gallery/${gallery.id}`);
+                                toast.success("Link copied!");
+                            }}
+                            className="absolute top-2 right-10 p-2 bg-black/40 backdrop-blur-sm rounded-full text-white/70 hover:text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                            title="Copy Link"
+                        >
+                            <LinkIcon className="w-4 h-4" />
+                        </button>
 
                         {/* Delete Button matches styling above but fitted for dark background */}
                         <button
