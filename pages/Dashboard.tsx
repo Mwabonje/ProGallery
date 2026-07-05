@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -50,6 +50,9 @@ export const Dashboard: React.FC = () => {
   const [selectedGalleries, setSelectedGalleries] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState<'extend' | 'enable' | 'disable'>('extend');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'viewed'>('recent');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [bulkExpiryHours, setBulkExpiryHours] = useState<number>(24);
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -403,6 +406,51 @@ export const Dashboard: React.FC = () => {
   const clientDeliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
   const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
+  const availableCategories = React.useMemo(() => {
+      const cats = new Set<string>();
+      galleries.forEach(g => {
+          if (g.category && g.category.trim() !== '' && g.category !== 'ABOUT') {
+              cats.add(g.category);
+          }
+      });
+      return Array.from(cats).sort();
+  }, [galleries]);
+
+  const processedGalleries = React.useMemo(() => {
+      let filtered = galleries;
+      
+      if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter(g => 
+              g.client_name.toLowerCase().includes(q) || 
+              (g.title && g.title.toLowerCase().includes(q)) ||
+              (g.category && g.category.toLowerCase().includes(q))
+          );
+      }
+
+      if (filterCategory !== 'all') {
+          if (filterCategory === 'Client Deliveries') {
+              filtered = filtered.filter(g => !g.category || g.category.trim() === '');
+          } else {
+              filtered = filtered.filter(g => g.category === filterCategory);
+          }
+      }
+
+      let sorted = [...filtered];
+      if (sortBy === 'recent') {
+          // preserve selection_status sort
+          sorted = sorted.sort((a, b) => {
+              if (a.selection_status === 'submitted' && b.selection_status !== 'submitted') return -1;
+              if (a.selection_status !== 'submitted' && b.selection_status === 'submitted') return 1;
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+      } else if (sortBy === 'viewed') {
+          sorted = sorted.sort((a, b) => (b.totalViews || 0) - (a.totalViews || 0));
+      }
+      
+      return sorted;
+  }, [galleries, searchQuery, sortBy, filterCategory]);
+
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
 
   return (
@@ -581,14 +629,51 @@ export const Dashboard: React.FC = () => {
 
         {currentView === 'dashboard' && (
         <>
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search galleries..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 transition-shadow"
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <select
+                            value={filterCategory}
+                            onChange={(e) => setFilterCategory(e.target.value)}
+                            className="pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 appearance-none text-sm text-slate-700"
+                        >
+                            <option value="all">All Categories</option>
+                            <option value="Client Deliveries">Client Deliveries</option>
+                            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'recent' | 'viewed')}
+                        className="px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm text-slate-700"
+                    >
+                        <option value="recent">Most Recent</option>
+                        <option value="viewed">Most Viewed</option>
+                    </select>
+                </div>
+            </div>
+
             {/* Private Client Deliveries Section */}
+            {(processedGalleries.filter(g => !g.category || g.category.trim() === '').length > 0 || (!searchQuery && filterCategory === 'all')) && (
             <div className="mb-12">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2 flex justify-between items-end">
                     <span>Client Deliveries</span>
                     <span className="text-sm font-normal text-slate-500">{clientDeliveriesCount} of 6 used</span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {galleries.filter(g => !g.category || g.category.trim() === '').map((gallery) => (
+                {processedGalleries.filter(g => !g.category || g.category.trim() === '').map((gallery) => (
                 <div 
                     key={gallery.id} 
                     onClick={() => navigate(`/gallery/${gallery.id}`)}
@@ -736,7 +821,7 @@ export const Dashboard: React.FC = () => {
                 ))}
 
                 {/* Create New Gallery Card */}
-                {galleries.filter(g => !g.category || g.category.trim() === '').length < 6 && (
+                {galleries.filter(g => !g.category || g.category.trim() === '').length < 6 && !searchQuery && filterCategory === 'all' && (
                 <div 
                     onClick={() => {
                         setNewCategory(''); // Ensure category is blank for Deliveries
@@ -754,16 +839,17 @@ export const Dashboard: React.FC = () => {
                 )}
             </div>
         </div>
+        )}
 
         {/* Portfolio Collections Section */}
-        {userEmail === 'ringa.michael@gmail.com' && (
+        {userEmail === 'ringa.michael@gmail.com' && (processedGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length > 0 || (!searchQuery && filterCategory === 'all')) && (
         <div className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2 flex justify-between items-end">
                 <span>Portfolio Collections</span>
                 <span className="text-sm font-normal text-slate-500">{portfolioCount} of 50 used</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map((gallery) => (
+                {processedGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map((gallery) => (
                 <div 
                     key={gallery.id} 
                     onClick={() => navigate(`/gallery/${gallery.id}`)}
@@ -879,7 +965,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 
                 {/* Create New Portfolio Collection */}
-                {galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length < 50 && (
+                {galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length < 50 && !searchQuery && filterCategory === 'all' && (
                 <div 
                     onClick={() => {
                         setNewCategory('Wedding'); // Pre-fill with a suggestion since it's portfolio
@@ -905,6 +991,15 @@ export const Dashboard: React.FC = () => {
                 <ImageIcon className="w-12 h-12 mb-4 text-slate-300" />
                 <p className="font-medium">Welcome to your studio dashboard.</p>
                 <p className="text-sm mt-1">Click "New Gallery" to create a private delivery or portfolio collection.</p>
+            </div>
+        )}
+
+        {/* Empty State for Search/Filter */}
+        {galleries.length > 0 && processedGalleries.length === 0 && (
+            <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                <Search className="w-12 h-12 mb-4 text-slate-300" />
+                <p className="font-medium">No galleries found matching your criteria.</p>
+                <p className="text-sm mt-1">Try adjusting your search or filters.</p>
             </div>
         )}
         </>
