@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare, Folder, X } from 'lucide-react';
+
+import { toast } from 'sonner';
 
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
@@ -1312,33 +1314,50 @@ export const GalleryManager: React.FC = () => {
                 </div>
 
                 {checkedFiles.length > 0 && (
-                    <div className="flex items-center gap-3 bg-zinc-900 text-white px-4 py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] mb-6 sticky top-16 z-20">
-                        <span className="font-semibold text-sm">{checkedFiles.length} selected</span>
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-zinc-900 text-white px-6 py-4 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-50 animate-in slide-in-from-bottom-8">
+                        <span className="font-semibold text-sm whitespace-nowrap">{checkedFiles.length} selected</span>
                         <div className="w-px h-4 bg-zinc-700 mx-1"></div>
                         <button
                             onClick={handleDownloadZip}
                             disabled={isZipping}
-                            className="flex items-center gap-1.5 text-sm font-medium hover:text-indigo-300 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-2 text-sm font-medium hover:text-indigo-300 disabled:opacity-50 transition-colors whitespace-nowrap"
                         >
                             {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                            {isZipping ? 'Zipping...' : 'Download ZIP'}
+                            <span>{isZipping ? 'Zipping...' : 'Download'}</span>
                         </button>
-                        
+                        <button
+                            onClick={() => {
+                                // Real folder implementation would go here
+                                toast.info('Move to Folder feature coming soon!');
+                            }}
+                            disabled={isZipping}
+                            className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+                        >
+                            <Folder className="w-4 h-4" />
+                            <span>Move to Folder</span>
+                        </button>
                         <button
                             onClick={handleRenameSelected}
                             disabled={isZipping}
-                            className="flex items-center gap-1.5 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors ml-auto mr-4"
+                            className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
                         >
                             <Edit2 className="w-4 h-4" />
-                            Rename
+                            <span>Rename</span>
                         </button>
                         <button
                             onClick={handleDeleteSelected}
                             disabled={isZipping}
-                            className="flex items-center gap-1.5 text-sm font-medium text-rose-400 hover:text-rose-300 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-2 text-sm font-medium text-rose-400 hover:text-rose-300 disabled:opacity-50 transition-colors whitespace-nowrap"
                         >
                             <Trash2 className="w-4 h-4" />
-                            Delete
+                            <span>Delete</span>
+                        </button>
+                        <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                        <button 
+                            onClick={() => setCheckedFiles([])}
+                            className="p-1 hover:bg-zinc-800 rounded-full transition-colors ml-1"
+                        >
+                            <X className="w-4 h-4 text-zinc-400 hover:text-white" />
                         </button>
                     </div>
                 )}
