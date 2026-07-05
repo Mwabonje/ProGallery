@@ -647,11 +647,27 @@ export const Dashboard: React.FC = () => {
                     )}
 
                     {/* Status Badges Overlay */}
-                    <div className="absolute top-2 left-2 flex gap-1 z-10">
+                    <div className="absolute top-2 left-10 flex gap-1 z-10 flex-wrap max-w-[70%]">
                         {gallery.selection_status === 'submitted' && (
                             <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1 animate-bounce">
                                 <Heart className="w-3 h-3 fill-current" />
                                 SUBMITTED
+                            </div>
+                        )}
+                        {gallery.selection_enabled && gallery.selection_status === 'pending' && (
+                            <div className="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                                PENDING SELECTION
+                            </div>
+                        )}
+                        {!gallery.link_enabled && (
+                            <div className="bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                                <EyeOff className="w-3 h-3" />
+                                HIDDEN
+                            </div>
+                        )}
+                        {gallery.itemCount === 0 && (
+                            <div className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                                EMPTY
                             </div>
                         )}
                     </div>
@@ -788,6 +804,21 @@ export const Dashboard: React.FC = () => {
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
                         
+                        {/* Status Badges Overlay */}
+                        <div className="absolute top-2 left-10 flex gap-1 z-10 flex-wrap max-w-[70%]">
+                            {!gallery.link_enabled && (
+                                <div className="bg-slate-800/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                                    <EyeOff className="w-3 h-3" />
+                                    HIDDEN
+                                </div>
+                            )}
+                            {gallery.itemCount === 0 && (
+                                <div className="bg-amber-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                                    EMPTY
+                                </div>
+                            )}
+                        </div>
+
                         {/* Hover Checkbox */}
                         <div className={`absolute top-2 left-2 z-20 transition-opacity duration-200 ${selectedGalleries.includes(gallery.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                             <div 
