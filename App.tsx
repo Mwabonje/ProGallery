@@ -52,7 +52,7 @@ const App: React.FC = () => {
     <UploadProvider>
       <Toaster position="top-center" richColors />
       <Router>
-        <Routes>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-400"></div>}><Routes>
           {/* Public Routes */}
           <Route path="/" element={<Portfolio />} />
           <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
@@ -83,7 +83,7 @@ const App: React.FC = () => {
 
           {/* Default */}
           <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
-        </Routes>
+        </Routes></React.Suspense>
       </Router>
     </UploadProvider>
   );

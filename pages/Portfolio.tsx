@@ -77,9 +77,16 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
             className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}
         >
             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
-                {gallery.coverType === 'video' ? (
+                {!gallery.coverUrl ? (
+                    <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">
+                        <div className="w-8 h-8 relative flex items-center justify-center">
+                            <div className="absolute inset-0 border border-slate-200 rounded-full"></div>
+                            <div className="absolute inset-0 border border-slate-400 border-r-transparent rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                ) : gallery.coverType === 'video' ? (
                     <video 
-                        src={rewriteUrlToR2(gallery.coverUrl!)} 
+                        src={rewriteUrlToR2(gallery.coverUrl!)}
                         className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                         muted playsInline loop preload="metadata"
                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}
@@ -96,6 +103,9 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
                         alt={gallery.client_name}
                         className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                         loading={index < 4 ? "eager" : "lazy"}
+                        decoding="async"
+                        // @ts-ignore
+                        fetchPriority={index < 4 ? "high" : "auto"}
                         onContextMenu={(e) => e.preventDefault()}
                     />
                 )}
@@ -156,6 +166,8 @@ export const Portfolio: React.FC = () => {
 
                 // Filter out non-portfolio items (client deliveries without a category)
                 const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '');
+                setGalleries(portfolioItems);
+                setLoading(false);
 
                 const enrichedGalleries = await Promise.all(
                     portfolioItems.map(async (gallery) => {
@@ -216,17 +228,6 @@ export const Portfolio: React.FC = () => {
             }
         }
     }, [activeCategory, galleries]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 relative flex items-center justify-center">
-                    <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
-                    <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
-                </div>
-            </div>
-        );
-    }
 
     // Extract unique categories (defaulting heavily to un-categorized if not set)
     const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints' && c?.toLowerCase() !== 'about')))];
@@ -398,7 +399,14 @@ export const Portfolio: React.FC = () => {
             </>
 
             {/* Main Content Gallery */}
-            {activeCategory === 'ABOUT' ? (() => {
+            {loading ? (
+                <main className="flex-1 w-full flex items-center justify-center p-32">
+                    <div className="w-8 h-8 relative flex items-center justify-center">
+                        <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
+                        <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
+                    </div>
+                </main>
+            ) : activeCategory === 'ABOUT' ? (() => {
                 const aboutData = galleries.find(g => g.category?.toUpperCase() === 'ABOUT');
                 const defaultImage = "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=2940&auto=format&fit=crop";
                 const displayImage = aboutData?.coverUrl || defaultImage;

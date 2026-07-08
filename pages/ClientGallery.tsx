@@ -397,6 +397,8 @@ export const ClientGallery: React.FC = () => {
       ) {
         setShowBalanceWarningModal(true);
       }
+      
+      setLoading(false); // Remove FCP blocker immediately after gallery metadata is fetched
 
       if (
         galData.selection_status === "submitted" ||
