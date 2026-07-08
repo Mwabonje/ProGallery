@@ -241,6 +241,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         file_url: publicUrl,
                         file_path: filePath,
                         file_type: dbFileType,
+                        file_size: file.size,
                         expires_at: expiresAt.toISOString()
                     }]);
 

@@ -27,6 +27,7 @@ export interface GalleryFile {
   file_url: string;
   file_path: string; // Storage path for deletion
   file_type: 'image' | 'video';
+  file_size?: number; // File size in bytes
   created_at: string;
   expires_at: string;
   download_count: number;

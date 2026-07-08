@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createServer as createViteServer } from "vite";
 import rateLimit from "express-rate-limit";
@@ -135,7 +135,6 @@ async function startServer() {
         return res.status(400).json({ error: "Cannot delete the root folder" });
       }
 
-      const { ListObjectsV2Command } = require("@aws-sdk/client-s3");
       const listCommand = new ListObjectsV2Command({
         Bucket: R2_BUCKET_NAME!,
         Prefix: folderPath.endsWith("/") ? folderPath : folderPath + "/",
@@ -176,6 +175,36 @@ async function startServer() {
   // Actually, R2 supports CORS. But it's easier to just fetch proxy if needed, though for large zips it's bad.
   // Given we are downloading photos locally to browser to zip, we MUST have CORS on Cloudflare R2.
   // We'll instruct the user.
+
+  app.get("/api/storage-usage", async (req, res) => {
+    if (!s3 || !isR2Configured) {
+      return res.status(500).json({ error: "R2 is not configured" });
+    }
+    try {
+      let totalBytes = 0;
+      let isTruncated = true;
+      let continuationToken = undefined;
+
+      while (isTruncated) {
+        const command: any = new ListObjectsV2Command({
+          Bucket: R2_BUCKET_NAME!,
+          ContinuationToken: continuationToken,
+        });
+        const response: any = await s3.send(command);
+        if (response.Contents) {
+          totalBytes += response.Contents.reduce((acc: number, item: any) => acc + (item.Size || 0), 0);
+        }
+        isTruncated = response.IsTruncated;
+        continuationToken = response.NextContinuationToken;
+      }
+      
+      const totalMB = totalBytes / (1024 * 1024);
+      res.json({ totalStorageUsedMB: totalMB });
+    } catch (e: any) {
+      console.error("Storage usage error:", e);
+      res.status(500).json({ error: "Failed to fetch storage usage", details: e.message || e.toString() });
+    }
+  });
 
   // --- Analytics APIs ---
   interface AnalyticsData {

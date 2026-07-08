@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,6 +14,7 @@ interface DashboardGallery extends Gallery {
   coverType: string | null;
   itemCount: number;
   downloadCount: number;
+  gallerySizeBytes: number;
   analytics: {
       views: number;
       clicks: number;
@@ -56,6 +57,7 @@ export const Dashboard: React.FC = () => {
   const [bulkExpiryHours, setBulkExpiryHours] = useState<number>(24);
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [realStorageUsedMB, setRealStorageUsedMB] = useState<number>(0);
 
   const toggleGallerySelection = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
@@ -100,8 +102,25 @@ export const Dashboard: React.FC = () => {
       }
   };
 
+  const fetchStorageUsage = async () => {
+      try {
+          const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+          const apiUrl = isNetlify ? '/.netlify/functions/storage-usage' : '/api/storage-usage';
+          const res = await fetch(apiUrl);
+          if (res.ok) {
+              const data = await res.json();
+              if (data.totalStorageUsedMB !== undefined) {
+                  setRealStorageUsedMB(data.totalStorageUsedMB);
+              }
+          }
+      } catch (e) {
+          console.error("Failed to fetch storage usage", e);
+      }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchStorageUsage();
   }, []);
 
   const fetchData = async () => {
@@ -195,7 +214,7 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type, download_count, created_at')
+            .select('file_url, file_type, download_count, created_at, file_size')
             .eq('gallery_id', gallery.id)
             .order('created_at', { ascending: false });
 
@@ -203,11 +222,13 @@ export const Dashboard: React.FC = () => {
 
           const coverFile = allFiles && allFiles.length > 0 ? allFiles[0] : null;
           const downloadCount = (allFiles || []).reduce((acc, f) => acc + (f.download_count || 0), 0);
+          const gallerySizeBytes = (allFiles || []).reduce((acc, f) => acc + (f.file_size || 0), 0);
 
           return {
             ...gallery,
             itemCount: count || 0,
             downloadCount,
+            gallerySizeBytes,
             analytics: {
                 views: ad.views || 0,
                 clicks: ad.clicks || 0,
@@ -451,6 +472,12 @@ export const Dashboard: React.FC = () => {
       return sorted;
   }, [galleries, searchQuery, sortBy, filterCategory]);
 
+  // Storage calculations using real usage
+  const totalStorageUsedBytes = galleries.reduce((acc, g) => acc + (g.gallerySizeBytes || 0), 0);
+  const totalStorageUsedMB = totalStorageUsedBytes / (1024 * 1024);
+  const storageLimitMB = 5000;
+  const storageUsagePercent = (totalStorageUsedMB / storageLimitMB) * 100;
+
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
 
   return (
@@ -459,6 +486,19 @@ export const Dashboard: React.FC = () => {
       <div className="flex-1 w-full max-w-full overflow-hidden">
         {currentView === 'dashboard' && (
             <>
+                {storageUsagePercent >= 80 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3 animate-in fade-in">
+                        <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                            <h3 className="text-amber-800 font-semibold text-sm">Storage Capacity Alert</h3>
+                            <p className="text-amber-700 text-sm mt-1">
+                                You have used {Math.round(storageUsagePercent)}% of your available storage ({(totalStorageUsedMB / 1024).toFixed(1)}GB / {(storageLimitMB / 1024).toFixed(1)}GB). 
+                                Consider archiving old galleries or upgrading your plan to free up space.
+                            </p>
+                        </div>
+                    </div>
+                )}
+                
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
                     <div>
                     <h1 className="text-2xl font-bold text-slate-900">Galleries & Deliveries</h1>
