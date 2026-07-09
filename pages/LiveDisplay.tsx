@@ -74,10 +74,10 @@ export const LiveDisplay: React.FC = () => {
     const publicUrl = `${window.location.origin}/${generateSlug(gallery.client_name)}`;
 
     return (
-        <div className="min-h-screen bg-[#f36c21] relative overflow-hidden flex flex-col md:flex-row items-center justify-center p-4 md:p-8 font-sans text-white">
+        <div className="fixed inset-0 bg-[#f36c21] overflow-y-auto no-scrollbar flex flex-col md:flex-row items-center justify-center p-4 md:p-8 font-sans text-white z-50">
             
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
+            <div className="fixed inset-0 opacity-[0.05] pointer-events-none">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <pattern id="triangles" width="200" height="200" patternUnits="userSpaceOnUse">
@@ -157,10 +157,10 @@ export const LiveDisplay: React.FC = () => {
                                 </div>
                                 
                                 {/* App Content */}
-                                <div className="flex-1 flex flex-col items-center bg-white overflow-hidden pb-4">
+                                <div className="flex-1 flex flex-col items-center bg-white overflow-y-auto no-scrollbar pb-6">
                                     
                                     {/* Event Photo at top of content */}
-                                    <div className="w-full h-24 bg-gray-100 relative mb-3 shrink-0">
+                                    <div className="w-full h-44 bg-gray-100 relative mb-4">
                                         {coverFile ? (
                                             <img src={getOptimizedImageUrl(coverFile.file_url, 400, 400)} className="w-full h-full object-cover" alt="Event Cover" key={coverFile.id} />
                                         ) : (
@@ -168,20 +168,20 @@ export const LiveDisplay: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <h3 className="font-bold text-gray-900 text-base mb-1 text-center px-4 leading-tight">Live Gallery Access</h3>
-                                    <p className="text-[11px] text-gray-500 text-center px-6 mb-4">
+                                    <h3 className="font-bold text-gray-900 text-lg mb-2 text-center px-4 leading-tight">Live Gallery Access</h3>
+                                    <p className="text-xs text-gray-500 text-center px-6 mb-6">
                                         Scan the code below with your phone's camera for easy access!
                                     </p>
                                     
-                                    <div className="text-xs font-bold text-gray-800 mb-2">{gallery.client_name}</div>
+                                    <div className="text-sm font-bold text-gray-800 mb-2">{gallery.client_name}</div>
                                     
                                     {/* QR Code Container */}
                                     <div className="p-0">
-                                        <QRCode value={publicUrl} size={120} level="H" />
+                                        <QRCode value={publicUrl} size={150} level="H" />
                                     </div>
 
-                                    <div className="mt-auto pt-4 pb-2 w-full px-8">
-                                        <div className="w-full py-2 border border-gray-200 rounded-lg text-gray-600 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div className="mt-auto pt-6 pb-2 w-full px-8">
+                                        <div className="w-full py-2.5 border border-gray-200 rounded-lg text-gray-600 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-colors">
                                             <ArrowLeft size={14} /> Back to Gallery
                                         </div>
                                     </div>
@@ -200,6 +200,13 @@ export const LiveDisplay: React.FC = () => {
                 .animate-fade-in-up {
                     animation: fade-in-up 0.8s ease-out forwards;
                     opacity: 0;
+                }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}} />
         </div>
