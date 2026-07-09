@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare, Folder, X } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare, Folder, X, QrCode } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -803,6 +803,17 @@ export const GalleryManager: React.FC = () => {
                     </>
                 )}
                 </button>
+                
+                <a 
+                href={`/g/${gallery.id}/display`}
+                target="_blank" 
+                rel="noreferrer"
+                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-xl flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300`}
+                >
+                    <QrCode className="w-4 h-4" />
+                    <span className="hidden sm:inline">Live Display</span>
+                    <span className="inline sm:hidden">QR</span>
+                </a>
                 
                 <a 
                 href={`/${generateSlug(gallery.client_name)}`}

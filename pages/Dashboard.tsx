@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -800,6 +800,19 @@ export const Dashboard: React.FC = () => {
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
                     
+                    {/* Live Display Button */}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(`/g/${gallery.id}/display`, '_blank');
+                        }}
+                        className="absolute top-2 right-22 md:right-20 p-3 md:p-2 bg-white/90 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-white shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-100 md:scale-90 group-hover:scale-100 z-10"
+                        title="Live Display (QR)"
+                    >
+                        <QrCode className="w-5 h-5 md:w-4 md:h-4" />
+                    </button>
+
                     {/* Copy Link Button */}
                     <button
                         onClick={(e) => {
@@ -992,6 +1005,18 @@ export const Dashboard: React.FC = () => {
                             <LinkIcon className="w-4 h-4" />
                         </button>
 
+                        {/* Live Display Button */}
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(`/g/${gallery.id}/display`, '_blank');
+                            }}
+                            className="absolute top-2 right-[4.5rem] p-2 bg-black/40 backdrop-blur-sm rounded-full text-white/70 hover:text-indigo-400 hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                            title="Live Display (QR)"
+                        >
+                            <QrCode className="w-4 h-4" />
+                        </button>
                         {/* Delete Button matches styling above but fitted for dark background */}
                         <button
                             onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}

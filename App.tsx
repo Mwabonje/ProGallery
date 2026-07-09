@@ -13,6 +13,7 @@ import { Toaster } from 'sonner';
 
 import { Portfolio } from './pages/Portfolio';
 import { Prints } from './pages/Prints';
+import { LiveDisplay } from './pages/LiveDisplay';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -58,6 +59,7 @@ const App: React.FC = () => {
           <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/admin" element={!session ? <Navigate to="/login" /> : <Navigate to="/dashboard" />} />
           <Route path="/g/:galleryId" element={<ClientGallery />} />
+          <Route path="/g/:galleryId/display" element={<LiveDisplay />} />
           <Route path="/p/:photographerId" element={<Portfolio />} />
           <Route path="/prints" element={<Prints />} />
 
