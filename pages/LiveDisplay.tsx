@@ -160,7 +160,7 @@ export const LiveDisplay: React.FC = () => {
                                 <div className="flex-1 flex flex-col items-center bg-white overflow-hidden pb-4">
                                     
                                     {/* Event Photo at top of content */}
-                                    <div className="w-full h-32 bg-gray-100 relative mb-4 shrink-0">
+                                    <div className="w-full h-24 bg-gray-100 relative mb-3 shrink-0">
                                         {coverFile ? (
                                             <img src={getOptimizedImageUrl(coverFile.file_url, 400, 400)} className="w-full h-full object-cover" alt="Event Cover" key={coverFile.id} />
                                         ) : (
@@ -168,20 +168,20 @@ export const LiveDisplay: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <h3 className="font-bold text-gray-900 text-lg mb-2 text-center px-4 leading-tight">Live Gallery Access</h3>
-                                    <p className="text-xs text-gray-500 text-center px-6 mb-6">
+                                    <h3 className="font-bold text-gray-900 text-base mb-1 text-center px-4 leading-tight">Live Gallery Access</h3>
+                                    <p className="text-[11px] text-gray-500 text-center px-6 mb-4">
                                         Scan the code below with your phone's camera for easy access!
                                     </p>
                                     
-                                    <div className="text-sm font-bold text-gray-800 mb-2">{gallery.client_name}</div>
+                                    <div className="text-xs font-bold text-gray-800 mb-2">{gallery.client_name}</div>
                                     
                                     {/* QR Code Container */}
                                     <div className="p-0">
-                                        <QRCode value={publicUrl} size={150} level="H" />
+                                        <QRCode value={publicUrl} size={120} level="H" />
                                     </div>
 
-                                    <div className="mt-auto pt-6 pb-2 w-full px-8">
-                                        <div className="w-full py-2.5 border border-gray-200 rounded-lg text-gray-600 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div className="mt-auto pt-4 pb-2 w-full px-8">
+                                        <div className="w-full py-2 border border-gray-200 rounded-lg text-gray-600 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-colors">
                                             <ArrowLeft size={14} /> Back to Gallery
                                         </div>
                                     </div>
