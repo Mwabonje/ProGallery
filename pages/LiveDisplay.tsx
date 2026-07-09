@@ -157,10 +157,10 @@ export const LiveDisplay: React.FC = () => {
                                 </div>
                                 
                                 {/* App Content */}
-                                <div className="flex-1 flex flex-col items-center bg-white overflow-y-auto pb-6">
+                                <div className="flex-1 flex flex-col items-center bg-white overflow-hidden pb-4">
                                     
                                     {/* Event Photo at top of content */}
-                                    <div className="w-full h-44 bg-gray-100 relative mb-4">
+                                    <div className="w-full h-32 bg-gray-100 relative mb-4 shrink-0">
                                         {coverFile ? (
                                             <img src={getOptimizedImageUrl(coverFile.file_url, 400, 400)} className="w-full h-full object-cover" alt="Event Cover" key={coverFile.id} />
                                         ) : (
