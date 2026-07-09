@@ -214,7 +214,7 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type, download_count, created_at, file_size')
+            .select('file_url, file_type, download_count, created_at')
             .eq('gallery_id', gallery.id)
             .order('created_at', { ascending: false });
 
