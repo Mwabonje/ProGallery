@@ -202,11 +202,15 @@ export const LiveDisplay: React.FC = () => {
                     opacity: 0;
                 }
                 .no-scrollbar::-webkit-scrollbar {
-                    display: none;
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    -webkit-appearance: none !important;
+                    background: transparent !important;
                 }
                 .no-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
+                    -ms-overflow-style: none !important;
+                    scrollbar-width: none !important;
                 }
             `}} />
         </div>
