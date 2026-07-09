@@ -8,19 +8,19 @@ import QRCode from 'react-qr-code';
 import { Loader2 } from 'lucide-react';
 
 export const LiveDisplay: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { galleryId } = useParams<{ galleryId: string }>();
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [coverFile, setCoverFile] = useState<GalleryFile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchGallery = async () => {
-            if (!id) return;
+            if (!galleryId) return;
             try {
                 const { data: gData, error: gError } = await supabase
                     .from('galleries')
                     .select('*')
-                    .eq('id', id)
+                    .eq('id', galleryId)
                     .single();
                 
                 if (gError) throw gError;
@@ -29,7 +29,7 @@ export const LiveDisplay: React.FC = () => {
                 const { data: fData } = await supabase
                     .from('files')
                     .select('*')
-                    .eq('gallery_id', id)
+                    .eq('gallery_id', galleryId)
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .single();
@@ -47,11 +47,11 @@ export const LiveDisplay: React.FC = () => {
         // Optional: Auto-refresh the cover photo periodically?
         // Let's set up a subscription or just a simple interval for new photos.
         const interval = setInterval(async () => {
-            if (!id) return;
+            if (!galleryId) return;
             const { data: fData } = await supabase
                 .from('files')
                 .select('*')
-                .eq('gallery_id', id)
+                .eq('gallery_id', galleryId)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
@@ -59,7 +59,7 @@ export const LiveDisplay: React.FC = () => {
         }, 15000); // Check for new latest photo every 15 seconds
 
         return () => clearInterval(interval);
-    }, [id]);
+    }, [galleryId]);
 
     if (loading) {
         return (
