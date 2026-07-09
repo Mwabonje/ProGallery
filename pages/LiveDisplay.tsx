@@ -131,10 +131,10 @@ export const LiveDisplay: React.FC = () => {
                         <div className="flex-1 flex flex-col h-full justify-between">
                             <div className="animate-fade-in-up">
                                 <h1 className="text-4xl md:text-5xl lg:text-7xl font-semibold text-white leading-tight mb-2 md:mb-4 max-w-2xl tracking-tight">
-                                    {gallery.title || gallery.client_name}
+                                    SCAN ME
                                 </h1>
                                 <p className="text-lg md:text-2xl text-white/90 font-light max-w-md">
-                                    Scan to view and download photos instantly.
+                                    To view and download photos from the event instantly.
                                 </p>
                             </div>
                             
