@@ -95,7 +95,7 @@ export const LiveDisplay: React.FC = () => {
             </div>
 
             {/* Main Content Container */}
-            <div className="relative z-10 w-full max-w-5xl flex flex-col items-center md:items-start h-full py-4 md:py-12 md:pl-40 justify-center">
+            <div className="relative z-10 w-full max-w-5xl flex flex-col items-center md:items-start h-full py-12 md:pl-40">
                 
                 {/* Left Icons - Absolutely positioned on the border line */}
                 <div className="hidden md:flex flex-col justify-center gap-8 absolute left-24 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
@@ -117,26 +117,21 @@ export const LiveDisplay: React.FC = () => {
                 </div>
 
                 {/* Text and Phone Container */}
-                <div className="flex flex-col items-center md:items-start w-full gap-4 md:gap-8 pl-0 md:pl-12 h-full md:h-auto justify-center">
+                <div className="flex flex-col items-center md:items-start w-full gap-8 pl-0 md:pl-12">
                     
                     {/* Header Text */}
-                    <div className="text-center md:text-left animate-fade-in-up w-full flex-shrink-0">
-                        <div className="md:hidden text-white font-medium text-lg tracking-widest mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-                            instantly.
-                        </div>
-                        <div className="hidden md:block">
-                            <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-4" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px rgba(0,0,0,0.1)'}}>
-                                {gallery.title || gallery.client_name}
-                            </h1>
-                            <p className="text-xl md:text-2xl text-white/90 font-light max-w-lg">
-                                Scan to view and download photos instantly.
-                            </p>
-                        </div>
+                    <div className="text-center md:text-left animate-fade-in-up w-full">
+                        <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-4" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px rgba(0,0,0,0.1)'}}>
+                            {gallery.title || gallery.client_name}
+                        </h1>
+                        <p className="text-xl md:text-2xl text-white/90 font-light max-w-lg">
+                            Scan to view and download photos instantly.
+                        </p>
                     </div>
 
                     {/* Phone Mockup */}
-                    <div className="flex justify-center md:justify-start w-full animate-fade-in-up flex-1 min-h-0" style={{ animationDelay: '0.2s' }}>
-                        <div className="h-full aspect-[9/19] md:h-auto md:w-full md:max-w-[340px] md:aspect-[9/19] bg-gray-900 rounded-[2.5rem] md:rounded-[3rem] p-[8px] md:p-[12px] shadow-2xl relative mx-auto md:mx-0">
+                    <div className="flex justify-center md:justify-start w-full animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        <div className="w-full max-w-[340px] aspect-[9/19] bg-gray-900 rounded-[3rem] p-[12px] shadow-2xl relative">
                             {/* Screen */}
                             <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden flex flex-col relative">
                                 {/* Notch */}
