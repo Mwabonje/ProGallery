@@ -84,7 +84,7 @@ export const LiveDisplay: React.FC = () => {
                 <div className="absolute inset-0 bg-stone-900 z-0">
                     {coverFile ? (
                         <img 
-                            src={getOptimizedImageUrl(coverFile.file_url, 1920, 1080)} 
+                            src={getOptimizedImageUrl(coverFile.file_url, 1920)} 
                             alt="Event Cover"
                             className="w-full h-full object-cover animate-fade-in-slow absolute inset-0"
                             key={coverFile.id}
