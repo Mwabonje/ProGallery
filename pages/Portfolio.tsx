@@ -272,7 +272,7 @@ export const Portfolio: React.FC = () => {
             </Helmet>
             
             {/* Top Navigation Header */}
-            <header className="w-full pt-8 pb-2 md:pt-16 md:pb-4 px-4 md:px-8 flex flex-col items-center relative">
+            <header className="w-full pt-12 pb-2 md:pt-20 md:pb-4 px-4 md:px-8 flex flex-col items-center relative">
                 
                 <div className="flex w-full justify-between items-center md:justify-center relative">
                     {/* Spacer for symmetry on mobile */}
