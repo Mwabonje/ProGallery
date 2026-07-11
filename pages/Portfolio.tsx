@@ -293,7 +293,7 @@ export const Portfolio: React.FC = () => {
                 </div>
 
                 {/* Desktop Navigation Links */}
-                <nav className="hidden lg:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-5 xl:gap-x-8 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.15em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
+                <nav className="hidden lg:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-3 xl:gap-x-5 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.10em] xl:tracking-[0.12em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
                     {categories.length > 0 && categories.map((cat) => {
                         const isAll = cat === 'All';
                         const catGalleries = galleries.filter(g => g.category === cat);
