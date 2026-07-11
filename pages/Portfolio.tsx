@@ -430,8 +430,8 @@ export const Portfolio: React.FC = () => {
             })() : (
             <main className={
                 isFilmsCategory 
-                ? "w-full overflow-hidden flex-1 flex flex-col" 
-                : `w-full p-1 md:p-2 pb-2 md:pb-4 flex-1 flex flex-col justify-center ${activeCategory === 'All' ? 'md:overflow-hidden md:min-h-0' : 'overflow-y-auto'}`
+                ? "w-full overflow-hidden flex-1 flex flex-col animate-in fade-in duration-1000" 
+                : `w-full p-1 md:p-2 pb-2 md:pb-4 flex-1 flex flex-col justify-center animate-in fade-in duration-1000 ${activeCategory === 'All' ? 'md:overflow-hidden md:min-h-0' : 'overflow-y-auto'}`
             }>
                 <div 
                     ref={isFilmsCategory ? horizontalRef : undefined}
