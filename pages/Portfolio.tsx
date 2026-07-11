@@ -274,9 +274,9 @@ export const Portfolio: React.FC = () => {
             {/* Top Navigation Header */}
             <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 flex flex-col items-center relative">
                 
-                <div className="flex w-full justify-between items-center md:justify-center relative">
+                <div className="flex w-full justify-center items-center relative">
                     {/* Spacer for symmetry on mobile */}
-                    <div className="w-10 md:hidden" /> 
+                    <div className="w-10 lg:hidden absolute left-0" /> 
                     
                     <h1 className="text-2xl md:text-3xl lg:text-[44px] uppercase tracking-wider font-bold md:mb-4 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                         {photographerName}
@@ -284,7 +284,7 @@ export const Portfolio: React.FC = () => {
                     
                     {/* Mobile Hamburger Button */}
                     <button 
-                        className="md:hidden text-slate-800 hover:text-black z-30 p-2 -mr-2"
+                        className="lg:hidden text-slate-800 hover:text-black absolute right-0 top-1/2 -translate-y-1/2 z-50 p-2"
                         onClick={() => setIsMobileMenuOpen(true)}
                         aria-label="Open menu"
                     >
@@ -293,7 +293,7 @@ export const Portfolio: React.FC = () => {
                 </div>
 
                 {/* Desktop Navigation Links */}
-                <nav className="hidden md:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-5 xl:gap-x-8 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.15em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
+                <nav className="hidden lg:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-5 xl:gap-x-8 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.15em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
                     {categories.length > 0 && categories.map((cat) => {
                         const isAll = cat === 'All';
                         const catGalleries = galleries.filter(g => g.category === cat);
@@ -342,11 +342,11 @@ export const Portfolio: React.FC = () => {
             {/* Mobile Sidebar Navigation */}
             <>
                 <div 
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
                 <aside 
-                    className={`fixed inset-y-0 left-0 w-64 bg-white z-50 md:hidden flex flex-col p-8 transform transition-transform duration-300 ease-in-out shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                    className={`fixed inset-y-0 left-0 w-64 bg-white z-50 lg:hidden flex flex-col p-8 transform transition-transform duration-300 ease-in-out shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 >
                     <button 
                         className="self-end text-slate-400 hover:text-slate-900 -mr-2 p-2 mb-4"
