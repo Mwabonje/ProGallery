@@ -54,7 +54,7 @@ interface PortfolioGallery extends Gallery {
   itemCount?: number;
 }
 
-const GalleryCard = ({ gallery, index, isFilmsCategory, isHome }: { gallery: PortfolioGallery, index: number, isFilmsCategory: boolean, isHome?: boolean }) => {
+const GalleryCard = ({ gallery, index, isFilmsCategory, isHome, isLastOddCard }: { gallery: PortfolioGallery, index: number, isFilmsCategory: boolean, isHome?: boolean, isLastOddCard?: boolean }) => {
     const linkRef = useRef<HTMLAnchorElement>(null);
 
     useEffect(() => {
@@ -74,7 +74,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory, isHome }: { gallery: Por
             to={`/${generateSlug(gallery.client_name)}`} 
             key={gallery.id}
             onClick={() => trackClick(gallery.id)}
-            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : isHome ? 'h-[60vh] md:h-full md:min-h-0 w-full' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}
+            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : isHome ? 'h-[60vh] md:h-full md:min-h-0 w-full' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'} ${isLastOddCard ? 'sm:col-span-2 lg:col-span-1' : ''}`}
         >
             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                 {gallery.coverType === 'video' ? (
@@ -447,6 +447,7 @@ export const Portfolio: React.FC = () => {
                             gallery={gallery} 
                             index={index} 
                             isFilmsCategory={isFilmsCategory} isHome={activeCategory === 'All'} 
+                            isLastOddCard={filteredGalleries.length % 2 !== 0 && index === filteredGalleries.length - 1}
                         />
                     ))}
                 </div>
