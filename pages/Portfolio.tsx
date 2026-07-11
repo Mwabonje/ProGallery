@@ -54,7 +54,7 @@ interface PortfolioGallery extends Gallery {
   itemCount?: number;
 }
 
-const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGallery, index: number, isFilmsCategory: boolean }) => {
+const GalleryCard = ({ gallery, index, isFilmsCategory, isHome }: { gallery: PortfolioGallery, index: number, isFilmsCategory: boolean, isHome?: boolean }) => {
     const linkRef = useRef<HTMLAnchorElement>(null);
 
     useEffect(() => {
@@ -74,7 +74,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory }: { gallery: PortfolioGa
             to={`/${generateSlug(gallery.client_name)}`} 
             key={gallery.id}
             onClick={() => trackClick(gallery.id)}
-            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}
+            className={`group block relative ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : isHome ? 'h-[60vh] md:h-full md:min-h-0 w-full' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}
         >
             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                 {gallery.coverType === 'video' ? (
@@ -238,7 +238,7 @@ export const Portfolio: React.FC = () => {
         : galleries.filter(g => g.category === activeCategory);
 
     return (
-        <div className="flex flex-col min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
+        <div className={`flex flex-col min-h-screen ${activeCategory === 'All' ? 'md:h-screen md:overflow-hidden' : ''} bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white`}>
             <Helmet>
                 <title>{photographerName} | Professional Photographer & Filmmaker</title>
                 <meta name="description" content={`Explore the photography and film portfolio of ${photographerName}. Specializing in hospitality, documentary, and portrait visual storytelling.`} />
@@ -272,13 +272,13 @@ export const Portfolio: React.FC = () => {
             </Helmet>
             
             {/* Top Navigation Header */}
-            <header className="w-full pt-12 pb-2 md:pt-20 md:pb-4 px-4 md:px-8 flex flex-col items-center relative">
+            <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 flex flex-col items-center relative">
                 
                 <div className="flex w-full justify-between items-center md:justify-center relative">
                     {/* Spacer for symmetry on mobile */}
                     <div className="w-10 md:hidden" /> 
                     
-                    <h1 className="text-2xl md:text-3xl lg:text-[44px] uppercase tracking-wider font-bold md:mb-10 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    <h1 className="text-2xl md:text-3xl lg:text-[44px] uppercase tracking-wider font-bold md:mb-4 text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                         {photographerName}
                     </h1>
                     
@@ -431,14 +431,14 @@ export const Portfolio: React.FC = () => {
             <main className={
                 isFilmsCategory 
                 ? "w-full overflow-hidden flex-1 flex flex-col" 
-                : "w-full p-1 md:p-2 pb-2 md:pb-4 overflow-y-auto flex-1 flex flex-col justify-center"
+                : `w-full p-1 md:p-2 pb-2 md:pb-4 flex-1 flex flex-col justify-center ${activeCategory === 'All' ? 'md:overflow-hidden md:min-h-0' : 'overflow-y-auto'}`
             }>
                 <div 
                     ref={isFilmsCategory ? horizontalRef : undefined}
                     className={
                         isFilmsCategory 
                         ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-280px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${filteredGalleries.length === 1 ? 'justify-center' : ''}`
-                        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 w-full"
+                        : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 w-full ${activeCategory === 'All' ? 'md:h-full md:min-h-0' : ''}`
                     }
                 >
                     {filteredGalleries.map((gallery, index) => (
@@ -446,7 +446,7 @@ export const Portfolio: React.FC = () => {
                             key={gallery.id} 
                             gallery={gallery} 
                             index={index} 
-                            isFilmsCategory={isFilmsCategory} 
+                            isFilmsCategory={isFilmsCategory} isHome={activeCategory === 'All'} 
                         />
                     ))}
                 </div>
