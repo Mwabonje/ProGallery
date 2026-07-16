@@ -239,12 +239,22 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                <input 
-                  type="text" 
+                <select
                   value={editingPost.category || ''} 
                   onChange={e => setEditingPost({ ...editingPost, category: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+                >
+                  <option value="" disabled>Select a category</option>
+                  <option value="Hospitality">Hospitality</option>
+                  <option value="Portraits">Portraits</option>
+                  <option value="Documentary">Documentary</option>
+                  <option value="Wedding">Wedding</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Events">Events</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               
               <div>
