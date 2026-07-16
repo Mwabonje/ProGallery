@@ -165,13 +165,19 @@ export const BlogAdmin: React.FC = () => {
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Enable RLS
 ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
 
+-- Drop any existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Enable read access for all users" ON blogs;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON blogs;
+DROP POLICY IF EXISTS "Enable update for authenticated users only" ON blogs;
+DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON blogs;
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON blogs;
+
+-- Create simple, permissive policies
 CREATE POLICY "Enable read access for all users" ON blogs FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON blogs FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Enable update for authenticated users only" ON blogs FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Enable delete for authenticated users only" ON blogs FOR DELETE TO authenticated USING (true);
-);`}
+CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO authenticated USING (true) WITH CHECK (true);`}
           </pre>
         </div>
         <button 
