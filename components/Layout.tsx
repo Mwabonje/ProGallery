@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Camera, LayoutDashboard, Loader2, Menu, X, Users, TrendingUp } from 'lucide-react';
+import { LogOut, Camera, LayoutDashboard, FileText, Loader2, Menu, X, Users, TrendingUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
@@ -110,7 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <LayoutDashboard className="w-5 h-5" />
+              <FileText className="w-5 h-5" />
               <span>Dashboard</span>
             </button>
             <button
@@ -126,6 +126,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <Users className="w-5 h-5" />
               <span>Audience Overview</span>
+            </button>
+            <button
+              onClick={() => {
+                navigate('/dashboard?view=blogs');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                location.search.includes('view=blogs')
+                  ? 'bg-emerald-600 text-white' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <FileText className="w-5 h-5" />
+              <span>Blog Manager</span>
             </button>
             <button
               onClick={() => {

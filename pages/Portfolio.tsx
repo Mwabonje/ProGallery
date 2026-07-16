@@ -334,6 +334,7 @@ export const Portfolio: React.FC = () => {
                         );
                     })}
                     <button onClick={() => setActiveCategory('ABOUT')} className={`py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300 ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
+                    <Link to="/blog" className="py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300">BLOG</Link>
                     <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300">CONTACT</a>
                     <Link to="/prints" className="py-2 lg:py-4 hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                 </nav>
@@ -383,6 +384,7 @@ export const Portfolio: React.FC = () => {
                         })}
                         <div className="h-px w-8 bg-slate-100 my-2" />
                         <button onClick={() => { setActiveCategory('ABOUT'); setIsMobileMenuOpen(false); }} className={`text-left hover:text-slate-900 transition-colors duration-300 font-semibold tracking-[0.15em] uppercase text-[11px] ${activeCategory === 'ABOUT' ? 'text-slate-900' : 'text-slate-500'}`}>ABOUT</button>
+                        <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-slate-900 transition-colors duration-300 font-semibold tracking-[0.15em] uppercase text-[11px] text-slate-500">BLOG</Link>
                         <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors duration-300">CONTACT</a>
                         <Link to="/prints" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-slate-900 transition-colors duration-300">PRINTS</Link>
                     </nav>

@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
+import { BlogAdmin } from "./BlogAdmin";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Extended interface for dashboard display
@@ -484,6 +485,7 @@ export const Dashboard: React.FC = () => {
     <div className="flex flex-col lg:flex-row gap-8">
       {/* Main Content */}
       <div className="flex-1 w-full max-w-full overflow-hidden">
+        {currentView === 'blogs' && <BlogAdmin />}
         {currentView === 'dashboard' && (
             <>
                 {storageUsagePercent >= 80 && (
