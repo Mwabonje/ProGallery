@@ -163,6 +163,14 @@ export const BlogAdmin: React.FC = () => {
   seo_title TEXT,
   seo_description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable read access for all users" ON blogs FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users only" ON blogs FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Enable update for authenticated users only" ON blogs FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Enable delete for authenticated users only" ON blogs FOR DELETE TO authenticated USING (true);
 );`}
           </pre>
         </div>
