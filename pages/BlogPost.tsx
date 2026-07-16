@@ -10,6 +10,7 @@ export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<BlogPostType | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPostType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +31,19 @@ export const BlogPost: React.FC = () => {
 
       if (error) throw error;
       setPost(data);
+      
+      if (data && data.category) {
+        const { data: relatedData, error: relatedError } = await supabase
+          .from('blogs')
+          .select('*')
+          .eq('category', data.category)
+          .neq('id', data.id)
+          .limit(2);
+          
+        if (!relatedError && relatedData) {
+          setRelatedPosts(relatedData);
+        }
+      }
     } catch (err: any) {
       console.error('Error fetching blog post:', err);
     } finally {
@@ -175,6 +189,47 @@ export const BlogPost: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Related Posts */}
+      {relatedPosts.length > 0 && (
+        <div className="w-full max-w-4xl mx-auto px-4 mt-20 pt-16 border-t border-slate-100">
+          <h3 className="text-2xl font-bold text-slate-900 mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            More in {post.category}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            {relatedPosts.map(relatedPost => (
+              <article key={relatedPost.id} className="group flex flex-col h-full">
+                <Link to={`/blog/${relatedPost.slug}`} className="block overflow-hidden relative aspect-[4/3] bg-slate-100 mb-6" aria-label={`Read ${relatedPost.title}`}>
+                  {relatedPost.cover_image && (
+                    <img 
+                      src={relatedPost.cover_image} 
+                      alt={relatedPost.title} 
+                      loading="lazy"
+                      className="w-full h-full object-cover transform transition-transform duration-[1.5s] group-hover:scale-[1.03]"
+                    />
+                  )}
+                </Link>
+                <div className="flex items-center gap-3 mb-3 text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
+                  <span>{new Date(relatedPost.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span>{calculateReadingTime(relatedPost.content)} min read</span>
+                </div>
+                <Link to={`/blog/${relatedPost.slug}`} className="block group">
+                  <h4 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    {relatedPost.title}
+                  </h4>
+                </Link>
+                <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow line-clamp-3">
+                  {relatedPost.excerpt}
+                </p>
+                <Link to={`/blog/${relatedPost.slug}`} className="inline-flex items-center text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
+                  Read More
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
     </article>
   );
 };
