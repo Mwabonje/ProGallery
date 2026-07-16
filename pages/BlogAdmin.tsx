@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
+import { RichTextEditor } from "../components/RichTextEditor";
 import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -332,15 +333,11 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
           </div>
 
           <div className="pt-4 border-t border-slate-100">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Content (HTML)</label>
-            <textarea 
-              value={editingPost.content || ''} 
-              onChange={e => setEditingPost({ ...editingPost, content: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 min-h-[400px] font-mono text-sm bg-slate-50"
+            <label className="block text-sm font-medium text-slate-700 mb-2">Content</label>
+            <RichTextEditor 
+              content={editingPost.content || ''} 
+              onChange={content => setEditingPost({ ...editingPost, content })}
             />
-            <p className="text-xs text-slate-500 mt-2">
-              Note: You can use HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, etc.
-            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
