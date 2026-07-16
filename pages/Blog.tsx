@@ -47,13 +47,13 @@ export const Blog: React.FC = () => {
         <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={pageUrl} />
-        {posts.length > 0 && <meta property="og:image" content={posts[0].coverImage} />}
+        {posts.length > 0 && <meta property="og:image" content={posts[0].cover_image} />}
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />
-        {posts.length > 0 && <meta name="twitter:image" content={posts[0].coverImage} />}
+        {posts.length > 0 && <meta name="twitter:image" content={posts[0].cover_image} />}
 
         {/* Structured Data (JSON-LD) for Blog */}
         <script type="application/ld+json">
@@ -75,7 +75,7 @@ export const Blog: React.FC = () => {
               "@type": "BlogPosting",
               "headline": post.seo_title || post.title,
               "description": post.seo_description || post.excerpt,
-              "image": post.coverImage,
+              "image": post.cover_image,
               "datePublished": post.date,
               "author": {
                 "@type": "Person",
@@ -115,9 +115,9 @@ export const Blog: React.FC = () => {
             {posts.map((post) => (
               <article key={post.id} className="group flex flex-col h-full">
                 <Link to={`/blog/${post.slug}`} className="block overflow-hidden relative aspect-[4/3] bg-slate-100 mb-6" aria-label={`Read ${post.title}`}>
-                  {post.coverImage && (
+                  {post.cover_image && (
                     <img 
-                      src={post.coverImage} 
+                      src={post.cover_image} 
                       alt={post.title} 
                       loading="lazy"
                       className="w-full h-full object-cover transform transition-transform duration-[1.5s] group-hover:scale-[1.03]"

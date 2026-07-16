@@ -57,7 +57,7 @@ export const BlogAdmin: React.FC = () => {
       content: '',
       date: new Date().toISOString().split('T')[0],
       author: 'Mwabonje',
-      coverImage: '',
+      cover_image: '',
       category: '',
       tags: [],
       seo_title: '',
@@ -157,7 +157,7 @@ export const BlogAdmin: React.FC = () => {
   content TEXT,
   date DATE,
   author TEXT,
-  coverImage TEXT,
+  cover_image TEXT,
   category TEXT,
   tags TEXT[],
   seo_title TEXT,
@@ -269,8 +269,8 @@ export const BlogAdmin: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image URL</label>
                 <input 
                   type="text" 
-                  value={editingPost.coverImage || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, coverImage: e.target.value })}
+                  value={editingPost.cover_image || ''} 
+                  onChange={e => setEditingPost({ ...editingPost, cover_image: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                   placeholder="https://images.unsplash.com/..."
                 />
@@ -392,8 +392,8 @@ export const BlogAdmin: React.FC = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded overflow-hidden bg-slate-100 flex-shrink-0">
-                          {post.coverImage ? (
-                            <img src={post.coverImage} alt="" className="w-full h-full object-cover" />
+                          {post.cover_image ? (
+                            <img src={post.cover_image} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <FileText className="w-6 h-6 m-auto text-slate-300 mt-3" />
                           )}

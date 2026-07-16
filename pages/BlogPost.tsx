@@ -74,7 +74,7 @@ export const BlogPost: React.FC = () => {
         <meta property="og:description" content={seoDescription} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={pageUrl} />
-        {post.coverImage && <meta property="og:image" content={post.coverImage} />}
+        {post.cover_image && <meta property="og:image" content={post.cover_image} />}
         <meta property="article:published_time" content={post.date} />
         <meta property="article:author" content={post.author} />
 
@@ -82,7 +82,7 @@ export const BlogPost: React.FC = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={seoDescription} />
-        {post.coverImage && <meta name="twitter:image" content={post.coverImage} />}
+        {post.cover_image && <meta name="twitter:image" content={post.cover_image} />}
 
         {/* Structured Data (JSON-LD) for Article */}
         <script type="application/ld+json">
@@ -90,7 +90,7 @@ export const BlogPost: React.FC = () => {
             "@context": "https://schema.org",
             "@type": "BlogPosting",
             "headline": post.seo_title || post.title,
-            "image": post.coverImage ? [post.coverImage] : [],
+            "image": post.cover_image ? [post.cover_image] : [],
             "datePublished": post.date,
             "author": {
               "@type": "Person",
@@ -144,10 +144,10 @@ export const BlogPost: React.FC = () => {
       </div>
 
       <div className="w-full max-w-5xl mx-auto px-4 mb-16 md:mb-24">
-        {post.coverImage && (
+        {post.cover_image && (
           <div className="aspect-[16/9] w-full md:aspect-[21/9] bg-slate-100 overflow-hidden relative">
             <img 
-              src={post.coverImage} 
+              src={post.cover_image} 
               alt={post.title} 
               className="w-full h-full object-cover"
               loading="eager"

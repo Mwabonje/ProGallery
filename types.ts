@@ -63,7 +63,7 @@ export interface BlogPost {
   content: string;
   date: string;
   author: string;
-  coverImage: string;
+  cover_image: string;
   category: string;
   tags: string[];
   seo_title?: string;

@@ -18,7 +18,7 @@ export const blogPosts: BlogPost[] = [
     `,
     date: '2025-05-12',
     author: 'Mwabonje',
-    coverImage: 'https://images.unsplash.com/photo-1542314831-c6a4d27ece50?q=80&w=2000&auto=format&fit=crop',
+    cover_image: 'https://images.unsplash.com/photo-1542314831-c6a4d27ece50?q=80&w=2000&auto=format&fit=crop',
     category: 'Hospitality',
     tags: ['Hospitality', 'Photography', 'Lighting']
   },
@@ -39,7 +39,7 @@ export const blogPosts: BlogPost[] = [
     `,
     date: '2025-06-20',
     author: 'Mwabonje',
-    coverImage: 'https://images.unsplash.com/photo-1516008685121-789f24cb2820?q=80&w=2000&auto=format&fit=crop',
+    cover_image: 'https://images.unsplash.com/photo-1516008685121-789f24cb2820?q=80&w=2000&auto=format&fit=crop',
     category: 'Portraits',
     tags: ['Portraits', 'Documentary', 'Storytelling']
   }
