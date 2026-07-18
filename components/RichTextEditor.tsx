@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon } from 'lucide-react';
@@ -130,7 +131,65 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-shadow">
       <MenuBar editor={editor} />
-      <div className="flex-1 overflow-y-auto max-h-[600px]">
+      <div className="flex-1 overflow-y-auto max-h-[600px] relative">
+        {editor && (
+          <BubbleMenu 
+            editor={editor} 
+            tippyOptions={{ duration: 100 }}
+            className="flex items-center bg-white shadow-lg border border-slate-200 rounded-lg overflow-hidden py-1 px-2 gap-1 z-50"
+          >
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Heading 1"
+            >
+              <Heading1 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Heading 2"
+            >
+              <Heading2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Heading 3"
+            >
+              <Heading3 className="w-4 h-4" />
+            </button>
+            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setParagraph().run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors text-xs font-bold ${editor.isActive('paragraph') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Paragraph"
+            >
+              P
+            </button>
+            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('bold') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Bold"
+            >
+              <Bold className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('italic') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Italic"
+            >
+              <Italic className="w-4 h-4" />
+            </button>
+          </BubbleMenu>
+        )}
         <EditorContent editor={editor} />
       </div>
     </div>
