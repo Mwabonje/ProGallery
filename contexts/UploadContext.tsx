@@ -234,16 +234,36 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 // Determine type for DB
                 const dbFileType = mimeType.startsWith('image/') ? 'image' : 'video';
 
-                const { error: dbError } = await supabase
-                    .from('files')
-                    .insert([{
-                        gallery_id: galleryId,
-                        file_url: publicUrl,
-                        file_path: filePath,
-                        file_type: dbFileType,
-                        expires_at: expiresAt.toISOString()
-                    }]);
+                let dbError = null;
+                let threwException = null;
+                for (let retry = 0; retry < 5; retry++) {
+                    try {
+                        threwException = null;
+                        const { error } = await supabase
+                            .from('files')
+                            .insert([{
+                                gallery_id: galleryId,
+                                file_url: publicUrl,
+                                file_path: filePath,
+                                file_type: dbFileType,
+                                expires_at: expiresAt.toISOString()
+                            }]);
+                        dbError = error;
+                        if (!error) break;
+                    } catch (e: any) {
+                        threwException = e;
+                    }
+                    
+                    const errMsg = (threwException?.message || dbError?.message || '');
+                    if (errMsg.includes('Lock') || errMsg.includes('fetch') || errMsg.includes('network') || threwException) {
+                        // Exponential backoff with jitter
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retry) + Math.random() * 500));
+                    } else {
+                        break;
+                    }
+                }
 
+                if (threwException) throw threwException;
                 if (dbError) throw dbError;
 
             } catch (err: any) {

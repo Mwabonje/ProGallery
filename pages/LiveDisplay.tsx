@@ -111,7 +111,7 @@ export const LiveDisplay: React.FC = () => {
                         <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-sm">
                             <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
                         </div>
-                        <span className="text-white font-bold text-lg md:text-xl drop-shadow-md hidden sm:block">Mwabonje</span>
+                        <span className="text-white font-bold text-lg md:text-xl drop-shadow-md hidden sm:block font-serif" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Mwabonje</span>
                     </div>
                 </div>
 
