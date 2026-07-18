@@ -13,6 +13,7 @@ export const BlogAdmin: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tableMissing, setTableMissing] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'editor' | 'split' | 'preview'>('editor');
 
   useEffect(() => {
     fetchPosts();
@@ -333,11 +334,52 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
           </div>
 
           <div className="pt-4 border-t border-slate-100">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Content</label>
-            <RichTextEditor 
-              content={editingPost.content || ''} 
-              onChange={content => setEditingPost({ ...editingPost, content })}
-            />
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-2">
+              <label className="block text-sm font-medium text-slate-700">Content</label>
+              <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+                <button 
+                  type="button"
+                  onClick={() => setPreviewMode('editor')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'editor' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Editor
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setPreviewMode('split')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'split' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'} hidden md:block`}
+                >
+                  Split View
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setPreviewMode('preview')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'preview' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+            
+            <div className={`grid gap-6 ${previewMode === 'split' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+              {(previewMode === 'editor' || previewMode === 'split') && (
+                <div className="w-full">
+                  <RichTextEditor 
+                    content={editingPost.content || ''} 
+                    onChange={content => setEditingPost({ ...editingPost, content })}
+                  />
+                </div>
+              )}
+              
+              {(previewMode === 'preview' || previewMode === 'split') && (
+                <div className="w-full border border-slate-200 rounded-lg bg-white overflow-y-auto max-h-[600px] min-h-[300px] p-6 md:p-8">
+                  <div 
+                    className="prose prose-slate prose-lg md:prose-xl mx-auto prose-headings:font-serif prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm w-full max-w-full"
+                    dangerouslySetInnerHTML={{ __html: editingPost.content || '<p class="text-slate-400 italic font-sans text-base">Start typing to see preview...</p>' }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
