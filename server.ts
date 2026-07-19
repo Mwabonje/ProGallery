@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import cors from "cors";
 import path from "path";
 import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
@@ -335,12 +336,65 @@ async function startServer() {
 
   app.use(galleryLimiter);
 
-  // --- VITE FRONTEND MIDDLEWARE ---
+  // --- VITE FRONTEND MIDDLEWARE & OG TAG INJECTION ---
+  let vite: any = null;
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
+  }
+
+  app.get("/blog/:slug", async (req, res, next) => {
+    try {
+      const { slug } = req.params;
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
+      
+      let html = "";
+      if (process.env.NODE_ENV !== "production") {
+        html = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
+        html = await vite.transformIndexHtml(req.originalUrl, html);
+      } else {
+        html = fs.readFileSync(path.join(process.cwd(), "dist", "index.html"), "utf-8");
+      }
+
+      if (supabaseUrl && supabaseKey) {
+        const response = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, {
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`
+          }
+        });
+        
+        if (response.ok) {
+          const posts = await response.json();
+          if (posts && posts.length > 0) {
+            const post = posts[0];
+            const title = `${post.title} | Mwabonje`;
+            const description = post.excerpt || "";
+            const image = post.cover_image || "https://mwabonje.com/og-image.jpg";
+            
+            html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
+            html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
+            html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
+            html = html.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
+            html = html.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="article" />`);
+            
+            html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
+            html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
+            html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
+          }
+        }
+      }
+      res.send(html);
+    } catch (err) {
+      console.error("OG injection error:", err);
+      next();
+    }
+  });
+
+  if (process.env.NODE_ENV !== "production") {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
