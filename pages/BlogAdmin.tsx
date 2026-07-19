@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
@@ -16,9 +16,53 @@ export const BlogAdmin: React.FC = () => {
   const [schemaMissing, setSchemaMissing] = useState(false);
   const [previewMode, setPreviewMode] = useState<'editor' | 'split' | 'preview'>('editor');
 
+  const editingPostRef = useRef(editingPost);
+  useEffect(() => {
+    editingPostRef.current = editingPost;
+  }, [editingPost]);
+
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const intervalId = setInterval(async () => {
+      const postToSave = editingPostRef.current;
+      if (!postToSave || !postToSave.title || !postToSave.slug) {
+        return;
+      }
+
+      try {
+        const postData = {
+          ...postToSave,
+          ...(postToSave.id ? { id: postToSave.id } : {})
+        };
+
+        const { data, error } = await supabase
+          .from('blogs')
+          .upsert(postData)
+          .select();
+
+        if (error) {
+          console.error('Autosave error:', error);
+          return;
+        }
+
+        if (data && data[0]) {
+          if (!postToSave.id) {
+            setEditingPost(prev => prev ? { ...prev, id: data[0].id } : null);
+          }
+          toast.success('Draft auto-saved', { id: 'autosave' });
+        }
+      } catch (err) {
+        console.error('Autosave error:', err);
+      }
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [isEditing]);
 
   const fetchPosts = async () => {
     setLoading(true);
