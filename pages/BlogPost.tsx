@@ -30,6 +30,21 @@ export const BlogPost: React.FC = () => {
         .single();
 
       if (error) throw error;
+      
+      const now = new Date();
+      const isPublished = (p: BlogPostType) => {
+        const s = p.status || 'published';
+        if (s === 'draft') return false;
+        if (s === 'scheduled') return new Date(p.date) <= now;
+        return true;
+      };
+
+      if (!data || !isPublished(data)) {
+        setPost(null);
+        setLoading(false);
+        return;
+      }
+
       setPost(data);
       
       if (data && data.category) {
@@ -37,11 +52,10 @@ export const BlogPost: React.FC = () => {
           .from('blogs')
           .select('*')
           .eq('category', data.category)
-          .neq('id', data.id)
-          .limit(2);
+          .neq('id', data.id);
           
         if (!relatedError && relatedData) {
-          setRelatedPosts(relatedData);
+          setRelatedPosts(relatedData.filter(isPublished).slice(0, 2));
         }
       }
     } catch (err: any) {

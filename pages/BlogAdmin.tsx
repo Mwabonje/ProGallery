@@ -13,6 +13,7 @@ export const BlogAdmin: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tableMissing, setTableMissing] = useState(false);
+  const [schemaMissing, setSchemaMissing] = useState(false);
   const [previewMode, setPreviewMode] = useState<'editor' | 'split' | 'preview'>('editor');
 
   useEffect(() => {
@@ -36,6 +37,10 @@ export const BlogAdmin: React.FC = () => {
           throw error;
         }
       } else {
+        // Also check if status is present in returned data
+        if (data && data.length > 0 && !('status' in data[0])) {
+          setSchemaMissing(true);
+        }
         setPosts(data || []);
       }
     } catch (err: any) {
@@ -63,7 +68,8 @@ export const BlogAdmin: React.FC = () => {
       category: '',
       tags: [],
       seo_title: '',
-      seo_description: ''
+      seo_description: '',
+      status: 'draft'
     });
     setIsEditing(true);
   };
@@ -106,7 +112,13 @@ export const BlogAdmin: React.FC = () => {
         .upsert(postData)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' && error.message.includes('status')) {
+          setSchemaMissing(true);
+          return;
+        }
+        throw error;
+      }
 
       toast.success(editingPost.id ? 'Post updated' : 'Post created');
       setIsEditing(false);
@@ -164,6 +176,7 @@ export const BlogAdmin: React.FC = () => {
   tags TEXT[],
   seo_title TEXT,
   seo_description TEXT,
+  status TEXT DEFAULT 'published',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -187,6 +200,33 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
           className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
         >
           I've created the table, refresh
+        </button>
+      </div>
+    );
+  }
+
+  if (schemaMissing) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center max-w-2xl mx-auto mt-12">
+        <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Schema Update Required</h2>
+        <p className="text-slate-600 mb-6">
+          The <code className="bg-slate-100 px-2 py-1 rounded text-sm text-emerald-600">blogs</code> table needs a new column for post status.
+        </p>
+        <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm overflow-x-auto">
+          <p className="font-mono text-slate-800 font-semibold mb-2">Run this SQL in your Supabase SQL Editor:</p>
+          <pre className="text-xs text-slate-600 whitespace-pre-wrap">
+{`ALTER TABLE blogs ADD COLUMN status TEXT DEFAULT 'published';`}
+          </pre>
+        </div>
+        <button 
+          onClick={() => {
+            setSchemaMissing(false);
+            fetchPosts();
+          }}
+          className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
+        >
+          I've added the column, refresh
         </button>
       </div>
     );
@@ -279,6 +319,19 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                   onChange={e => setEditingPost({ ...editingPost, author: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select
+                  value={editingPost.status || 'published'} 
+                  onChange={e => setEditingPost({ ...editingPost, status: e.target.value as any })}
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="scheduled">Scheduled</option>
+                </select>
               </div>
 
               <div>
@@ -445,6 +498,7 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                   <th className="p-4">Post</th>
                   <th className="p-4">Category</th>
+                  <th className="p-4">Status</th>
                   <th className="p-4">Date</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
@@ -472,6 +526,15 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                     <td className="p-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                         {post.category || 'Uncategorized'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        post.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
+                        post.status === 'scheduled' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {(post.status || 'published').charAt(0).toUpperCase() + (post.status || 'published').slice(1)}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-slate-600">

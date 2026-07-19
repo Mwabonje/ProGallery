@@ -25,7 +25,19 @@ export const Blog: React.FC = () => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setPosts(data || []);
+      
+      const now = new Date();
+      const publishedPosts = (data || []).filter((post: BlogPost) => {
+        const postStatus = post.status || 'published';
+        if (postStatus === 'draft') return false;
+        if (postStatus === 'scheduled') {
+          // If scheduled, only show if date is in the past
+          return new Date(post.date) <= now;
+        }
+        return true;
+      });
+      
+      setPosts(publishedPosts);
     } catch (err: any) {
       console.error('Error fetching blogs from DB, fallback to static if needed:', err);
       // Fallback could be implemented here if desired, but we'll show empty or handle gracefully
