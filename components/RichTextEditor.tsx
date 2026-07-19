@@ -5,7 +5,9 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo } from 'lucide-react';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo, Type } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -44,6 +46,23 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <Redo className="w-4 h-4" />
       </button>
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      <select
+        value={editor.getAttributes('textStyle').fontFamily || ''}
+        onChange={(e) => {
+          if (e.target.value) {
+            editor.chain().focus().setFontFamily(e.target.value).run();
+          } else {
+            editor.chain().focus().unsetFontFamily().run();
+          }
+        }}
+        className="p-1.5 rounded bg-transparent hover:bg-slate-200 text-sm font-medium text-slate-700 outline-none cursor-pointer"
+        title="Font Family"
+      >
+        <option value="">Default Font</option>
+        <option value="Montserrat">Montserrat</option>
+        <option value="Playfair Display">Playfair Display</option>
+      </select>
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
       <button
         type="button"
@@ -179,6 +198,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       StarterKit,
       Image,
       Underline,
+      TextStyle,
+      FontFamily.configure({
+        fonts: ['Montserrat', 'Playfair Display'],
+      }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -222,6 +245,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             >
               <Redo className="w-4 h-4" />
             </button>
+            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+            <select
+              value={editor.getAttributes('textStyle').fontFamily || ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  editor.chain().focus().setFontFamily(e.target.value).run();
+                } else {
+                  editor.chain().focus().unsetFontFamily().run();
+                }
+              }}
+              className="p-1 rounded bg-transparent hover:bg-slate-100 text-sm font-medium text-slate-700 outline-none cursor-pointer"
+              title="Font Family"
+            >
+              <option value="">Default Font</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Playfair Display">Playfair Display</option>
+            </select>
             <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
             <button
               type="button"
