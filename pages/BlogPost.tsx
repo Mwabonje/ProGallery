@@ -12,6 +12,19 @@ export const BlogPost: React.FC = () => {
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPostType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop;
+      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scroll = `${totalScroll / windowHeight}`;
+      setScrollProgress(Number(scroll) * 100);
+    }
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // Scroll to top when post loads
@@ -160,6 +173,10 @@ export const BlogPost: React.FC = () => {
 
       {/* Header */}
       <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-20">
+        <div 
+          className="absolute top-0 left-0 h-1 bg-slate-900 transition-all duration-150 ease-out"
+          style={{ width: `${scrollProgress}%` }}
+        />
         <div className="w-full max-w-4xl mx-auto flex items-center relative h-8">
           <Link to="/blog" className="absolute left-0 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase z-10">
             <ArrowLeft className="w-5 h-5" />
