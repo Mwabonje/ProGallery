@@ -3,7 +3,9 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import { Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon } from 'lucide-react';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -73,6 +75,47 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <Italic className="w-4 h-4" />
       </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Underline"
+      >
+        <UnderlineIcon className="w-4 h-4" />
+      </button>
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Align Left"
+      >
+        <AlignLeft className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Align Center"
+      >
+        <AlignCenter className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Align Right"
+      >
+        <AlignRight className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Justify"
+      >
+        <AlignJustify className="w-4 h-4" />
+      </button>
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
       <button
         type="button"
@@ -116,6 +159,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     extensions: [
       StarterKit,
       Image,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
     ],
     content,
     editorProps: {
@@ -187,6 +234,47 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
               title="Italic"
             >
               <Italic className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('underline') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Underline"
+            >
+              <UnderlineIcon className="w-4 h-4" />
+            </button>
+            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign('left').run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Align Left"
+            >
+              <AlignLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign('center').run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Align Center"
+            >
+              <AlignCenter className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign('right').run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Align Right"
+            >
+              <AlignRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Justify"
+            >
+              <AlignJustify className="w-4 h-4" />
             </button>
           </BubbleMenu>
         )}
