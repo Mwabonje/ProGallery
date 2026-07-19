@@ -7,7 +7,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo, Type } from 'lucide-react';
+import Link from '@tiptap/extension-link';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -24,6 +25,22 @@ const MenuBar = ({ editor }: { editor: any }) => {
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
+  };
+
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
   return (
@@ -121,6 +138,14 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <UnderlineIcon className="w-4 h-4" />
       </button>
+      <button
+        type="button"
+        onClick={setLink}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('link') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        title="Link"
+      >
+        <LinkIcon className="w-4 h-4" />
+      </button>
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
       <button
         type="button"
@@ -198,6 +223,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       StarterKit,
       Image,
       Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
       TextStyle,
       FontFamily.configure({
         fonts: ['Montserrat', 'Playfair Display'],
@@ -216,6 +245,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       onChange(editor.getHTML());
     },
   });
+
+  const setLink = () => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
 
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-shadow">
@@ -320,6 +366,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
               title="Underline"
             >
               <UnderlineIcon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={setLink}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('link') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              title="Link"
+            >
+              <LinkIcon className="w-4 h-4" />
             </button>
             <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
             <button
