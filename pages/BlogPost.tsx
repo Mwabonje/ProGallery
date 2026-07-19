@@ -174,8 +174,8 @@ export const BlogPost: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-6 md:pb-10">
-        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 font-bold">
+      <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-4 md:pb-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4 md:mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 font-bold">
           <span>{post.category}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
           <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -208,7 +208,7 @@ export const BlogPost: React.FC = () => {
         />
         
         {/* Author at the bottom */}
-        <div className="mt-12 text-slate-500 italic">
+        <div className="mt-4 text-center text-slate-500 italic">
           <p>By {post.author}</p>
         </div>
 
