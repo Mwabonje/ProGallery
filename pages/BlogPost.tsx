@@ -160,36 +160,36 @@ export const BlogPost: React.FC = () => {
 
       {/* Header */}
       <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-20">
-        <div className="w-full max-w-4xl mx-auto flex justify-between items-center">
-          <Link to="/blog" className="text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase">
+        <div className="w-full max-w-4xl mx-auto flex items-center relative h-8">
+          <Link to="/blog" className="absolute left-0 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase z-10">
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back to Blog</span>
           </Link>
-          <span className="text-lg uppercase tracking-widest font-bold text-slate-800" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            Mwabonje
-          </span>
-          <div className="w-[88px] sm:w-[130px]"></div> {/* Spacer for symmetry */}
+          <div className="w-full flex justify-center">
+            <span className="text-lg uppercase tracking-widest font-bold text-slate-800" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              Mwabonje
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-10">
-        <div className="flex items-center justify-center gap-3 mb-6 text-[10px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 font-bold">
+      <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-6 md:pb-10">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 font-bold">
           <span>{post.category}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
           <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-          <span>{calculateReadingTime(post.content)} min read</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden sm:inline-block"></span>
+          <span className="hidden sm:inline-block">{calculateReadingTime(post.content)} min read</span>
         </div>
-        <h1 className="text-3xl md:text-5xl lg:text-[56px] leading-[1.1] md:leading-[1.1] font-bold text-slate-900 text-center mb-8 max-w-3xl mx-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <h1 className="text-3xl md:text-5xl lg:text-[56px] leading-[1.1] md:leading-[1.1] font-bold text-slate-900 text-center max-w-3xl mx-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           {post.title}
         </h1>
-        <p className="text-center text-slate-500 italic mb-12">By {post.author}</p>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto px-4 mb-16 md:mb-24">
+      <div className="w-full max-w-5xl mx-auto px-4 mb-8 md:mb-16">
         {post.cover_image && (
-          <div className="aspect-[16/9] w-full md:aspect-[21/9] bg-slate-100 overflow-hidden relative">
+          <div className="aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 overflow-hidden relative">
             <img 
               src={post.cover_image} 
               alt={post.title} 
@@ -201,12 +201,17 @@ export const BlogPost: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="w-full max-w-2xl mx-auto px-4">
+      <div className="w-full max-w-3xl mx-auto px-4 lg:px-8">
         <div 
-          className="prose prose-slate prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm"
+          className="prose prose-slate prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
         
+        {/* Author at the bottom */}
+        <div className="mt-12 text-slate-500 italic">
+          <p>By {post.author}</p>
+        </div>
+
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
           <div className="mt-16 pt-8 border-t border-slate-100 flex flex-wrap gap-2">
@@ -222,14 +227,14 @@ export const BlogPost: React.FC = () => {
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
-        <div className="w-full max-w-4xl mx-auto px-4 mt-20 pt-16 border-t border-slate-100">
-          <h3 className="text-2xl font-bold text-slate-900 mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <div className="w-full max-w-4xl mx-auto px-4 mt-16 md:mt-20 pt-12 md:pt-16 border-t border-slate-100">
+          <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 md:mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Related Posts
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {relatedPosts.map(relatedPost => (
               <article key={relatedPost.id} className="group flex flex-col h-full">
-                <Link to={`/blog/${relatedPost.slug}`} className="block overflow-hidden relative aspect-[4/3] bg-slate-100 mb-6" aria-label={`Read ${relatedPost.title}`}>
+                <Link to={`/blog/${relatedPost.slug}`} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 mb-4 md:mb-6" aria-label={`Read ${relatedPost.title}`}>
                   {relatedPost.cover_image && (
                     <img 
                       src={relatedPost.cover_image} 
@@ -239,20 +244,20 @@ export const BlogPost: React.FC = () => {
                     />
                   )}
                 </Link>
-                <div className="flex items-center gap-3 mb-3 text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
                   <span>{new Date(relatedPost.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                  <span>{calculateReadingTime(relatedPost.content)} min read</span>
+                  <span className="hidden sm:inline-block">{calculateReadingTime(relatedPost.content)} min read</span>
                 </div>
                 <Link to={`/blog/${relatedPost.slug}`} className="block group">
-                  <h4 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  <h4 className="text-xl md:text-2xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {relatedPost.title}
                   </h4>
                 </Link>
-                <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow line-clamp-3">
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-3">
                   {relatedPost.excerpt}
                 </p>
-                <Link to={`/blog/${relatedPost.slug}`} className="inline-flex items-center text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
+                <Link to={`/blog/${relatedPost.slug}`} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
                   Read More
                 </Link>
               </article>

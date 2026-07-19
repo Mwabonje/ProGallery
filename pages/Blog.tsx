@@ -126,7 +126,7 @@ export const Blog: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
             {posts.map((post) => (
               <article key={post.id} className="group flex flex-col h-full">
-                <Link to={`/blog/${post.slug}`} className="block overflow-hidden relative aspect-[4/3] bg-slate-100 mb-6" aria-label={`Read ${post.title}`}>
+                <Link to={`/blog/${post.slug}`} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 mb-4 md:mb-6" aria-label={`Read ${post.title}`}>
                   {post.cover_image && (
                     <img 
                       src={post.cover_image} 
@@ -136,22 +136,22 @@ export const Blog: React.FC = () => {
                     />
                   )}
                 </Link>
-                <div className="flex items-center gap-3 mb-3 text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
                   <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                   <span>{post.category}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                  <span>{calculateReadingTime(post.content)} min read</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block"></span>
+                  <span className="hidden sm:inline-block">{calculateReadingTime(post.content)} min read</span>
                 </div>
                 <Link to={`/blog/${post.slug}`} className="block group">
-                  <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  <h2 className="text-2xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {post.title}
                   </h2>
                 </Link>
-                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 flex-grow">
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-4">
                   {post.excerpt}
                 </p>
-                <Link to={`/blog/${post.slug}`} className="inline-flex items-center text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
+                <Link to={`/blog/${post.slug}`} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
                   Read More
                 </Link>
               </article>
