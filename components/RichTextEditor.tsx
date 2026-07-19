@@ -8,7 +8,8 @@ import Underline from '@tiptap/extension-underline';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Link from '@tiptap/extension-link';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon } from 'lucide-react';
+import Highlight from '@tiptap/extension-highlight';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon, Highlighter } from 'lucide-react';
 
 interface RichTextEditorProps {
   content: string;
@@ -138,6 +139,16 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <UnderlineIcon className="w-4 h-4" />
       </button>
+      <div className="flex items-center gap-1 p-1 rounded hover:bg-slate-200 transition-colors">
+        <Highlighter className="w-4 h-4 text-slate-600" />
+        <input
+          type="color"
+          onInput={(event) => editor.chain().focus().setHighlight({ color: event.currentTarget.value }).run()}
+          value={editor.getAttributes('highlight').color || '#ffff00'}
+          className="w-5 h-5 p-0 border-0 bg-transparent cursor-pointer"
+          title="Highlight Color"
+        />
+      </div>
       <button
         type="button"
         onClick={setLink}
@@ -223,6 +234,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       StarterKit,
       Image,
       Underline,
+      Highlight.configure({
+        multicolor: true,
+      }),
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -367,6 +381,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             >
               <UnderlineIcon className="w-4 h-4" />
             </button>
+            <div className="flex items-center gap-1 p-1 rounded hover:bg-slate-100 transition-colors">
+              <Highlighter className="w-4 h-4 text-slate-600" />
+              <input
+                type="color"
+                onInput={(event) => editor.chain().focus().setHighlight({ color: event.currentTarget.value }).run()}
+                value={editor.getAttributes('highlight').color || '#ffff00'}
+                className="w-5 h-5 p-0 border-0 bg-transparent cursor-pointer"
+                title="Highlight Color"
+              />
+            </div>
             <button
               type="button"
               onClick={setLink}
