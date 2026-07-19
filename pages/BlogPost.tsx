@@ -47,17 +47,33 @@ export const BlogPost: React.FC = () => {
 
       setPost(data);
       
-      if (data && data.category) {
-        const { data: relatedData, error: relatedError } = await supabase
+      let relatedData: BlogPostType[] = [];
+      
+      if (data && data.tags && data.tags.length > 0) {
+        const { data: tagData, error: tagError } = await supabase
+          .from('blogs')
+          .select('*')
+          .overlaps('tags', data.tags)
+          .neq('id', data.id);
+          
+        if (!tagError && tagData) {
+          relatedData = tagData;
+        }
+      }
+
+      if (relatedData.length === 0 && data && data.category) {
+        const { data: catData, error: catError } = await supabase
           .from('blogs')
           .select('*')
           .eq('category', data.category)
           .neq('id', data.id);
           
-        if (!relatedError && relatedData) {
-          setRelatedPosts(relatedData.filter(isPublished).slice(0, 2));
+        if (!catError && catData) {
+          relatedData = catData;
         }
       }
+      
+      setRelatedPosts(relatedData.filter(isPublished).slice(0, 2));
     } catch (err: any) {
       console.error('Error fetching blog post:', err);
     } finally {
@@ -208,7 +224,7 @@ export const BlogPost: React.FC = () => {
       {relatedPosts.length > 0 && (
         <div className="w-full max-w-4xl mx-auto px-4 mt-20 pt-16 border-t border-slate-100">
           <h3 className="text-2xl font-bold text-slate-900 mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            More in {post.category}
+            Related Posts
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {relatedPosts.map(relatedPost => (
