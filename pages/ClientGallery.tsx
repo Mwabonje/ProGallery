@@ -32,7 +32,7 @@ import {
   getOptimizedImageUrl,
   rewriteUrlToR2,
 } from "../utils/formatters";
-import { Helmet } from "react-helmet-async";
+import { SEO } from "../components/SEO";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -1076,83 +1076,24 @@ export const ClientGallery: React.FC = () => {
     <div
       className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? "pb-24" : ""}`}
     >
-      <Helmet>
-        <title>
-          {gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"}
-        </title>
-        <meta
-          name="description"
-          content={
-            gallery
-              ? `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`
-              : "Explore professional photography galleries by Mwabonje."
-          }
-        />
-        <meta
-          name="keywords"
-          content={`photography, gallery, Mwabonje, ${gallery?.client_name || ""}, ${gallery?.category || "portraits"}, professional photographer, visual storytelling`}
-        />
-        <link
-          rel="canonical"
-          href={window.location.origin + window.location.pathname}
-        />
-        <meta
-          property="og:title"
-          content={
-            gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"
-          }
-        />
-        <meta
-          property="og:description"
-          content={
-            gallery
-              ? `View the ${gallery.client_name} photography gallery by Mwabonje.`
-              : "Explore professional photography galleries by Mwabonje."
-          }
-        />
-        <meta property="og:type" content="article" />
-        <meta
-          property="og:url"
-          content={window.location.origin + window.location.pathname}
-        />
-        {files.length > 0 && files[0].file_url && (
-          <>
-            <meta property="og:image" content={files[0].file_url} />
-            <meta
-              property="og:image:alt"
-              content={gallery?.client_name || "Gallery Image"}
-            />
-            <meta name="twitter:image" content={files[0].file_url} />
-          </>
-        )}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content={
-            gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"
-          }
-        />
-        <meta
-          name="twitter:description"
-          content={
-            gallery
-              ? `View the ${gallery.client_name} photography gallery by Mwabonje.`
-              : "Explore professional photography galleries by Mwabonje."
-          }
-        />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ImageGallery",
-            name: gallery?.client_name || "Gallery",
-            url: window.location.href,
-            author: {
-              "@type": "Person",
-              name: "Mwabonje",
-            },
-          })}
-        </script>
-      </Helmet>
+      <SEO 
+        title={gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"}
+        description={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.` : "Explore professional photography galleries by Mwabonje."}
+        image={(files.length > 0 && files[0].file_url) ? files[0].file_url : `${window.location.origin}/og-image.jpg`}
+        url={window.location.origin + window.location.pathname}
+        type="website"
+        keywords={`photography, gallery, Mwabonje, ${gallery?.client_name || ""}, ${gallery?.category || "portraits"}, professional photographer, visual storytelling`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ImageGallery",
+          name: gallery?.client_name || "Gallery",
+          url: window.location.href,
+          author: {
+            "@type": "Person",
+            name: "Mwabonje",
+          },
+        }}
+      />
       {/* Header */}
       <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">

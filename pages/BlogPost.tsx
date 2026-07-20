@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { calculateReadingTime } from '../utils/blogData';
 import { BlogPost as BlogPostType } from '../types';
 import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -105,7 +105,7 @@ export const BlogPost: React.FC = () => {
   if (!post) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
-        <Helmet><title>Post Not Found | Mwabonje</title></Helmet>
+        <SEO title="Post Not Found | Mwabonje" description="Post not found" image={`${window.location.origin}/og-image.jpg`} url={window.location.origin} />
         <h1 className="text-2xl font-bold text-slate-800 mb-4">Post not found</h1>
         <button onClick={() => navigate('/blog')} className="text-slate-500 hover:text-slate-900 border-b border-slate-300 pb-1">
           Return to Blog
@@ -120,56 +120,16 @@ export const BlogPost: React.FC = () => {
 
   return (
     <article className="min-h-screen bg-white text-slate-900 pb-20">
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={seoDescription} />
-        {post.tags && post.tags.length > 0 && <meta name="keywords" content={post.tags.join(', ')} />}
-        <link rel="canonical" href={pageUrl} />
-
-        {/* Open Graph Tags */}
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={pageUrl} />
-        {post.cover_image && <meta property="og:image" content={post.cover_image} />}
-        <meta property="article:published_time" content={post.date} />
-        <meta property="article:author" content={post.author} />
-
-        {/* Twitter Card Tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        {post.cover_image && <meta name="twitter:image" content={post.cover_image} />}
-
-        {/* Structured Data (JSON-LD) for Article */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": post.seo_title || post.title,
-            "image": post.cover_image ? [post.cover_image] : [],
-            "datePublished": post.date,
-            "author": {
-              "@type": "Person",
-              "name": post.author,
-              "url": window.location.origin
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "Mwabonje",
-              "logo": {
-                "@type": "ImageObject",
-                "url": `${window.location.origin}/og-image.jpg`
-              }
-            },
-            "description": seoDescription,
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": pageUrl
-            }
-          })}
-        </script>
-      </Helmet>
+      <SEO 
+        title={pageTitle}
+        description={seoDescription}
+        image={post.cover_image || `${window.location.origin}/og-image.jpg`}
+        url={pageUrl}
+        type="article"
+        keywords={post.tags?.join(', ')}
+        author={post.author}
+        publishDate={post.date}
+      />
 
       {/* Header */}
       <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-20">
