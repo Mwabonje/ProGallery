@@ -3,10 +3,20 @@ import { supabase, supabaseUrl, supabaseKey } from '../services/supabase';
 import * as tus from 'tus-js-client';
 import exifr from 'exifr';
 
+export interface UploadTask {
+  id: string;
+  fileName: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
+  fileSize: number;
+}
+
 interface UploadContextType {
   uploading: boolean;
   progress: number;
   activeGalleryId: string | null;
+  uploadTasks: UploadTask[];
   uploadFiles: (galleryId: string, files: File[], expiryHours: number) => Promise<void>;
   cancelUpload: () => void;
 }
@@ -42,6 +52,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeGalleryId, setActiveGalleryId] = useState<string | null>(null);
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
 
   // We use a Ref to track progress of individual files without triggering re-renders for every byte
   const fileProgressMap = useRef<number[]>([]);
@@ -56,6 +67,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setUploading(false);
     setProgress(0);
     setActiveGalleryId(null);
+    setUploadTasks([]);
   }, []);
 
   const uploadFiles = useCallback(async (galleryId: string, filesToUpload: File[], expiryHours: number) => {
@@ -84,6 +96,15 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fileProgressMap.current = new Array(filesToUpload.length).fill(0);
     const uploadErrors: string[] = [];
 
+    // Initialize tasks
+    setUploadTasks(filesToUpload.map((f, i) => ({
+      id: `${f.name}-${i}`,
+      fileName: f.name,
+      fileSize: f.size,
+      progress: 0,
+      status: 'pending'
+    })));
+
     // Global ticker to update the React state from the Refs
     const uiInterval = setInterval(() => {
         if (isCancelledRef.current) return;
@@ -91,6 +112,14 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const percentage = totalBytes > 0 ? Math.round((totalUploaded / totalBytes) * 100) : 0;
         // Cap visual progress at 95% until everything is truly resolved
         setProgress(Math.min(95, percentage));
+
+        setUploadTasks(prev => prev.map((task, idx) => {
+            const file = filesToUpload[idx];
+            if (!file) return task;
+            const currentBytes = fileProgressMap.current[idx] || 0;
+            const p = file.size > 0 ? Math.round((currentBytes / file.size) * 100) : 0;
+            return { ...task, progress: Math.min(95, p) }; // cap at 95, 100 is set on completion
+        }));
     }, 200);
 
     try {
@@ -117,6 +146,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await asyncPool(3, filesToUpload, async (file, index) => {
             if (isCancelledRef.current) return;
             
+            setUploadTasks(prev => {
+                const newArr = [...prev];
+                if (newArr[index]) newArr[index] = { ...newArr[index], status: 'uploading' };
+                return newArr;
+            });
+
             const controller = new AbortController();
             abortControllersRef.current.push(controller);
 
@@ -266,6 +301,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 if (threwException) throw threwException;
                 if (dbError) throw dbError;
 
+                setUploadTasks(prev => {
+                    const newArr = [...prev];
+                    if (newArr[index]) newArr[index] = { ...newArr[index], status: 'completed', progress: 100 };
+                    return newArr;
+                });
+
             } catch (err: any) {
                 if (isCancelledRef.current || err.message === "Upload Cancelled" || err.name === 'AbortError') {
                      // Upload was cancelled, ignore error
@@ -279,6 +320,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     }
                     
                     uploadErrors.push(`${file.name}: ${msg}`);
+
+                    setUploadTasks(prev => {
+                        const newArr = [...prev];
+                        if (newArr[index]) newArr[index] = { ...newArr[index], status: 'error', error: msg };
+                        return newArr;
+                    });
                 }
             } finally {
                 clearInterval(simulationInterval);

@@ -336,8 +336,11 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                   <option value="Documentary">Documentary</option>
                   <option value="Wedding">Wedding</option>
                   <option value="Travel">Travel</option>
+                  <option value="Places & Travel">Places &amp; Travel</option>
                   <option value="Commercial">Commercial</option>
                   <option value="Events">Events</option>
+                  <option value="Photography Tips">Photography Tips</option>
+                  <option value="Maternity">Maternity</option>
                   <option value="Personal">Personal</option>
                   <option value="Other">Other</option>
                 </select>

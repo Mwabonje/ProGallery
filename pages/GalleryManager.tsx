@@ -22,7 +22,7 @@ export const GalleryManager: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Use Global Upload Context
-  const { uploading, progress, activeGalleryId, uploadFiles } = useUpload();
+  const { uploading, progress, activeGalleryId, uploadFiles, uploadTasks } = useUpload();
   const isUploadingThisGallery = uploading && activeGalleryId === id;
   
   // Track previous uploading state to trigger refresh on completion
@@ -1323,6 +1323,33 @@ export const GalleryManager: React.FC = () => {
                         )}
                     </div>
                 </div>
+
+                {isUploadingThisGallery && uploadTasks && uploadTasks.length > 0 && (
+                    <div className="p-4 md:p-6 border-b border-zinc-200/60 bg-emerald-50/30">
+                        <h3 className="text-sm font-semibold text-zinc-800 mb-3">Upload Progress ({uploadTasks.filter(t => t.status === 'completed').length}/{uploadTasks.length})</h3>
+                        <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {uploadTasks.map(task => (
+                                <div key={task.id} className="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-emerald-100 shadow-sm text-sm">
+                                    <div className="flex-1 truncate font-medium text-slate-700" title={task.fileName}>{task.fileName}</div>
+                                    <div className="w-32 shrink-0">
+                                       {task.status === 'uploading' || task.status === 'pending' ? (
+                                          <div className="flex items-center gap-3">
+                                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500 transition-all duration-300 ease-out" style={{ width: `${task.progress}%` }} />
+                                             </div>
+                                             <span className="text-xs text-slate-500 w-8 text-right font-mono">{task.progress}%</span>
+                                          </div>
+                                       ) : task.status === 'completed' ? (
+                                          <span className="text-emerald-600 font-semibold flex items-center justify-end gap-1.5"><Check className="w-4 h-4" /> Done</span>
+                                       ) : task.status === 'error' ? (
+                                          <span className="text-rose-600 font-semibold flex items-center justify-end gap-1.5" title={task.error}><X className="w-4 h-4" /> Error</span>
+                                       ) : null}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {checkedFiles.length > 0 && (
                     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-zinc-900 text-white px-6 py-4 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-50 animate-in slide-in-from-bottom-8">
