@@ -196,8 +196,8 @@ export const BlogPost: React.FC = () => {
           <span>{post.category}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
           <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden sm:inline-block"></span>
-          <span className="hidden sm:inline-block">{calculateReadingTime(post.content)} min read</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+          <span>{calculateReadingTime(post.content)} min read</span>
         </div>
         <h1 className="text-3xl md:text-5xl lg:text-[56px] leading-[1.1] md:leading-[1.1] font-bold text-slate-900 text-center max-w-3xl mx-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           {post.title}
