@@ -1,6 +1,4 @@
 User-agent: *
 Allow: /
-Allow: /p/
-Allow: /g/
 
 Sitemap: https://mwabonje.com/sitemap.xml

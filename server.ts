@@ -370,6 +370,76 @@ async function startServer() {
     return html;
   };
 
+  app.get("/sitemap.xml", async (req, res, next) => {
+    try {
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
+      
+      const headers = {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`
+      };
+
+      const domain = 'https://mwabonje.com';
+      let blogs = [];
+      let galleries = [];
+
+      if (supabaseUrl && supabaseKey) {
+        const blogsRes = await fetch(`${supabaseUrl}/rest/v1/blogs?select=slug,date&published=eq.true`, { headers });
+        if (blogsRes.ok) blogs = await blogsRes.json();
+
+        const galleriesRes = await fetch(`${supabaseUrl}/rest/v1/galleries?select=id,created_at&link_enabled=eq.true`, { headers });
+        if (galleriesRes.ok) galleries = await galleriesRes.json();
+      }
+
+      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${domain}/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${domain}/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${domain}/prints</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+
+      for (const blog of blogs) {
+        sitemap += `
+  <url>
+    <loc>${domain}/blog/${blog.slug}</loc>
+    <lastmod>${new Date(blog.date || Date.now()).toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+      }
+
+      for (const gallery of galleries) {
+        sitemap += `
+  <url>
+    <loc>${domain}/g/${gallery.id}</loc>
+    <lastmod>${new Date(gallery.created_at || Date.now()).toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>`;
+      }
+
+      sitemap += `\n</urlset>`;
+
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (err) {
+      console.error("Sitemap generation error:", err);
+      next(err);
+    }
+  });
+
   app.get(["/g/:id", "/gallery/:id", "/:id"], async (req, res, next) => {
     try {
       const { id } = req.params;
