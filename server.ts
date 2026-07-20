@@ -345,19 +345,88 @@ async function startServer() {
     });
   }
 
+  const injectOGTags = (html: string, title: string, description: string, image: string, type: string = "website") => {
+    let newHtml = html;
+    newHtml = newHtml.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
+    newHtml = newHtml.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
+    newHtml = newHtml.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
+    newHtml = newHtml.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
+    newHtml = newHtml.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="${type}" />`);
+    
+    newHtml = newHtml.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
+    newHtml = newHtml.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
+    newHtml = newHtml.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
+    return newHtml;
+  };
+
+  const getBaseHtml = async (req: express.Request) => {
+    let html = "";
+    if (process.env.NODE_ENV !== "production") {
+      html = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
+      html = await vite.transformIndexHtml(req.originalUrl, html);
+    } else {
+      html = fs.readFileSync(path.join(process.cwd(), "dist", "index.html"), "utf-8");
+    }
+    return html;
+  };
+
+  app.get(["/g/:id", "/gallery/:id", "/:id"], async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+      
+      if (!isUUID) {
+        return next();
+      }
+
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
+      
+      let html = await getBaseHtml(req);
+
+      if (supabaseUrl && supabaseKey) {
+        const headers = {
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`
+        };
+
+        const response = await fetch(`${supabaseUrl}/rest/v1/galleries?id=eq.${id}&select=client_name,title&limit=1`, { headers });
+        
+        if (response.ok) {
+          const galleries = await response.json();
+          if (galleries && galleries.length > 0) {
+            const gallery = galleries[0];
+            const title = gallery.title || `${gallery.client_name} Gallery | Mwabonje`;
+            const description = `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`;
+            let image = "https://mwabonje.com/og-image.jpg";
+
+            // Fetch cover image from files
+            const filesResponse = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&select=file_url&limit=1&order=expires_at.asc`, { headers });
+            if (filesResponse.ok) {
+              const files = await filesResponse.json();
+              if (files && files.length > 0 && files[0].file_url) {
+                image = files[0].file_url;
+              }
+            }
+
+            html = injectOGTags(html, title, description, image, "website");
+          }
+        }
+      }
+      res.send(html);
+    } catch (err) {
+      console.error("Gallery OG injection error:", err);
+      next();
+    }
+  });
+
   app.get("/blog/:slug", async (req, res, next) => {
     try {
       const { slug } = req.params;
       const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
       const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
       
-      let html = "";
-      if (process.env.NODE_ENV !== "production") {
-        html = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
-        html = await vite.transformIndexHtml(req.originalUrl, html);
-      } else {
-        html = fs.readFileSync(path.join(process.cwd(), "dist", "index.html"), "utf-8");
-      }
+      let html = await getBaseHtml(req);
 
       if (supabaseUrl && supabaseKey) {
         const response = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, {
@@ -375,15 +444,7 @@ async function startServer() {
             const description = post.excerpt || "";
             const image = post.cover_image || "https://mwabonje.com/og-image.jpg";
             
-            html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
-            html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
-            html = html.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="article" />`);
-            
-            html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
+            html = injectOGTags(html, title, description, image, "article");
           }
         }
       }
