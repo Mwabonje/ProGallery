@@ -69,4 +69,5 @@ export interface BlogPost {
   seo_title?: string;
   seo_description?: string;
   status?: 'draft' | 'scheduled' | 'published';
+  views?: number;
 }

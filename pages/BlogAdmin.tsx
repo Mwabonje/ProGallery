@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
-import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText } from 'lucide-react';
+import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlogAdmin: React.FC = () => {
@@ -221,6 +221,7 @@ export const BlogAdmin: React.FC = () => {
   seo_title TEXT,
   seo_description TEXT,
   status TEXT DEFAULT 'published',
+  views INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -236,7 +237,17 @@ DROP POLICY IF EXISTS "Enable all access for authenticated users" ON blogs;
 
 -- Create simple, permissive policies
 CREATE POLICY "Enable read access for all users" ON blogs FOR SELECT USING (true);
-CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO authenticated USING (true) WITH CHECK (true);`}
+CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Create RPC function to increment views
+CREATE OR REPLACE FUNCTION increment_blog_view(blog_slug TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE blogs
+  SET views = COALESCE(views, 0) + 1
+  WHERE slug = blog_slug;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;`}
           </pre>
         </div>
         <button 
@@ -545,6 +556,7 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                   <th className="p-4">Post</th>
                   <th className="p-4">Category</th>
+                  <th className="p-4">Views</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Date</th>
                   <th className="p-4 text-right">Actions</th>
@@ -574,6 +586,12 @@ CREATE POLICY "Enable all access for authenticated users" ON blogs FOR ALL TO au
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                         {post.category || 'Uncategorized'}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                        <Eye className="w-4 h-4 text-slate-400" />
+                        {post.views || 0}
+                      </div>
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
