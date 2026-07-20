@@ -143,6 +143,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
             <button
               onClick={() => {
+                navigate('/dashboard?view=blog-analytics');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                location.search.includes('view=blog-analytics')
+                  ? 'bg-emerald-600 text-white' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>Blog Analytics</span>
+            </button>
+            <button
+              onClick={() => {
                 navigate('/dashboard?view=performance');
                 setIsMobileMenuOpen(false);
               }}

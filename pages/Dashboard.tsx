@@ -7,6 +7,7 @@ import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/forma
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { BlogAdmin } from "./BlogAdmin";
+import { BlogAnalytics } from "../components/BlogAnalytics";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Extended interface for dashboard display
@@ -486,6 +487,7 @@ export const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 w-full max-w-full overflow-hidden">
         {currentView === 'blogs' && <BlogAdmin />}
+        {currentView === 'blog-analytics' && <BlogAnalytics />}
         {currentView === 'dashboard' && (
             <>
                 {storageUsagePercent >= 80 && (
