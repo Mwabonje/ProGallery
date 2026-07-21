@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
-import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye } from 'lucide-react';
+import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, MousePointerClick } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlogAdmin: React.FC = () => {
@@ -81,9 +81,12 @@ export const BlogAdmin: React.FC = () => {
           throw error;
         }
       } else {
-        // Also check if status is present in returned data
-        if (data && data.length > 0 && !('status' in data[0])) {
-          setSchemaMissing(true);
+        // Also check if status, views, or clicks are present in returned data
+        if (data && data.length > 0) {
+           const first = data[0];
+           if (!('status' in first) || !('views' in first) || !('clicks' in first)) {
+             setSchemaMissing(true);
+           }
         }
         setPosts(data || []);
       }
@@ -222,6 +225,7 @@ export const BlogAdmin: React.FC = () => {
   seo_description TEXT,
   status TEXT DEFAULT 'published',
   views INTEGER DEFAULT 0,
+  clicks INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -247,6 +251,16 @@ BEGIN
   SET views = COALESCE(views, 0) + 1
   WHERE slug = blog_slug;
 END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create RPC function to increment clicks
+CREATE OR REPLACE FUNCTION increment_blog_click(blog_slug TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE blogs
+  SET clicks = COALESCE(clicks, 0) + 1
+  WHERE slug = blog_slug;
+END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;`}
           </pre>
         </div>
@@ -266,12 +280,34 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
         <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-slate-900 mb-2">Schema Update Required</h2>
         <p className="text-slate-600 mb-6">
-          The <code className="bg-slate-100 px-2 py-1 rounded text-sm text-emerald-600">blogs</code> table needs a new column for post status.
+          The <code className="bg-slate-100 px-2 py-1 rounded text-sm text-emerald-600">blogs</code> table needs new columns.
         </p>
         <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm overflow-x-auto">
           <p className="font-mono text-slate-800 font-semibold mb-2">Run this SQL in your Supabase SQL Editor:</p>
           <pre className="text-xs text-slate-600 whitespace-pre-wrap">
-{`ALTER TABLE blogs ADD COLUMN status TEXT DEFAULT 'published';`}
+{`ALTER TABLE blogs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published';
+ALTER TABLE blogs ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
+ALTER TABLE blogs ADD COLUMN IF NOT EXISTS clicks INTEGER DEFAULT 0;
+
+-- Create RPC function to increment views
+CREATE OR REPLACE FUNCTION increment_blog_view(blog_slug TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE blogs
+  SET views = COALESCE(views, 0) + 1
+  WHERE slug = blog_slug;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create RPC function to increment clicks
+CREATE OR REPLACE FUNCTION increment_blog_click(blog_slug TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE blogs
+  SET clicks = COALESCE(clicks, 0) + 1
+  WHERE slug = blog_slug;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;`}
           </pre>
         </div>
         <button 
@@ -557,6 +593,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                   <th className="p-4">Post</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Views</th>
+                  <th className="p-4">Clicks</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Date</th>
                   <th className="p-4 text-right">Actions</th>
@@ -591,6 +628,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
                         <Eye className="w-4 h-4 text-slate-400" />
                         {post.views || 0}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                        <MousePointerClick className="w-4 h-4 text-slate-400" />
+                        {post.clicks || 0}
                       </div>
                     </td>
                     <td className="p-4">
