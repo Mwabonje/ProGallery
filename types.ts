@@ -40,6 +40,8 @@ export interface GalleryFile {
   price?: string; // Print Price
   thumbnail_url?: string;
   thumbnail_path?: string;
+  views?: number;
+  clicks?: number;
 }
 
 export interface Selection {

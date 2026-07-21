@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare, Folder, X, QrCode } from 'lucide-react';
+import { Upload, Trash2, Save, ExternalLink, RefreshCw, Eye, Lock, Unlock, Download, DollarSign, Calculator, Check, Copy, Clock, Loader2, ArrowLeft, Heart, Filter, FileDown, Edit2, Star, List, LayoutGrid, MessageSquare, Folder, X, QrCode, Flame } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -44,6 +44,7 @@ export const GalleryManager: React.FC = () => {
   const [checkedFiles, setCheckedFiles] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
   const [layoutView, setLayoutView] = useState<'list' | 'grid'>('list');
+  const [isHeatmapActive, setIsHeatmapActive] = useState(false);
   
   // Rename Modal State
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -95,8 +96,8 @@ export const GalleryManager: React.FC = () => {
   const fetchGalleryData = async () => {
     if (!id) return;
     
-    // Check if new Print columns exist
-    const { error: schemaErr } = await supabase.from('files').select('price').limit(1);
+    // Check if new columns exist
+    const { error: schemaErr } = await supabase.from('files').select('price, views, clicks').limit(1);
     if (schemaErr && schemaErr.message.includes('column')) {
         setSchemaMissing(true);
     } else {
@@ -681,6 +682,9 @@ export const GalleryManager: React.FC = () => {
   if (viewFilter === 'main') visibleFiles = files.filter(f => mainSelections.includes(f.id));
   if (viewFilter === 'extras') visibleFiles = files.filter(f => extraSelections.includes(f.id));
 
+  const maxViews = Math.max(...visibleFiles.map(f => f.views || 0), 1);
+  const maxClicks = Math.max(...visibleFiles.map(f => f.clicks || 0), 1);
+
   return (
     <div className="space-y-8 md:space-y-10 pb-12">
       {schemaMissing && (
@@ -696,6 +700,22 @@ export const GalleryManager: React.FC = () => {
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS material text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS views integer DEFAULT 0;{'\n'}
+            ALTER TABLE public.files ADD COLUMN IF NOT EXISTS clicks integer DEFAULT 0;{'\n'}
+{'\n'}
+            -- Create RPC function to increment views{'\n'}
+            CREATE OR REPLACE FUNCTION increment_file_view(fid uuid) RETURNS void AS $${'\n'}
+            BEGIN{'\n'}
+              UPDATE files SET views = COALESCE(views, 0) + 1 WHERE id = fid;{'\n'}
+            END;{'\n'}
+            $$ LANGUAGE plpgsql SECURITY DEFINER;{'\n'}
+{'\n'}
+            -- Create RPC function to increment clicks{'\n'}
+            CREATE OR REPLACE FUNCTION increment_file_click(fid uuid) RETURNS void AS $${'\n'}
+            BEGIN{'\n'}
+              UPDATE files SET clicks = COALESCE(clicks, 0) + 1 WHERE id = fid;{'\n'}
+            END;{'\n'}
+            $$ LANGUAGE plpgsql SECURITY DEFINER;{'\n'}
           </pre>
           <p className="mt-2 text-sm italic">After running this command, refresh this page so that the data saves successfully.</p>
         </div>
@@ -1245,6 +1265,14 @@ export const GalleryManager: React.FC = () => {
                             >
                                 <LayoutGrid className="w-4 h-4" />
                             </button>
+                            <div className="w-px h-4 bg-slate-300 self-center mx-1"></div>
+                            <button
+                                onClick={() => setIsHeatmapActive(!isHeatmapActive)}
+                                className={`p-1.5 rounded-md transition-all ${isHeatmapActive ? 'bg-orange-100 shadow-sm text-orange-600' : 'text-zinc-500 hover:text-orange-500'}`}
+                                title="Toggle Heatmap"
+                            >
+                                <Flame className="w-4 h-4" />
+                            </button>
                         </div>
                         {!isPortfolio && (
                             <>
@@ -1436,6 +1464,11 @@ export const GalleryManager: React.FC = () => {
                                     isExtra = true;
                                 }
                             }
+                            
+                            const fileViews = file.views || 0;
+                            const fileClicks = file.clicks || 0;
+                            const heatScore = maxViews === 0 && maxClicks === 0 ? 0 : 
+                                ((fileViews / maxViews) * 0.5) + ((fileClicks / maxClicks) * 0.5);
                             return (
                                 <div key={file.id} className={layoutView === 'grid' ? `relative group rounded-xl overflow-hidden border ${isSelected ? 'border-rose-300 ring-2 ring-rose-200' : 'border-zinc-200/60'} bg-white hover:shadow-md transition-all flex flex-col` : `p-4 flex items-center justify-between hover:bg-zinc-50/80 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
                                     <div className={layoutView === 'grid' ? "flex flex-col flex-1" : "flex items-center gap-3 md:gap-4 overflow-hidden"}>
@@ -1474,6 +1507,22 @@ export const GalleryManager: React.FC = () => {
                                             {!isPortfolio && isSelected && (
                                                 <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
                                                     <Heart className="w-6 h-6 text-rose-600 fill-rose-600" />
+                                                </div>
+                                            )}
+                                            {isHeatmapActive && (
+                                                <div 
+                                                    className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300"
+                                                    style={{ 
+                                                        backgroundColor: `rgba(249, 115, 22, ${heatScore * 0.7})`,
+                                                        opacity: heatScore > 0 ? 1 : 0
+                                                    }}
+                                                >
+                                                    {heatScore > 0 && (
+                                                        <div className="bg-zinc-900/80 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded backdrop-blur-sm flex flex-col items-center gap-0.5">
+                                                            <div className="flex items-center gap-1"><Eye className="w-3 h-3" /> {fileViews}</div>
+                                                            <div className="flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {fileClicks}</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
