@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
-import { TrendingUp, FileText, Loader2, Eye, MousePointerClick } from 'lucide-react';
+import { TrendingUp, FileText, Loader2, Eye, MousePointerClick, RefreshCw } from 'lucide-react';
 
 export const BlogAnalytics: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -58,6 +58,13 @@ export const BlogAnalytics: React.FC = () => {
           <p className="text-slate-500 text-lg">Performance trends of your published articles.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
+          <button
+            onClick={fetchAnalytics}
+            className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+            title="Refresh Analytics"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
           <div className="flex items-center gap-4 bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100">
             <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
               <Eye className="w-6 h-6" />

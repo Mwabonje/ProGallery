@@ -483,6 +483,9 @@ export const ClientGallery: React.FC = () => {
 
   const toggleSelection = async (file: GalleryFile) => {
     if (!gallery?.selection_enabled || selectionSubmitted) return;
+    
+    // Always track click on the file when interacted with
+    trackFileClick(file.id);
 
     const isSelected = selectedFileIds.has(file.id);
 
@@ -657,6 +660,7 @@ export const ClientGallery: React.FC = () => {
 
     try {
       await supabase.rpc("increment_download", { row_id: file.id });
+      trackFileClick(file.id);
 
       const response = await fetch(rewriteUrlToR2(file.file_url), {
         signal: singleAbortControllerRef.current.signal,
@@ -760,6 +764,9 @@ export const ClientGallery: React.FC = () => {
         );
         // Optional: we could fallback to individual increments, but for large galleries it might trigger rate limits.
       }
+      
+      // Also increment clicks for all files
+      fileIds.forEach((id) => trackFileClick(id));
 
       const zip = new JSZip();
 
@@ -901,14 +908,25 @@ export const ClientGallery: React.FC = () => {
   if (viewFilter === "extras")
     displayedFiles = files.filter((f) => extraSelections.includes(f.id));
 
+  const setLightboxFileWithTracking = (file: GalleryFile | null) => {
+    setLightboxFile(file);
+    if (file) {
+      supabase.rpc("increment_file_view", { fid: file.id }).catch(() => {});
+    }
+  };
+
+  const trackFileClick = (fileId: string) => {
+    supabase.rpc("increment_file_click", { fid: fileId }).catch(() => {});
+  };
+
   const handlePrevLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
     if (e && "stopPropagation" in e) e.stopPropagation();
     if (!lightboxFile) return;
     const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
     if (index > 0) {
-      setLightboxFile(displayedFiles[index - 1]);
+      setLightboxFileWithTracking(displayedFiles[index - 1]);
     } else {
-      setLightboxFile(displayedFiles[displayedFiles.length - 1]);
+      setLightboxFileWithTracking(displayedFiles[displayedFiles.length - 1]);
     }
   };
 
@@ -917,9 +935,9 @@ export const ClientGallery: React.FC = () => {
     if (!lightboxFile) return;
     const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
     if (index !== -1 && index < displayedFiles.length - 1) {
-      setLightboxFile(displayedFiles[index + 1]);
+      setLightboxFileWithTracking(displayedFiles[index + 1]);
     } else {
-      setLightboxFile(displayedFiles[0]);
+      setLightboxFileWithTracking(displayedFiles[0]);
     }
   };
 

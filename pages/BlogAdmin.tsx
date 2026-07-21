@@ -558,13 +558,23 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
           <h1 className="text-2xl font-bold text-slate-900">Blog Manager</h1>
           <p className="text-sm text-slate-500">Manage your journal entries and stories</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Post</span>
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={fetchPosts}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            title="Refresh Data"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span className="sm:hidden">Refresh</span>
+          </button>
+          <button
+            onClick={handleCreate}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Post</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

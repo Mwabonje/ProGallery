@@ -16,12 +16,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mwabonje.com/blog/why-golden-hour-is-the-best-time-for-photos</loc>
-    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.com/blog/top-beach-photography-spots-in-watamu</loc>
     <lastmod>2026-07-19T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
@@ -29,6 +23,12 @@
   </url>
   <url>
     <loc>https://mwabonje.com/blog/indoor-vs-outdoor-photography-which-is-better</loc>
+    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.com/blog/why-golden-hour-is-the-best-time-for-photos</loc>
     <lastmod>2026-07-19T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
