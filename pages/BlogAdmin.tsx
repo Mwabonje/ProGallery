@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
-import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, MousePointerClick } from 'lucide-react';
+import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, MousePointerClick, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlogAdmin: React.FC = () => {
