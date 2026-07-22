@@ -1063,11 +1063,27 @@ export const ClientGallery: React.FC = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-8 h-8 relative flex items-center justify-center">
-          <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
-          <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
-        </div>
+      <div className="min-h-screen flex flex-col bg-white">
+        <header className="sticky top-0 z-20 shadow-sm bg-white/95 border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
+            <div>
+              <div className="h-6 bg-slate-100 animate-pulse rounded w-48 mb-2"></div>
+              <div className="h-4 bg-slate-100 animate-pulse rounded w-24"></div>
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-full"></div>
+              <div className="h-10 w-10 bg-slate-100 animate-pulse rounded-full"></div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 w-full max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="aspect-[4/5] bg-slate-100 animate-pulse rounded-sm"></div>
+            ))}
+          </div>
+        </main>
       </div>
     );
 

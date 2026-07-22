@@ -217,16 +217,7 @@ export const Portfolio: React.FC = () => {
         }
     }, [activeCategory, galleries]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 relative flex items-center justify-center">
-                    <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
-                    <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
-                </div>
-            </div>
-        );
-    }
+
 
     // Extract unique categories (defaulting heavily to un-categorized if not set)
     const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints' && c?.toLowerCase() !== 'about')))];
@@ -443,7 +434,11 @@ export const Portfolio: React.FC = () => {
                         : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 w-full ${activeCategory === 'All' ? 'md:h-full md:min-h-0' : ''}`
                     }
                 >
-                    {filteredGalleries.map((gallery, index) => (
+                    {loading ? (
+                        Array.from({ length: 6 }).map((_, idx) => (
+                            <div key={idx} className={`bg-slate-100 animate-pulse ${isFilmsCategory ? 'flex-none h-full snap-center aspect-[4/5]' : activeCategory === 'All' ? 'h-[60vh] md:h-full md:min-h-0 w-full' : 'h-[60vh] md:h-[calc(100vh-280px)] min-h-[300px] md:min-h-[450px] w-full'}`}></div>
+                        ))
+                    ) : filteredGalleries.map((gallery, index) => (
                         <GalleryCard 
                             key={gallery.id} 
                             gallery={gallery} 
