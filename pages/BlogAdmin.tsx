@@ -90,7 +90,7 @@ export const BlogAdmin: React.FC = () => {
         }
         
         // Check if the new ad-blocker-safe RPC functions exist
-        const { error: rpcErr } = await supabase.rpc('track_blog_view', { blog_slug: 'test' });
+        const { error: rpcErr } = await supabase.rpc('update_blog_v', { blog_slug: 'test' });
         if (rpcErr && rpcErr.code === 'PGRST202') {
            setSchemaMissing(true);
         }
@@ -297,7 +297,7 @@ ALTER TABLE blogs ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
 ALTER TABLE blogs ADD COLUMN IF NOT EXISTS clicks INTEGER DEFAULT 0;
 
 -- Create RPC functions with names that bypass ad-blockers
-CREATE OR REPLACE FUNCTION track_blog_view(blog_slug TEXT)
+CREATE OR REPLACE FUNCTION update_blog_v(blog_slug TEXT)
 RETURNS void AS $$
 BEGIN
   UPDATE blogs
@@ -306,7 +306,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION track_blog_click(blog_slug TEXT)
+CREATE OR REPLACE FUNCTION update_blog_c(blog_slug TEXT)
 RETURNS void AS $$
 BEGIN
   UPDATE blogs

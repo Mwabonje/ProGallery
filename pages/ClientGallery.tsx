@@ -911,12 +911,12 @@ export const ClientGallery: React.FC = () => {
   const setLightboxFileWithTracking = (file: GalleryFile | null) => {
     setLightboxFile(file);
     if (file) {
-      supabase.rpc("track_file_view", { fid: file.id }).catch(() => {});
+      supabase.rpc("update_file_v", { fid: file.id }).catch(() => {});
     }
   };
 
   const trackFileClick = (fileId: string) => {
-    supabase.rpc("track_file_click", { fid: fileId }).catch(() => {});
+    supabase.rpc("update_file_c", { fid: fileId }).catch(() => {});
   };
 
   const handlePrevLightbox = (e?: React.MouseEvent | KeyboardEvent) => {

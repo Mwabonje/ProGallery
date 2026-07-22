@@ -102,7 +102,7 @@ export const GalleryManager: React.FC = () => {
         setSchemaMissing(true);
     } else {
         // Check if the ad-blocker safe RPC exists
-        const { error: rpcErr } = await supabase.rpc('track_file_view', { fid: '00000000-0000-0000-0000-000000000000' });
+        const { error: rpcErr } = await supabase.rpc('update_file_v', { fid: '00000000-0000-0000-0000-000000000000' });
         if (rpcErr && rpcErr.code === 'PGRST202') {
             setSchemaMissing(true);
         } else {
@@ -710,14 +710,14 @@ export const GalleryManager: React.FC = () => {
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS clicks integer DEFAULT 0;{'\n'}
 {'\n'}
             -- Create RPC function to increment views with ad-blocker safe names{'\n'}
-            CREATE OR REPLACE FUNCTION track_file_view(fid uuid) RETURNS void AS $${'\n'}
+            CREATE OR REPLACE FUNCTION update_file_v(fid uuid) RETURNS void AS $${'\n'}
             BEGIN{'\n'}
               UPDATE files SET views = COALESCE(views, 0) + 1 WHERE id = fid;{'\n'}
             END;{'\n'}
             $$ LANGUAGE plpgsql SECURITY DEFINER;{'\n'}
 {'\n'}
             -- Create RPC function to increment clicks with ad-blocker safe names{'\n'}
-            CREATE OR REPLACE FUNCTION track_file_click(fid uuid) RETURNS void AS $${'\n'}
+            CREATE OR REPLACE FUNCTION update_file_c(fid uuid) RETURNS void AS $${'\n'}
             BEGIN{'\n'}
               UPDATE files SET clicks = COALESCE(clicks, 0) + 1 WHERE id = fid;{'\n'}
             END;{'\n'}
