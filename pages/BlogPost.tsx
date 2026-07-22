@@ -61,7 +61,7 @@ export const BlogPost: React.FC = () => {
       setPost(data);
 
       // Increment views without awaiting to not block rendering
-      supabase.rpc('increment_blog_view', { blog_slug: slug }).catch(console.error);
+      supabase.rpc('track_blog_view', { blog_slug: slug }).catch(console.error);
       
       let relatedData: BlogPostType[] = [];
       

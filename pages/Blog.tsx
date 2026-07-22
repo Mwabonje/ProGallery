@@ -19,7 +19,7 @@ export const Blog: React.FC = () => {
 
   const handlePostClick = (slug: string) => {
     // Fire and forget
-    supabase.rpc('increment_blog_click', { blog_slug: slug }).catch(console.error);
+    supabase.rpc('track_blog_click', { blog_slug: slug }).catch(console.error);
   };
 
   const fetchPosts = async () => {
