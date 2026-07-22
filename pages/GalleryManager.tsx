@@ -31,6 +31,7 @@ export const GalleryManager: React.FC = () => {
   // Edit states
   const [agreedAmount, setAgreedAmount] = useState<number | ''>('');
   const [paid, setPaid] = useState<number | ''>('');
+  const [downloadsBeforeClearing, setDownloadsBeforeClearing] = useState<number | ''>('');
   const [paymentUpdated, setPaymentUpdated] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [schemaMissing, setSchemaMissing] = useState(false);
@@ -103,7 +104,10 @@ export const GalleryManager: React.FC = () => {
     } else {
         // Check if the ad-blocker safe RPC exists
         const { error: rpcErr } = await supabase.rpc('update_file_v', { fid: '00000000-0000-0000-0000-000000000000' });
+        const { error: gallerySchemaErr } = await supabase.from('galleries').select('downloads_before_clearing').limit(1);
         if (rpcErr && rpcErr.code === 'PGRST202') {
+            setSchemaMissing(true);
+        } else if (gallerySchemaErr && gallerySchemaErr.message.includes('column')) {
             setSchemaMissing(true);
         } else {
             setSchemaMissing(false);
@@ -125,6 +129,7 @@ export const GalleryManager: React.FC = () => {
     setGallery(galData);
     setAgreedAmount(galData.agreed_balance === 0 ? '' : galData.agreed_balance);
     setPaid(galData.amount_paid === 0 ? '' : galData.amount_paid);
+    setDownloadsBeforeClearing(galData.downloads_before_clearing === 0 || !galData.downloads_before_clearing ? '' : galData.downloads_before_clearing);
     setEditClientName(galData.client_name);
     setEditTitle(galData.title);
     setEditCategory(galData.category || '');
@@ -294,7 +299,11 @@ export const GalleryManager: React.FC = () => {
     try {
       const { error } = await supabase
         .from('galleries')
-        .update({ agreed_balance: Number(agreedAmount) || 0, amount_paid: Number(paid) || 0 })
+        .update({ 
+            agreed_balance: Number(agreedAmount) || 0, 
+            amount_paid: Number(paid) || 0,
+            downloads_before_clearing: Number(downloadsBeforeClearing) || 0
+        })
         .eq('id', gallery.id);
       
       if (error) throw error;
@@ -708,6 +717,7 @@ export const GalleryManager: React.FC = () => {
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS price text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS views integer DEFAULT 0;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS clicks integer DEFAULT 0;{'\n'}
+            ALTER TABLE public.galleries ADD COLUMN IF NOT EXISTS downloads_before_clearing integer DEFAULT 0;{'\n'}
 {'\n'}
             -- Create RPC function to increment views with ad-blocker safe names{'\n'}
             CREATE OR REPLACE FUNCTION update_file_v(fid uuid) RETURNS void AS $${'\n'}
@@ -955,6 +965,24 @@ export const GalleryManager: React.FC = () => {
                         />
                     </div>
                   </div>
+
+                  {agreedAmount !== '' && Number(agreedAmount) > 0 && Number(paid) < Number(agreedAmount) && (
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-1">
+                          Allowed Downloads (Before Clearing Balance)
+                          <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 to lock all)</span>
+                      </label>
+                      <div className="relative">
+                          <input 
+                          type="number" 
+                          value={downloadsBeforeClearing}
+                          onChange={(e) => setDownloadsBeforeClearing(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full px-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
+                          placeholder="0"
+                          />
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-zinc-700 mb-1">Remaining Balance</label>

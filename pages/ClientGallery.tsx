@@ -63,6 +63,7 @@ export const ClientGallery: React.FC = () => {
   const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [downloadedImageIds, setDownloadedImageIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -129,7 +130,17 @@ export const ClientGallery: React.FC = () => {
   };
 
   useEffect(() => {
-    if (galleryId) loadGallery();
+    if (galleryId) {
+      loadGallery();
+      const storedDownloads = localStorage.getItem(`gallery_downloads_${galleryId}`);
+      if (storedDownloads) {
+        try {
+          setDownloadedImageIds(JSON.parse(storedDownloads));
+        } catch (e) {
+          console.error('Failed to parse stored downloads', e);
+        }
+      }
+    }
   }, [galleryId]);
 
   useEffect(() => {
@@ -646,17 +657,22 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
-    const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
-
-    if (balance > 0) {
+    if (isFileLocked(file.id)) {
       setShowPayModal(true);
       return;
     }
 
     setDownloadingId(file.id);
     setSingleDownloadStats({ loaded: 0, total: 0 });
-
     singleAbortControllerRef.current = new AbortController();
+
+    // Track the download for the limit
+    setDownloadedImageIds(prev => {
+      if (prev.includes(file.id)) return prev;
+      const next = [...prev, file.id];
+      if (gallery.id) localStorage.setItem(`gallery_downloads_${gallery.id}`, JSON.stringify(next));
+      return next;
+    });
 
     try {
       await supabase.rpc("increment_download", { row_id: file.id });
@@ -733,8 +749,7 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
-    const balance = (gallery.agreed_balance || 0) - (gallery.amount_paid || 0);
-    if (balance > 0) {
+    if (!canDownloadAll) {
       setShowPayModal(true);
       return;
     }
@@ -869,7 +884,20 @@ export const ClientGallery: React.FC = () => {
   const isPortfolio = Boolean(
     gallery?.category && gallery.category.trim() !== "",
   );
-  const isLocked = balanceDue > 0 && !isPortfolio;
+  
+  const isBalancePending = balanceDue > 0 && !isPortfolio;
+  
+  const downloadLimit = gallery?.downloads_before_clearing || 0;
+  const canDownloadAll = !isBalancePending || (downloadLimit >= files.length);
+
+  const isFileLocked = (fileId: string) => {
+    if (!isBalancePending) return false;
+    if (downloadLimit <= 0) return true;
+    if (downloadedImageIds.includes(fileId)) return false;
+    if (downloadedImageIds.length >= downloadLimit) return true;
+    return false;
+  };
+
   const isPortraitGallery =
     isPortfolio &&
     Boolean(
@@ -1179,7 +1207,7 @@ export const ClientGallery: React.FC = () => {
                   onClick={handleDownloadAll}
                   disabled={downloadingAll || files.length === 0}
                   className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium transition-all text-sm shadow-sm ${
-                    isLocked
+                    !canDownloadAll
                       ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed"
                       : downloadingAll
                         ? "bg-[#0f1423] border border-white/5 text-slate-400 cursor-wait opacity-80"
@@ -1199,11 +1227,11 @@ export const ClientGallery: React.FC = () => {
                   )}
                 </button>
 
-                {isLocked ? (
+                {isBalancePending ? (
                   <div className="flex items-center gap-2 bg-slate-50 px-4 h-10 rounded-lg border border-slate-200 shadow-sm">
                     <div className="flex flex-col text-right justify-center">
                       <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">
-                        Balance Due
+                        {downloadLimit > 0 ? `${Math.max(0, downloadLimit - downloadedImageIds.length)} Free Downloads` : "Balance Due"}
                       </span>
                       <span className="font-bold text-slate-800 text-sm leading-none">
                         {formatCurrency(balanceDue)}
@@ -1540,7 +1568,7 @@ export const ClientGallery: React.FC = () => {
                             }}
                             onContextMenu={(e) => e.preventDefault()}
                           />
-                          {isLocked && !isPortfolio && <WatermarkOverlay />}
+                          {isFileLocked(file.id) && !isPortfolio && <WatermarkOverlay />}
                           <div
                             className="absolute inset-0 z-[5]"
                             onContextMenu={(e) => {
@@ -1559,9 +1587,9 @@ export const ClientGallery: React.FC = () => {
                         className={`block transform transition-transform duration-[1.5s] ${isFilmGallery ? "w-auto h-full max-w-[90vw] object-contain mx-auto" : "w-full h-full object-cover"} ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} ${isFilmGallery ? "" : isPortfolio ? "pointer-events-none" : ""}`}
                         controls={isFilmGallery || !isPortfolio}
                         controlsList={
-                          isLocked ? "nodownload nofullscreen" : "nodownload"
+                          isFileLocked(file.id) ? "nodownload nofullscreen" : "nodownload"
                         }
-                        disablePictureInPicture={isLocked}
+                        disablePictureInPicture={isFileLocked(file.id)}
                         preload="metadata"
                         autoPlay={isPortfolio && !isFilmGallery}
                         muted={isPortfolio && !isFilmGallery}
@@ -1607,7 +1635,7 @@ export const ClientGallery: React.FC = () => {
                           >
                             {downloadingId === file.id ? (
                               <X className="w-4 h-4 text-red-500" />
-                            ) : isLocked ? (
+                            ) : isFileLocked(file.id) ? (
                               <Lock className="w-4 h-4" />
                             ) : (
                               <Download className="w-4 h-4" />
@@ -1623,7 +1651,7 @@ export const ClientGallery: React.FC = () => {
                                     ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
                                     : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
                                   : "Cancel"
-                                : isLocked
+                                : isFileLocked(file.id)
                                   ? "Locked"
                                   : "Download"}
                             </span>
@@ -1663,7 +1691,7 @@ export const ClientGallery: React.FC = () => {
                           }
                           className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-3"} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
                                 ${
-                                  isLocked
+                                  isFileLocked(file.id)
                                     ? "bg-slate-100/90 text-slate-800"
                                     : "bg-white/90 text-slate-900"
                                 }
@@ -1672,11 +1700,11 @@ export const ClientGallery: React.FC = () => {
                         >
                           {downloadingId === file.id ? (
                             <X className="w-5 h-5 shrink-0" />
-                          ) : isLocked ? (
-                            <Lock className="w-5 h-5" />
-                          ) : (
-                            <Download className="w-5 h-5" />
-                          )}
+                          ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
+                    <Lock className="w-5 h-5" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
                           {downloadingId === file.id && singleDownloadStats && (
                             <span className="font-semibold truncate">
                               {singleDownloadStats.total
@@ -1910,8 +1938,9 @@ export const ClientGallery: React.FC = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Notice</h3>
             <p className="text-slate-600 mb-6 text-sm">
-              Once the balance has been cleared, you will be able to download
-              high-res images and videos.
+              {downloadLimit > 0
+                ? `You can download up to ${downloadLimit} high-res images. To download the rest, please clear the remaining balance.`
+                : "Once the balance has been cleared, you will be able to download high-res images and videos."}
             </p>
             <div className="space-y-3">
               <button
@@ -2034,7 +2063,7 @@ export const ClientGallery: React.FC = () => {
                 ) : (
                   <span>
                     Please{" "}
-                    {isLocked
+                    {!canDownloadAll
                       ? "complete the payment"
                       : "use the download button"}{" "}
                     to access high-quality versions of these images.
@@ -2121,7 +2150,7 @@ export const ClientGallery: React.FC = () => {
                     }
                   }}
                 />
-                {isLocked && !isPortfolio && <WatermarkOverlay />}
+                {isFileLocked(lightboxFile ? lightboxFile.id : "") && !isPortfolio && <WatermarkOverlay />}
                 {/* Protection overlay to catch right-clicks / drag-and-drops from extensions */}
                 <div
                   className="absolute inset-0 z-10"
@@ -2150,9 +2179,9 @@ export const ClientGallery: React.FC = () => {
                   className="max-w-full max-h-full object-contain pointer-events-auto shadow-2xl animate-in fade-in duration-300"
                   controls
                   controlsList={
-                    isLocked ? "nodownload nofullscreen" : "nodownload"
+                    isFileLocked(lightboxFile ? lightboxFile.id : "") ? "nodownload nofullscreen" : "nodownload"
                   }
-                  disablePictureInPicture={isLocked}
+                  disablePictureInPicture={isFileLocked(lightboxFile ? lightboxFile.id : "")}
                   autoPlay
                   playsInline
                   onTouchStart={handleLongPressStart}
@@ -2168,7 +2197,7 @@ export const ClientGallery: React.FC = () => {
                     }
                   }}
                 />
-                {isLocked && !isPortfolio && <WatermarkOverlay />}
+                {isFileLocked(lightboxFile ? lightboxFile.id : "") && !isPortfolio && <WatermarkOverlay />}
               </div>
             )}
           </div>
@@ -2281,7 +2310,7 @@ export const ClientGallery: React.FC = () => {
                     downloadingId !== null && downloadingId !== lightboxFile.id
                   }
                   className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
-                    isLocked
+                    isFileLocked(lightboxFile ? lightboxFile.id : "")
                       ? "bg-slate-100 text-slate-800"
                       : downloadingId === lightboxFile.id
                         ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
@@ -2290,7 +2319,7 @@ export const ClientGallery: React.FC = () => {
                 >
                   {downloadingId === lightboxFile.id ? (
                     <X className="w-5 h-5" />
-                  ) : isLocked ? (
+                  ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
                     <Lock className="w-5 h-5" />
                   ) : (
                     <Download className="w-5 h-5" />
@@ -2302,7 +2331,7 @@ export const ClientGallery: React.FC = () => {
                           ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
                           : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
                         : "Cancel"
-                      : isLocked
+                      : isFileLocked(lightboxFile ? lightboxFile.id : "")
                         ? "Locked"
                         : "Download Photo"}
                   </span>
