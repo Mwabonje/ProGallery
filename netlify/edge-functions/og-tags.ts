@@ -35,7 +35,7 @@ export default async (request: Request, context: Context) => {
           const post = posts[0];
           const title = `${post.title} | Mwabonje`;
           const description = post.excerpt || "";
-          const image = post.cover_image || "https://mwabonje.com/og-image.jpg";
+          const image = post.cover_image || "https://mwabonje.netlify.app/og-image.jpg";
           
           html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
           html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
@@ -59,7 +59,7 @@ export default async (request: Request, context: Context) => {
             const gallery = galleries[0];
             const title = gallery.title || `${gallery.client_name} Gallery | Mwabonje`;
             const description = `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`;
-            let image = "https://mwabonje.com/og-image.jpg";
+            let image = "https://mwabonje.netlify.app/og-image.jpg";
 
             // Fetch cover image
             const filesRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&select=file_url&limit=1&order=expires_at.asc`, { headers });

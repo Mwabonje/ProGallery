@@ -380,7 +380,7 @@ async function startServer() {
         "Authorization": `Bearer ${supabaseKey}`
       };
 
-      const domain = 'https://mwabonje.com';
+      const domain = 'https://mwabonje.netlify.app';
       let blogs = [];
       let galleries = [];
 
@@ -468,7 +468,7 @@ async function startServer() {
             const gallery = galleries[0];
             const title = gallery.title || `${gallery.client_name} Gallery | Mwabonje`;
             const description = `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`;
-            let image = "https://mwabonje.com/og-image.jpg";
+            let image = "https://mwabonje.netlify.app/og-image.jpg";
 
             // Fetch cover image from files
             const filesResponse = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&select=file_url&limit=1&order=expires_at.asc`, { headers });
@@ -512,7 +512,7 @@ async function startServer() {
             const post = posts[0];
             const title = `${post.title} | Mwabonje`;
             const description = post.excerpt || "";
-            const image = post.cover_image || "https://mwabonje.com/og-image.jpg";
+            const image = post.cover_image || "https://mwabonje.netlify.app/og-image.jpg";
             
             html = injectOGTags(html, title, description, image, "article");
           }

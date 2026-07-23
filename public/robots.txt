@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mwabonje.com/sitemap.xml
+Sitemap: https://mwabonje.netlify.app/sitemap.xml

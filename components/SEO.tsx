@@ -34,14 +34,14 @@ export const SEO: React.FC<SEOProps> = ({
         "author": {
             "@type": "Person",
             "name": author,
-            "url": "https://mwabonje.com"
+            "url": "https://mwabonje.netlify.app"
         },
         "publisher": {
           "@type": "Organization",
           "name": "Mwabonje",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://mwabonje.com/og-image.jpg"
+            "url": "https://mwabonje.netlify.app/og-image.jpg"
           }
         },
         "description": description,

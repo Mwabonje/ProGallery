@@ -23,7 +23,7 @@ async function generateSitemap() {
         galleries = await galleriesRes.json();
     }
 
-    const domain = 'https://mwabonje.com';
+    const domain = 'https://mwabonje.netlify.app';
 
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

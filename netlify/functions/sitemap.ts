@@ -25,7 +25,7 @@ export const handler: Handler = async (event) => {
       return { statusCode: 500, body: "Internal Server Error" };
     }
 
-    const baseUrl = "https://mwabonje.com";
+    const baseUrl = "https://mwabonje.netlify.app";
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
