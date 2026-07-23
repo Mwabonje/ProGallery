@@ -890,6 +890,21 @@ export const ClientGallery: React.FC = () => {
   const downloadLimit = gallery?.downloads_before_clearing || 0;
   const canDownloadAll = !isBalancePending || (downloadLimit >= files.length);
 
+  
+  const getDisplayUrl = (file: GalleryFile, isLightbox = false) => {
+    // If it's locked and we have a watermarked thumbnail, use it
+    if (isFileLocked(file.id) && file.thumbnail_url && !isPortfolio) {
+        return file.thumbnail_url;
+    }
+    // If unlocked (or portfolio where there's no watermark anyway)
+    // For standard images, we can just use the file_url so they see the clean version
+    if (file.file_url && file.file_url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+        return file.file_url;
+    }
+    // For RAW files, we MUST use the thumbnail because browsers can't render RAW
+    return file.thumbnail_url || file.file_url;
+  };
+
   const isFileLocked = (fileId: string) => {
     if (!isBalancePending) return false;
     if (downloadLimit <= 0) return true;
@@ -1509,7 +1524,7 @@ export const ClientGallery: React.FC = () => {
                       isPortfolio ? (
                         <img
                           src={getOptimizedImageUrl(
-                            file.thumbnail_url || file.file_url,
+                            getDisplayUrl(file),
                             isPortraitGallery ? 1200 : 800,
                             isPortraitGallery ? 1500 : 1000,
                             75,
@@ -1526,7 +1541,7 @@ export const ClientGallery: React.FC = () => {
                               target.dataset.retried = "true";
                               target.src =
                                 rewriteUrlToR2(
-                                  file.thumbnail_url || file.file_url,
+                                  getDisplayUrl(file),
                                 ) || "";
                             }
                           }}
@@ -1536,16 +1551,16 @@ export const ClientGallery: React.FC = () => {
                         <>
                           <img
                             src={getOptimizedImageUrl(
-                              file.thumbnail_url || file.file_url,
+                              getDisplayUrl(file),
                               400,
                               400,
                               30,
                             )}
                             srcSet={`
-                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 150, 150, 25)} 150w,
-                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 300, 300, 30)} 300w,
-                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 600, 600, 40)} 600w,
-                                    ${getOptimizedImageUrl(file.thumbnail_url || file.file_url, 900, 900, 50)} 900w
+                                    ${getOptimizedImageUrl(getDisplayUrl(file), 150, 150, 25)} 150w,
+                                    ${getOptimizedImageUrl(getDisplayUrl(file), 300, 300, 30)} 300w,
+                                    ${getOptimizedImageUrl(getDisplayUrl(file), 600, 600, 40)} 600w,
+                                    ${getOptimizedImageUrl(getDisplayUrl(file), 900, 900, 50)} 900w
                                 `}
                             sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
                             alt="Gallery item"
@@ -1562,7 +1577,7 @@ export const ClientGallery: React.FC = () => {
                                 target.dataset.retried = "true";
                                 target.src =
                                   rewriteUrlToR2(
-                                    file.thumbnail_url || file.file_url,
+                                    getDisplayUrl(file),
                                   ) || "";
                               }
                             }}
@@ -2134,7 +2149,7 @@ export const ClientGallery: React.FC = () => {
                 <img
                   key={lightboxFile.id}
                   src={getOptimizedImageUrl(
-                    lightboxFile.file_url,
+                    getDisplayUrl(lightboxFile, true),
                     1920,
                     undefined,
                     85,
@@ -2378,7 +2393,7 @@ export const ClientGallery: React.FC = () => {
                 >
                   <img
                     src={getOptimizedImageUrl(
-                      file.thumbnail_url || file.file_url,
+                      getDisplayUrl(file),
                       150,
                       150,
                       30,
