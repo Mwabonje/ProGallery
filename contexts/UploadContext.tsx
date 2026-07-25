@@ -319,10 +319,11 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
                             const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
                             
+                            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
                             const thumbPresignRes = await fetch(apiUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fileName: 'watermark_' + file.name + '.jpg', fileType: 'image/jpeg' }),
+                                body: JSON.stringify({ fileName: 'watermark_' + file.name + '.jpg', fileType: 'image/jpeg', folderPath }),
                                 signal: controller.signal
                             });
                             
@@ -361,8 +362,6 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                                 gallery_id: galleryId,
                                 file_url: publicUrl,
                                 file_path: filePath,
-                                thumbnail_url: thumbPublicUrl,
-                                thumbnail_path: thumbFilePath,
                                 file_type: dbFileType,
                                 expires_at: expiresAt.toISOString()
                             }]);
