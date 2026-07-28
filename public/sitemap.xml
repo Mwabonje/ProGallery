@@ -112,12 +112,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/g/2520d7f0-9037-4984-bffb-6dc1d28d3a44</loc>
-    <lastmod>2026-07-25T18:25:43.094Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.netlify.app/g/c63e7d49-3c83-4407-b96e-2884ce7de8b1</loc>
     <lastmod>2026-06-19T15:43:15.916Z</lastmod>
     <changefreq>monthly</changefreq>
@@ -166,12 +160,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/g/a06dba14-c021-48a8-a2c1-62ab0f92be97</loc>
-    <lastmod>2026-07-18T10:01:04.109Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.netlify.app/g/fbbd3475-cdd2-4a24-8e09-f30a06784706</loc>
     <lastmod>2026-04-26T12:53:39.152Z</lastmod>
     <changefreq>monthly</changefreq>
@@ -210,6 +198,12 @@
   <url>
     <loc>https://mwabonje.netlify.app/g/c4d4459d-28c0-4f9e-8fed-a76f22d31910</loc>
     <lastmod>2026-05-08T17:29:08.252Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/79c0931b-843b-4585-840d-b84c88d968c0</loc>
+    <lastmod>2026-07-27T12:50:47.627Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

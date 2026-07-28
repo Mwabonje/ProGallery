@@ -14,6 +14,11 @@ export default async (request: Request, context: Context) => {
 
   let html = await response.text();
 
+  // Fix canonical URL and og:url for all routes handled by this edge function
+  // This prevents Google Search Console from seeing all pages as duplicates of the homepage
+  const cleanUrl = url.origin + url.pathname;
+  html = html.replace('</head>', `  <link rel="canonical" href="${cleanUrl}" />\n    <meta property="og:url" content="${cleanUrl}" />\n</head>`);
+
   // @ts-ignore
   const supabaseUrl = Netlify.env.get("VITE_SUPABASE_URL") || "https://bdaqtpyzqutelkdgcoex.supabase.co";
   // @ts-ignore
