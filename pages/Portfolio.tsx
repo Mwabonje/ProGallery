@@ -49,6 +49,7 @@ const trackClick = (galleryId: string) => {
 };
 
 interface PortfolioGallery extends Gallery {
+  baseCategory?: string;
   coverUrl?: string | null;
   coverType?: string | null;
   itemCount?: number;
@@ -169,6 +170,7 @@ export const Portfolio: React.FC = () => {
 
                         return {
                             ...gallery,
+                            baseCategory: gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '',
                             coverUrl: files && files.length > 0 ? files[0].file_url : null,
                             coverType: files && files.length > 0 ? files[0].file_type : null,
                         };
@@ -229,13 +231,13 @@ export const Portfolio: React.FC = () => {
     }
 
     // Extract unique categories (defaulting heavily to un-categorized if not set)
-    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.category).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints' && c?.toLowerCase() !== 'about')))];
+    const categories = ['All', ...Array.from(new Set(galleries.map(g => g.baseCategory).filter(c => Boolean(c) && c?.toLowerCase() !== 'prints' && c?.toLowerCase() !== 'about')))];
     
     const homeKeywords = ["rafiki", "lamu", "kilele"];
     
     const filteredGalleries = activeCategory === 'All' 
         ? galleries.filter(g => homeKeywords.some(keyword => g.client_name.toLowerCase().includes(keyword)))
-        : galleries.filter(g => g.category === activeCategory);
+        : galleries.filter(g => g.baseCategory === activeCategory);
 
     return (
         <div className={`flex flex-col min-h-screen ${activeCategory === 'All' ? 'md:h-screen md:overflow-hidden' : ''} bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white`}>
@@ -296,7 +298,7 @@ export const Portfolio: React.FC = () => {
                 <nav className="hidden lg:flex flex-wrap justify-center items-center gap-x-3 gap-y-2 lg:gap-x-3 xl:gap-x-5 lg:gap-y-4 text-[9px] xl:text-[10px] font-semibold tracking-[0.10em] lg:tracking-[0.10em] xl:tracking-[0.12em] uppercase text-slate-500 w-full max-w-7xl mx-auto px-2 lg:px-4">
                     {categories.length > 0 && categories.map((cat) => {
                         const isAll = cat === 'All';
-                        const catGalleries = galleries.filter(g => g.category === cat);
+                        const catGalleries = galleries.filter(g => g.baseCategory === cat);
                         const hasDropdown = !isAll && catGalleries.length > 0;
                         
                         const displayCatName = isAll ? 'HOME' : (String(cat).toLowerCase() === 'airbnb' ? 'HOSPITALITY' : String(cat).toUpperCase());
@@ -360,7 +362,7 @@ export const Portfolio: React.FC = () => {
                     <nav className="flex flex-col gap-6 text-[11px] font-semibold tracking-[0.15em] uppercase text-slate-500 mt-4">
                         {categories.length > 0 && categories.map((cat) => {
                             const isAll = cat === 'All';
-                            const catGalleries = galleries.filter(g => g.category === cat);
+                            const catGalleries = galleries.filter(g => g.baseCategory === cat);
                             const hasDropdown = !isAll && catGalleries.length > 0;
                             const displayCatName = isAll ? 'HOME' : (cat.toLowerCase() === 'airbnb' ? 'HOSPITALITY' : (cat as string).toUpperCase());
 

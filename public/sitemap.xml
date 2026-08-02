@@ -207,4 +207,10 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/d642152b-fc90-4b0d-9ac4-d28e2d5c0c02</loc>
+    <lastmod>2026-08-02T11:21:50.127Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>

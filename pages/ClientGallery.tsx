@@ -940,8 +940,8 @@ export const ClientGallery: React.FC = () => {
         f.file_type === "video" ||
         (f.file_url && f.file_url.match(/\.(mp4|mov|webm|ogg)$/i)),
     );
-  const explicitGrid = isPortfolio && Boolean(gallery?.category?.includes("[grid]"));
-  const explicitSwipe = isPortfolio && Boolean(gallery?.category?.includes("[swipe]"));
+  const explicitGrid = isPortfolio && Boolean(gallery?.category?.toLowerCase().includes("[grid]"));
+  const explicitSwipe = isPortfolio && Boolean(gallery?.category?.toLowerCase().includes("[swipe]"));
   const isHorizontalLayout = explicitSwipe ? true : (explicitGrid ? false : (isPortraitGallery || isFilmGallery));
   const isInstagramGrid = explicitGrid;
   const isMasonryPortfolio = isPortfolio && !explicitGrid && !explicitSwipe && !isHorizontalLayout;
