@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -46,6 +46,7 @@ export const Dashboard: React.FC = () => {
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
+  const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
   const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -283,7 +284,8 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!newClientName.trim()) return;
 
-    const isPortfolio = newCategory.trim() !== '';
+    const baseCategory = newCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
+    const isPortfolio = baseCategory !== '';
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
@@ -308,7 +310,7 @@ export const Dashboard: React.FC = () => {
           photographer_id: user.id,
           client_name: newClientName,
           title: `${newClientName}'s Gallery`,
-          category: newCategory,
+          category: isPortfolio ? `${baseCategory} [${newLayout}]` : newCategory,
           agreed_balance: 0,
           amount_paid: 0,
           link_enabled: true
@@ -978,7 +980,7 @@ export const Dashboard: React.FC = () => {
                         
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                             <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider block mb-1 flex items-center justify-between">
-                                <span>{gallery.category}</span>
+                                <span>{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}</span>
                                 <div className="flex items-center gap-3 opacity-80">
                                     <span className="flex items-center gap-1" title="Views">
                                         <Eye className="w-3 h-3" />
@@ -1247,6 +1249,32 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-slate-500 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
               </div>
               )}
+              {userEmail === 'ringa.michael@gmail.com' && newCategory.trim() !== '' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Display Layout
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNewLayout('swipe')}
+                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'swipe' ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      <GalleryHorizontalEnd className="w-4 h-4" />
+                      Swipe (Carousel)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewLayout('grid')}
+                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'grid' ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      Grid (4:6)
+                    </button>
+                  </div>
+                </div>
+              )}
+
 
               <div className="flex gap-3 justify-end mt-8">
                 <button

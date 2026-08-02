@@ -786,7 +786,7 @@ export const GalleryManager: React.FC = () => {
                                     setIsEditingMeta(false);
                                     setEditClientName(gallery.client_name);
                                     setEditTitle(gallery.title);
-                                    setEditCategory(gallery.category || '');
+                                    setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '') || '');
                                 }}
                                 className="px-3 py-1 bg-slate-100 text-zinc-600 rounded text-sm hover:bg-slate-200"
                             >
@@ -801,7 +801,7 @@ export const GalleryManager: React.FC = () => {
                                 {gallery.client_name}
                                 {gallery.category && (
                                     <span className="text-xs font-bold tracking-widest uppercase bg-slate-100 text-zinc-500 px-2 py-1 rounded">
-                                        {gallery.category}
+                                        {gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}
                                     </span>
                                 )}
                             </h1>
@@ -1163,7 +1163,7 @@ export const GalleryManager: React.FC = () => {
                 <div className="space-y-4 text-sm text-slate-300">
                     <div>
                         <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Category</span>
-                        <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category}</span>
+                        <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}</span>
                     </div>
                     <div>
                         <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Visibility</span>

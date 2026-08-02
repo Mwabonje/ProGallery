@@ -940,7 +940,11 @@ export const ClientGallery: React.FC = () => {
         f.file_type === "video" ||
         (f.file_url && f.file_url.match(/\.(mp4|mov|webm|ogg)$/i)),
     );
-  const isHorizontalLayout = isPortraitGallery || isFilmGallery;
+  const explicitGrid = isPortfolio && Boolean(gallery?.category?.includes("[grid]"));
+  const explicitSwipe = isPortfolio && Boolean(gallery?.category?.includes("[swipe]"));
+  const isHorizontalLayout = explicitSwipe ? true : (explicitGrid ? false : (isPortraitGallery || isFilmGallery));
+  const isInstagramGrid = explicitGrid;
+  const isMasonryPortfolio = isPortfolio && !explicitGrid && !explicitSwipe && !isHorizontalLayout;
 
   // Selection mode is not relevant for portfolio collections
   const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
@@ -1464,8 +1468,10 @@ export const ClientGallery: React.FC = () => {
             className={
               isHorizontalLayout
                 ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-140px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${displayedFiles.length === 1 ? "justify-center" : ""}`
-                : isPortfolio
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                : isInstagramGrid 
+                  ? "grid grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                  : isPortfolio 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" 
                   : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
             }
           >
@@ -1502,7 +1508,7 @@ export const ClientGallery: React.FC = () => {
                     onMouseDown={handleLongPressStart}
                     onMouseUp={handleLongPressEnd}
                     onMouseLeave={handleLongPressEnd}
-                    className={`group relative flex flex-col ${isFilmGallery ? "flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center" : isPortraitGallery ? "flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isPortfolio ? "aspect-auto w-full block bg-slate-50 relative" : "aspect-square bg-slate-100"} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} content-vis-auto max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
+                    className={`group relative flex flex-col ${isFilmGallery ? "flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center" : isPortraitGallery ? "flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative" : (isPortfolio ? "aspect-auto w-full block bg-slate-50 relative" : "aspect-square bg-slate-100")} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} content-vis-auto max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
                     style={{
                       contentVisibility: "auto",
                       WebkitTouchCallout: "none",
