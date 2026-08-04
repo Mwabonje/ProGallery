@@ -457,20 +457,17 @@ export const ClientGallery: React.FC = () => {
       if (galData.selection_enabled) {
         const { data: selectionData } = await supabase
           .from("selections")
-          .select("file_id, client_note, created_at")
+          .select("file_id, client_note")
           .eq("gallery_id", activeGalleryId)
           .order("created_at", { ascending: true }); // Important for counting extras
 
         if (selectionData) {
           setSelectedFileIds(new Set(selectionData.map((s) => s.file_id)));
           const notes: Record<string, string> = {};
-          const dates: Record<string, string> = {};
           selectionData.forEach((s) => {
             if (s.client_note) notes[s.file_id] = s.client_note;
-            if (s.created_at) dates[s.file_id] = s.created_at;
           });
           setSelectionNotes(notes);
-          setSelectionDates(dates);
           if (
             selectionData.length === 0 &&
             galData.selection_limit > 0 &&
@@ -542,11 +539,9 @@ export const ClientGallery: React.FC = () => {
         if (error) throw error;
       } else {
         // Add to DB
-        const now = new Date().toISOString();
-        setSelectionDates(prev => ({ ...prev, [file.id]: now }));
         const { error } = await supabase
           .from("selections")
-          .insert({ gallery_id: gallery.id, file_id: file.id, created_at: now });
+          .insert({ gallery_id: gallery.id, file_id: file.id });
         if (error) throw error;
       }
     } catch (err: any) {
@@ -569,29 +564,14 @@ export const ClientGallery: React.FC = () => {
   const saveSelectionNoteDb = async (fileId: string, note: string) => {
     if (!gallery) return;
     try {
-      // Due to RLS restrictions on UPDATE for public users, we delete and re-insert to update the note
-      const { error: delError } = await supabase
+      const { error } = await supabase
         .from("selections")
-        .delete()
+        .update({ client_note: note })
         .eq("gallery_id", gallery.id)
         .eq("file_id", fileId);
 
-      if (delError) {
-        console.error("Failed to delete selection for note update", delError);
-        return;
-      }
-
-      const { error: insError } = await supabase
-        .from("selections")
-        .insert({
-          gallery_id: gallery.id,
-          file_id: fileId,
-          client_note: note,
-          ...(selectionDates[fileId] ? { created_at: selectionDates[fileId] } : {})
-        });
-
-      if (insError) {
-        console.error("Failed to insert updated note", insError);
+      if (error) {
+        console.error("Failed to update note", error);
       }
     } catch (err) {
       console.error("Error updating note", err);

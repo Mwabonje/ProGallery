@@ -28,6 +28,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://mwabonje.netlify.app/blog/why-golden-hour-is-the-best-time-for-photos</loc>
+    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://mwabonje.netlify.app/blog/why-professional-photography-is-better-than-smartphone-photos</loc>
     <lastmod>2026-07-19T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
@@ -40,12 +46,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/blog/why-golden-hour-is-the-best-time-for-photos</loc>
-    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.netlify.app/g/7ce795e8-f0a5-46e0-82d5-80e9d2319ac8</loc>
     <lastmod>2026-04-30T18:59:27.127Z</lastmod>
     <changefreq>monthly</changefreq>
@@ -54,6 +54,12 @@
   <url>
     <loc>https://mwabonje.netlify.app/g/80a0207a-84da-48ba-a761-abfdbe20a5ef</loc>
     <lastmod>2026-05-01T15:17:56.915Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/42e6cf9d-1016-4117-a7c8-f5819b6899f4</loc>
+    <lastmod>2026-07-05T11:07:41.402Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -184,20 +190,14 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/g/255dd821-7b7a-4668-98d6-d17614c0a085</loc>
-    <lastmod>2026-08-02T17:39:18.555Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://mwabonje.netlify.app/g/a8e3941c-e954-4a1a-a1df-adcc69d4fe36</loc>
-    <lastmod>2026-08-03T06:51:09.444Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.netlify.app/g/1cbf65a4-4f83-49e1-b736-198a4ca27944</loc>
     <lastmod>2026-07-30T14:37:37.793Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/79c0931b-843b-4585-840d-b84c88d968c0</loc>
+    <lastmod>2026-07-27T12:50:47.627Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
