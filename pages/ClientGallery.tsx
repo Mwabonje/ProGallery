@@ -97,6 +97,7 @@ export const ClientGallery: React.FC = () => {
     type: "success" | "info";
   } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
+  const pendingNoteSaves = useRef<Promise<void>[]>([]);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
