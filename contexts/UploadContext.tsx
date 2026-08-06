@@ -450,7 +450,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [uploading]);
 
   return (
-    <UploadContext.Provider value={{ uploading, progress, activeGalleryId, uploadFiles, cancelUpload }}>
+    <UploadContext.Provider value={{ uploading, progress, activeGalleryId, uploadTasks, uploadFiles, cancelUpload }}>
       {children}
     </UploadContext.Provider>
   );

@@ -17,6 +17,7 @@ interface DashboardGallery extends Gallery {
   itemCount: number;
   downloadCount: number;
   gallerySizeBytes: number;
+  analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
   analytics: {
       views: number;
       clicks: number;
@@ -217,7 +218,7 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type, download_count, created_at')
+            .select('file_url, file_type, download_count, created_at, file_size')
             .eq('gallery_id', gallery.id)
             .order('created_at', { ascending: false });
 
@@ -470,7 +471,7 @@ export const Dashboard: React.FC = () => {
               return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
       } else if (sortBy === 'viewed') {
-          sorted = sorted.sort((a, b) => (b.totalViews || 0) - (a.totalViews || 0));
+          sorted = sorted.sort((a, b) => (b.analytics?.views || 0) - (a.analytics?.views || 0));
       }
       
       return sorted;

@@ -887,7 +887,7 @@ export const ClientGallery: React.FC = () => {
         // You could optionally increment all files' download counters here if desired
         // For now, logging the activity is sufficient
         await supabase.from("activity_logs").insert({
-          gallery_id: id,
+          gallery_id: galleryId,
           action: `Client downloaded all ${files.length} photos`,
         });
       } catch (err) {}

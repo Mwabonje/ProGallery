@@ -251,7 +251,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       }),
       TextStyle,
       FontFamily.configure({
-        fonts: ['Montserrat', 'Playfair Display'],
+        // fonts config
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -301,7 +301,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         {editor && (
           <BubbleMenu 
             editor={editor} 
-            tippyOptions={{ duration: 100 }}
+            
             className="flex items-center bg-white shadow-lg border border-slate-200 rounded-lg overflow-hidden py-1 px-2 gap-1 z-50"
           >
             <button

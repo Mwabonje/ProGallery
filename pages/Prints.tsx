@@ -189,11 +189,11 @@ export const Prints: React.FC = () => {
                 <meta property="og:description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections." />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content={window.location.origin + window.location.pathname} />
-                {printsGalleries.length > 0 && printsGalleries[0].coverUrl && (
+                {prints.length > 0 && prints[0].file_url && (
                     <>
-                        <meta property="og:image" content={printsGalleries[0].coverUrl} />
+                        <meta property="og:image" content={prints[0].file_url} />
                         <meta property="og:image:alt" content="Mwabonje Fine Art Prints Collection" />
-                        <meta name="twitter:image" content={printsGalleries[0].coverUrl} />
+                        <meta name="twitter:image" content={prints[0].file_url} />
                     </>
                 )}
                 <meta name="twitter:card" content="summary_large_image" />
