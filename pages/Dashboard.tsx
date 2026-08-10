@@ -17,6 +17,7 @@ interface DashboardGallery extends Gallery {
   itemCount: number;
   downloadCount: number;
   gallerySizeBytes: number;
+  expires_at: string | null;
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
   analytics: {
       views: number;
@@ -218,7 +219,7 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type, download_count, created_at')
+            .select('file_url, file_type, download_count, created_at, expires_at')
             .eq('gallery_id', gallery.id)
             .order('created_at', { ascending: false });
 
@@ -240,6 +241,7 @@ export const Dashboard: React.FC = () => {
             },
             coverUrl: coverFile ? coverFile.file_url : null,
             coverType: coverFile ? coverFile.file_type : null,
+            expires_at: coverFile ? coverFile.expires_at : null,
           };
         })
       );
@@ -787,9 +789,15 @@ export const Dashboard: React.FC = () => {
                             </div>
                         )}
                         {gallery.selection_enabled && gallery.selection_status === 'pending' && (
-                            <div className="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-                                PENDING SELECTION
-                            </div>
+                            gallery.expires_at && new Date(gallery.expires_at) < new Date() ? (
+                                <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                                    EXPIRED
+                                </div>
+                            ) : (
+                                <div className="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                                    PENDING SELECTION
+                                </div>
+                            )
                         )}
                         {!gallery.link_enabled && (
                             <div className="bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
