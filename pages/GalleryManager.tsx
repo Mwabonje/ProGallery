@@ -40,6 +40,7 @@ export const GalleryManager: React.FC = () => {
   const [editClientName, setEditClientName] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editLayout, setEditLayout] = useState<'grid' | 'swipe'>('grid');
   
   // UI States
   const [checkedFiles, setCheckedFiles] = useState<string[]>([]);
@@ -133,6 +134,7 @@ export const GalleryManager: React.FC = () => {
     setEditClientName(galData.client_name);
     setEditTitle(galData.title);
     setEditCategory(galData.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
+    setEditLayout(galData.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
 
     // Get Files
     let allFiles: GalleryFile[] = [];
@@ -327,10 +329,9 @@ export const GalleryManager: React.FC = () => {
   const updateMeta = async () => {
     if (!gallery) return;
     try {
-      let finalCategory = editCategory.trim();
-      const layoutMatch = gallery.category?.match(/\s*\[(swipe|grid)\]/i);
-      if (layoutMatch && finalCategory) {
-          finalCategory = `${finalCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim()} ${layoutMatch[0].trim()}`;
+      let finalCategory = editCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
+      if (finalCategory) {
+          finalCategory = `${finalCategory} [${editLayout}]`;
       }
       
       const { error } = await supabase
@@ -780,6 +781,16 @@ export const GalleryManager: React.FC = () => {
                                 <option key={cat} value={cat} />
                             ))}
                         </datalist>
+                        {editCategory.trim() !== '' && (
+                            <select
+                                value={editLayout}
+                                onChange={(e) => setEditLayout(e.target.value as 'grid' | 'swipe')}
+                                className="w-full text-zinc-700 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
+                            >
+                                <option value="grid">Grid Layout (Vertical Scroll)</option>
+                                <option value="swipe">Swipe Layout (Horizontal Scroll)</option>
+                            </select>
+                        )}
                         <div className="flex gap-2">
                             <button
                                 onClick={updateMeta}
@@ -792,7 +803,8 @@ export const GalleryManager: React.FC = () => {
                                     setIsEditingMeta(false);
                                     setEditClientName(gallery.client_name);
                                     setEditTitle(gallery.title);
-                                    setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '') || '');
+                                    setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
+                                    setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
                                 }}
                                 className="px-3 py-1 bg-slate-100 text-zinc-600 rounded text-sm hover:bg-slate-200"
                             >
