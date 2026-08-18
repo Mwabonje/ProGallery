@@ -94,7 +94,7 @@ export const ClientGallery: React.FC = () => {
   >("all");
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "info";
+    type: "success" | "info" | "download";
   } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
   const pendingNoteSaves = useRef<Promise<void>[]>([]);
@@ -881,6 +881,9 @@ export const ClientGallery: React.FC = () => {
       const zipName = `${galleryName}_photos.zip`;
 
       saveAs(content, zipName);
+      
+      setToast({ message: "Your download has started!", type: "download" });
+      setTimeout(() => setToast(null), 3000);
 
       // Log download all feature
       try {
@@ -1950,6 +1953,8 @@ export const ClientGallery: React.FC = () => {
           >
             {toast.type === "success" ? (
               <Heart className="w-4 h-4 fill-current" />
+            ) : toast.type === "download" ? (
+              <span className="text-base leading-none">🎉</span>
             ) : (
               <Heart className="w-4 h-4" />
             )}
