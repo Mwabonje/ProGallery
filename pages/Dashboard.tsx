@@ -287,7 +287,12 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!newClientName.trim()) return;
 
-    const baseCategory = newCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
+    let matchedCategory = newCategory;
+    const existingMatch = galleries.find(g => g.category && g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase() === newCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase());
+    if (existingMatch && existingMatch.category) {
+        matchedCategory = existingMatch.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
+    }
+    const baseCategory = matchedCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
     const isPortfolio = baseCategory !== '';
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
@@ -1250,7 +1255,7 @@ export const Dashboard: React.FC = () => {
                     "Maternity", 
                     "Boudoir", 
                     "Fine Art",
-                    ...galleries.map(g => g.category).filter(c => Boolean(c) && c !== 'ABOUT')
+                    ...galleries.map(g => g.category ? g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim() : '').filter(c => Boolean(c) && c.toUpperCase() !== 'ABOUT')
                   ])).map(cat => (
                     <option key={cat as string} value={cat as string} />
                   ))}

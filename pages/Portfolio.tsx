@@ -170,7 +170,7 @@ export const Portfolio: React.FC = () => {
 
                         return {
                             ...gallery,
-                            baseCategory: gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '',
+                            baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
                             coverUrl: files && files.length > 0 ? files[0].file_url : null,
                             coverType: files && files.length > 0 ? files[0].file_type : null,
                         };

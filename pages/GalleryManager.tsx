@@ -132,7 +132,7 @@ export const GalleryManager: React.FC = () => {
     setDownloadsBeforeClearing(galData.downloads_before_clearing === 0 || !galData.downloads_before_clearing ? '' : galData.downloads_before_clearing);
     setEditClientName(galData.client_name);
     setEditTitle(galData.title);
-    setEditCategory(galData.category || '');
+    setEditCategory(galData.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
 
     // Get Files
     let allFiles: GalleryFile[] = [];
@@ -327,9 +327,15 @@ export const GalleryManager: React.FC = () => {
   const updateMeta = async () => {
     if (!gallery) return;
     try {
+      let finalCategory = editCategory.trim();
+      const layoutMatch = gallery.category?.match(/\s*\[(swipe|grid)\]/i);
+      if (layoutMatch && finalCategory) {
+          finalCategory = `${finalCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim()} ${layoutMatch[0].trim()}`;
+      }
+      
       const { error } = await supabase
         .from('galleries')
-        .update({ client_name: editClientName, title: editTitle, category: editCategory })
+        .update({ client_name: editClientName, title: editTitle, category: finalCategory })
         .eq('id', gallery.id);
       
       if (error) throw error;
