@@ -297,8 +297,8 @@ export const Dashboard: React.FC = () => {
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
-    if (!isPortfolio && deliveriesCount >= 6) {
-        alert("You have reached the maximum limit of 6 Client Deliveries. Please delete an existing delivery to create a new one.");
+    if (!isPortfolio && deliveriesCount >= 50) {
+        alert("You have reached the maximum limit of 50 Client Deliveries. Please delete an existing delivery to create a new one.");
         return;
     }
     if (isPortfolio && portfolioCount >= 50) {
@@ -724,7 +724,7 @@ export const Dashboard: React.FC = () => {
             <div className="mb-12">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2 flex justify-between items-end">
                     <span>Client Deliveries</span>
-                    <span className="text-sm font-normal text-slate-500">{clientDeliveriesCount} of 6 used</span>
+                    <span className="text-sm font-normal text-slate-500">{clientDeliveriesCount} of 50 used</span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {processedGalleries.filter(g => !g.category || g.category.trim() === '').map((gallery) => (
