@@ -894,7 +894,7 @@ export const Dashboard: React.FC = () => {
                 ))}
 
                 {/* Create New Gallery Card */}
-                {galleries.filter(g => !g.category || g.category.trim() === '').length < 6 && !searchQuery && filterCategory === 'all' && (
+                {galleries.filter(g => !g.category || g.category.trim() === '').length < 50 && !searchQuery && filterCategory === 'all' && (
                 <div 
                     onClick={() => {
                         setNewCategory(''); // Ensure category is blank for Deliveries
