@@ -56,7 +56,7 @@ async function startServer() {
     }
 
     try {
-      const { fileName, fileType } = req.body;
+      const { fileName, fileType, folderPath } = req.body;
       
       if (!fileName || !fileType) {
          return res.status(400).json({ error: "fileName and fileType are required" });
@@ -65,7 +65,13 @@ async function startServer() {
       // Generate a clean, unique file path mimicking what the app does
       const uniqueId = Math.random().toString(36).substring(2);
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.\_-]/g, "_");
-      const filePath = `uploads/${Date.now()}_${uniqueId}/${sanitizedFileName}`;
+      
+      let filePath;
+      if (folderPath) {
+          filePath = `${folderPath}/${sanitizedFileName}`;
+      } else {
+          filePath = `uploads/${Date.now()}_${uniqueId}/${sanitizedFileName}`;
+      }
 
       const command = new PutObjectCommand({
         Bucket: R2_BUCKET_NAME,

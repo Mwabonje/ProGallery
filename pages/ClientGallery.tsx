@@ -1592,10 +1592,8 @@ export const ClientGallery: React.FC = () => {
                             const target = e.target as HTMLImageElement;
                             if (!target.dataset.retried) {
                               target.dataset.retried = "true";
-                              target.src =
-                                rewriteUrlToR2(
-                                  getDisplayUrl(file),
-                                ) || "";
+                              // Fallback to original image if watermarked version fails
+                              target.src = rewriteUrlToR2(file.file_url) || "";
                             }
                           }}
                           onContextMenu={(e) => e.preventDefault()}
@@ -1628,10 +1626,8 @@ export const ClientGallery: React.FC = () => {
                               target.removeAttribute("sizes");
                               if (!target.dataset.retried) {
                                 target.dataset.retried = "true";
-                                target.src =
-                                  rewriteUrlToR2(
-                                    getDisplayUrl(file),
-                                  ) || "";
+                                // Fallback to original image if watermarked version fails
+                                target.src = rewriteUrlToR2(file.file_url) || "";
                               }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
@@ -2217,6 +2213,14 @@ export const ClientGallery: React.FC = () => {
                     e.stopPropagation();
                     if (!isPortfolio) {
                       setShowScreenshotWarning(true);
+                    }
+                  }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "true";
+                      // Fallback to original image if watermarked version fails
+                      target.src = rewriteUrlToR2(lightboxFile.file_url) || "";
                     }
                   }}
                 />
