@@ -48,6 +48,7 @@ export const AboutSettingsModal = ({
                         .from('files')
                         .select('file_url')
                         .eq('gallery_id', gal.id)
+                        .neq('file_path', 'GALLERY_PASSWORD')
                         .order('created_at', { ascending: false })
                         .limit(1);
 
@@ -153,6 +154,7 @@ export const AboutSettingsModal = ({
                         .from('files')
                         .select('file_url')
                         .eq('gallery_id', galleryId)
+                        .neq('file_path', 'GALLERY_PASSWORD')
                         .order('created_at', { ascending: false })
                         .limit(1);
 

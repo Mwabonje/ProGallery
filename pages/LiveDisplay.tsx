@@ -31,6 +31,8 @@ export const LiveDisplay: React.FC = () => {
                     .from('files')
                     .select('*')
                     .eq('gallery_id', galleryId)
+                    .neq('file_path', 'GALLERY_PASSWORD')
+                    .neq('file_path', 'GALLERY_PASSWORD')
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .single();

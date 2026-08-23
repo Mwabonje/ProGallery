@@ -78,6 +78,10 @@ export const ClientGallery: React.FC = () => {
     expired: boolean;
   } | null>(null);
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
+  const [galleryPassword, setGalleryPassword] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
   const [acceptedExtras, setAcceptedExtras] = useState(false);
 
   // Selection Mode State
@@ -446,12 +450,25 @@ export const ClientGallery: React.FC = () => {
         }
       }
 
-      if (allFiles.length === 0) {
+      const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
+      const actualFiles = allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD');
+      
+      if (pwFile && pwFile.caption) {
+          setGalleryPassword(pwFile.caption);
+          const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`);
+          if (savedAuth === pwFile.caption) {
+              setIsAuthenticated(true);
+          }
+      } else {
+          setIsAuthenticated(true);
+      }
+
+      if (actualFiles.length === 0) {
         setError(
           "This gallery link has expired. Please contact the photographer to request access.",
         );
       } else {
-        setFiles(allFiles);
+        setFiles(actualFiles);
       }
 
       // Load Selections if enabled
@@ -1186,6 +1203,54 @@ export const ClientGallery: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated && galleryPassword) {
+      return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
+              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Lock className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h1 className="text-xl font-bold text-slate-900 mb-3">
+                      Protected Gallery
+                  </h1>
+                  <p className="text-slate-600 mb-8 leading-relaxed">Please enter the password to view this gallery.</p>
+                  
+                  <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (passwordInput === galleryPassword) {
+                          setIsAuthenticated(true);
+                          sessionStorage.setItem(`auth_${gallery?.id}`, passwordInput);
+                      } else {
+                          setPasswordError(true);
+                      }
+                  }} className="space-y-4">
+                      <div>
+                          <input 
+                              type="password"
+                              placeholder="Enter password"
+                              value={passwordInput}
+                              onChange={(e) => {
+                                  setPasswordInput(e.target.value);
+                                  setPasswordError(false);
+                              }}
+                              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 ${passwordError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'}`}
+                          />
+                          {passwordError && (
+                              <p className="text-red-500 text-sm mt-2 text-left">Incorrect password. Please try again.</p>
+                          )}
+                      </div>
+                      <button 
+                          type="submit"
+                          className="w-full bg-slate-900 text-white p-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                      >
+                          Unlock Gallery
+                      </button>
+                  </form>
+              </div>
+          </div>
+      );
   }
 
   return (

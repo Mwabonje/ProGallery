@@ -147,6 +147,7 @@ export const Prints: React.FC = () => {
                         .from('files')
                         .select('*')
                         .in('gallery_id', galleryIds)
+                        .neq('file_path', 'GALLERY_PASSWORD')
                         .order('created_at', { ascending: false });
                         
                     if (files) {

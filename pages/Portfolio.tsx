@@ -165,6 +165,7 @@ export const Portfolio: React.FC = () => {
                             .from('files')
                             .select('file_url, file_type')
                             .eq('gallery_id', gallery.id)
+                            .neq('file_path', 'GALLERY_PASSWORD')
                             .order('created_at', { ascending: false })
                             .limit(1);
 

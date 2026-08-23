@@ -192,7 +192,8 @@ export const Dashboard: React.FC = () => {
           const { count } = await supabase
             .from('files')
             .select('*', { count: 'exact', head: true })
-            .eq('gallery_id', gallery.id);
+            .eq('gallery_id', gallery.id)
+            .neq('file_path', 'GALLERY_PASSWORD');
 
           // Get view metrics from API
           const ad = analyticsData.galleries[gallery.id] || { views: 0, clicks: 0, daily: {} };
@@ -221,6 +222,7 @@ export const Dashboard: React.FC = () => {
             .from('files')
             .select('file_url, file_type, download_count, created_at, expires_at')
             .eq('gallery_id', gallery.id)
+            .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false });
 
           if (filesError) console.error("Files query error for gallery", gallery.id, filesError);
