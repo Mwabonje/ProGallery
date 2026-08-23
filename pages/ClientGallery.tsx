@@ -1575,7 +1575,13 @@ export const ClientGallery: React.FC = () => {
                     {file.file_type === "image" &&
                     !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                       isPortfolio ? (
+                        <>
+                        <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
                         <img
+                          onLoad={(e) => {
+                            const skeleton = document.getElementById(`skeleton-${file.id}`);
+                            if (skeleton) skeleton.style.display = 'none';
+                          }}
                           src={getOptimizedImageUrl(
                             getDisplayUrl(file),
                             isPortraitGallery ? 1200 : 800,
@@ -1598,9 +1604,15 @@ export const ClientGallery: React.FC = () => {
                           }}
                           onContextMenu={(e) => e.preventDefault()}
                         />
+                        </>
                       ) : (
                         <>
+                          <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
                           <img
+                            onLoad={(e) => {
+                              const skeleton = document.getElementById(`skeleton-${file.id}`);
+                              if (skeleton) skeleton.style.display = 'none';
+                            }}
                             src={getOptimizedImageUrl(
                               getDisplayUrl(file),
                               400,
