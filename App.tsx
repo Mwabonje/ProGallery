@@ -70,9 +70,7 @@ const App: React.FC = () => {
           {/* Protected Photographer Routes */}
           <Route path="/dashboard" element={
             session ? (
-              <Layout>
                 <Dashboard />
-              </Layout>
             ) : <Navigate to="/login" />
           } />
           
