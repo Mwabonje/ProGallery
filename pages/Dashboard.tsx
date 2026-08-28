@@ -684,7 +684,7 @@ export const Dashboard: React.FC = () => {
         }
         .ledger-head{
           display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 40px;
+          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px;
           padding:10px 20px;
           background:var(--sand);
           border-bottom:1px solid var(--line);
@@ -696,7 +696,7 @@ export const Dashboard: React.FC = () => {
         }
         .ledger-row{
           display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 40px;
+          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px;
           align-items:center;
           padding:11px 20px;
           border-bottom:1px solid var(--line-soft);
@@ -914,7 +914,17 @@ export const Dashboard: React.FC = () => {
                             <div className="num">{getCardMetrics(gallery).v}</div>
                             <div className="num">{gallery.downloadCount || 0}</div>
                             <div className="row-updated">{formatDate(gallery.created_at)}</div>
-                            <div className="flex justify-end pr-2">
+                            <div className="flex justify-end pr-2 gap-1">
+                                <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`/g/${gallery.id}`, '_blank');
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                    title="Preview Gallery"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
                                 <button 
                                     onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
                                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
@@ -967,7 +977,17 @@ export const Dashboard: React.FC = () => {
                             <div className="num">{getCardMetrics(gallery).v}</div>
                             <div className="num">{gallery.downloadCount || 0}</div>
                             <div className="row-updated">{formatDate(gallery.created_at)}</div>
-                            <div className="flex justify-end pr-2">
+                            <div className="flex justify-end pr-2 gap-1">
+                                <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`/g/${gallery.id}`, '_blank');
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                    title="Preview Gallery"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
                                 <button 
                                     onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
                                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
