@@ -684,7 +684,7 @@ export const Dashboard: React.FC = () => {
         }
         .ledger-head{
           display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr;
+          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 40px;
           padding:10px 20px;
           background:var(--sand);
           border-bottom:1px solid var(--line);
@@ -696,7 +696,7 @@ export const Dashboard: React.FC = () => {
         }
         .ledger-row{
           display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr;
+          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 40px;
           align-items:center;
           padding:11px 20px;
           border-bottom:1px solid var(--line-soft);
@@ -887,6 +887,7 @@ export const Dashboard: React.FC = () => {
                     <div>Views</div>
                     <div>DLs</div>
                     <div>Updated</div>
+                    <div></div>
                   </div>
                   <div id="delivery-rows">
                     {processedGalleries.filter(g => !g.category || g.category.trim() === '').map(gallery => {
@@ -913,6 +914,15 @@ export const Dashboard: React.FC = () => {
                             <div className="num">{getCardMetrics(gallery).v}</div>
                             <div className="num">{gallery.downloadCount || 0}</div>
                             <div className="row-updated">{formatDate(gallery.created_at)}</div>
+                            <div className="flex justify-end pr-2">
+                                <button 
+                                    onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
+                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    title="Delete Gallery"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
                         </div>
                     )})}
                   </div>
@@ -936,6 +946,7 @@ export const Dashboard: React.FC = () => {
                     <div>Views</div>
                     <div>DLs</div>
                     <div>Updated</div>
+                    <div></div>
                   </div>
                   <div id="portfolio-rows">
                     {processedGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map(gallery => {
@@ -956,6 +967,15 @@ export const Dashboard: React.FC = () => {
                             <div className="num">{getCardMetrics(gallery).v}</div>
                             <div className="num">{gallery.downloadCount || 0}</div>
                             <div className="row-updated">{formatDate(gallery.created_at)}</div>
+                            <div className="flex justify-end pr-2">
+                                <button 
+                                    onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
+                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    title="Delete Gallery"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
                         </div>
                     )})}
                   </div>
