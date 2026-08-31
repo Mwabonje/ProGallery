@@ -1620,17 +1620,24 @@ export const ClientGallery: React.FC = () => {
                     }}
                   >
                     {/* Badges */}
-                    {isSelectionMode && isSelected && !isPortfolio && (
+                    {!isPortfolio && ((isSelectionMode && isSelected) || file.is_edited) && (
                       <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none">
-                        <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                          SELECTED
-                        </span>
-                        {isExtra && (
+                        {isSelectionMode && isSelected && (
+                          <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                            SELECTED
+                          </span>
+                        )}
+                        {file.is_edited && (
+                          <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm tracking-wide">
+                            EDITED
+                          </span>
+                        )}
+                        {isSelectionMode && isSelected && isExtra && (
                           <span className="bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
                             EXTRA
                           </span>
                         )}
-                        {selectionNotes[file.id] && (
+                        {isSelectionMode && isSelected && selectionNotes[file.id] && (
                           <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
                             NOTE ADDED
                           </span>
@@ -2255,6 +2262,13 @@ export const ClientGallery: React.FC = () => {
               }
             }}
           >
+            {lightboxFile.is_edited && !isPortfolio && (
+              <div className="absolute top-4 left-4 z-50 pointer-events-none">
+                <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg tracking-wide">
+                  EDITED
+                </span>
+              </div>
+            )}
             {displayedFiles.length > 1 && (
               <>
                 <button
