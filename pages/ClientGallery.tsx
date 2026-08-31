@@ -92,6 +92,9 @@ export const ClientGallery: React.FC = () => {
     {},
   );
   const [submittingSelection, setSubmittingSelection] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockPinInput, setUnlockPinInput] = useState('');
+  const [unlockError, setUnlockError] = useState('');
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
   const [viewFilter, setViewFilter] = useState<
     "all" | "selected" | "main" | "extras"
@@ -518,6 +521,11 @@ export const ClientGallery: React.FC = () => {
 
     const isSelected = selectedFileIds.has(file.id);
 
+    if (isSelected && file.is_edited) {
+      setToast({ message: "This photo has already been edited and cannot be unselected.", type: "error" });
+      return;
+    }
+
     if (!isSelected && gallery.selection_limit && gallery.selection_limit > 0) {
       if (selectedFileIds.size >= gallery.selection_limit && !acceptedExtras) {
         const confirmExtras = window.confirm(
@@ -671,32 +679,34 @@ export const ClientGallery: React.FC = () => {
     }
   };
 
-  const unsubmitSelection = async () => {
-    if (!gallery) return;
-    if (
-      !confirm(
-        `Are you sure you want to edit your selection? This will notify the photographer that you are making changes.`,
-      )
-    )
-      return;
+  const handleUnlockRequest = () => {
+    setUnlockError('');
+    setUnlockPinInput('');
+    setShowUnlockModal(true);
+  };
 
+  const confirmUnlockSelection = async () => {
+    if (!gallery) return;
+    
+    const expectedPin = gallery.id.split('-')[0].slice(0, 4).toUpperCase();
+    if (unlockPinInput.toUpperCase() !== expectedPin) {
+      setUnlockError('Incorrect PIN. Please contact your photographer.');
+      return;
+    }
+
+    setShowUnlockModal(false);
     setSubmittingSelection(true);
     try {
       const { error } = await supabase.rpc("unsubmit_selection", {
         gallery_id: gallery.id,
       });
-
       if (error) throw error;
-
       setSelectionSubmitted(false);
       setGallery({ ...gallery, selection_status: "pending" });
-
-      alert("Selection re-opened for editing.");
-    } catch (err: any) {
-      console.error(err);
-      alert(
-        "Failed to re-open selection: " + (err?.message || JSON.stringify(err)),
-      );
+      setToast({ message: "Selection unlocked for editing", type: "success" });
+    } catch (err) {
+      console.error("Error unsubmitting:", err);
+      setToast({ message: "Failed to unlock selection", type: "error" });
     } finally {
       setSubmittingSelection(false);
     }
@@ -1990,7 +2000,7 @@ export const ClientGallery: React.FC = () => {
                     <span>Submitted</span>
                   </div>
                   <button
-                    onClick={unsubmitSelection}
+                    onClick={handleUnlockRequest}
                     disabled={submittingSelection}
                     className="flex-1 sm:flex-none bg-white text-slate-700 px-4 py-2 rounded-lg font-medium border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                   >

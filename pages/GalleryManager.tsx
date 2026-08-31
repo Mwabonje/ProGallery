@@ -1119,6 +1119,16 @@ export const GalleryManager: React.FC = () => {
                  </div>
                  {gallery.selection_enabled && (
                      <div className="mt-4 pt-4 border-t border-zinc-200/40">
+                         <label className="block text-sm text-zinc-700 font-medium mb-1">Client Unlock PIN</label>
+                         <div className="flex gap-2 mb-4">
+                             <input 
+                                 type="text" 
+                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-100 text-zinc-500 font-mono tracking-widest uppercase cursor-not-allowed"
+                                 value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
+                                 readOnly
+                                 title="Share this PIN with clients if they need to unlock their submitted selections."
+                             />
+                         </div>
                          <label className="block text-sm text-zinc-700 font-medium mb-1">Agreed Number of Photos</label>
                          <div className="flex gap-2">
                              <input 
