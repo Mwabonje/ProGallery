@@ -28,14 +28,14 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/blog/why-professional-photography-is-better-than-smartphone-photos</loc>
-    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
+    <loc>https://mwabonje.netlify.app/blog/professional-photographers-in-malindi</loc>
+    <lastmod>2026-07-20T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/blog/professional-photographers-in-malindi</loc>
-    <lastmod>2026-07-20T00:00:00.000Z</lastmod>
+    <loc>https://mwabonje.netlify.app/blog/why-professional-photography-is-better-than-smartphone-photos</loc>
+    <lastmod>2026-07-19T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -54,6 +54,12 @@
   <url>
     <loc>https://mwabonje.netlify.app/g/80a0207a-84da-48ba-a761-abfdbe20a5ef</loc>
     <lastmod>2026-05-01T15:17:56.915Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/d0f4c73a-2517-4158-80da-4f103a322905</loc>
+    <lastmod>2026-08-20T07:21:27.010Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -148,20 +154,8 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://mwabonje.netlify.app/g/d0f4c73a-2517-4158-80da-4f103a322905</loc>
-    <lastmod>2026-08-20T07:21:27.010Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://mwabonje.netlify.app/g/0647b68f-cb39-4569-8bf0-0755cd24cea1</loc>
     <lastmod>2026-07-09T16:20:17.363Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://mwabonje.netlify.app/g/cf3b4e8a-7f56-4da8-b5fd-d0b909512d68</loc>
-    <lastmod>2026-08-21T13:46:11.976Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -174,6 +168,12 @@
   <url>
     <loc>https://mwabonje.netlify.app/g/fbbd3475-cdd2-4a24-8e09-f30a06784706</loc>
     <lastmod>2026-04-26T12:53:39.152Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mwabonje.netlify.app/g/cf3b4e8a-7f56-4da8-b5fd-d0b909512d68</loc>
+    <lastmod>2026-08-21T13:46:11.976Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
