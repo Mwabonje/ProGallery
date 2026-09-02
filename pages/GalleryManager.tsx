@@ -741,6 +741,7 @@ export const GalleryManager: React.FC = () => {
 
   const maxViews = Math.max(...visibleFiles.map(f => f.views || 0), 1);
   const maxClicks = Math.max(...visibleFiles.map(f => f.clicks || 0), 1);
+  const editedCount = files.filter(f => f.is_edited).length;
 
   return (
     <div className="space-y-8 md:space-y-10 pb-12">
@@ -1791,6 +1792,12 @@ export const GalleryManager: React.FC = () => {
             </div>
         </div>
       </div>
+      {editedCount > 0 && (
+        <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-40 animate-in slide-in-from-bottom-8">
+            <Check className="w-4 h-4 text-emerald-100" />
+            <span className="font-semibold text-sm tracking-wide">{editedCount} {editedCount === 1 ? 'photo' : 'photos'} edited</span>
+        </div>
+      )}
       {/* Rename Modal */}
       {isRenameModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
