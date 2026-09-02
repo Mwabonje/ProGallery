@@ -1,12 +1,23 @@
 const fs = require('fs');
-let code = fs.readFileSync('pages/Portfolio.tsx', 'utf8');
+let code = fs.readFileSync('pages/Dashboard.tsx', 'utf8');
 
-code = code.replace(`.select('file_url, file_type')
-                            .eq('gallery_id', gallery.id)
-                            .order('created_at', { ascending: false })`, `.select('file_url, file_type')
-                            .eq('gallery_id', gallery.id)
-                            .neq('file_path', 'GALLERY_PASSWORD')
-                            .order('created_at', { ascending: false })`);
+const target2 = `                        if (!gallery.link_enabled) {
+                            statusClass = 'hidden';
+                            statusText = 'Hidden';
+                        }`;
 
-fs.writeFileSync('pages/Portfolio.tsx', code);
-console.log("Patched Portfolio");
+const replacement2 = `                        if (gallery.selection_status === 'submitted') {
+                            statusClass = 'submitted';
+                            statusText = 'Selection submitted';
+                        } else if (!gallery.link_enabled) {
+                            statusClass = 'hidden';
+                            statusText = 'Hidden';
+                        }`;
+
+if (code.includes(target2)) {
+    code = code.replace(target2, replacement2);
+    fs.writeFileSync('pages/Dashboard.tsx', code);
+    console.log("Patched portfolio successfully.");
+} else {
+    console.log("Target block not found in portfolio section.");
+}

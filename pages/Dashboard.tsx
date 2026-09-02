@@ -893,12 +893,12 @@ export const Dashboard: React.FC = () => {
                     {processedGalleries.filter(g => !g.category || g.category.trim() === '').map(gallery => {
                         let statusClass = 'live';
                         let statusText = 'Live';
-                        if (!gallery.link_enabled) {
+                        if (gallery.selection_status === 'submitted') {
+                            statusClass = 'submitted';
+                            statusText = 'Selection submitted';
+                        } else if (!gallery.link_enabled) {
                             statusClass = 'hidden';
                             statusText = 'Hidden';
-                        } else if (gallery.selection_status === 'submitted') {
-                            statusClass = 'submitted';
-                            statusText = 'Submitted';
                         } else if (gallery.expires_at && new Date(gallery.expires_at) < new Date()) {
                             statusClass = 'expired';
                             statusText = 'Expired';
@@ -962,7 +962,10 @@ export const Dashboard: React.FC = () => {
                     {processedGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map(gallery => {
                         let statusClass = 'live';
                         let statusText = 'Live';
-                        if (!gallery.link_enabled) {
+                        if (gallery.selection_status === 'submitted') {
+                            statusClass = 'submitted';
+                            statusText = 'Selection submitted';
+                        } else if (!gallery.link_enabled) {
                             statusClass = 'hidden';
                             statusText = 'Hidden';
                         }
