@@ -48,9 +48,11 @@ export const GalleryManager: React.FC = () => {
   const [isZipping, setIsZipping] = useState(false);
   const [layoutView, setLayoutView] = useState<'list' | 'grid'>('list');
   const [isHeatmapActive, setIsHeatmapActive] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Rename Modal State
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const [renameBaseName, setRenameBaseName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -985,7 +987,7 @@ export const GalleryManager: React.FC = () => {
                 />
               </div>
               {(Number(agreedAmount) || 0) === 0 && (
-                <div className="inline-flex items-center gap-1.5 text-[12px] color-indigo-600 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full mb-[14px] font-medium">
+                <div className="inline-flex items-center gap-1.5 text-[12px] text-indigo-600 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full mb-[14px] font-medium">
                   ♡ Volunteer / collaboration
                 </div>
               )}
@@ -1185,8 +1187,8 @@ export const GalleryManager: React.FC = () => {
                   </>
               )}
             </div>
-            <div className="flex items-center gap-3.5 text-[12px] color-slate-500">
-               <button onClick={fetchGalleryData} className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="Refresh">
+            <div className="flex items-center gap-3.5 text-[12px] text-slate-500">
+               <button onClick={() => setIsExtendModalOpen(true)} className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="Reactivate / Extend Expiry">
                   <RefreshCw className="w-3.5 h-3.5" />
                </button>
             </div>
@@ -1373,6 +1375,45 @@ export const GalleryManager: React.FC = () => {
         <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-40 animate-in slide-in-from-bottom-8">
             <Check className="w-4 h-4 text-emerald-100" />
             <span className="font-semibold text-sm tracking-wide">{editedCount} {editedCount === 1 ? 'photo' : 'photos'} edited</span>
+        </div>
+      )}
+
+      {/* Extend Modal */}
+      {isExtendModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto">
+            <div className="p-6 md:p-8">
+              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">Reactivate Links</h2>
+              <p className="text-slate-500 text-[13px] mb-6">
+                Set a new expiration time to reactivate all {files.length} files in this gallery.
+              </p>
+              
+              <div className="mb-6">
+                 <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Expiration (Hours from now)</label>
+                 <input 
+                      type="number"
+                      value={expiryHours}
+                      onChange={(e) => setExpiryHours(Number(e.target.value))}
+                      className="w-full font-sans text-[14px] px-3.5 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setIsExtendModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-200 font-medium text-[13px] text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleExtendExpiration}
+                  className="flex-1 py-2.5 rounded-lg bg-indigo-600 font-medium text-[13px] text-white hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
+                >
+                  Reactivate Files
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

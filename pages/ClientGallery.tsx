@@ -522,7 +522,7 @@ export const ClientGallery: React.FC = () => {
     const isSelected = selectedFileIds.has(file.id);
 
     if (isSelected && file.is_edited) {
-      setToast({ message: "This photo has already been edited and cannot be unselected.", type: "error" });
+      setToast({ message: "This photo has already been edited and cannot be unselected.", type: "info" });
       return;
     }
 
@@ -706,7 +706,7 @@ export const ClientGallery: React.FC = () => {
       setToast({ message: "Selection unlocked for editing", type: "success" });
     } catch (err) {
       console.error("Error unsubmitting:", err);
-      setToast({ message: "Failed to unlock selection", type: "error" });
+      setToast({ message: "Failed to unlock selection", type: "info" });
     } finally {
       setSubmittingSelection(false);
     }

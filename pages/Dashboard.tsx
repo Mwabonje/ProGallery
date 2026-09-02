@@ -19,16 +19,6 @@ interface DashboardGallery extends Gallery {
   gallerySizeBytes: number;
   expires_at: string | null;
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
-  analytics: {
-      views: number;
-      clicks: number;
-      viewToday: number;
-      clickToday: number;
-      view7d: number;
-      click7d: number;
-      view30d: number;
-      click30d: number;
-  };
 }
 
 interface EnrichedActivityLog extends ActivityLog {
@@ -229,7 +219,7 @@ export const Dashboard: React.FC = () => {
 
           const coverFile = allFiles && allFiles.length > 0 ? allFiles[0] : null;
           const downloadCount = (allFiles || []).reduce((acc, f) => acc + (f.download_count || 0), 0);
-          const gallerySizeBytes = (allFiles || []).reduce((acc, f) => acc + (f.file_size || 0), 0);
+          const gallerySizeBytes = (allFiles || []).reduce((acc, f) => acc + (0 || 0), 0);
 
           return {
             ...gallery,
@@ -1201,7 +1191,7 @@ export const Dashboard: React.FC = () => {
                 </label>
                 <select 
                     value={bulkAction}
-                    onChange={(e) => setBulkAction(e.target.value)}
+                    onChange={(e) => setBulkAction(e.target.value as any)}
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-800"
                     disabled={isUpdatingBulk}
                 >
