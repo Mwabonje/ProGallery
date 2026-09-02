@@ -185,6 +185,14 @@ export const GalleryManager: React.FC = () => {
   };
 
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
+  const isPrintsGallery = Boolean(gallery?.category && gallery.category.toLowerCase().includes('print'));
+  
+  const [localLimit, setLocalLimit] = useState<number | ''>('');
+  useEffect(() => {
+    if (gallery?.selection_limit !== undefined) {
+      setLocalLimit(gallery.selection_limit || '');
+    }
+  }, [gallery?.selection_limit]);
 
   const filterDuplicateFiles = (fileList: FileList) => {
     const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9.\_-]/g, "_");
@@ -399,6 +407,25 @@ export const GalleryManager: React.FC = () => {
       console.error('Error toggling status:', error);
       alert('Failed to update gallery status: ' + (error?.message || JSON.stringify(error)));
     }
+  };
+
+  const updateSelectionStatus = async (status: boolean | 'pending') => {
+      if (!gallery) return;
+      try {
+          const payload: any = {};
+          if (typeof status === 'boolean') {
+              payload.link_enabled = status;
+          } else {
+              payload.selection_status = status;
+              payload.link_enabled = true; // ensure it's enabled if we reopen
+          }
+          const { error } = await supabase.from('galleries').update(payload).eq('id', gallery.id);
+          if (error) throw error;
+          fetchGalleryData();
+      } catch (e: any) {
+          console.error(e);
+          toast.error("Failed to update status");
+      }
   };
 
   const toggleSelectionMode = async () => {
@@ -1006,9 +1033,9 @@ export const GalleryManager: React.FC = () => {
                   <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Agreed number of photos</label>
                   <input 
                       type="number" 
-                      value={limit === 0 ? '' : limit}
-                      onChange={(e) => setLimit(e.target.value ? Number(e.target.value) : 0)}
-                      onBlur={updateSelectionLimit}
+                      value={localLimit}
+                      onChange={(e) => setLocalLimit(e.target.value ? Number(e.target.value) : '')}
+                      onBlur={() => updateSelectionLimit(Number(localLimit) || 0)}
                       placeholder="Unlimited"
                       className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
                   />
@@ -1097,7 +1124,7 @@ export const GalleryManager: React.FC = () => {
                   const csvRows = [
                       ["Filename", "Client Selected", "Main Selection", "Extra Selection", "Edited", "Downloads"],
                       ...files.map(f => [
-                          f.file_name,
+                          (f.file_url.split('/').pop() || 'file'),
                           clientSelections.includes(f.id) ? 'Yes' : 'No',
                           mainSelections.includes(f.id) ? 'Yes' : 'No',
                           limit > 0 && clientSelections.indexOf(f.id) >= limit ? 'Yes' : 'No',
@@ -1207,7 +1234,7 @@ export const GalleryManager: React.FC = () => {
                 <input 
                     type="checkbox" 
                     checked={visibleFiles.length > 0 && checkedFiles.length === visibleFiles.length}
-                    onChange={(e) => handleToggleCheckAll(e.target.checked)}
+                    onChange={handleCheckAll}
                     className="w-[15px] h-[15px] accent-emerald-600 cursor-pointer"
                 />
                 <span></span>
@@ -1224,7 +1251,7 @@ export const GalleryManager: React.FC = () => {
                         <input 
                             type="checkbox" 
                             checked={checkedFiles.includes(file.id)}
-                            onChange={(e) => handleToggleCheck(file.id, e.target.checked)}
+                            onChange={() => handleCheckFile(file.id)}
                             className="w-[15px] h-[15px] accent-emerald-600 cursor-pointer shrink-0"
                         />
                         <div className="hidden md:block w-11 h-11 rounded-[6px] bg-slate-200 shrink-0 overflow-hidden relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
@@ -1252,7 +1279,7 @@ export const GalleryManager: React.FC = () => {
                         </div>
                         
                         <div className="min-w-0">
-                            <div className="font-mono text-[12.5px] font-medium text-slate-900 truncate" title={file.file_name}>{file.file_name}</div>
+                            <div className="font-mono text-[12.5px] font-medium text-slate-900 truncate" title={(file.file_url.split('/').pop() || 'file')}>{(file.file_url.split('/').pop() || 'file')}</div>
                             <div className="md:hidden text-[11px] text-slate-500 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
                             <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                 {isSelected && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-emerald-600 text-white">Selected</span>}

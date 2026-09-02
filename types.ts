@@ -19,6 +19,7 @@ export interface Gallery {
   downloads_before_clearing?: number;
   seo_title?: string;
   seo_description?: string;
+  password?: string;
   created_at: string;
 }
 
@@ -71,6 +72,7 @@ export interface BlogPost {
   tags: string[];
   seo_title?: string;
   seo_description?: string;
+  password?: string;
   status?: 'draft' | 'scheduled' | 'published';
   views?: number;
   clicks?: number;
