@@ -1741,7 +1741,7 @@ export const ClientGallery: React.FC = () => {
                       )
                     ) : (
                       <video
-                        src={rewriteUrlToR2(file.file_url)}
+                        src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
                         className={`block transform transition-transform duration-[1.5s] ${isFilmGallery ? "w-auto h-full max-w-[90vw] object-contain mx-auto" : "w-full h-full object-cover"} ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} ${isFilmGallery ? "" : isPortfolio ? "pointer-events-none" : ""}`}
                         controls={isFilmGallery || !isPortfolio}
                         controlsList={
@@ -2350,7 +2350,7 @@ export const ClientGallery: React.FC = () => {
               <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
                 <video
                   key={lightboxFile.id}
-                  src={rewriteUrlToR2(lightboxFile.file_url)}
+                  src={`${rewriteUrlToR2(lightboxFile.file_url)}#t=0.001`}
                   className="max-w-full max-h-full object-contain pointer-events-auto shadow-2xl animate-in fade-in duration-300"
                   controls
                   controlsList={
@@ -2358,7 +2358,7 @@ export const ClientGallery: React.FC = () => {
                   }
                   disablePictureInPicture={isFileLocked(lightboxFile ? lightboxFile.id : "")}
                   autoPlay
-                  playsInline
+                  playsInline preload="metadata"
                   onTouchStart={handleLongPressStart}
                   onTouchEnd={handleLongPressEnd}
                   onTouchMove={handleLongPressEnd}

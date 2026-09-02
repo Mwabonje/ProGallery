@@ -80,7 +80,7 @@ const GalleryCard = ({ gallery, index, isFilmsCategory, isHome, isLastOddCard }:
             <div className="bg-slate-50 overflow-hidden relative w-full h-full">
                 {gallery.coverType === 'video' ? (
                     <video 
-                        src={rewriteUrlToR2(gallery.coverUrl!)} 
+                        src={`${rewriteUrlToR2(gallery.coverUrl!)}#t=0.001`} 
                         className="w-full h-full object-cover block transform transition-transform duration-[1.5s] group-hover:scale-[1.02]"
                         muted playsInline loop preload="metadata"
                         onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(()=> {})}

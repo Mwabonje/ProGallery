@@ -276,7 +276,7 @@ export const Prints: React.FC = () => {
                                         <div className="relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
                                             {print.file_type === 'video' ? (
                                                 <video 
-                                                    src={rewriteUrlToR2(print.file_url)} 
+                                                    src={`${rewriteUrlToR2(print.file_url)}#t=0.001`} 
                                                     className={mediaClass}
                                                     muted playsInline loop autoPlay preload="metadata"
                                                     onContextMenu={(e) => e.preventDefault()}
@@ -423,9 +423,9 @@ export const Prints: React.FC = () => {
                                                             <div className="shrink-0">
                                                                 {item.file_type === 'video' ? (
                                                                     <video 
-                                                                        src={rewriteUrlToR2(item.file_url)} 
+                                                                        src={`${rewriteUrlToR2(item.file_url)}#t=0.001`} 
                                                                         className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100"
-                                                                        muted playsInline
+                                                                        muted playsInline preload="metadata"
                                                                     />
                                                                 ) : (
                                                                     <img 

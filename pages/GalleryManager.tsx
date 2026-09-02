@@ -1612,7 +1612,7 @@ export const GalleryManager: React.FC = () => {
                                                 />
                                             ) : (
                                                 <video 
-                                                    src={rewriteUrlToR2(file.file_url)} 
+                                                    src={`${rewriteUrlToR2(file.file_url)}#t=0.001`} 
                                                     className="w-full h-full object-cover"
                                                     muted
                                                     preload="metadata"
