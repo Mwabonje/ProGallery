@@ -754,15 +754,15 @@ export const GalleryManager: React.FC = () => {
   const editedCount = files.filter(f => f.is_edited).length;
 
   return (
-    <div className="space-y-8 md:space-y-10 pb-12">
+    <div className="min-h-screen bg-gray-50 text-slate-900 font-sans pb-20">
       {schemaMissing && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700">
+        <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded text-rose-700 mb-6 mx-4 md:mx-8 mt-4">
           <h3 className="font-bold text-lg">Database Schema Update Required</h3>
           <p className="mt-1">
              The prints features cannot be saved correctly because some database columns are missing.
              To fix this, please run the following SQL command in your <strong>Supabase SQL Editor</strong>:
           </p>
-          <pre className="bg-red-100 p-3 rounded mt-2 text-[10px] sm:text-xs font-mono text-red-900 border border-red-200 overflow-x-auto whitespace-pre-wrap">
+          <pre className="bg-rose-100 p-3 rounded mt-2 text-[10px] sm:text-xs font-mono text-rose-900 border border-rose-200 overflow-x-auto whitespace-pre-wrap">
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS title text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS description text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;{'\n'}
@@ -773,14 +773,14 @@ export const GalleryManager: React.FC = () => {
             ALTER TABLE public.galleries ADD COLUMN IF NOT EXISTS downloads_before_clearing integer DEFAULT 0;{'\n'}
 {'\n'}
             -- Create RPC function to increment views with ad-blocker safe names{'\n'}
-            CREATE OR REPLACE FUNCTION update_file_v(fid uuid) RETURNS void AS $${'\n'}
+            CREATE OR REPLACE FUNCTION update_file_v(fid uuid) RETURNS void AS $\n
             BEGIN{'\n'}
               UPDATE files SET views = COALESCE(views, 0) + 1 WHERE id = fid;{'\n'}
             END;{'\n'}
             $$ LANGUAGE plpgsql SECURITY DEFINER;{'\n'}
 {'\n'}
             -- Create RPC function to increment clicks with ad-blocker safe names{'\n'}
-            CREATE OR REPLACE FUNCTION update_file_c(fid uuid) RETURNS void AS $${'\n'}
+            CREATE OR REPLACE FUNCTION update_file_c(fid uuid) RETURNS void AS $\n
             BEGIN{'\n'}
               UPDATE files SET clicks = COALESCE(clicks, 0) + 1 WHERE id = fid;{'\n'}
             END;{'\n'}
@@ -789,1045 +789,586 @@ export const GalleryManager: React.FC = () => {
           <p className="mt-2 text-sm italic">After running this command, refresh this page so that the data saves successfully.</p>
         </div>
       )}
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        {/* Back Button (Mobile only) */}
-        <button onClick={() => navigate('/dashboard')} className="md:hidden flex items-center text-zinc-500 hover:text-zinc-900 mb-2 py-2 -ml-2 px-2">
-            <ArrowLeft className="w-5 h-5 mr-1" /> Back to Dashboard
-        </button>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1">
-                {isEditingMeta ? (
-                    <div className="space-y-3 w-full max-w-xl">
-                        <input
-                            type="text"
-                            value={editClientName}
-                            onChange={(e) => setEditClientName(e.target.value)}
-                            placeholder="Gallery Name / Client Name"
-                            className="w-full text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 text-zinc-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
-                        />
-                        <textarea
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            placeholder="Description or Subtitle (e.g., Print Details)"
-                            rows={2}
-                            className="w-full text-zinc-600 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none resize-none"
-                        />
-                        <input
-                            type="text"
-                            list="gallery-category-options"
-                            value={editCategory}
-                            onChange={(e) => setEditCategory(e.target.value)}
-                            placeholder="Category (e.g. Wedding, Portraits...)"
-                            className="w-full text-zinc-700 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
-                        />
-                        <datalist id="gallery-category-options">
-                            {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
-                                <option key={cat} value={cat} />
-                            ))}
-                        </datalist>
-                        {editCategory.trim() !== '' && (
-                            <select
-                                value={editLayout}
-                                onChange={(e) => setEditLayout(e.target.value as 'grid' | 'swipe')}
-                                className="w-full text-zinc-700 border border-zinc-200/60 rounded-md p-2 text-sm focus:border-slate-400 focus:outline-none"
-                            >
-                                <option value="grid">Grid Layout (Vertical Scroll)</option>
-                                <option value="swipe">Swipe Layout (Horizontal Scroll)</option>
-                            </select>
-                        )}
-                        <div className="flex gap-2">
-                            <button
-                                onClick={updateMeta}
-                                className="px-3 py-1 bg-slate-900 text-white rounded text-sm hover:bg-slate-800"
-                            >
-                                Save Details
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsEditingMeta(false);
-                                    setEditClientName(gallery.client_name);
-                                    setEditTitle(gallery.title);
-                                    setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
-                                    setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
-                                }}
-                                className="px-3 py-1 bg-slate-100 text-zinc-600 rounded text-sm hover:bg-slate-200"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="group flex items-start gap-3">
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 text-zinc-900 break-words flex items-center gap-3">
-                                {gallery.client_name}
-                                {gallery.category && (
-                                    <span className="text-xs font-bold tracking-widest uppercase bg-slate-100 text-zinc-500 px-2 py-1 rounded">
-                                        {gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}
-                                    </span>
-                                )}
-                            </h1>
-                            {gallery.title && gallery.title !== `${gallery.client_name}'s Gallery` && (
-                                <p className="text-zinc-600 mt-1 max-w-2xl">{gallery.title}</p>
-                            )}
-                            <p className="text-zinc-500 text-sm mt-1">ID: <span className="font-mono">{gallery.id.slice(0, 8)}...</span></p>
-                        </div>
-                        <button
-                            onClick={() => setIsEditingMeta(true)}
-                            className="p-1.5 text-slate-400 hover:text-zinc-900 hover:bg-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-all mt-1"
-                            title="Edit Details"
+      {/* Topbar */}
+      <div className="flex justify-between items-end mb-6 flex-wrap gap-4 pt-6 md:pt-10">
+        <div>
+            {isEditingMeta ? (
+                <div className="space-y-3 w-full max-w-xl mb-4">
+                    <input
+                        type="text"
+                        value={editClientName}
+                        onChange={(e) => setEditClientName(e.target.value)}
+                        placeholder="Gallery Name / Client Name"
+                        className="w-full text-3xl font-serif font-medium tracking-tight text-slate-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
+                    />
+                    <textarea
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Description or Subtitle (e.g., Print Details)"
+                        rows={2}
+                        className="w-full text-slate-600 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none resize-none bg-white"
+                    />
+                    <input
+                        type="text"
+                        list="gallery-category-options"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        placeholder="Category (e.g. Wedding, Portraits...)"
+                        className="w-full text-slate-700 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none bg-white"
+                    />
+                    <datalist id="gallery-category-options">
+                        {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
+                            <option key={cat} value={cat} />
+                        ))}
+                    </datalist>
+                    {editCategory.trim() !== '' && (
+                        <select
+                            value={editLayout}
+                            onChange={(e) => setEditLayout(e.target.value as 'grid' | 'swipe')}
+                            className="w-full text-slate-700 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none bg-white"
                         >
-                            <Edit2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-                <button
-                onClick={handleCopyLink}
-                className="flex-1 md:flex-none justify-center px-4 py-2 bg-white border border-zinc-200/60 text-zinc-700 rounded-xl shadow-sm active:scale-[0.98] hover:bg-zinc-50/80 flex items-center gap-2 transition-all active:scale-95 text-sm font-medium shadow-sm"
-                >
-                {linkCopied ? (
-                    <>
-                    <Check className="w-4 h-4 text-emerald-600" />
-                    <span className="text-emerald-600">Copied</span>
-                    </>
-                ) : (
-                    <>
-                    <Copy className="w-4 h-4" />
-                    <span className="hidden sm:inline">Copy Link</span>
-                    <span className="inline sm:hidden">Copy</span>
-                    </>
-                )}
-                </button>
-                
-                <a 
-                href={`/g/${gallery.id}/display`}
-                target="_blank" 
-                rel="noreferrer"
-                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-xl flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300`}
-                >
-                    <QrCode className="w-4 h-4" />
-                    <span className="hidden sm:inline">Live Display</span>
-                    <span className="inline sm:hidden">QR</span>
-                </a>
-                
-                <a 
-                href={`/${generateSlug(gallery.client_name)}`}
-                target="_blank" 
-                rel="noreferrer"
-                className={`flex-1 md:flex-none justify-center px-4 py-2 border rounded-xl flex items-center gap-2 text-sm font-medium shadow-sm transition-colors whitespace-nowrap ${
-                  isPortfolio 
-                    ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700' 
-                    : 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800'
-                }`}
-                >
-                    <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">{isPortfolio ? "Public View" : "Client Preview"}</span>
-                    <span className="inline sm:hidden">{isPortfolio ? "View" : "Preview"}</span>
-                </a>
-                
-                <button
-                onClick={toggleStatus}
-                className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg flex items-center gap-2 text-white transition-colors text-sm font-medium shadow-sm ${
-                    gallery.link_enabled ? 'bg-black hover:bg-zinc-800' : 'bg-red-500 hover:bg-red-600'
-                }`}
-                >
-                {gallery.link_enabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                <span>{gallery.link_enabled ? 'Active' : 'Disabled'}</span>
-                </button>
-            </div>
-        </div>
-      </div>
-      
-      {/* Notifications Area */}
-      {!isPortfolio && gallery.selection_status === 'submitted' && (
-          <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                  <div className="bg-rose-100 p-2 rounded-full">
-                      <Heart className="w-5 h-5 text-rose-600" />
-                  </div>
-                  <div>
-                      <p className="font-semibold text-rose-900">Client Selection Submitted</p>
-                      <p className="text-sm text-rose-700">The client has finished selecting {clientSelections.length} photos.</p>
-                  </div>
-              </div>
-              <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => {
-                      setViewFilter('selected');
-                      document.getElementById('gallery-content')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="text-sm font-medium text-rose-700 hover:text-rose-900 underline"
-                  >
-                      View Selection
-                  </button>
-                  <button 
-                    onClick={async () => {
-                      if (!confirm("Are you sure you want to reopen the selection? This will allow the client to select photos again, and will reactivate the link.")) return;
-                      try {
-                        const { error } = await supabase
-                          .from('galleries')
-                          .update({ selection_status: 'pending', link_enabled: true })
-                          .eq('id', gallery.id);
-                        if (error) throw error;
-                        setGallery({ ...gallery, selection_status: 'pending', link_enabled: true });
-                        alert("Selection reopened! The link is active again.");
-                      } catch (err: any) {
-                        alert("Error reopening selection: " + (err?.message || JSON.stringify(err)));
-                      }
-                    }}
-                    className="text-sm font-medium text-zinc-500 hover:text-zinc-700 underline"
-                  >
-                      Reopen Selection
-                  </button>
-              </div>
-          </div>
-      )}
-
-      <div className={`grid grid-cols-1 ${!isPortfolio ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6 md:gap-8`}>
-        {/* Left Column: Settings */}
-        {!isPortfolio ? (
-            <div className="lg:col-span-1 space-y-6">
-              {/* Payment Card */}
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
-                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-slate-400" />
-                  Payment & Access
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">
-                        Total Agreed Amount
-                        <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 for volunteer)</span>
-                    </label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                        <input 
-                        type="number" 
-                        value={agreedAmount}
-                        onChange={(e) => setAgreedAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                        placeholder="0"
-                        />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">Amount Paid</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                        <input 
-                        type="number" 
-                        value={paid}
-                        onChange={(e) => setPaid(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                        placeholder="0"
-                        />
-                    </div>
-                  </div>
-
-                  {agreedAmount !== '' && Number(agreedAmount) > 0 && Number(paid) < Number(agreedAmount) && (
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-1">
-                          Allowed Downloads (Before Clearing Balance)
-                          <span className="text-xs font-normal text-slate-400 ml-2">(Set 0 to lock all)</span>
-                      </label>
-                      <div className="relative">
-                          <input 
-                          type="number" 
-                          value={downloadsBeforeClearing}
-                          onChange={(e) => setDownloadsBeforeClearing(e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full px-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                          placeholder="0"
-                          />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">Remaining Balance</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2 text-slate-400">KES</span>
-                        <input 
-                        type="number" 
-                        value={remainingBalance === 0 ? '' : remainingBalance}
-                        onChange={(e) => {
-                            if (e.target.value === '') {
-                                setPaid(Number(agreedAmount) || 0);
-                            } else {
-                                const newBalance = Number(e.target.value);
-                                setPaid((Number(agreedAmount) || 0) - newBalance);
-                            }
-                        }}
-                        className="w-full pl-12 pr-4 py-2 border border-zinc-200/60 rounded-xl bg-zinc-50/80 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                        placeholder="0"
-                        />
-                        <div className="absolute right-3 top-2.5">
-                          <Calculator className="w-4 h-4 text-slate-400" />
-                        </div>
-                    </div>
-                  </div>
-                  
-                  <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${
-                    isVolunteer 
-                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
-                        : remainingBalance <= 0 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                            : 'bg-slate-50 text-slate-700 border border-slate-200'
-                  }`}>
-                    <span className="font-medium">
-                        {isVolunteer ? 'Volunteer / Collaboration' : (remainingBalance <= 0 ? 'Fully Paid' : 'Outstanding Balance')}
-                    </span>
-                    {isVolunteer ? <Heart className="w-4 h-4" /> : (remainingBalance <= 0 ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
-                  </div>
-
-                  <button 
-                    onClick={updatePayment}
-                    disabled={paymentUpdated}
-                    className={`w-full py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-200 font-medium ${
-                      paymentUpdated 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-black text-white hover:bg-zinc-800 active:scale-[0.98]'
-                    }`}
-                  >
-                    {paymentUpdated ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Updated!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>Update Payment</span>
-                      </>
+                            <option value="grid">Grid Layout (Vertical Scroll)</option>
+                            <option value="swipe">Swipe Layout (Horizontal Scroll)</option>
+                        </select>
                     )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Settings Card */}
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
-                 <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Gallery Settings</h2>
-                 
-                 {/* Selection Mode Toggle */}
-                 <div className="flex items-center justify-between mb-2">
-                     <div>
-                         <p className="font-medium text-zinc-900">Client Selection</p>
-                         <p className="text-xs text-zinc-500 max-w-[200px]">
-                             When enabled, clients can favorite photos but <strong>cannot download them</strong>.
-                         </p>
-                     </div>
-                     <button
-                        onClick={toggleSelectionMode}
-                        className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${gallery.selection_enabled ? 'bg-rose-500' : 'bg-slate-300'}`}
-                     >
-                         <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${gallery.selection_enabled ? 'translate-x-5' : ''}`}></div>
-                     </button>
-                 </div>
-                 {gallery.selection_enabled && (
-                     <div className="mt-4 pt-4 border-t border-zinc-200/40">
-                         <label className="block text-sm text-zinc-700 font-medium mb-1">Client Unlock PIN</label>
-                         <div className="flex gap-2 mb-4">
-                             <input 
-                                 type="text" 
-                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-100 text-zinc-500 font-mono tracking-widest uppercase cursor-not-allowed"
-                                 value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
-                                 readOnly
-                                 title="Share this PIN with clients if they need to unlock their submitted selections."
-                             />
-                         </div>
-                         <label className="block text-sm text-zinc-700 font-medium mb-1">Agreed Number of Photos</label>
-                         <div className="flex gap-2">
-                             <input 
-                                 type="number" 
-                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
-                                 defaultValue={gallery.selection_limit || 0}
-                                 min="0"
-                                 onBlur={(e) => {
-                                     const val = parseInt(e.target.value);
-                                     if (!isNaN(val) && val !== gallery.selection_limit) {
-                                         updateSelectionLimit(val);
-                                     }
-                                 }}
-                             />
-                         </div>
-                         <p className="text-xs text-zinc-500 mt-1">Set to 0 for unlimited. If greater than 0, clients will be asked to confirm before selecting more (extras).</p>
-                     </div>
-                 )}
-                 <div className="mt-4 pt-4 border-t border-zinc-200/40">
-                     <label className="block text-sm text-zinc-700 font-medium mb-1">Password Protection</label>
-                     <div className="flex gap-2">
-                         <input
-                              type="text"
-                              placeholder="Leave blank for public access"
-                              className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
-                             defaultValue={galleryPassword}
-                             onBlur={(e) => {
-                                 if (e.target.value !== galleryPassword) {
-                                     updatePassword(e.target.value);
-                                 }
-                             }}
-                         />
-                     </div>
-                     <p className="text-xs text-zinc-500 mt-1">If set, clients must enter this password to view the gallery.</p>
-                 </div>
-
-                 <div className="mt-4 pt-4 border-t border-zinc-200/40">
-                     <h3 className="font-medium text-zinc-900 mb-3">SEO Details</h3>
-                     <div className="space-y-3">
-                         <div>
-                             <label className="block text-sm text-zinc-700 font-medium mb-1">Page Title</label>
-                             <input 
-                                 type="text" 
-                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
-                                 defaultValue={gallery.seo_title || ''}
-                                 onBlur={(e) => {
-                                     if (e.target.value !== gallery.seo_title) {
-                                         updateSeoInfo('seo_title', e.target.value);
-                                     }
-                                 }}
-                             />
-                             <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and search results.</p>
-                         </div>
-                         <div>
-                             <label className="block text-sm text-zinc-700 font-medium mb-1">Meta Description</label>
-                             <textarea 
-                                 rows={3}
-                                 className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none"
-                                 defaultValue={gallery.seo_description || ''}
-                                 onBlur={(e) => {
-                                     if (e.target.value !== gallery.seo_description) {
-                                         updateSeoInfo('seo_description', e.target.value);
-                                     }
-                                 }}
-                             />
-                             <p className="text-xs text-zinc-500 mt-1">Brief summary for search engine results.</p>
-                         </div>
-                     </div>
-                 </div>
-              </div>
-
-              {/* Stats Card */}
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
-                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Gallery Stats</h2>
-                <div className="space-y-3 text-sm text-zinc-600 mb-4">
-                    <div className="flex justify-between items-center border-b border-zinc-200/40 pb-2">
-                        <span>Total Files</span>
-                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-zinc-200/40 pb-2">
-                        <span>Selected by Client</span>
-                        <div className="flex items-center gap-2">
-                            {gallery.selection_limit && gallery.selection_limit > 0 && clientSelections.length > gallery.selection_limit && (
-                                <span className="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full text-[10px] hidden sm:inline">
-                                    {clientSelections.length - gallery.selection_limit} Extras
-                                </span>
-                            )}
-                            <span className="font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">{clientSelections.length}</span>
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span>Total Downloads</span>
-                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.reduce((acc, curr) => acc + curr.download_count, 0)}</span>
-                    </div>
-                </div>
-                
-                {clientSelections.length > 0 && (
-                  <button 
-                    onClick={handleExportCSV}
-                    className="w-full py-3 bg-slate-100 text-zinc-700 hover:bg-slate-200 border-none text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex justify-center items-center gap-2 transition-colors font-medium text-sm mt-4"
-                  >
-                    <FileDown className="w-4 h-4" />
-                    <span>Export Selections (CSV)</span>
-                  </button>
-                )}
-              </div>
-            </div>
-        ) : (
-            <div className="lg:col-span-1 space-y-6">
-              {/* Portfolio Detail Card */}
-              <div className="bg-slate-900 text-white p-6 rounded-xl shadow-md border border-slate-800">
-                <h2 className="text-xl font-semibold tracking-tight text-white mb-5">Portfolio Details</h2>
-                <div className="space-y-4 text-sm text-slate-300">
-                    <div>
-                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Category</span>
-                        <span className="font-medium text-white px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}</span>
-                    </div>
-                    <div>
-                        <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1 text-left">Visibility</span>
-                        <span className="font-medium text-emerald-400 flex items-center gap-2">
-                            <Eye className="w-4 h-4" /> Visible on Public Site
-                        </span>
-                    </div>
-                </div>
-              </div>
-
-              {/* SEO Details Card for Portfolio */}
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
-                  <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">SEO Details</h2>
-                  <div className="space-y-3">
-                      <div>
-                          <label className="block text-sm text-zinc-700 font-medium mb-1">Page Title</label>
-                          <input 
-                              type="text" 
-                              className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
-                              defaultValue={gallery.seo_title || ''}
-                              onBlur={(e) => {
-                                  if (e.target.value !== gallery.seo_title) {
-                                      updateSeoInfo('seo_title', e.target.value);
-                                  }
-                              }}
-                          />
-                          <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and search results.</p>
-                      </div>
-                      <div>
-                          <label className="block text-sm text-zinc-700 font-medium mb-1">Meta Description</label>
-                          <textarea 
-                              rows={3}
-                              className="w-full text-sm p-2 border border-zinc-200/60 rounded-md bg-zinc-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none"
-                              defaultValue={gallery.seo_description || ''}
-                              onBlur={(e) => {
-                                  if (e.target.value !== gallery.seo_description) {
-                                      updateSeoInfo('seo_description', e.target.value);
-                                  }
-                              }}
-                          />
-                          <p className="text-xs text-zinc-500 mt-1">Brief summary for search engine results.</p>
-                      </div>
-                  </div>
-              </div>
-
-              {/* Stats Card */}
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-zinc-200/40">
-                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 mb-5">Collection Stats</h2>
-                <div className="space-y-3 text-sm text-zinc-600 mb-4">
-                    <div className="flex justify-between items-center pb-2 border-b border-zinc-200/40">
-                        <span>Total Items</span>
-                        <span className="font-medium text-zinc-900 bg-slate-100 px-2 py-0.5 rounded-full">{files.length}</span>
-                    </div>
-                </div>
-                <p className="text-xs text-zinc-500 mt-4 leading-relaxed">
-                    Portfolio collections are public indefinitely. You don't need to set an expiration time for these items.
-                </p>
-              </div>
-            </div>
-        )}
-
-        {/* Right Column: Content */}
-        <div className={!isPortfolio ? "lg:col-span-2" : "lg:col-span-3"} id="gallery-content">
-            <div 
-                className={`bg-white rounded-2xl shadow-sm border border-zinc-200/40 overflow-hidden transition-colors relative ${
-                    isDragging ? 'border-emerald-500 bg-emerald-50/30 border-2 border-dashed' : 'border-zinc-200/60'
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                {isDragging && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-emerald-50/80 backdrop-blur-sm pointer-events-none">
-                        <div className="flex flex-col items-center text-emerald-600">
-                            <Upload className="w-12 h-12 mb-4 animate-bounce" />
-                            <h3 className="text-xl font-bold">Drop files to upload</h3>
-                            <p className="text-sm mt-2 opacity-80">Images and videos are supported</p>
-                        </div>
-                    </div>
-                )}
-                <div className="p-4 md:p-6 border-b border-zinc-200/60 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-lg font-semibold">Gallery Content</h2>
-                        {/* Filter Tabs */}
-                        {!isPortfolio && (
-                          <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-medium flex-wrap gap-1">
-                              <button 
-                                  onClick={() => setViewFilter('all')}
-                                  className={`px-3 py-1 rounded-md transition-all ${viewFilter === 'all' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
-                              >
-                                  All ({files.length})
-                              </button>
-                              <button 
-                                  onClick={() => setViewFilter('selected')}
-                                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'selected' ? 'bg-white shadow-sm text-rose-600' : 'text-zinc-500 hover:text-rose-600'}`}
-                              >
-                                  <Heart className="w-3 h-3" />
-                                  Selected ({clientSelections.length})
-                              </button>
-                              {gallery?.selection_limit && gallery.selection_limit > 0 && clientSelections.length > 0 && (
-                                <>
-                                  <button 
-                                      onClick={() => setViewFilter('main')}
-                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'main' ? 'bg-white shadow-sm text-rose-600' : 'text-zinc-500 hover:text-rose-600'}`}
-                                  >
-                                      Main ({mainSelections.length})
-                                  </button>
-                                  <button 
-                                      onClick={() => setViewFilter('extras')}
-                                      className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${viewFilter === 'extras' ? 'bg-white shadow-sm text-slate-800' : 'text-zinc-500 hover:text-slate-800'}`}
-                                  >
-                                      Extras ({extraSelections.length})
-                                  </button>
-                                </>
-                              )}
-                          </div>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            <button
-                                onClick={() => setLayoutView('list')}
-                                className={`p-1.5 rounded-md transition-all ${layoutView === 'list' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                title="List View"
-                            >
-                                <List className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setLayoutView('grid')}
-                                className={`p-1.5 rounded-md transition-all ${layoutView === 'grid' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                title="Grid View"
-                            >
-                                <LayoutGrid className="w-4 h-4" />
-                            </button>
-                            <div className="w-px h-4 bg-slate-300 self-center mx-1"></div>
-                            <button
-                                onClick={() => setIsHeatmapActive(!isHeatmapActive)}
-                                className={`p-1.5 rounded-md transition-all ${isHeatmapActive ? 'bg-orange-100 shadow-sm text-orange-600' : 'text-zinc-500 hover:text-orange-500'}`}
-                                title="Toggle Heatmap"
-                            >
-                                <Flame className="w-4 h-4" />
-                            </button>
-                        </div>
-                        {!isPortfolio && (
-                            <>
-                                <div className="flex items-center gap-2 bg-zinc-50/80 px-3 py-2.5 rounded-lg border border-zinc-200/60 flex-1 sm:flex-none">
-                                   <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
-                                   <select 
-                                     value={expiryHours}
-                                     onChange={(e) => setExpiryHours(Number(e.target.value))}
-                                     className="bg-transparent text-sm text-zinc-700 outline-none cursor-pointer w-full sm:w-auto"
-                                     title="Content Expiration"
-                                     disabled={uploading}
-                                   >
-                                     <option value={0.5}>30 Minutes</option>
-                                     <option value={1}>1 Hour</option>
-                                     <option value={2}>2 Hours</option>
-                                     <option value={3}>3 Hours</option>
-                                     <option value={6}>6 Hours</option>
-                                     <option value={12}>12 Hours</option>
-                                     <option value={24}>24 Hours</option>
-                                     <option value={48}>48 Hours</option>
-                                     <option value={72}>3 Days</option>
-                                     <option value={168}>1 Week</option>
-                                   </select>
-
-                                   {files.length > 0 && (
-                                    <>
-                                        <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                                        <button
-                                            onClick={handleExtendExpiration}
-                                            disabled={uploading}
-                                            className="text-slate-400 hover:text-emerald-600 transition-colors p-2 md:p-1 rounded-md hover:bg-emerald-50"
-                                            title="Apply this duration to all existing files (Reactivate expired)"
-                                        >
-                                            <RefreshCw className="w-5 h-5 md:w-4 md:h-4" />
-                                        </button>
-                                    </>
-                                   )}
-                                </div>
-                                <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
-                            </>
-                        )}
-
-                        <input
-                            type="file"
-                            multiple
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            accept="image/*,video/*,.cr2,.cr3,.nef,.arw,.dng,.raf,.orf,.rw2,.srw,.raw"
-                        />
-                        
-                        {isUploadingThisGallery ? (
-                          <div className="flex items-center gap-3 bg-zinc-50/80 px-4 py-2 rounded-lg border border-zinc-200/60 flex-1 sm:flex-none">
-                             <div className="flex flex-col w-full sm:w-32">
-                                <div className="flex justify-between text-xs mb-1">
-                                   <span className="text-zinc-600 font-medium">Uploading...</span>
-                                   <span className="text-emerald-600 font-bold">{progress}%</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                   <div 
-                                      className="h-full bg-emerald-500 transition-all duration-300 ease-out"
-                                      style={{ width: `${progress}%` }}
-                                   />
-                                </div>
-                             </div>
-                          </div>
-                        ) : (
-                          <button 
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={uploading} 
-                              className={`bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 flex justify-center items-center gap-2 font-medium transition-colors shadow-sm ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                              <Upload className="w-4 h-4" />
-                              <span>Upload Files</span>
-                          </button>
-                        )}
-                    </div>
-                </div>
-
-                {isUploadingThisGallery && uploadTasks && uploadTasks.length > 0 && (
-                    <div className="p-4 md:p-6 border-b border-zinc-200/60 bg-emerald-50/30">
-                        <h3 className="text-sm font-semibold text-zinc-800 mb-3">Upload Progress ({uploadTasks.filter(t => t.status === 'completed').length}/{uploadTasks.length})</h3>
-                        <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                            {uploadTasks.map(task => (
-                                <div key={task.id} className="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-emerald-100 shadow-sm text-sm">
-                                    <div className="flex-1 truncate font-medium text-slate-700" title={task.fileName}>{task.fileName}</div>
-                                    <div className="w-32 shrink-0">
-                                       {task.status === 'uploading' || task.status === 'pending' ? (
-                                          <div className="flex items-center gap-3">
-                                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                <div className="h-full bg-emerald-500 transition-all duration-300 ease-out" style={{ width: `${task.progress}%` }} />
-                                             </div>
-                                             <span className="text-xs text-slate-500 w-8 text-right font-mono">{task.progress}%</span>
-                                          </div>
-                                       ) : task.status === 'completed' ? (
-                                          <span className="text-emerald-600 font-semibold flex items-center justify-end gap-1.5"><Check className="w-4 h-4" /> Done</span>
-                                       ) : task.status === 'error' ? (
-                                          <span className="text-rose-600 font-semibold flex items-center justify-end gap-1.5" title={task.error}><X className="w-4 h-4" /> Error</span>
-                                       ) : null}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {checkedFiles.length > 0 && (
-                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-zinc-900 text-white px-6 py-4 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-50 animate-in slide-in-from-bottom-8">
-                        <span className="font-semibold text-sm whitespace-nowrap">{checkedFiles.length} selected</span>
-                        <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                    <div className="flex gap-2 pt-1">
                         <button
-                            onClick={handleDownloadZip}
-                            disabled={isZipping}
-                            className="flex items-center gap-2 text-sm font-medium hover:text-indigo-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+                            onClick={updateMeta}
+                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                         >
-                            {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                            <span>{isZipping ? 'Zipping...' : 'Download'}</span>
+                            Save Details
                         </button>
                         <button
                             onClick={() => {
-                                // Real folder implementation would go here
-                                toast.info('Move to Folder feature coming soon!');
+                                setIsEditingMeta(false);
+                                setEditClientName(gallery.client_name);
+                                setEditTitle(gallery.title);
+                                setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
+                                setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
                             }}
-                            disabled={isZipping}
-                            className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
                         >
-                            <Folder className="w-4 h-4" />
-                            <span>Move to Folder</span>
-                        </button>
-                        <button
-                            onClick={handleRenameSelected}
-                            disabled={isZipping}
-                            className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
-                        >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Rename</span>
-                        </button>
-                        <button
-                            onClick={handleDeleteSelected}
-                            disabled={isZipping}
-                            className="flex items-center gap-2 text-sm font-medium text-rose-400 hover:text-rose-300 disabled:opacity-50 transition-colors whitespace-nowrap"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                        </button>
-                        <div className="w-px h-4 bg-zinc-700 mx-1"></div>
-                        <button 
-                            onClick={() => setCheckedFiles([])}
-                            className="p-1 hover:bg-zinc-800 rounded-full transition-colors ml-1"
-                        >
-                            <X className="w-4 h-4 text-zinc-400 hover:text-white" />
+                            Cancel
                         </button>
                     </div>
-                )}
-
-                {visibleFiles.length === 0 ? (
-                    <div className="p-12 text-center text-zinc-500">
-                        {!isPortfolio && viewFilter === 'selected' ? (
-                            <>
-                                <Heart className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                                <p>No files selected by the client yet.</p>
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                                <p>{isPortfolio ? "No files uploaded to this portfolio yet." : "No files uploaded yet. Select an expiration time above and upload."}</p>
-                            </>
-                        )}
+                </div>
+            ) : (
+                <div className="group flex items-start gap-3">
+                    <div>
+                        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900 mb-1 flex items-center gap-3">
+                            {gallery.client_name}
+                            {gallery.category && (
+                                <span className="text-[10px] font-sans font-bold tracking-widest uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded-sm">
+                                    {gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}
+                                </span>
+                            )}
+                        </h1>
+                        <div className="font-mono text-[11.5px] text-slate-500">ID · {gallery.id.slice(0, 8)}</div>
                     </div>
-                ) : (
-                    <div className="bg-white rounded-2xl shadow-sm border border-zinc-200/40 overflow-hidden">
-                        <div className="p-3 bg-zinc-50 border-b border-zinc-200/60 flex items-center gap-3">
-                            <input 
-                                type="checkbox"
-                                checked={visibleFiles.length > 0 && checkedFiles.length === visibleFiles.length}
-                                onChange={handleCheckAll}
-                                className="w-4 h-4 text-black rounded border-slate-300 focus:ring-black cursor-pointer ml-1.5"
-                            />
-                            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Select All</span>
-                        </div>
-                        <div className={layoutView === 'grid' ? "p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" : "divide-y divide-slate-100"}>
-                        {visibleFiles.map((file) => {
-                            const isExpired = new Date(file.expires_at) < new Date();
-                            const isSelected = clientSelections.includes(file.id);
-                            let isExtra = false;
-                            if (isSelected && gallery.selection_limit && gallery.selection_limit > 0) {
-                                const index = clientSelections.indexOf(file.id);
-                                if (index >= gallery.selection_limit) {
-                                    isExtra = true;
-                                }
-                            }
-                            
-                            const fileViews = file.views || 0;
-                            const fileClicks = file.clicks || 0;
-                            const heatScore = maxViews === 0 && maxClicks === 0 ? 0 : 
-                                ((fileViews / maxViews) * 0.5) + ((fileClicks / maxClicks) * 0.5);
-                            return (
-                                <div key={file.id} className={layoutView === 'grid' ? `relative group rounded-xl overflow-hidden border ${isSelected ? 'border-rose-300 ring-2 ring-rose-200' : 'border-zinc-200/60'} bg-white hover:shadow-md transition-all flex flex-col` : `p-4 flex items-center justify-between hover:bg-zinc-50/80 transition-colors ${isSelected ? 'bg-rose-50/50' : ''}`}>
-                                    <div className={layoutView === 'grid' ? "flex flex-col flex-1" : "flex items-center gap-3 md:gap-4 overflow-hidden"}>
-                                        <div className={layoutView === 'grid' ? `absolute top-2 left-2 z-10 bg-white/80 backdrop-blur-sm rounded-md p-0.5 shadow-sm transition-opacity ${checkedFiles.includes(file.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}` : "flex items-center"}>
-                                            <input 
-                                                type="checkbox"
-                                                checked={checkedFiles.includes(file.id)}
-                                                onChange={() => handleCheckFile(file.id)}
-                                                className="w-4 h-4 text-black rounded border-slate-300 focus:ring-black cursor-pointer"
-                                            />
-                                        </div>
-                                        <div className={layoutView === 'grid' ? "relative aspect-square bg-slate-100 w-full overflow-hidden border-b border-zinc-200/60 shrink-0" : "relative w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-200/60"}>
-                                            {file.file_type === 'image' ? (
-                                                <img 
-                                                  src={file.thumbnail_url ? getOptimizedImageUrl(file.thumbnail_url, 100, 100) : getOptimizedImageUrl(file.file_url, 100, 100)} 
-                                                  alt="Thumbnail" 
-                                                  className="w-full h-full object-cover" 
-                                                  onError={(e) => {
-                                                    const target = e.target as HTMLImageElement;
-                                                    if (!target.dataset.retried) {
-                                                        target.dataset.retried = 'true';
-                                                        target.src = file.thumbnail_url ? rewriteUrlToR2(file.thumbnail_url) : rewriteUrlToR2(file.file_url);
-                                                    }
-                                                  }}
-                                                  onContextMenu={(e) => e.preventDefault()}
-                                                />
-                                            ) : (
-                                                <video 
-                                                    src={`${rewriteUrlToR2(file.file_url)}#t=0.001`} 
-                                                    className="w-full h-full object-cover"
-                                                    muted
-                                                    preload="metadata"
-                                                    onContextMenu={(e) => e.preventDefault()}
-                                                />
-                                            )}
-                                            {!isPortfolio && isSelected && (
-                                                <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
-                                                    <Heart className="w-6 h-6 text-rose-600 fill-rose-600" />
-                                                </div>
-                                            )}
-                                            {isHeatmapActive && (
-                                                <div 
-                                                    className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300"
-                                                    style={{ 
-                                                        backgroundColor: `rgba(249, 115, 22, ${heatScore * 0.7})`,
-                                                        opacity: heatScore > 0 ? 1 : 0
-                                                    }}
-                                                >
-                                                    {heatScore > 0 && (
-                                                        <div className="bg-zinc-900/80 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded backdrop-blur-sm flex flex-col items-center gap-0.5">
-                                                            <div className="flex items-center gap-1"><Eye className="w-3 h-3" /> {fileViews}</div>
-                                                            <div className="flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {fileClicks}</div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className={layoutView === 'grid' ? "p-3 flex-1 flex flex-col min-w-0" : "min-w-0 flex-1 md:ml-2"}>
-                                            <div className="text-sm font-medium text-zinc-900 flex items-center gap-2">
-                                                <span className="truncate" title={file.title || file.file_path.split('/').pop()}>{file.title || file.file_path.split('/').pop()}</span>
-                                                {!isPortfolio && isSelected && (
-                                                    <>
-                                                        <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold shrink-0">SELECTED</span>
-                                                        {isExtra && (
-                                                            <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold shrink-0">EXTRA</span>
-                                                        )}
-                                                    </>
-                                                )}
-                                                {file.is_edited && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold shrink-0">EDITED</span>}
-                                            </div>
-                                            <p className={`text-xs text-zinc-500 mt-0.5 leading-tight ${layoutView === 'grid' ? '' : 'truncate'}`}>
-                                                <span className={layoutView === 'grid' ? 'block text-[10px] text-zinc-400 uppercase tracking-wider' : 'hidden'}>Uploaded</span>
-                                                <span className={layoutView === 'grid' ? 'hidden' : ''}>Uploaded: </span>{formatDate(file.created_at)}
-                                            </p>
-                                            {!isPortfolio && selectionNotes[file.id] && (
-                                                <div className="mt-2 bg-rose-50/50 border border-rose-100/50 rounded p-2 relative group">
-                                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                                                        <MessageSquare className="w-3 h-3" />
-                                                        Client Note
-                                                    </p>
-                                                    <p className="text-xs text-zinc-700 break-words whitespace-pre-wrap">{selectionNotes[file.id]}</p>
-                                                </div>
-                                            )}
-                                            {!isPortfolio && (
-                                                <p className={`text-xs mt-1 leading-tight ${isExpired ? 'text-red-600 font-bold' : 'text-zinc-500'} ${layoutView === 'grid' ? '' : 'truncate'}`}>
-                                                    <span className={layoutView === 'grid' ? 'block text-[10px] uppercase tracking-wider opacity-70' : 'hidden'}>{isExpired ? 'Expired' : 'Expires'}</span>
-                                                    <span className={layoutView === 'grid' ? 'hidden' : ''}>{isExpired ? 'Expired: ' : 'Expires: '}</span>{formatDate(file.expires_at)}
-                                                </p>
-                                            )}
-                                            {isPortfolio && (
-                                                <div className="mt-2 space-y-2 max-w-sm">
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Title" 
-                                                        defaultValue={file.title || ''} 
-                                                        onBlur={(e) => {
-                                                            if (e.target.value !== (file.title || '')) {
-                                                                updateFileDetails(file.id, { title: e.target.value });
-                                                            }
-                                                        }}
-                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium"
-                                                    />
-                                                    <textarea 
-                                                        placeholder="Description" 
-                                                        defaultValue={file.description ?? file.caption ?? ''} 
-                                                        rows={2}
-                                                        onBlur={(e) => {
-                                                            const currentVal = file.description ?? file.caption ?? '';
-                                                            if (e.target.value !== currentVal) {
-                                                                updateFileDetails(file.id, { description: e.target.value });
-                                                            }
-                                                        }}
-                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 resize-none"
-                                                    />
-                                                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="Size" 
-                                                            defaultValue={file.print_size || ''} 
-                                                            onBlur={(e) => {
-                                                                if (e.target.value !== (file.print_size || '')) {
-                                                                    updateFileDetails(file.id, { print_size: e.target.value });
-                                                                }
-                                                            }}
-                                                            className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
-                                                        />
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="Material" 
-                                                            defaultValue={file.material || ''} 
-                                                            onBlur={(e) => {
-                                                                if (e.target.value !== (file.material || '')) {
-                                                                    updateFileDetails(file.id, { material: e.target.value });
-                                                                }
-                                                            }}
-                                                            className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400"
-                                                        />
-                                                    </div>
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Price/Details" 
-                                                        defaultValue={file.price || ''} 
-                                                        onBlur={(e) => {
-                                                            if (e.target.value !== (file.price || '')) {
-                                                                updateFileDetails(file.id, { price: e.target.value });
-                                                            }
-                                                        }}
-                                                        className="text-[11px] sm:text-xs bg-zinc-50/80 border border-zinc-200/60 rounded px-2 py-1 w-full focus:outline-none focus:border-slate-400 font-medium text-slate-800"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={layoutView === 'grid' ? "flex items-center justify-between flex-wrap gap-x-0.5 gap-y-1.5 px-1.5 py-2 border-t border-zinc-100 bg-zinc-50/80 mt-auto" : "flex items-center gap-1 md:gap-3 pl-2 shrink-0"}>
-                                        <div className={`flex items-center ${layoutView === 'grid' ? 'gap-1 px-1.5 mr-0' : 'gap-1.5 px-2 mr-1 md:mr-3'} bg-slate-100 py-1 rounded-md shrink-0`}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={file.is_edited || false}
-                                                onChange={() => handleToggleEdited(file.id, file.is_edited || false)}
-                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                                                id={`edited-${file.id}`}
-                                            />
-                                            <label htmlFor={`edited-${file.id}`} className={layoutView === 'grid' ? "text-[10px] sm:text-xs font-medium text-zinc-600 cursor-pointer" : "text-xs font-medium text-zinc-600 cursor-pointer hidden sm:block"}>Edited</label>
-                                        </div>
-                                        <div className="flex items-center gap-0.5 ml-auto flex-wrap justify-end">
-                                            {layoutView !== 'grid' && (
-                                                <div className="hidden md:flex text-xs text-slate-400 mr-2 items-center gap-1">
-                                                    <Download className="w-3 h-3" />
-                                                    {file.download_count}
-                                                </div>
-                                            )}
-                                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="p-1 md:p-1.5 text-slate-400 hover:text-emerald-600 rounded-full hover:bg-emerald-50 transition-colors" title="View Original">
-                                                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                            </a>
-                                            <a href={rewriteUrlToR2(file.file_url)} download target="_blank" rel="noreferrer" onClick={(e) => {
-                                              // e.stopPropagation();
-                                              // optional: increment download count locally if we want
-                                            }} className="p-1 md:p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition-colors" title="Download">
-                                                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                            </a>
-                                            {isPortfolio && (
-                                                <button
-                                                    onClick={() => handleSetCover(file.id)}
-                                                    className={`p-1 md:p-1.5 rounded-full transition-colors ${file.id === files[0]?.id ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'}`}
-                                                    title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
-                                                >
-                                                    <Star className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
-                                                </button>
-                                            )}
-                                            <button 
-                                                onClick={() => deleteFile(file.id, file.file_path)}
-                                                className="p-1 md:p-1.5 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                  </div>
-                )}
-            </div>
+                    <button
+                        onClick={() => setIsEditingMeta(true)}
+                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-[3px] opacity-0 group-hover:opacity-100 transition-all mt-1"
+                        title="Edit Details"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+        </div>
+        
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={handleCopyLink} className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
+            {linkCopied ? <><Check className="w-3.5 h-3.5 text-emerald-600"/> <span className="text-emerald-600">Copied</span></> : <><Copy className="w-3.5 h-3.5"/> Copy link</>}
+          </button>
+          <a href={`/${gallery.id}/display`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-indigo-50 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors inline-flex items-center gap-1.5">
+            <LayoutGrid className="w-3.5 h-3.5" /> Live display
+          </a>
+          <a href={`/${gallery.id}`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5">
+            <ExternalLink className="w-3.5 h-3.5" /> Client preview
+          </a>
+          <button onClick={() => {
+              if (gallery.selection_status === 'submitted') {
+                  if (window.confirm("The client has already submitted their selection. Do you want to reopen it?")) {
+                      updateSelectionStatus('pending');
+                  }
+              } else {
+                  updateSelectionStatus(!gallery.link_enabled);
+              }
+          }} className={`font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border transition-colors inline-flex items-center gap-1.5 ${!gallery.link_enabled || gallery.selection_status === 'submitted' ? 'bg-rose-600 border-rose-600 text-white hover:bg-rose-700' : 'border-slate-200 bg-white text-slate-900 hover:bg-slate-50'}`}>
+             {!gallery.link_enabled ? <Lock className="w-3.5 h-3.5" /> : gallery.selection_status === 'submitted' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+             {!gallery.link_enabled ? 'Disabled' : gallery.selection_status === 'submitted' ? 'Locked (Submitted)' : 'Active'}
+          </button>
         </div>
       </div>
+
+      {/* Banner */}
+      {!isPortfolio && gallery.selection_status === 'submitted' && (
+          <div className="flex justify-between items-center bg-rose-50 border border-rose-200 border-l-[3px] border-l-rose-600 rounded-[3px] px-4 py-3.5 mb-6 flex-wrap gap-4">
+            <div>
+              <div className="text-[13.5px] font-semibold text-rose-900 mb-0.5">Client selection submitted</div>
+              <div className="text-[12.5px] text-rose-700">The client has finished selecting <b className="text-rose-900 font-bold">{clientSelections.length} photos</b>.</div>
+            </div>
+            <div className="text-[12px] flex gap-4 whitespace-nowrap">
+              <button onClick={() => setViewFilter('selected')} className="text-rose-900 underline underline-offset-2 hover:text-rose-700">View selection</button>
+              <button onClick={() => updateSelectionStatus('pending')} className="text-rose-900 underline underline-offset-2 hover:text-rose-700">Reopen selection</button>
+            </div>
+          </div>
+      )}
+
+      {/* Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[296px_1fr] gap-7 items-start">
+        
+        {/* Left Column */}
+        <div className="flex flex-col">
+          
+          {!isPortfolio && (
+            <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
+              <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+                <span className="text-[14px] opacity-60">●</span> Payment & access
+              </h2>
+              <div className="mb-4">
+                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Total agreed amount <span className="font-normal text-slate-400">— set 0 for volunteer</span></label>
+                <input 
+                    type="number" 
+                    value={agreedAmount}
+                    onChange={(e) => setAgreedAmount(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="KES 0"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Amount paid</label>
+                <input 
+                    type="number" 
+                    value={paid}
+                    onChange={(e) => setPaid(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="KES 0"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                />
+              </div>
+              <div className="mb-[14px]">
+                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Remaining balance</label>
+                <input 
+                    type="text"
+                    value={Math.max(0, (Number(agreedAmount) || 0) - (Number(paid) || 0))}
+                    disabled
+                    placeholder="KES 0"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-500 cursor-not-allowed"
+                />
+              </div>
+              {(Number(agreedAmount) || 0) === 0 && (
+                <div className="inline-flex items-center gap-1.5 text-[12px] color-indigo-600 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full mb-[14px] font-medium">
+                  ♡ Volunteer / collaboration
+                </div>
+              )}
+              <button 
+                onClick={updatePayment}
+                className="w-full justify-center font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 text-white hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 mt-4"
+              >
+                {paymentUpdated ? <Check className="w-4 h-4" /> : 'Update payment'}
+              </button>
+            </div>
+          )}
+
+          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
+            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+              <span className="text-[14px] opacity-60">●</span> Gallery settings
+            </h2>
+
+            {!isPortfolio && (
+                <>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <label className="block text-[11.5px] text-slate-500 mb-1 font-medium">Client selection</label>
+                    <div className="text-[11px] text-slate-400 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
+                  </div>
+                  <button 
+                    onClick={() => updateSelectionStatus(!gallery.link_enabled)}
+                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${!gallery.link_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${!gallery.link_enabled ? 'right-[2px]' : 'left-[2px]'}`}></div>
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Client unlock PIN</label>
+                  <input 
+                      type="text" 
+                      value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
+                      readOnly
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-600 cursor-not-allowed"
+                  />
+                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Share this PIN with clients if they need to unlock submitted selections.</div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Agreed number of photos</label>
+                  <input 
+                      type="number" 
+                      value={limit === 0 ? '' : limit}
+                      onChange={(e) => setLimit(e.target.value ? Number(e.target.value) : 0)}
+                      onBlur={updateSelectionLimit}
+                      placeholder="Unlimited"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Set to 0 or leave blank for unlimited. If greater than 0, clients are asked to confirm before selecting extras.</div>
+                </div>
+                </>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Password protection</label>
+              <div className="flex gap-2">
+                  <input 
+                      type="text" 
+                      placeholder="Leave blank for public"
+                      defaultValue={gallery.password || ''}
+                      onBlur={(e) => {
+                          if (e.target.value !== (gallery.password || '')) {
+                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => fetchGalleryData());
+                          }
+                      }}
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">If set, visitors must enter this password to view the gallery.</div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Link Expiration (Hours)</label>
+              <div className="flex gap-2">
+                  <input 
+                      type="number"
+                      value={expiryHours}
+                      onChange={(e) => setExpiryHours(Number(e.target.value))}
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+                  <button 
+                    onClick={handleExtendExpiration}
+                    className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                  >
+                    Apply
+                  </button>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Updates all files to expire N hours from now.</div>
+            </div>
+            
+            {isPrintsGallery && (
+                <div className="mb-0">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Downloads before clearing <span className="font-normal text-slate-400">— e.g. for prints</span></label>
+                  <div className="flex gap-2">
+                      <input 
+                          type="number"
+                          value={downloadsBeforeClearing}
+                          onChange={(e) => setDownloadsBeforeClearing(e.target.value ? Number(e.target.value) : '')}
+                          placeholder="0 = Unlimited"
+                          className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                      />
+                      <button 
+                        onClick={updatePayment}
+                        className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                      >
+                        Save
+                      </button>
+                  </div>
+                </div>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
+            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+              <span className="text-[14px] opacity-60">●</span> Gallery stats
+            </h2>
+            <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 text-[13px] text-slate-700">
+                <span>Total files</span><span className="font-serif text-[17px] text-slate-900">{files.length}</span>
+            </div>
+            {!isPortfolio && (
+                <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 text-[13px] text-slate-700">
+                    <span>Selected by client</span><span className="font-serif text-[17px] text-rose-600">{clientSelections.length}</span>
+                </div>
+            )}
+            <div className="flex justify-between items-baseline py-2.5 text-[13px] text-slate-700">
+                <span>Total downloads</span><span className="font-serif text-[17px] text-slate-900">{files.reduce((acc, f) => acc + (f.download_count || 0), 0)}</span>
+            </div>
+            
+            <button 
+               onClick={() => {
+                  const csvRows = [
+                      ["Filename", "Client Selected", "Main Selection", "Extra Selection", "Edited", "Downloads"],
+                      ...files.map(f => [
+                          f.file_name,
+                          clientSelections.includes(f.id) ? 'Yes' : 'No',
+                          mainSelections.includes(f.id) ? 'Yes' : 'No',
+                          limit > 0 && clientSelections.indexOf(f.id) >= limit ? 'Yes' : 'No',
+                          f.is_edited ? 'Yes' : 'No',
+                          f.download_count || 0
+                      ])
+                  ];
+                  const csvContent = csvRows.map(e => e.join(",")).join("\n");
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement("a");
+                  const url = URL.createObjectURL(blob);
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", `${gallery.client_name.replace(/\s+/g, '_')}_selections.csv`);
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+               }}
+               className="w-full justify-center mt-4 font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"
+            >
+               Export selections (CSV)
+            </button>
+          </div>
+
+        </div>
+
+        {/* Right Column */}
+        <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px]">
+          <div className="px-5 pt-5 pb-4 flex justify-between items-center border-b border-slate-200 flex-wrap gap-4">
+            <h2 className="font-serif font-medium text-[18px] m-0 text-slate-900">Gallery content</h2>
+            <div className="flex items-center gap-2">
+                <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    accept="image/*,video/*"
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="bg-emerald-600 text-white border-none text-[12.5px] font-medium px-4 py-2 rounded-[3px] inline-flex items-center gap-1.5 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Upload className="w-4 h-4" /> Upload files
+                </button>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-200 flex-wrap gap-2.5">
+            <div className="flex gap-1.5 flex-wrap">
+              <div onClick={() => setViewFilter('all')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>All ({files.length})</div>
+              <div onClick={() => setViewFilter('selected')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'selected' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Selected ({clientSelections.length})</div>
+              {limit > 0 && (
+                  <>
+                  <div onClick={() => setViewFilter('main')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'main' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Main ({mainSelections.length})</div>
+                  <div onClick={() => setViewFilter('extras')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'extras' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Extras ({extraSelections.length})</div>
+                  </>
+              )}
+            </div>
+            <div className="flex items-center gap-3.5 text-[12px] color-slate-500">
+               <button onClick={fetchGalleryData} className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="Refresh">
+                  <RefreshCw className="w-3.5 h-3.5" />
+               </button>
+            </div>
+          </div>
+          
+          {uploading && (
+             <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-[13px] font-medium text-slate-700 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-emerald-600"/> Uploading...</span>
+                    <span className="text-[13px] font-medium text-emerald-600">{progress}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+                </div>
+             </div>
+          )}
+
+          {files.length === 0 ? (
+            <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const fileList = e.dataTransfer.files;
+                    if (!fileList || fileList.length === 0) return;
+                    const filesToUpload = filterDuplicateFiles(fileList);
+                    if (filesToUpload.length > 0) {
+                        uploadFiles(gallery.id, filesToUpload, isPortfolio ? 876000 : expiryHours);
+                    }
+                }}
+                className={`flex-1 flex flex-col items-center justify-center p-12 text-center transition-colors ${isDragging ? 'bg-emerald-50/50' : 'bg-transparent'}`}
+            >
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                    <Upload className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No files uploaded yet</h3>
+                <p className="text-slate-500 text-sm max-w-sm">
+                    Drag and drop your photos and videos here, or click the upload button to get started.
+                </p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-[26px_minmax(56px,1fr)_100px_90px_84px] md:grid-cols-[26px_56px_1fr_100px_90px_84px] gap-3.5 px-5 py-2.5 text-[10.5px] tracking-[0.06em] uppercase text-slate-400 border-b border-slate-200 font-semibold sticky top-0 bg-white z-10 hidden md:grid">
+                <input 
+                    type="checkbox" 
+                    checked={visibleFiles.length > 0 && checkedFiles.length === visibleFiles.length}
+                    onChange={(e) => handleToggleCheckAll(e.target.checked)}
+                    className="w-[15px] h-[15px] accent-emerald-600 cursor-pointer"
+                />
+                <span></span>
+                <span>File</span>
+                <span>Status</span>
+                <span>Uploaded</span>
+                <span></span>
+              </div>
+
+              {visibleFiles.map((file) => {
+                 const isSelected = clientSelections.includes(file.id);
+                 return (
+                    <div key={file.id} className={`grid grid-cols-[26px_minmax(0,1fr)_50px] md:grid-cols-[26px_56px_minmax(0,1fr)_100px_90px_84px] gap-3.5 px-5 py-3 items-center border-b border-slate-100 hover:bg-slate-50 transition-colors ${checkedFiles.includes(file.id) ? 'bg-indigo-50/30' : isSelected ? 'bg-emerald-50/20' : ''}`}>
+                        <input 
+                            type="checkbox" 
+                            checked={checkedFiles.includes(file.id)}
+                            onChange={(e) => handleToggleCheck(file.id, e.target.checked)}
+                            className="w-[15px] h-[15px] accent-emerald-600 cursor-pointer shrink-0"
+                        />
+                        <div className="hidden md:block w-11 h-11 rounded-[6px] bg-slate-200 shrink-0 overflow-hidden relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
+                            {file.file_type === 'image' ? (
+                                <img 
+                                    src={file.thumbnail_url ? getOptimizedImageUrl(file.thumbnail_url, 100, 100) : getOptimizedImageUrl(file.file_url, 100, 100)}
+                                    alt="Thumbnail" 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        if (!target.dataset.retried) {
+                                            target.dataset.retried = 'true';
+                                            target.src = file.thumbnail_url ? rewriteUrlToR2(file.thumbnail_url) : rewriteUrlToR2(file.file_url);
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <video 
+                                    src={`${rewriteUrlToR2(file.file_url)}#t=0.001`} 
+                                    className="w-full h-full object-cover"
+                                    preload="metadata"
+                                    muted playsInline loop
+                                />
+                            )}
+                        </div>
+                        
+                        <div className="min-w-0">
+                            <div className="font-mono text-[12.5px] font-medium text-slate-900 truncate" title={file.file_name}>{file.file_name}</div>
+                            <div className="md:hidden text-[11px] text-slate-500 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
+                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                {isSelected && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-emerald-600 text-white">Selected</span>}
+                                {file.is_edited && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-indigo-50 text-indigo-600">Edited</span>}
+                            </div>
+                        </div>
+
+                        <div className="hidden md:block">
+                            {file.is_edited ? (
+                                <span className="text-[11.5px] font-medium text-slate-500 cursor-pointer hover:text-slate-900" onClick={() => handleToggleEdited(file.id, true)}>Edited</span>
+                            ) : (
+                                <span className="text-[11.5px] font-medium text-slate-400 cursor-pointer hover:text-slate-900" onClick={() => handleToggleEdited(file.id, false)}>—</span>
+                            )}
+                            {file.expires_at && new Date(file.expires_at) < new Date() && (
+                                <div className="text-[10.5px] text-rose-600 font-semibold mt-0.5">Expired</div>
+                            )}
+                        </div>
+
+                        <div className="hidden md:block text-[11px] text-slate-500">
+                            {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}
+                        </div>
+
+                        <div className="flex gap-2.5 justify-end text-[13px] text-slate-500 ml-auto md:ml-0">
+                            {isPortfolio && (
+                                <button
+                                    onClick={() => handleSetCover(file.id)}
+                                    className={`hover:text-slate-900 transition-colors ${file.id === files[0]?.id ? 'text-slate-900' : ''}`}
+                                    title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
+                                >
+                                    <Star className={`w-4 h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
+                                </button>
+                            )}
+                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors" title="View Original">
+                                <Eye className="w-4 h-4" />
+                            </a>
+                            <a href={rewriteUrlToR2(file.file_url)} download target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors hidden md:block" title="Download">
+                                <Download className="w-4 h-4" />
+                            </a>
+                            <button onClick={() => deleteFile(file.id, file.file_path)} className="hover:text-rose-600 transition-colors" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                 );
+              })}
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {checkedFiles.length > 0 && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-50 animate-in slide-in-from-bottom-8">
+              <span className="font-semibold text-sm whitespace-nowrap">{checkedFiles.length} selected</span>
+              <div className="w-px h-4 bg-slate-700 mx-1"></div>
+              <button
+                  onClick={handleDownloadZip}
+                  disabled={isZipping}
+                  className="flex items-center gap-2 text-sm font-medium hover:text-indigo-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                  {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                  <span>{isZipping ? 'Zipping...' : 'Download'}</span>
+              </button>
+              <button
+                  onClick={() => setIsRenameModalOpen(true)}
+                  disabled={isZipping}
+                  className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap hidden sm:flex"
+              >
+                  <Edit2 className="w-4 h-4" />
+                  <span>Rename</span>
+              </button>
+              <button
+                  onClick={handleDeleteSelected}
+                  disabled={isZipping}
+                  className="flex items-center gap-2 text-sm font-medium text-rose-400 hover:text-rose-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete</span>
+              </button>
+              <div className="w-px h-4 bg-slate-700 mx-1"></div>
+              <button 
+                  onClick={() => setCheckedFiles([])}
+                  className="p-1 hover:bg-slate-800 rounded-full transition-colors ml-1"
+              >
+                  <X className="w-4 h-4" />
+              </button>
+          </div>
+      )}
+
       {showEditedIndicator && editedCount > 0 && (
         <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-40 animate-in slide-in-from-bottom-8">
             <Check className="w-4 h-4 text-emerald-100" />
             <span className="font-semibold text-sm tracking-wide">{editedCount} {editedCount === 1 ? 'photo' : 'photos'} edited</span>
         </div>
       )}
+
       {/* Rename Modal */}
       {isRenameModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto">
             <div className="p-6 md:p-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Rename Selected Files</h2>
-              <p className="text-slate-500 text-sm mb-6">
+              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">Rename Selected Files</h2>
+              <p className="text-slate-500 text-[13px] mb-6">
                 Enter a base name (e.g., 'Wedding'). {checkedFiles.length} files will be sequentially named 'Wedding_001', 'Wedding_002', etc.
               </p>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-[11.5px] font-medium text-slate-700 mb-1">
                     Base Name
                   </label>
                   <input
                     type="text"
                     value={renameBaseName}
                     onChange={(e) => setRenameBaseName(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-[3px] bg-slate-50 hover:bg-slate-100 focus:bg-white focus:outline-none focus:border-slate-300 transition-all font-sans text-[13px]"
                     placeholder="Enter base name"
                     autoFocus
                   />
@@ -1837,19 +1378,18 @@ export const GalleryManager: React.FC = () => {
                     </p>
                   )}
                 </div>
-
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-2 pt-4">
                   <button
                     onClick={() => setIsRenameModalOpen(false)}
                     disabled={isRenaming}
-                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors font-medium disabled:opacity-50"
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-transparent rounded-[3px] transition-colors font-medium text-[12.5px] disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmRenameSelected}
                     disabled={isRenaming || !renameBaseName.trim()}
-                    className="bg-black text-white hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
+                    className="bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-[3px] font-medium text-[12.5px] transition-colors flex items-center gap-2"
                   >
                     {isRenaming && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isRenaming ? 'Renaming...' : 'Rename'}
