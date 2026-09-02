@@ -55,6 +55,8 @@ export const GalleryManager: React.FC = () => {
   const [isRenaming, setIsRenaming] = useState(false);
 
   const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
+  const [showEditedIndicator, setShowEditedIndicator] = useState(false);
+  const editedIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Expiration settings (in hours)
   const [expiryHours, setExpiryHours] = useState<number>(24);
@@ -493,6 +495,14 @@ export const GalleryManager: React.FC = () => {
       
       // Update local state
       setFiles(files.map(f => f.id === fileId ? { ...f, is_edited: !currentStatus } : f));
+      
+      setShowEditedIndicator(true);
+      if (editedIndicatorTimeoutRef.current) {
+          clearTimeout(editedIndicatorTimeoutRef.current);
+      }
+      editedIndicatorTimeoutRef.current = setTimeout(() => {
+          setShowEditedIndicator(false);
+      }, 3000);
     } catch (error: any) {
       console.error('Error toggling edited status:', error);
       alert('Failed to update edited status: ' + (error?.message || JSON.stringify(error)));
@@ -1792,7 +1802,7 @@ export const GalleryManager: React.FC = () => {
             </div>
         </div>
       </div>
-      {editedCount > 0 && (
+      {showEditedIndicator && editedCount > 0 && (
         <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-full shadow-[0_20px_40px_rgb(0,0,0,0.2)] z-40 animate-in slide-in-from-bottom-8">
             <Check className="w-4 h-4 text-emerald-100" />
             <span className="font-semibold text-sm tracking-wide">{editedCount} {editedCount === 1 ? 'photo' : 'photos'} edited</span>
