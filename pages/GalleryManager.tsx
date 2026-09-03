@@ -513,6 +513,33 @@ export const GalleryManager: React.FC = () => {
       }
   };
 
+    const handleBulkToggleEdited = async (markAsEdited: boolean) => {
+    if (checkedFiles.length === 0) return;
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ is_edited: markAsEdited })
+        .in('id', checkedFiles);
+        
+      if (error) throw error;
+      
+      setFiles(files.map(f => checkedFiles.includes(f.id) ? { ...f, is_edited: markAsEdited } : f));
+      
+      setShowEditedIndicator(true);
+      if (editedIndicatorTimeoutRef.current) {
+          clearTimeout(editedIndicatorTimeoutRef.current);
+      }
+      editedIndicatorTimeoutRef.current = setTimeout(() => {
+          setShowEditedIndicator(false);
+      }, 3000);
+      
+      setCheckedFiles([]);
+    } catch (error: any) {
+      console.error('Error in bulk edit toggle:', error);
+      alert('Failed to update edited status: ' + (error?.message || JSON.stringify(error)));
+    }
+  };
+
   const handleToggleEdited = async (fileId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -1289,12 +1316,17 @@ export const GalleryManager: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="hidden md:block">
-                            {file.is_edited ? (
-                                <span className="text-[11.5px] font-medium text-slate-500 cursor-pointer hover:text-slate-900" onClick={() => handleToggleEdited(file.id, true)}>Edited</span>
-                            ) : (
-                                <span className="text-[11.5px] font-medium text-slate-400 cursor-pointer hover:text-slate-900" onClick={() => handleToggleEdited(file.id, false)}>—</span>
-                            )}
+                        <div className="hidden md:flex flex-col justify-center">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={file.is_edited || false}
+                                    onChange={() => handleToggleEdited(file.id, file.is_edited || false)}
+                                    className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer shrink-0"
+                                    title="Toggle Edited Status"
+                                />
+                                {file.is_edited && <span className="text-[11px] font-medium text-indigo-600 cursor-pointer select-none" onClick={() => handleToggleEdited(file.id, true)}>Edited</span>}
+                            </div>
                             {file.expires_at && new Date(file.expires_at) < new Date() && (
                                 <div className="text-[10.5px] text-rose-600 font-semibold mt-0.5">Expired</div>
                             )}
@@ -1352,6 +1384,22 @@ export const GalleryManager: React.FC = () => {
               >
                   <Edit2 className="w-4 h-4" />
                   <span>Rename</span>
+              </button>
+              <div className="w-px h-4 bg-slate-700 mx-1 hidden sm:block"></div>
+              <button
+                  onClick={() => handleBulkToggleEdited(true)}
+                  disabled={isZipping}
+                  className="flex items-center gap-2 text-sm font-medium hover:text-indigo-300 disabled:opacity-50 transition-colors whitespace-nowrap hidden sm:flex"
+              >
+                  <Check className="w-4 h-4" />
+                  <span>Set Edited</span>
+              </button>
+              <button
+                  onClick={() => handleBulkToggleEdited(false)}
+                  disabled={isZipping}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-300 disabled:opacity-50 transition-colors whitespace-nowrap hidden sm:flex"
+              >
+                  <span>Unset</span>
               </button>
               <button
                   onClick={handleDeleteSelected}
