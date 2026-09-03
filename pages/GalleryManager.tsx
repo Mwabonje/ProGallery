@@ -1389,13 +1389,19 @@ export const GalleryManager: React.FC = () => {
               </p>
               
               <div className="mb-6">
-                 <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Expiration (Hours from now)</label>
-                 <input 
-                      type="number"
+                 <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Expiration Time</label>
+                 <select 
                       value={expiryHours}
                       onChange={(e) => setExpiryHours(Number(e.target.value))}
-                      className="w-full font-sans text-[14px] px-3.5 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                  />
+                      className="w-full font-sans text-[14px] px-3.5 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 appearance-none"
+                  >
+                      <option value={0.5}>30 minutes</option>
+                      <option value={1}>1 hour</option>
+                      <option value={2}>2 hours</option>
+                      <option value={24}>24 hours</option>
+                      <option value={72}>3 days</option>
+                      <option value={168}>1 week</option>
+                  </select>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -1407,7 +1413,7 @@ export const GalleryManager: React.FC = () => {
                 </button>
                 <button 
                   onClick={handleExtendExpiration}
-                  className="flex-1 py-2.5 rounded-lg bg-indigo-600 font-medium text-[13px] text-white hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
+                  className="flex-1 py-2.5 rounded-lg bg-slate-900 font-medium text-[13px] text-white hover:bg-slate-800 transition-colors shadow-sm shadow-slate-200"
                 >
                   Reactivate Files
                 </button>
