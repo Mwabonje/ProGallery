@@ -20,6 +20,7 @@ export const GalleryManager: React.FC = () => {
   const [clientSelections, setClientSelections] = useState<string[]>([]);
   const [selectionNotes, setSelectionNotes] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
   
   // Use Global Upload Context
   const { uploading, progress, activeGalleryId, uploadFiles, uploadTasks } = useUpload();
@@ -1074,15 +1075,39 @@ export const GalleryManager: React.FC = () => {
             )}
 
             <div className="mb-4">
-              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Password protection</label>
+              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium flex justify-between items-center">
+                 <span>Password protection</span>
+                 <button 
+                     type="button"
+                     onClick={() => {
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                        let pass = '';
+                        for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                        if (passwordInputRef.current) {
+                            passwordInputRef.current.value = pass;
+                            supabase.from('galleries').update({ password: pass }).eq('id', gallery.id).then(() => {
+                                fetchGalleryData();
+                                toast.success("Password generated & saved");
+                            });
+                        }
+                     }}
+                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
+                 >
+                     Generate
+                 </button>
+              </label>
               <div className="flex gap-2">
                   <input 
+                      ref={passwordInputRef}
                       type="text" 
                       placeholder="Leave blank for public"
                       defaultValue={gallery.password || ''}
                       onBlur={(e) => {
                           if (e.target.value !== (gallery.password || '')) {
-                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => fetchGalleryData());
+                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => {
+                                  fetchGalleryData();
+                                  toast.success("Password updated");
+                              });
                           }
                       }}
                       className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
