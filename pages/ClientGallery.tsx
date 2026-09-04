@@ -453,13 +453,16 @@ export const ClientGallery: React.FC = () => {
         }
       }
 
-      const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
       const actualFiles = allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD');
       
-      if (pwFile && pwFile.caption) {
-          setGalleryPassword(pwFile.caption);
+      const galleryPass = galData.password && galData.password.trim() !== '' ? galData.password : null;
+      const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
+      const activePass = galleryPass || (pwFile ? pwFile.caption : null);
+
+      if (activePass) {
+          setGalleryPassword(activePass);
           const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`);
-          if (savedAuth === pwFile.caption) {
+          if (savedAuth === activePass) {
               setIsAuthenticated(true);
           }
       } else {
