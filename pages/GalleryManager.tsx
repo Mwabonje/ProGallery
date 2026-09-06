@@ -219,9 +219,9 @@ export const GalleryManager: React.FC = () => {
 
     if (duplicateFiles.length > 0) {
         if (newFiles.length === 0) {
-            alert("All selected files have already been uploaded.");
+            toast.error("All selected files have already been uploaded.");
         } else {
-            alert(`${duplicateFiles.length} file(s) are already uploaded and will be skipped.`);
+            toast.error(`${duplicateFiles.length} file(s) are already uploaded and will be skipped.`);
         }
     }
     
@@ -1206,7 +1206,13 @@ export const GalleryManager: React.FC = () => {
         </div>
 
         {/* Right Column */}
-        <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px]">
+        <div 
+          className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] transition-colors"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={isDragging ? { backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgb(16, 185, 129)' } : {}}
+        >
           <div className="px-5 pt-5 pb-4 flex justify-between items-center border-b border-slate-200 flex-wrap gap-4">
             <h2 className="font-serif font-medium text-[18px] m-0 text-slate-900">Gallery content</h2>
             <div className="flex items-center gap-2">
@@ -1260,18 +1266,6 @@ export const GalleryManager: React.FC = () => {
 
           {files.length === 0 ? (
             <div 
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDragging(false);
-                    const fileList = e.dataTransfer.files;
-                    if (!fileList || fileList.length === 0) return;
-                    const filesToUpload = filterDuplicateFiles(fileList);
-                    if (filesToUpload.length > 0) {
-                        uploadFiles(gallery.id, filesToUpload, isPortfolio ? 876000 : expiryHours);
-                    }
-                }}
                 className={`flex-1 flex flex-col items-center justify-center p-12 text-center transition-colors ${isDragging ? 'bg-emerald-50/50' : 'bg-transparent'}`}
             >
                 <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
