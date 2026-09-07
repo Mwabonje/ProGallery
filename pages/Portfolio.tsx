@@ -531,6 +531,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     font-family:'Fraunces', serif;
     font-size:1.6rem;
     margin-bottom:.4rem;
+    text-transform: capitalize;
   }
 
   .mwabonje-card .coords {
@@ -854,7 +855,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                      {gallery.baseCategory || 'Photography'}
                    </span>
                    <div className="label">
-                     <div className="place serif">{gallery.client_name}</div>
+                     <div className="place serif">{gallery.client_name.toLowerCase()}</div>
                      <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
                    </div>
                  </Link>
