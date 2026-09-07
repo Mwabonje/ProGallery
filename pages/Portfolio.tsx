@@ -128,54 +128,114 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   /* ---------- NAV ---------- */
   .mwabonje-header {
-    position:fixed;
+    position:sticky;
     top:0; left:0; right:0;
     z-index:100;
-    padding:1.6rem clamp(1.25rem, 4vw, 3rem);
-    background:linear-gradient(to bottom, rgba(14,19,16,.65), transparent);
+    padding:1.4rem clamp(1.25rem, 4vw, 3rem);
+    background:var(--paper);
+    color:var(--ink);
+    border-bottom:1px solid rgba(14,19,16,0.06);
   }
 
-  .mwabonje-wrapper .wordmark {
+  .header-layout {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .brand-logo {
+    display:flex;
+    align-items:center;
+    gap:0.75rem;
+    color:var(--ink);
+    text-decoration:none;
+  }
+
+  .m-circle {
+    width:36px;
+    height:36px;
+    border:1px solid var(--ink);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     font-size:1.15rem;
+    font-style:italic;
+  }
+
+  .brand-text {
+    font-weight:600;
+    letter-spacing:0.18em;
+    font-size:0.8rem;
+  }
+
+  .primary-nav {
+    display:flex;
+    align-items:center;
+    gap:clamp(1.5rem, 2.5vw, 2.5rem);
+  }
+
+  .primary-nav a {
+    font-size:0.75rem;
     font-weight:500;
-    letter-spacing:.02em;
-  }
-
-  .mwabonje-wrapper nav.primary {
+    letter-spacing:0.1em;
+    color:rgba(14,19,16,.65);
+    text-decoration:none;
     display:flex;
     align-items:center;
-    gap:clamp(1.25rem, 3vw, 2.5rem);
-    font-size:.9rem;
+    gap:0.25rem;
+    transition:color 0.2s ease;
+  }
+  
+  .primary-nav a.active {
+    color:var(--ink);
   }
 
-  .mwabonje-wrapper nav.primary a {
-    opacity:.85;
-    transition:opacity .2s ease;
+  .primary-nav a:hover {
+    color:var(--ink);
   }
-  .mwabonje-wrapper nav.primary a:hover { opacity:1; }
 
-  .mwabonje-wrapper .menu-btn {
+  .primary-nav a .dot {
+    font-size:1.2rem;
+    line-height:0;
+    margin-top:-2px;
+  }
+  
+  .header-actions {
     display:flex;
     align-items:center;
-    gap:.6rem;
-    font-size:.9rem;
-    cursor:pointer;
-    border:1px solid var(--line-dark);
-    padding:.5rem 1.1rem;
-    border-radius:999px;
-    background:rgba(14,19,16,.3);
-    backdrop-filter:blur(6px);
-    transition:border-color .2s ease, background .2s ease;
+    gap: 1rem;
   }
-  .mwabonje-wrapper .menu-btn:hover { border-color:rgba(243,238,228,.35); }
 
-  .mwabonje-wrapper .menu-btn .bars {
+  .enquire-btn {
+    border:1px solid var(--ink);
+    padding:0.65rem 1.6rem;
+    font-size:0.75rem;
+    font-weight:500;
+    letter-spacing:0.1em;
+    color:var(--ink);
+    text-decoration:none;
+    transition:background 0.3s ease, color 0.3s ease;
+  }
+
+  .enquire-btn:hover {
+    background:var(--ink);
+    color:var(--paper);
+  }
+
+  .mobile-menu-btn {
+    display:none;
+  }
+
+  .mobile-menu-btn .bars {
     display:flex;
     flex-direction:column;
-    gap:3px;
+    gap:4px;
+    cursor:pointer;
   }
-  .mwabonje-wrapper .menu-btn .bars span {
-    width:14px; height:1px; background:var(--paper);
+  
+  .mobile-menu-btn .bars span {
+    width:22px; height:1px; background:var(--ink);
   }
 
   /* ---------- HERO ---------- */
@@ -605,7 +665,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   /* ---------- RESPONSIVE ---------- */
   @media (max-width: 860px) {
-    .mwabonje-wrapper nav.primary { display:none; }
+    .primary-nav { display:none; }
+    .enquire-btn { display:none; }
+    .mobile-menu-btn { display:block; }
     .mwabonje-grid { grid-template-columns:repeat(1, 1fr); }
     .mwabonje-card.c1, 
     .mwabonje-card.c2,
@@ -629,18 +691,26 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 `}</style>
       </Helmet>
 
-      <header className="mwabonje-header">
-        <div className="mwabonje-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <a href="#" className="wordmark serif">Mwabonje</a>
-          <nav className="primary">
-            <a href="#work">Work</a>
-            <a href="#films">Films</a>
-            <a href="#about">Studio</a>
-            <a href="https://mwabonjebooking.netlify.app/">Contact</a>
+<header className="mwabonje-header">
+        <div className="mwabonje-container header-layout">
+          <a href="#" className="brand-logo">
+            <div className="m-circle serif">M</div>
+            <span className="brand-text">MWABONJE</span>
+          </a>
+          <nav className="primary-nav">
+            <a href="#">HOME</a>
+            <a href="#work" className="active">PORTFOLIO <span className="dot">·</span></a>
+            <a href="#films">FILMS</a>
+            <a href="#about-me">ABOUT</a>
+            <a href="#">BLOG</a>
+            <a href="#">PRINTS</a>
           </nav>
-          <div className="menu-btn" onClick={() => setIsMenuOpen(true)}>
-            <span>Menu</span>
-            <div className="bars"><span></span><span></span><span></span></div>
+          
+          <div className="header-actions">
+            <a href="https://mwabonjebooking.netlify.app/" className="enquire-btn">ENQUIRE</a>
+            <div className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
+              <div className="bars"><span></span><span></span><span></span></div>
+            </div>
           </div>
         </div>
       </header>
