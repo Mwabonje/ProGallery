@@ -131,9 +131,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     position:fixed;
     top:0; left:0; right:0;
     z-index:100;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
     padding:1.6rem clamp(1.25rem, 4vw, 3rem);
     background:linear-gradient(to bottom, rgba(14,19,16,.65), transparent);
   }
@@ -343,6 +340,12 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     .about-me-image { aspect-ratio: 1/1; }
   }
 
+  .mwabonje-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
   .mwabonje-index {
     background:var(--paper);
     color:var(--ink);
@@ -443,10 +446,13 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     background:var(--paper-dim);
     color:var(--ink);
     padding:clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
+    border-top:1px solid var(--line-light);
+  }
+
+  .strip-grid {
     display:grid;
     grid-template-columns:1.1fr 1fr;
     gap:3rem;
-    border-top:1px solid var(--line-light);
   }
 
   .mwabonje-strip h3 {
@@ -606,7 +612,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     .mwabonje-card.c3, 
     .mwabonje-card.c4, 
     .mwabonje-card.c5 { grid-column:span 1; min-height:340px; }
-    .mwabonje-strip { grid-template-columns:1fr; }
+    .strip-grid { grid-template-columns:1fr; }
     .mwabonje-wrapper .overlay-grid { grid-template-columns:repeat(2,1fr); }
   }
 
@@ -624,16 +630,18 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       </Helmet>
 
       <header className="mwabonje-header">
-        <a href="#" className="wordmark serif">Mwabonje</a>
-        <nav className="primary">
-          <a href="#work">Work</a>
-          <a href="#films">Films</a>
-          <a href="#about">Studio</a>
-          <a href="https://mwabonjebooking.netlify.app/">Contact</a>
-        </nav>
-        <div className="menu-btn" onClick={() => setIsMenuOpen(true)}>
-          <span>Menu</span>
-          <div className="bars"><span></span><span></span><span></span></div>
+        <div className="mwabonje-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <a href="#" className="wordmark serif">Mwabonje</a>
+          <nav className="primary">
+            <a href="#work">Work</a>
+            <a href="#films">Films</a>
+            <a href="#about">Studio</a>
+            <a href="https://mwabonjebooking.netlify.app/">Contact</a>
+          </nav>
+          <div className="menu-btn" onClick={() => setIsMenuOpen(true)}>
+            <span>Menu</span>
+            <div className="bars"><span></span><span></span><span></span></div>
+          </div>
         </div>
       </header>
 
@@ -649,7 +657,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             backgroundPosition: 'center',
           } : {}}
         ></div>
-        <div className="hero-content">
+        <div className="hero-content mwabonje-container">
           <div className="hero-eyebrow">
             <span className="dot"></span>
             <span>Lamu · Shela · Mombasa</span>
@@ -666,103 +674,111 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       </section>
 
       <section className="mwabonje-index" id="work">
-        <div className="index-head">
-          <h2 className="serif">
-            {selectedCategory ? `${selectedCategory} places` : "Recent places"}
-            {selectedCategory && (
-              <span 
-                style={{ fontSize: '1rem', marginLeft: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', color: 'rgba(14,19,16,0.6)' }}
-                onClick={() => setSelectedCategory(null)}
-              >
-                (Clear filter)
-              </span>
-            )}
-          </h2>
-          <p className="count">{filteredGalleries.length > 0 ? `${filteredGalleries.length} locations shot over the last season, from lantern-lit courtyards to open water.` : "Loading recent places..."}</p>
-        </div>
-        <div className="mwabonje-grid">
-          {filteredGalleries.map((gallery, index) => {
-             const classIndex = (index % 5) + 1;
-             return (
-               <Link 
-                 to={`/${generateSlug(gallery.client_name)}`}
-                 key={gallery.id} 
-                 className={`mwabonje-card c${classIndex}`}
-                 style={{
-                   backgroundImage: `linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%), url(${getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)})`,
-                   backgroundSize: 'cover',
-                   backgroundPosition: 'center'
-                 }}
-               >
-                 <span 
-                   className="tag"
-                   onClick={(e) => handleCategoryClick(e, gallery.baseCategory || 'Photography')}
-                   style={{ cursor: 'pointer' }}
+        <div className="mwabonje-container">
+          <div className="index-head">
+            <h2 className="serif">
+              {selectedCategory ? `${selectedCategory} places` : "Recent places"}
+              {selectedCategory && (
+                <span 
+                  style={{ fontSize: '1rem', marginLeft: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', color: 'rgba(14,19,16,0.6)' }}
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  (Clear filter)
+                </span>
+              )}
+            </h2>
+            <p className="count">{filteredGalleries.length > 0 ? `${filteredGalleries.length} locations shot over the last season, from lantern-lit courtyards to open water.` : "Loading recent places..."}</p>
+          </div>
+          <div className="mwabonje-grid">
+            {filteredGalleries.map((gallery, index) => {
+               const classIndex = (index % 5) + 1;
+               return (
+                 <Link 
+                   to={`/${generateSlug(gallery.client_name)}`}
+                   key={gallery.id} 
+                   className={`mwabonje-card c${classIndex}`}
+                   style={{
+                     backgroundImage: `linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%), url(${getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)})`,
+                     backgroundSize: 'cover',
+                     backgroundPosition: 'center'
+                   }}
                  >
-                   {gallery.baseCategory || 'Photography'}
-                 </span>
-                 <div className="label">
-                   <div className="place serif">{gallery.client_name}</div>
-                   <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
-                 </div>
-               </Link>
-             );
-          })}
+                   <span 
+                     className="tag"
+                     onClick={(e) => handleCategoryClick(e, gallery.baseCategory || 'Photography')}
+                     style={{ cursor: 'pointer' }}
+                   >
+                     {gallery.baseCategory || 'Photography'}
+                   </span>
+                   <div className="label">
+                     <div className="place serif">{gallery.client_name}</div>
+                     <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
+                   </div>
+                 </Link>
+               );
+            })}
+          </div>
         </div>
       </section>
 
 {aboutGallery && (
         <section className="mwabonje-about" id="about-me">
-          <div className="about-me-grid">
-            <div className="about-me-image">
-              <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt="Mwabonje" />
-            </div>
-            <div className="about-me-content">
-              <h2 className="serif">
-                Capturing the<br/>
-                <em>Essence</em> of<br/>
-                the Moment.
-              </h2>
-              <div className="about-text">
-                {aboutGallery.title ? aboutGallery.title.split('\n').map((p, i) => (
-                  <p key={i}>{p}</p>
-                )) : (
-                  <>
-                    <p>I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.</p>
-                    <p>For me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.</p>
-                    <p>Available for travel worldwide. Let's create something beautiful together.</p>
-                  </>
-                )}
+          <div className="mwabonje-container">
+            <div className="about-me-grid">
+              <div className="about-me-image">
+                <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt="Mwabonje" />
               </div>
-              <a href="https://mwabonjebooking.netlify.app/" className="about-me-btn">Book a Session</a>
+              <div className="about-me-content">
+                <h2 className="serif">
+                  Capturing the<br/>
+                  <em>Essence</em> of<br/>
+                  the Moment.
+                </h2>
+                <div className="about-text">
+                  {aboutGallery.title ? aboutGallery.title.split('\n').map((p, i) => (
+                    <p key={i}>{p}</p>
+                  )) : (
+                    <>
+                      <p>I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.</p>
+                      <p>For me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.</p>
+                      <p>Available for travel worldwide. Let's create something beautiful together.</p>
+                    </>
+                  )}
+                </div>
+                <a href="https://mwabonjebooking.netlify.app/" className="about-me-btn">Book a Session</a>
+              </div>
             </div>
           </div>
         </section>
       )}
 
       <section className="mwabonje-strip" id="about">
-        <h3 className="serif">Studio work spanning couples, hospitality, and the coast itself.</h3>
-        <div className="services">
-          <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}><span>Couples &amp; weddings</span><span className="n">01</span></a>
-          <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}><span>Hospitality &amp; hotels</span><span className="n">02</span></a>
-          <a href="#films" id="films"><span>Film &amp; documentary</span><span className="n">03</span></a>
-          <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}><span>Portraits &amp; events</span><span className="n">04</span></a>
-          <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}><span>Places &amp; details</span><span className="n">05</span></a>
+        <div className="mwabonje-container strip-grid">
+          <h3 className="serif">Studio work spanning couples, hospitality, and the coast itself.</h3>
+          <div className="services">
+            <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}><span>Couples &amp; weddings</span><span className="n">01</span></a>
+            <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}><span>Hospitality &amp; hotels</span><span className="n">02</span></a>
+            <a href="#films" id="films"><span>Film &amp; documentary</span><span className="n">03</span></a>
+            <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}><span>Portraits &amp; events</span><span className="n">04</span></a>
+            <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}><span>Places &amp; details</span><span className="n">05</span></a>
+          </div>
         </div>
       </section>
 
       <footer className="mwabonje-footer" id="contact">
-        <div className="footer-top">
-          <span className="serif">Let's shoot<br/>something.</span>
-          <div className="footer-links">
-            <a href="https://www.instagram.com/mwabonje_/" target="_blank" rel="noopener noreferrer">Instagram</a>
-            <a href="https://www.tiktok.com/@mwabonje_?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer">TikTok</a>
-            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <div className="mwabonje-container">
+          <div className="footer-top">
+            <span className="serif">Let's shoot<br/>something.</span>
+            <div className="footer-links">
+              <a href="https://www.instagram.com/mwabonje_/" target="_blank" rel="noopener noreferrer">Instagram</a>
+              <a href="https://www.tiktok.com/@mwabonje_?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer">TikTok</a>
+              <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            </div>
           </div>
-        </div>
-        <div className="footer-bottom">
-          <span>© 2026 Mwabonje Photography, All Rights Reserved</span>
-          <span>Mombasa &amp; Lamu, Kenya</span>
+          <div className="footer-bottom">
+            <span>© 2026 Mwabonje Photography, All Rights Reserved</span>
+            <span>Mombasa &amp; Lamu, Kenya</span>
+          </div>
         </div>
       </footer>
 
