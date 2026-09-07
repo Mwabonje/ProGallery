@@ -75,9 +75,12 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const aboutGallery = galleries.find(g => g.client_name === '_ABOUT_' || g.baseCategory === 'ABOUT');
+  const portfolioGalleries = galleries.filter(g => g.id !== aboutGallery?.id);
+
   const filteredGalleries = selectedCategory 
-    ? galleries.filter(g => g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())) 
-    : galleries;
+    ? portfolioGalleries.filter(g => g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())) 
+    : portfolioGalleries;
 
   return (
     <div className="mwabonje-wrapper">
@@ -274,6 +277,72 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   }
 
   /* ---------- INDEX (light section) ---------- */
+/* ---------- ABOUT ME SECTION ---------- */
+  .mwabonje-about {
+    background:var(--paper);
+    color:var(--ink);
+    padding:clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
+  }
+  
+  .about-me-grid {
+    display:grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap:clamp(3rem, 8vw, 6rem);
+    align-items:center;
+  }
+  
+  .about-me-image {
+    position:relative;
+    width:100%;
+    aspect-ratio: 4/5;
+    border-radius:2px;
+    overflow:hidden;
+  }
+  
+  .about-me-image img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  
+  .about-me-content h2 {
+    font-size:clamp(2.5rem, 5vw, 4.2rem);
+    line-height:1.05;
+    margin-bottom:2rem;
+    font-weight:400;
+  }
+  
+  .about-me-content .about-text {
+    font-size:clamp(1rem, 1.5vw, 1.1rem);
+    line-height:1.75;
+    color:rgba(14,19,16,.75);
+    display:flex;
+    flex-direction:column;
+    gap:1.2rem;
+    margin-bottom:2.5rem;
+    max-width: 50ch;
+  }
+  
+  .about-me-btn {
+    display:inline-flex;
+    align-items:center;
+    padding:.8rem 1.8rem;
+    border:1px solid var(--ink);
+    border-radius:999px;
+    font-size:.9rem;
+    transition:background .3s ease, color .3s ease;
+  }
+  
+  .about-me-btn:hover {
+    background:var(--ink);
+    color:var(--paper);
+  }
+
+  @media (max-width: 900px) {
+    .about-me-grid { grid-template-columns:1fr; }
+    .about-me-image { aspect-ratio: 1/1; }
+  }
+
   .mwabonje-index {
     background:var(--paper);
     color:var(--ink);
@@ -641,6 +710,35 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           })}
         </div>
       </section>
+
+{aboutGallery && (
+        <section className="mwabonje-about" id="about-me">
+          <div className="about-me-grid">
+            <div className="about-me-image">
+              <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt="Mwabonje" />
+            </div>
+            <div className="about-me-content">
+              <h2 className="serif">
+                Capturing the<br/>
+                <em>Essence</em> of<br/>
+                the Moment.
+              </h2>
+              <div className="about-text">
+                {aboutGallery.title ? aboutGallery.title.split('\n').map((p, i) => (
+                  <p key={i}>{p}</p>
+                )) : (
+                  <>
+                    <p>I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.</p>
+                    <p>For me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.</p>
+                    <p>Available for travel worldwide. Let's create something beautiful together.</p>
+                  </>
+                )}
+              </div>
+              <a href="https://mwabonjebooking.netlify.app/" className="about-me-btn">Book a Session</a>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="mwabonje-strip" id="about">
         <h3 className="serif">Studio work spanning couples, hospitality, and the coast itself.</h3>
