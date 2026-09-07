@@ -175,7 +175,50 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     gap:clamp(1.5rem, 2.5vw, 2.5rem);
   }
 
-  .primary-nav a {
+  .nav-dropdown {
+    position: relative;
+    padding: 1.5rem 0;
+    margin: -1.5rem 0;
+  }
+
+  .nav-dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--paper);
+    min-width: 180px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid rgba(14,19,16,0.06);
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+  }
+
+  .nav-dropdown:hover .nav-dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .nav-dropdown-content a {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.7rem;
+    width: 100%;
+    text-align: left;
+    display: block;
+  }
+  
+  .nav-dropdown-content a:hover {
+    background: rgba(14,19,16,0.03);
+    color: var(--ink);
+  }
+
+  .primary-nav > a, .nav-dropdown > a {
     font-size:0.75rem;
     font-weight:500;
     letter-spacing:0.1em;
@@ -185,13 +228,33 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     align-items:center;
     gap:0.25rem;
     transition:color 0.2s ease;
+    position: relative;
   }
   
-  .primary-nav a.active {
+  .primary-nav > a::after, .nav-dropdown > a::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 1px;
+    bottom: -4px;
+    left: 0;
+    background-color: var(--ink);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+  }
+
+  .primary-nav > a:hover::after, .nav-dropdown > a:hover::after,
+  .primary-nav > a.active::after, .nav-dropdown > a.active::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+
+  .primary-nav > a.active, .nav-dropdown > a.active {
     color:var(--ink);
   }
 
-  .primary-nav a:hover {
+  .primary-nav > a:hover, .nav-dropdown > a:hover {
     color:var(--ink);
   }
 
@@ -699,7 +762,17 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           </a>
           <nav className="primary-nav">
             <a href="#">HOME</a>
-            <a href="#work" className="active">PORTFOLIO <span className="dot">·</span></a>
+            <div className="nav-dropdown">
+              <a href="#work" className="active">PORTFOLIO</a>
+              <div className="nav-dropdown-content">
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}>COUPLES</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>PORTRAITS</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Wedding')}>WEDDING</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}>EVENTS</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}>HOSPITALITY</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}>PLACES & DETAILS</a>
+              </div>
+            </div>
             <a href="#films">FILMS</a>
             <a href="#about-me">ABOUT</a>
             <a href="#">BLOG</a>
