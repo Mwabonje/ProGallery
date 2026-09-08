@@ -483,580 +483,298 @@ export const Dashboard: React.FC = () => {
   const storageUsagePercent = (totalStorageUsedMB / storageLimitMB) * 100;
 
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
-
   return (
-    <div className="admin-theme">
+    <div className="min-h-screen flex bg-[#F9F9F9] text-slate-800 font-sans">
+      {/* Dynamic old styles for components that still need them */}
       <style>{`
-        .admin-theme {
-          --sand:#F2EDE2;
-          --surface:#FFFFFF;
-          --ink:#1C1B18;
-          --ink-soft:#4A473E;
-          --line:#DED6C2;
-          --line-soft:#E9E3D4;
-          --muted:#8E8571;
-          --indigo:#242C4C;
-          --indigo-soft:#3B4676;
-          --indigo-tint:#E7E9F1;
-          --ochre:#B9822A;
-          --ochre-tint:#F4E7CD;
-          --rose:#A23B45;
-          --green:#3F6B4A;
-
-          font-family:'Inter', sans-serif;
-          background:var(--sand);
-          color:var(--ink);
-          min-height: 100vh;
-        }
-        .admin-theme .display{ font-family:'Space Grotesk', sans-serif; }
-        .admin-theme .mono{ font-family:'IBM Plex Mono', monospace; }
-
-        .shell{ display:grid; grid-template-columns:72px 1fr 268px; min-height:100vh; }
-
-        /* ---------------- ICON RAIL ---------------- */
-        .rail{
-          background:var(--indigo);
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          padding:20px 0;
-          position:sticky; top:0; height:100vh;
-        }
-        .rail-mark{
-          width:34px; height:34px;
-          border-radius:8px;
-          background:var(--ochre);
-          display:flex; align-items:center; justify-content:center;
-          font-family:'Space Grotesk', sans-serif;
-          font-weight:700;
-          font-size:15px;
-          color:var(--indigo);
-          margin-bottom:30px;
-        }
-        .rail-nav{ display:flex; flex-direction:column; gap:6px; flex:1; align-items:center; }
-        .rail-item{
-          width:52px;
-          display:flex; flex-direction:column; align-items:center; gap:5px;
-          padding:9px 0 7px 0;
-          border-radius:9px;
-          color:rgba(255,255,255,0.5);
-          cursor:pointer;
-          transition:background .15s ease, color .15s ease;
-        }
-        .rail-item:hover{ color:#fff; background:rgba(255,255,255,0.06); }
-        .rail-item.active{ color:#fff; background:rgba(255,255,255,0.12); }
-        .rail-item.active::before{
-          content:'';
-          width:3px; height:3px; border-radius:50%;
-          background:var(--ochre);
-        }
-        .rail-item svg{ width:18px; height:18px; }
-        .rail-item span{ font-size:8.5px; letter-spacing:0.02em; font-weight:500; }
-        .rail-foot{ color:rgba(255,255,255,0.4); display:flex; flex-direction:column; align-items:center; gap:5px; padding-top:14px; }
-        .rail-foot:hover{ color:#fff; cursor:pointer; }
-        .rail-foot svg{ width:17px; height:17px; }
-        .rail-foot span{ font-size:8.5px; font-weight:500; }
-
-        /* ---------------- MAIN ---------------- */
-        .main-content{ padding:0 0 60px 0; overflow-y:auto; height:100vh; }
-
-        .topbar{
-          background:var(--surface);
-          border-bottom:1px solid var(--line);
-          padding:20px 36px;
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-        }
-        .topbar-title{ display:flex; align-items:baseline; gap:10px; }
-        .topbar-title h1{
-          font-family:'Space Grotesk', sans-serif;
-          font-weight:600;
-          font-size:20px;
-          letter-spacing:-0.01em;
-        }
-        .topbar-title span{ font-size:12.5px; color:var(--muted); }
-
-        .topbar-actions{ display:flex; align-items:center; gap:10px; }
-        .search-pill{
-          display:flex; align-items:center; gap:8px;
-          background:var(--sand);
-          border:1px solid var(--line);
-          border-radius:20px;
-          padding:8px 15px;
-          width:220px;
-        }
-        .search-pill svg{ width:14px; height:14px; opacity:0.5; flex-shrink:0; }
-        .search-pill input{
-          border:none; background:transparent; outline:none;
-          font-size:12.5px; font-family:'Inter', sans-serif; color:var(--ink); width:100%;
-        }
-        .search-pill input::placeholder{ color:var(--muted); }
-        .custom-btn{
-          font-family:'Space Grotesk', sans-serif;
-          font-weight:500;
-          font-size:12.5px;
-          padding:9px 16px;
-          border-radius:20px;
-          display:inline-flex; align-items:center; gap:6px;
-          cursor:pointer;
-          border:1px solid transparent;
-        }
-        .btn-ochre{ background:var(--ochre); color:#2A1E08; }
-        .btn-ochre:hover{ background:#A5761F; }
-        .custom-btn svg{ width:13px; height:13px; }
-
-        /* pattern divider — signature motif */
-        .kanga-rule{
-          height:8px;
-          background-image:
-            repeating-linear-gradient(45deg, var(--ochre) 0 4px, transparent 4px 9px);
-          opacity:0.55;
-        }
-
-        .content-area{ padding:28px 36px 0 36px; }
-
-        /* KPI ledger strip */
-        .kpi-strip{
-          display:grid;
-          grid-template-columns:repeat(4, 1fr);
-          background:var(--surface);
-          border:1px solid var(--line);
-          border-radius:10px;
-          margin-bottom:30px;
-          overflow:hidden;
-        }
-        .kpi{
-          padding:16px 22px;
-          border-right:1px solid var(--line-soft);
-        }
-        .kpi:last-child{ border-right:none; }
-        .kpi-num{
-          font-family:'IBM Plex Mono', monospace;
-          font-size:22px;
-          font-weight:500;
-          color:var(--indigo);
-        }
-        .kpi-label{
-          font-size:11px;
-          color:var(--muted);
-          text-transform:uppercase;
-          letter-spacing:0.06em;
-          margin-top:3px;
-        }
-
-        /* Tabs */
-        .custom-tabs{ display:flex; gap:6px; margin-bottom:18px; }
-        .custom-tab{
-          font-family:'Space Grotesk', sans-serif;
-          font-weight:500;
-          font-size:13px;
-          padding:8px 16px;
-          border-radius:18px;
-          cursor:pointer;
-          color:var(--muted);
-        }
-        .custom-tab.active{ background:var(--indigo); color:#fff; }
-        .custom-tab .count{
-          font-family:'IBM Plex Mono', monospace;
-          font-size:10.5px;
-          margin-left:5px;
-          opacity:0.75;
-        }
-
-        /* Ledger table */
-        .ledger{
-          background:var(--surface);
-          border:1px solid var(--line);
-          border-radius:10px;
-          overflow:hidden;
-          margin-bottom:38px;
-        }
-        .ledger-head{
-          display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px;
-          padding:10px 20px;
-          background:var(--sand);
-          border-bottom:1px solid var(--line);
-          font-size:10.5px;
-          letter-spacing:0.07em;
-          text-transform:uppercase;
-          color:var(--muted);
-          font-weight:600;
-        }
-        .ledger-row{
-          display:grid;
-          grid-template-columns:34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px;
-          align-items:center;
-          padding:11px 20px;
-          border-bottom:1px solid var(--line-soft);
-          font-size:13px;
-          transition:background .12s ease;
-          cursor:pointer;
-        }
-        .ledger-row:last-child{ border-bottom:none; }
-        .ledger-row:hover{ background:var(--sand); }
-        .swatch{
-          width:30px; height:30px;
-          border-radius:6px;
-          flex-shrink:0;
-          background-size: cover;
-          background-position: center;
-        }
-        .row-name{ display:flex; align-items:center; gap:11px; }
-        .row-name-text{ font-weight:500; color:var(--ink); }
-        .row-cat{ color:var(--muted); font-size:12px; }
-        .status{
-          display:inline-flex; align-items:center; gap:6px;
-          font-size:11.5px; font-weight:500;
-        }
-        .status-dot{ width:6px; height:6px; border-radius:50%; }
-        .status.submitted .status-dot{ background:var(--rose); }
-        .status.live .status-dot{ background:var(--green); }
-        .status.expired .status-dot{ background:var(--ochre); }
-        .status.hidden .status-dot{ background:var(--muted); }
-        .num{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-soft); }
-        .row-updated{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted); }
-
-        .ledger-add{
-          display:flex; align-items:center; gap:8px;
-          padding:12px 20px;
-          color:var(--ochre);
-          font-size:12.5px; font-weight:500;
-          font-family:'Space Grotesk', sans-serif;
-          cursor:pointer;
-          border-top:1px dashed var(--line);
-        }
-        .ledger-add svg{ width:14px; height:14px; }
-        .ledger-add:hover{ background:var(--ochre-tint); }
-
-        /* ---------------- RIGHT PANEL ---------------- */
-        .side{ padding:28px 28px 60px 0; display:flex; flex-direction:column; gap:20px; overflow-y:auto; height:100vh; }
-        .card{
-          background:var(--surface);
-          border:1px solid var(--line);
-          border-radius:10px;
-          padding:16px;
-        }
-        .card-title{
-          font-family:'Space Grotesk', sans-serif;
-          font-weight:600;
-          font-size:13px;
-          margin-bottom:12px;
-          display:flex; justify-content:space-between; align-items:center;
-        }
-        .card-title .pill{
-          font-family:'IBM Plex Mono', monospace;
-          font-size:11px;
-          background:var(--indigo-tint);
-          color:var(--indigo);
-          padding:2px 8px;
-          border-radius:10px;
-        }
-        .side-btns{ display:flex; flex-direction:column; gap:8px; }
-        .side-btn{
-          border:1px solid var(--line);
-          border-radius:8px;
-          padding:9px 12px;
-          font-size:12px; font-weight:500;
-          display:flex; align-items:center; gap:8px;
-          cursor:pointer;
-          justify-content:center;
-        }
-        .side-btn:hover{ border-color:var(--muted); }
-        .side-btn svg{ width:13px; height:13px; opacity:0.7; }
-        .side-btn.dark{ background:var(--indigo); color:#fff; border-color:var(--indigo); }
-
-        .rank-row{
-          display:flex; justify-content:space-between; align-items:center;
-          padding:8px 0;
-          border-bottom:1px solid var(--line-soft);
-          font-size:12.5px;
-          cursor:pointer;
-        }
-        .rank-row:hover { background: var(--sand); }
-        .rank-row:last-child{ border-bottom:none; padding-bottom:0; }
-        .rank-num{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--muted); width:16px; display:inline-block; }
-        .rank-stats{ display:flex; gap:9px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--muted); }
-        .rank-stats span{ display:inline-flex; gap:3px; align-items:center; }
-        .rank-stats svg{ width:10px; height:10px; opacity:0.7; }
-
-        .log-item{ padding:9px 0; border-bottom:1px solid var(--line-soft); }
-        .log-item:last-child{ border-bottom:none; padding-bottom:0; }
-        .log-name{ font-size:11.5px; font-weight:600; color:var(--ink); }
-        .log-detail{ font-size:11px; color:var(--muted); margin-top:2px; line-height:1.4; }
-        .log-time{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; color:var(--muted); margin-top:3px; }
-        .log-list{ max-height:340px; overflow-y:auto; }
-        .log-list::-webkit-scrollbar{ width:3px; }
-        .log-list::-webkit-scrollbar-thumb{ background:var(--line); }
-
-        @media (max-width: 1200px){
-          .shell{ grid-template-columns:72px 1fr; }
-          .side{ display:none; }
-        }
+        .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }
+        .ledger { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 38px; }
+        .ledger-head { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+        .ledger-row { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; align-items: center; padding: 11px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; transition: background .12s ease; cursor: pointer; }
+        .ledger-row:hover { background: #f8fafc; }
+        .swatch { width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0; background-size: cover; background-position: center; }
+        .status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status.submitted .status-dot { background: #ef4444; }
+        .status.live .status-dot { background: #22c55e; }
+        .status.expired .status-dot { background: #eab308; }
+        .status.hidden .status-dot { background: #94a3b8; }
       `}</style>
-      <div className="shell">
-        <aside className="rail">
-          <div className="rail-mark">M</div>
-          <nav className="rail-nav">
-            <div className={`rail-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => navigate('/dashboard')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-              <span>Board</span>
-            </div>
-            <div className={`rail-item ${currentView === 'audience' ? 'active' : ''}`} onClick={() => navigate('/dashboard?view=audience')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg>
-              <span>Audience</span>
-            </div>
-            <div className={`rail-item ${currentView === 'blogs' ? 'active' : ''}`} onClick={() => navigate('/dashboard?view=blogs')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 2.5h9l4 4V21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6"/></svg>
-              <span>Blog</span>
-            </div>
-            <div className={`rail-item ${currentView === 'blog-analytics' ? 'active' : ''}`} onClick={() => navigate('/dashboard?view=blog-analytics')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 20 8 10l5 5 8-11"/></svg>
-              <span>Stats</span>
-            </div>
-            <div className={`rail-item ${currentView === 'performance' ? 'active' : ''}`} onClick={() => navigate('/dashboard?view=performance')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 19 9.5 8l4.5 6 6-10"/></svg>
-              <span>Perform</span>
-            </div>
-          </nav>
-          <div className="rail-foot" onClick={async () => { await supabase.auth.signOut(); navigate('/login'); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
-            <span>Exit</span>
-          </div>
-        </aside>
 
-        <main className="main-content">
-          {currentView === 'blogs' && <div className="p-8"><BlogAdmin /></div>}
-          {currentView === 'blog-analytics' && <div className="p-8"><BlogAnalytics /></div>}
-          
-          {(currentView === 'dashboard' || currentView === 'audience' || currentView === 'performance') && (
-            <>
-              <div className="topbar">
-                <div className="topbar-title">
-                  <h1>Galleries &amp; Deliveries</h1>
-                  <span>Ledger view · All Time</span>
-                </div>
-                <div className="topbar-actions">
-                  <div className="search-pill">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                    <input 
-                        type="text" 
-                        placeholder="Search galleries…" 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <button className="custom-btn btn-ochre" onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-                    New Gallery
-                  </button>
-                </div>
-              </div>
-              <div className="kanga-rule"></div>
-
-              <div className="content-area">
-                <div className="kpi-strip">
-                  <div className="kpi"><div className="kpi-num">{galleries.length}</div><div className="kpi-label">Total Galleries</div></div>
-                  <div className="kpi"><div className="kpi-num">{clientDeliveriesCount}</div><div className="kpi-label">Active Deliveries</div></div>
-                  <div className="kpi"><div className="kpi-num">{globalViews.toLocaleString()}</div><div className="kpi-label">Total Views</div></div>
-                  <div className="kpi"><div className="kpi-num">{galleries.reduce((acc, g) => acc + (g.downloadCount || 0), 0).toLocaleString()}</div><div className="kpi-label">Total Downloads</div></div>
-                </div>
-
-                <div className="custom-tabs">
-                  <div className="custom-tab active">Client Deliveries <span className="count">{clientDeliveriesCount}</span></div>
-                </div>
-
-                <div className="ledger">
-                  <div className="ledger-head">
-                    <div></div>
-                    <div>Gallery</div>
-                    <div>Category</div>
-                    <div>Status</div>
-                    <div>Items</div>
-                    <div>Views</div>
-                    <div>DLs</div>
-                    <div>Updated</div>
-                    <div></div>
-                  </div>
-                  <div id="delivery-rows">
-                    {processedGalleries.filter(g => !g.category || g.category.trim() === '').map(gallery => {
-                        let statusClass = 'live';
-                        let statusText = 'Live';
-                        if (gallery.selection_status === 'submitted') {
-                            statusClass = 'submitted';
-                            statusText = 'Selection submitted';
-                        } else if (!gallery.link_enabled) {
-                            statusClass = 'hidden';
-                            statusText = 'Hidden';
-                        } else if (gallery.expires_at && new Date(gallery.expires_at) < new Date()) {
-                            statusClass = 'expired';
-                            statusText = 'Expired';
-                        }
-                        
-                        return (
-                        <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
-                            <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#d1d5db' }}></div>
-                            <div className="row-name"><span className="row-name-text">{gallery.client_name}</span></div>
-                            <div className="row-cat">{gallery.category || 'Deliveries'}</div>
-                            <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
-                            <div className="num">{gallery.itemCount}</div>
-                            <div className="num">{getCardMetrics(gallery).v}</div>
-                            <div className="num">{gallery.downloadCount || 0}</div>
-                            <div className="row-updated">{formatDate(gallery.created_at)}</div>
-                            <div className="flex justify-end pr-2 gap-1">
-                                <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(`/g/${gallery.id}`, '_blank');
-                                    }}
-                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                    title="Preview Gallery"
-                                >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                                <button 
-                                    onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
-                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                    title="Delete Gallery"
-                                >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    )})}
-                  </div>
-                  <div className="ledger-add" onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-                    Add new delivery
-                  </div>
-                </div>
-
-                <div className="custom-tabs">
-                  <div className="custom-tab">Portfolio Collections <span className="count">{portfolioCount}</span></div>
-                </div>
-
-                <div className="ledger">
-                  <div className="ledger-head">
-                    <div></div>
-                    <div>Gallery</div>
-                    <div>Category</div>
-                    <div>Status</div>
-                    <div>Items</div>
-                    <div>Views</div>
-                    <div>DLs</div>
-                    <div>Updated</div>
-                    <div></div>
-                  </div>
-                  <div id="portfolio-rows">
-                    {processedGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').map(gallery => {
-                        let statusClass = 'live';
-                        let statusText = 'Live';
-                        if (gallery.selection_status === 'submitted') {
-                            statusClass = 'submitted';
-                            statusText = 'Selection submitted';
-                        } else if (!gallery.link_enabled) {
-                            statusClass = 'hidden';
-                            statusText = 'Hidden';
-                        }
-                        
-                        return (
-                        <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
-                            <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#d1d5db' }}></div>
-                            <div className="row-name"><span className="row-name-text">{gallery.client_name}</span></div>
-                            <div className="row-cat">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}</div>
-                            <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
-                            <div className="num">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
-                            <div className="num">{getCardMetrics(gallery).v}</div>
-                            <div className="num">{gallery.downloadCount || 0}</div>
-                            <div className="row-updated">{formatDate(gallery.created_at)}</div>
-                            <div className="flex justify-end pr-2 gap-1">
-                                <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(`/g/${gallery.id}`, '_blank');
-                                    }}
-                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                    title="Preview Gallery"
-                                >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                                <button 
-                                    onClick={(e) => deleteGallery(e, gallery.id, gallery.client_name)}
-                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                    title="Delete Gallery"
-                                >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    )})}
-                  </div>
-                  <div className="ledger-add" onClick={() => { setNewCategory('Wedding'); handleOpenCreateModal(); }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-                    Add new collection
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </main>
-
-        <aside className="side">
-          {userId && userEmail === 'ringa.michael@gmail.com' && (
-          <div className="card">
-            <div className="card-title">About Page <span className="pill">{aboutViews} views</span></div>
-            <div className="side-btns">
-              <div className="side-btn" onClick={() => setIsAboutModalOpen(true)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/></svg>
-                Edit About Me
-              </div>
-              <div className="side-btn dark" onClick={() => window.open(`/`, '_blank')}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-6-3.8-9S9.5 5.6 12 3Z"/></svg>
-                Live Portfolio
+      {/* Sidebar */}
+      <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
+        <div className="px-6 mb-10">
+          <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
+          <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-8 no-scrollbar">
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">General</h2>
+            <div className="px-3">
+              <div onClick={() => navigate('/dashboard')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'dashboard' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
+                <LayoutGrid className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Overview</span>
               </div>
             </div>
           </div>
-          )}
 
-          <div className="card">
-            <div className="card-title">Top Engagement</div>
-            <div id="engagement-list">
-                {[...galleries].sort((a,b) => (b.analytics.views + b.downloadCount) - (a.analytics.views + a.downloadCount)).slice(0, 5).map((gallery, i) => (
-                    <div key={'eng-'+gallery.id} className="rank-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
-                        <span><span className="rank-num">{String(i+1).padStart(2,'0')}</span>{gallery.client_name}</span>
-                        <span className="rank-stats">
-                            <span>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="2.6"/></svg>
-                                {gallery.analytics.views}
-                            </span>
-                            <span>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 20h16"/></svg>
-                                {gallery.downloadCount || 0}
-                            </span>
-                        </span>
-                    </div>
-                ))}
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content</h2>
+            <div className="px-3 space-y-0.5">
+              <div onClick={() => navigate('/dashboard?view=galleries')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'galleries' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
+                <div className="flex items-center">
+                  <ImageIcon className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Galleries</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{galleries.length}</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Proposals</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Delivery</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
+              </div>
+              <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'blogs' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
+                <div className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Blog</span>
+              </div>
+              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+                <div className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Pages</span>
+              </div>
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-title">Recent Activity</div>
-            <div className="log-list" id="activity-list">
-                {activities.length === 0 ? <div className="text-sm text-slate-400 py-4 text-center">No recent activity</div> : activities.map((log) => (
-                    <div key={log.id} className="log-item">
-                        <div className="log-name">{log.gallery?.client_name || 'Unknown Gallery'}</div>
-                        <div className="log-detail">{log.action.replace(/Client submitted selection of (\d+) photos/, 'Selected $1 photos')}</div>
-                        <div className="log-time">{formatDate(log.timestamp)}</div>
-                    </div>
-                ))}
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Business</h2>
+            <div className="px-3 space-y-0.5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  </div>
+                  <span className="text-[13px] font-medium">Print orders</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  </div>
+                  <span className="text-[13px] font-medium">Messages</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">4</span>
+              </div>
             </div>
           </div>
-        </aside>
+
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">System</h2>
+            <div className="px-3">
+              <div onClick={() => setIsAboutModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </div>
+                <span className="text-[13px] font-medium">Settings</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 px-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
+            J
+          </div>
+          <div>
+            <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
+            <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
+          </div>
+        </div>
       </div>
 
-      {/* Modals from original code are appended outside the shell so they can float above */}
-      {/* Create Gallery Modal */}
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        {currentView === 'dashboard' && (
+          <div className="max-w-5xl px-12 py-10">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-10">
+              <div>
+                <h1 className="text-[34px] text-slate-900 mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
+                <p className="text-slate-500 text-[14px]">A working summary of galleries, client proposals, and orders across the site.</p>
+              </div>
+              <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
+                Upload to gallery
+              </button>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-4 gap-4 mb-8">
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
+                <p className="text-[12px] text-slate-500 mb-2 font-medium">Published photos</p>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                  {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
+                </h3>
+                <p className="text-[11px] text-emerald-600">+42 this month</p>
+              </div>
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
+                <p className="text-[12px] text-slate-500 mb-2 font-medium">Active proposals</p>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>6</h3>
+                <p className="text-[11px] text-slate-500">2 awaiting client review</p>
+              </div>
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
+                <p className="text-[12px] text-slate-500 mb-2 font-medium">Print orders</p>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>3</h3>
+                <p className="text-[11px] text-red-500">1 unfulfilled</p>
+              </div>
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
+                <p className="text-[12px] text-slate-500 mb-2 font-medium">New messages</p>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>4</h3>
+                <p className="text-[11px] text-slate-500">since last visit</p>
+              </div>
+            </div>
+            
+            {/* Recent Activity List */}
+            <div className="bg-white rounded-[10px] border border-slate-200 shadow-sm overflow-hidden mb-10">
+              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+                <h2 className="text-[16px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600 }}>Recent activity</h2>
+                <span className="text-[12px] text-slate-500 cursor-pointer hover:text-slate-700">Last 7 days</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {activities.length > 0 ? (
+                  activities.map(act => (
+                    <div key={act.id} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">{act.action} {act.gallery?.client_name ? `— ${act.gallery.client_name}` : ''}</p>
+                        <p className="text-[12px] text-slate-500">System event</p>
+                      </div>
+                      <span className="text-[12px] text-slate-500">{formatDate(act.timestamp)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">Rafiki Hotel gallery published</p>
+                        <p className="text-[12px] text-slate-500">42 photos · Hospitality</p>
+                      </div>
+                      <span className="text-[12px] text-slate-500">2 hours ago</span>
+                    </div>
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">Proposal sent to Amara & Kito</p>
+                        <p className="text-[12px] text-slate-500">Wedding · Shela</p>
+                      </div>
+                      <span className="text-[12px] text-slate-500">Yesterday</span>
+                    </div>
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">New print order — 3 canvas prints</p>
+                        <p className="text-[12px] text-slate-500">Order #1042</p>
+                      </div>
+                      <span className="text-[12px] text-slate-500">2 days ago</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'galleries' && (
+          <div className="p-10 max-w-[1200px] mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Galleries</h1>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <input 
+                    type="text" 
+                    placeholder="Search galleries..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> New Gallery
+                </button>
+              </div>
+            </div>
+
+            <div className="ledger">
+              <div className="ledger-head">
+                <div></div>
+                <div>Gallery</div>
+                <div>Category</div>
+                <div>Status</div>
+                <div>Items</div>
+                <div>Views</div>
+                <div>DLs</div>
+                <div>Updated</div>
+                <div></div>
+              </div>
+              <div>
+                {galleries.filter(g => !searchQuery || g.client_name.toLowerCase().includes(searchQuery.toLowerCase())).map(gallery => {
+                  let statusClass = 'live';
+                  let statusText = 'Live';
+                  if (gallery.selection_status === 'submitted') {
+                      statusClass = 'submitted';
+                      statusText = 'Selection submitted';
+                  } else if (!gallery.link_enabled) {
+                      statusClass = 'hidden';
+                      statusText = 'Hidden';
+                  }
+                  
+                  return (
+                    <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
+                      <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}></div>
+                      <div className="flex items-center gap-3 font-medium text-slate-900">{gallery.client_name}</div>
+                      <div className="text-slate-500 text-[12px]">{gallery.category?.replace(/s*\[(swipe|grid)\]/gi, '')}</div>
+                      <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
+                      <div className="text-slate-500 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
+                      <div className="flex justify-end pr-2 gap-1">
+                          <button 
+                              onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          >
+                              <Eye className="w-4 h-4" />
+                          </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'blogs' && (
+          <div className="p-8">
+             <BlogAdmin />
+          </div>
+        )}
+
+        {currentView === 'blog-analytics' && (
+          <div className="p-8">
+             <BlogAnalytics />
+          </div>
+        )}
+
+      </div>
+
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
