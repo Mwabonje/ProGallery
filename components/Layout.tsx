@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Camera, LayoutDashboard, FileText, Loader2, Menu, X, Users, TrendingUp } from 'lucide-react';
+import { LogOut, Camera, LayoutDashboard, FileText, Loader2, Menu, X, Users, TrendingUp, Image as ImageIcon, LayoutGrid } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
-import { toast } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,206 +12,160 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { uploading, progress, cancelUpload } = useUpload();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  
+  const [portfolioCount, setPortfolioCount] = useState(0);
+  const [deliveryCount, setDeliveryCount] = useState(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
+      if (user) {
+        setUserId(user.id);
+        fetchCounts(user.id);
+      }
     });
   }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    // Listen to gallery updates to show real-time notifications
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'galleries',
-          filter: `photographer_id=eq.${userId}`
-        },
-        (payload) => {
-          const newGallery = payload.new;
-          const oldGallery = payload.old;
-          
-          if (oldGallery && oldGallery.selection_status !== 'submitted' && newGallery.selection_status === 'submitted') {
-            toast.success(`Client ${newGallery.client_name} submitted their photo selection!`, {
-              duration: 6000,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
+  
+  const fetchCounts = async (uid: string) => {
+    const { data } = await supabase.from('galleries').select('category').eq('photographer_id', uid);
+    if (data) {
+        setPortfolioCount(data.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length);
+        setDeliveryCount(data.filter(g => !g.category || g.category.trim() === '').length);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isGalleryManager = location.pathname.startsWith('/gallery/');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-[#09090b] text-slate-50 p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
-        <div className="flex items-center space-x-2">
-           <Camera className="w-6 h-6 text-emerald-400" />
-           <span className="text-xl font-bold tracking-tight font-serif" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Mwabonje</span>
-        </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="p-2 -mr-2 rounded-md hover:bg-white/5 transition-colors"
-          aria-label="Toggle menu"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
-      {/* Sidebar Overlay (Mobile) */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
+    <div className="min-h-screen flex bg-[#F9F9F9] text-slate-800 font-sans">
       {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-[#09090b] text-slate-50 transform transition-transform duration-300 ease-in-out shadow-xl
-        md:relative md:translate-x-0 md:shadow-none flex flex-col justify-between
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div>
-          <div className="p-6 hidden md:flex items-center space-x-3 border-b border-slate-700">
-            <Camera className="w-6 h-6 text-emerald-400" />
-            <span className="text-xl font-bold tracking-tight font-serif" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Mwabonje</span>
+      <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
+        <div className="px-6 mb-10">
+          <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
+          <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-8 no-scrollbar">
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">General</h2>
+            <div className="px-3">
+              <div onClick={() => navigate('/dashboard')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]`}>
+                <LayoutGrid className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Overview</span>
+              </div>
+            </div>
           </div>
-          
-          <nav className="mt-6 px-4 space-y-2">
-            <button
-              onClick={() => {
-                navigate('/dashboard');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/dashboard') && !location.search.includes('view=')
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <FileText className="w-5 h-5" />
-              <span>Dashboard</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/dashboard?view=audience');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                location.search.includes('view=audience')
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <Users className="w-5 h-5" />
-              <span>Audience Overview</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/dashboard?view=blogs');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                location.search.includes('view=blogs')
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <FileText className="w-5 h-5" />
-              <span>Blog Manager</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/dashboard?view=blog-analytics');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                location.search.includes('view=blog-analytics')
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span>Blog Analytics</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/dashboard?view=performance');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                location.search.includes('view=performance')
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span>Performance</span>
-            </button>
-          </nav>
+
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content</h2>
+            <div className="px-3 space-y-0.5">
+              <div onClick={() => navigate('/dashboard?view=galleries')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]`}>
+                <div className="flex items-center">
+                  <ImageIcon className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Galleries</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Proposals</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
+              </div>
+              <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${isGalleryManager ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3" />
+                  <span className="text-[13px] font-medium">Delivery</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{deliveryCount}</span>
+              </div>
+              <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]`}>
+                <div className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Blog</span>
+              </div>
+              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+                <div className="w-[15px] h-[15px] mr-3" />
+                <span className="text-[13px] font-medium">Pages</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Business</h2>
+            <div className="px-3 space-y-0.5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  </div>
+                  <span className="text-[13px] font-medium">Print orders</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+                <div className="flex items-center">
+                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  </div>
+                  <span className="text-[13px] font-medium">Messages</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">4</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="p-4 border-t border-slate-700 space-y-4">
-          {/* Upload Status in Sidebar */}
-          {uploading && (
-            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-                <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-slate-300 font-medium flex items-center gap-2">
-                        <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
-                        Uploading...
-                    </span>
-                    <span className="text-xs text-emerald-400 font-bold">{progress}%</span>
+        {uploading && (
+            <div className="px-6 mb-4">
+                <div className="bg-[#222] rounded-lg p-3 border border-[#333]">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-slate-300 font-medium flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                            Uploading...
+                        </span>
+                        <span className="text-xs text-emerald-400 font-bold">{progress}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-[#111] rounded-full overflow-hidden mb-3">
+                        <div 
+                            className="h-full bg-emerald-500 transition-all duration-300 ease-out"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+                    <button 
+                        onClick={cancelUpload}
+                        className="w-full text-xs text-center text-rose-400 hover:text-rose-300 font-medium py-1 hover:bg-[#333] rounded transition-colors"
+                    >
+                        Cancel Upload
+                    </button>
                 </div>
-                <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden mb-3">
-                    <div 
-                        className="h-full bg-emerald-500 transition-all duration-300 ease-out"
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
-                <button 
-                  onClick={cancelUpload}
-                  className="w-full text-xs text-center text-rose-400 hover:text-rose-300 font-medium py-1 hover:bg-slate-700 rounded transition-colors"
-                >
-                  Cancel Upload
-                </button>
             </div>
-          )}
+        )}
 
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
+        <div className="pt-4 px-6 flex justify-between items-center gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
+                J
+            </div>
+            <div>
+                <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
+                <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="text-slate-500 hover:text-white transition-colors">
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
-      </aside>
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] md:h-screen relative bg-gray-50">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-          {children}
-        </div>
+      <main className="flex-1 overflow-y-auto">
+        {children}
       </main>
     </div>
   );
