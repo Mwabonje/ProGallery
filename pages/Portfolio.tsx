@@ -109,6 +109,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     font-weight:400;
     -webkit-font-smoothing:antialiased;
     min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   .mwabonje-wrapper * { box-sizing:border-box; }

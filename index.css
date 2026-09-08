@@ -5,3 +5,9 @@
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
 }
+
+
+body, html {
+  overflow-x: hidden;
+  width: 100%;
+}
