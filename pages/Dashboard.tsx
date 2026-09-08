@@ -527,7 +527,7 @@ export const Dashboard: React.FC = () => {
                   <ImageIcon className="w-[15px] h-[15px] mr-3" />
                   <span className="text-[13px] font-medium">Galleries</span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{galleries.length}</span>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
               </div>
               <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
                 <div className="flex items-center">
@@ -536,12 +536,12 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
+              <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'delivery' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3" />
                   <span className="text-[13px] font-medium">Delivery</span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
+                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{clientDeliveriesCount}</span>
               </div>
               <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'blogs' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
@@ -724,7 +724,78 @@ export const Dashboard: React.FC = () => {
                 <div></div>
               </div>
               <div>
-                {galleries.filter(g => !searchQuery || g.client_name.toLowerCase().includes(searchQuery.toLowerCase())).map(gallery => {
+                {galleries.filter(g => (g.category && g.category.trim() !== '' && g.category !== 'ABOUT') && (!searchQuery || g.client_name.toLowerCase().includes(searchQuery.toLowerCase()))).map(gallery => {
+                  let statusClass = 'live';
+                  let statusText = 'Live';
+                  if (gallery.selection_status === 'submitted') {
+                      statusClass = 'submitted';
+                      statusText = 'Selection submitted';
+                  } else if (!gallery.link_enabled) {
+                      statusClass = 'hidden';
+                      statusText = 'Hidden';
+                  }
+                  
+                  return (
+                    <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
+                      <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}></div>
+                      <div className="flex items-center gap-3 font-medium text-slate-900">{gallery.client_name}</div>
+                      <div className="text-slate-500 text-[12px]">{gallery.category?.replace(/s*\[(swipe|grid)\]/gi, '')}</div>
+                      <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
+                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
+                      <div className="text-slate-500 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
+                      <div className="flex justify-end pr-2 gap-1">
+                          <button 
+                              onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          >
+                              <Eye className="w-4 h-4" />
+                          </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+{currentView === 'delivery' && (
+          <div className="p-10 max-w-[1200px] mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Delivery</h1>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <input 
+                    type="text" 
+                    placeholder="Search galleries..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> New Gallery
+                </button>
+              </div>
+            </div>
+
+            <div className="ledger">
+              <div className="ledger-head">
+                <div></div>
+                <div>Gallery</div>
+                <div>Category</div>
+                <div>Status</div>
+                <div>Items</div>
+                <div>Views</div>
+                <div>DLs</div>
+                <div>Updated</div>
+                <div></div>
+              </div>
+              <div>
+                {galleries.filter(g => (!g.category || g.category.trim() === '') && (!searchQuery || g.client_name.toLowerCase().includes(searchQuery.toLowerCase()))).map(gallery => {
                   let statusClass = 'live';
                   let statusText = 'Live';
                   if (gallery.selection_status === 'submitted') {
