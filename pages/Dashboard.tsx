@@ -321,7 +321,7 @@ export const Dashboard: React.FC = () => {
       if (error) throw error;
       toast.success(`Gallery "${newClientName}" created successfully!`);
       setIsCreateModalOpen(false);
-      navigate(`/gallery/${data.id}`);
+      navigate(`/gallery/${data.id}?returnTo=${currentView}`);
     } catch (error: any) {
       alert(`Database Error: ${error.message || 'Error creating gallery'}. Did you add the 'category' column?`);
       console.error(error);
@@ -780,7 +780,7 @@ export const Dashboard: React.FC = () => {
                     return (
                         <tr key={gallery.id} style={{cursor: 'pointer'}} onClick={(e) => {
                             if ((e.target as HTMLElement).closest('.row-actions')) return;
-                            navigate(`/gallery/${gallery.id}`);
+                            navigate(`/gallery/${gallery.id}?returnTo=${currentView}`);
                         }}>
                         <td className="cell-primary">
                             <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -796,7 +796,7 @@ export const Dashboard: React.FC = () => {
                         <td><span className={`badge ${statusClass}`}><span className="dot"></span>{statusText}</span></td>
                         <td>
                             <div className="row-actions">
-                                <button className="icon-btn" title="Edit" onClick={() => navigate(`/gallery/${gallery.id}`)}>
+                                <button className="icon-btn" title="Edit" onClick={() => navigate(`/gallery/${gallery.id}?returnTo=${currentView}`)}>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                                 </button>
                             </div>
@@ -869,7 +869,7 @@ export const Dashboard: React.FC = () => {
                     return (
                         <tr key={gallery.id} style={{cursor: 'pointer'}} onClick={(e) => {
                             if ((e.target as HTMLElement).closest('.row-actions')) return;
-                            navigate(`/gallery/${gallery.id}`);
+                            navigate(`/gallery/${gallery.id}?returnTo=${currentView}`);
                         }}>
                         <td className="cell-primary">
                             <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -884,7 +884,7 @@ export const Dashboard: React.FC = () => {
                         <td><span className={`badge ${statusClass}`}><span className="dot"></span>{statusText}</span></td>
                         <td>
                             <div className="row-actions">
-                                <button className="icon-btn" title="Edit" onClick={(e) => { e.stopPropagation(); navigate(`/gallery/${gallery.id}`); }}>
+                                <button className="icon-btn" title="Edit" onClick={(e) => { e.stopPropagation(); navigate(`/gallery/${gallery.id}?returnTo=${currentView}`); }}>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                                 </button>
                             </div>
