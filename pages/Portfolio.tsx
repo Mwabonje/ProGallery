@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl } from '../utils/formatters';
@@ -17,7 +17,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCategory = searchParams.get('category');
 
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -70,7 +71,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   const handleCategoryClick = (e: React.MouseEvent, category: string) => {
     e.preventDefault();
-    setSelectedCategory(category);
+    setSearchParams({ category });
     setIsMenuOpen(false);
     document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -825,7 +826,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               {selectedCategory && (
                 <span 
                   style={{ fontSize: '1rem', marginLeft: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', color: 'rgba(14,19,16,0.6)' }}
-                  onClick={() => setSelectedCategory(null)}
+                  onClick={() => setSearchParams({})}
                 >
                   (Clear filter)
                 </span>
