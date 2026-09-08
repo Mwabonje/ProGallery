@@ -844,12 +844,19 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                    to={`/${generateSlug(gallery.client_name)}`}
                    key={gallery.id} 
                    className={`mwabonje-card c${classIndex}`}
-                   style={{
-                     backgroundImage: `linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%), url(${getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)})`,
-                     backgroundSize: 'cover',
-                     backgroundPosition: 'center'
-                   }}
-                 >
+                   >
+                   {gallery.coverType?.startsWith('video') ? (
+                     <video 
+                       src={gallery.coverUrl!} 
+                       autoPlay muted loop playsInline 
+                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+                     />
+                   ) : (
+                     <div 
+                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, backgroundImage: `url(${getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                     />
+                   )}
+                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, background: 'linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%)', pointerEvents: 'none' }}></div>
                    <span 
                      className="tag"
                      onClick={(e) => handleCategoryClick(e, gallery.baseCategory || 'Photography')}
