@@ -350,6 +350,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     justify-content:flex-end;
     padding:0 clamp(1.25rem, 4vw, 3rem) clamp(2rem, 5vw, 3.5rem);
     overflow:hidden;
+    padding-top: 120px;
   }
 
   .mwabonje-wrapper .hero-bg {
@@ -416,7 +417,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   }
 
   .mwabonje-wrapper .hero-foot p {
-    max-width:34ch;
+    max-width:65ch;
     font-size:.95rem;
     line-height:1.55;
     color:rgba(243,238,228,.7);
