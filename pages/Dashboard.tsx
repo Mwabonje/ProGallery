@@ -7,6 +7,7 @@ import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/forma
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { BlogAdmin } from "./BlogAdmin";
+import { PagesAdmin } from "./PagesAdmin";
 import { BlogAnalytics } from "../components/BlogAnalytics";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -564,7 +565,7 @@ export const Dashboard: React.FC = () => {
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Blog</span>
               </div>
-              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+              <div onClick={() => navigate('/dashboard?view=pages')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'pages' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Pages</span>
               </div>
@@ -869,6 +870,9 @@ export const Dashboard: React.FC = () => {
           <div className="p-8">
              <BlogAdmin />
           </div>
+        )}
+        {currentView === 'pages' && (
+          <PagesAdmin />
         )}
 
         {currentView === 'blog-analytics' && (

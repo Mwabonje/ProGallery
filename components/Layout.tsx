@@ -40,6 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const isGalleryManager = location.pathname.startsWith('/gallery/');
+  const isPages = location.search.includes('view=pages');
 
   return (
     <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
@@ -89,7 +90,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Blog</span>
               </div>
-              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+              <div onClick={() => navigate('/dashboard?view=pages')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${isPages ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Pages</span>
               </div>
