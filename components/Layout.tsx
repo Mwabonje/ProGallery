@@ -42,7 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isGalleryManager = location.pathname.startsWith('/gallery/');
 
   return (
-    <div className="min-h-screen flex bg-[#F9F9F9] text-slate-800 font-sans">
+    <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
       {/* Sidebar */}
       <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
         <div className="px-6 mb-10">

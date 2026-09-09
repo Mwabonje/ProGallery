@@ -811,7 +811,7 @@ export const GalleryManager: React.FC = () => {
   const editedCount = files.filter(f => f.is_edited).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-slate-900 font-sans pb-20">
+    <div className="min-h-full bg-gray-50 text-slate-900 font-sans pb-20">
       {schemaMissing && (
         <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded text-rose-700 mb-6 mx-4 md:mx-8 mt-4">
           <h3 className="font-bold text-lg">Database Schema Update Required</h3>
