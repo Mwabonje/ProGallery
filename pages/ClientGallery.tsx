@@ -951,7 +951,9 @@ export const ClientGallery: React.FC = () => {
   const amountPaid = gallery?.amount_paid || 0;
   const balanceDue = Math.max(0, agreedAmount - amountPaid);
   const isPortfolio = Boolean(
-    gallery?.category && gallery.category.trim() !== "",
+    gallery?.category && 
+    gallery.category.trim() !== "" && 
+    gallery.category.toLowerCase().trim() !== "delivery"
   );
   
   const isBalancePending = balanceDue > 0 && !isPortfolio;
@@ -1743,21 +1745,20 @@ export const ClientGallery: React.FC = () => {
                         </>
                       )
                     ) : (
-                      <video
-                        src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                        className={`block transform transition-transform duration-[1.5s] w-full h-full object-cover ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} ${isPortfolio ? "pointer-events-none" : ""}`}
-                        controls={isFilmGallery || !isPortfolio}
-                        controlsList={
-                          isFileLocked(file.id) ? "nodownload nofullscreen" : "nodownload"
-                        }
-                        disablePictureInPicture={isFileLocked(file.id)}
-                        preload="metadata"
-                        autoPlay={isPortfolio && !isFilmGallery}
-                        muted={isPortfolio && !isFilmGallery}
-                        loop={isPortfolio}
-                        playsInline={isPortfolio}
-                        onContextMenu={(e) => e.preventDefault()}
-                      />
+                      <div className="relative w-full h-full">
+                        <video
+                          src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
+                          className={`block transform transition-transform duration-[1.5s] w-full h-full object-cover ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} pointer-events-none`}
+                          preload="metadata"
+                          autoPlay={isPortfolio}
+                          muted={true}
+                          loop={true}
+                          playsInline={true}
+                        />
+                        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md rounded-full p-1.5 shadow-sm">
+                          <FileVideo className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
                     )}
 
                     {/* Desktop Hover Overlay */}
@@ -2357,17 +2358,11 @@ export const ClientGallery: React.FC = () => {
                   className="max-w-full max-h-full object-contain pointer-events-auto shadow-2xl animate-in fade-in duration-300"
                   controls
                   controlsList={
-                    isFileLocked(lightboxFile ? lightboxFile.id : "") ? "nodownload nofullscreen" : "nodownload"
+                    isFileLocked(lightboxFile ? lightboxFile.id : "") ? "nodownload nofullscreen" : ""
                   }
                   disablePictureInPicture={isFileLocked(lightboxFile ? lightboxFile.id : "")}
                   autoPlay
                   playsInline preload="metadata"
-                  onTouchStart={handleLongPressStart}
-                  onTouchEnd={handleLongPressEnd}
-                  onTouchMove={handleLongPressEnd}
-                  onMouseDown={handleLongPressStart}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     if (!isPortfolio) {
@@ -2511,7 +2506,7 @@ export const ClientGallery: React.FC = () => {
                         : "Cancel"
                       : isFileLocked(lightboxFile ? lightboxFile.id : "")
                         ? "Locked"
-                        : "Download Photo"}
+                        : lightboxFile?.file_type === "video" || lightboxFile?.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? "Download Video" : "Download Photo"}
                   </span>
                 </button>
               )

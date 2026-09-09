@@ -285,7 +285,7 @@ export const Dashboard: React.FC = () => {
         matchedCategory = existingMatch.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
     }
     const baseCategory = matchedCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
-    const isPortfolio = baseCategory !== '';
+    const isPortfolio = baseCategory !== '' && baseCategory.toLowerCase() !== 'delivery';
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
@@ -482,7 +482,24 @@ export const Dashboard: React.FC = () => {
   const storageLimitMB = 5000;
   const storageUsagePercent = (totalStorageUsedMB / storageLimitMB) * 100;
 
+  
+  const handleDeleteGallery = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+        try {
+            const { error } = await supabase.from('galleries').delete().eq('id', id);
+            if (error) throw error;
+            toast.success('Gallery deleted successfully');
+            setGalleries(galleries.filter(g => g.id !== id));
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete gallery');
+        }
+    }
+  };
+
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
+
   return (
     <div className="min-h-screen flex bg-[#F9F9F9] text-slate-800 font-sans">
       {/* Dynamic old styles for components that still need them */}
@@ -749,8 +766,16 @@ export const Dashboard: React.FC = () => {
                           <button 
                               onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                              title="View Gallery"
                           >
                               <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                              onClick={(e) => handleDeleteGallery(e, gallery.id, gallery.client_name)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              title="Delete Gallery"
+                          >
+                              <Trash2 className="w-4 h-4" />
                           </button>
                       </div>
                     </div>
@@ -820,8 +845,16 @@ export const Dashboard: React.FC = () => {
                           <button 
                               onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                              title="View Gallery"
                           >
                               <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                              onClick={(e) => handleDeleteGallery(e, gallery.id, gallery.client_name)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              title="Delete Gallery"
+                          >
+                              <Trash2 className="w-4 h-4" />
                           </button>
                       </div>
                     </div>
