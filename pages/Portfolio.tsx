@@ -18,6 +18,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [settings, setSettings] = useState({
   brandName: "MWABONJE",
   heroLocation: "Lamu · Shela · Mombasa",
@@ -41,15 +42,31 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         if (error) throw error;
 
         
+        
         const settingsGal = (galleriesData || []).find(g => g.category === 'SETTINGS');
-        if (settingsGal && settingsGal.title) {
-          try {
-            const parsed = JSON.parse(settingsGal.title);
-            setSettings(prev => ({ ...prev, ...parsed }));
-          } catch(e) {}
+        if (settingsGal) {
+          if (settingsGal.title) {
+            try {
+              const parsed = JSON.parse(settingsGal.title);
+              setSettings(prev => ({ ...prev, ...parsed }));
+            } catch(e) {}
+          }
+          
+          const { data: settingsFiles } = await supabase
+              .from('files')
+              .select('file_url')
+              .eq('gallery_id', settingsGal.id)
+              .neq('file_path', 'GALLERY_PASSWORD')
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+          if (settingsFiles && settingsFiles.length > 0) {
+              setHeroImageUrl(settingsFiles[0].file_url);
+          }
         }
         
         const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+
 
 
         const enrichedGalleries = await Promise.all(
@@ -815,10 +832,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       <section className="mwabonje-hero">
         <div 
           className="hero-bg"
-          style={galleries.length > 0 && galleries[0].coverUrl ? {
+          style={(heroImageUrl || (galleries.length > 0 && galleries[0].coverUrl)) ? {
             backgroundImage: `
               linear-gradient(180deg, rgba(10,14,12,0.4) 0%, rgba(10,14,12,0.8) 100%), 
-              url(${getOptimizedImageUrl(galleries[0].coverUrl, 1920, 1080, 80)})
+              url(${getOptimizedImageUrl(heroImageUrl || galleries[0].coverUrl!, 1920, 1080, 80)})
             `,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
