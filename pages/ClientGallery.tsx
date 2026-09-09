@@ -1011,7 +1011,7 @@ export const ClientGallery: React.FC = () => {
     );
   const explicitGrid = isPortfolio && Boolean(gallery?.category?.toLowerCase().includes("[grid]"));
   const explicitSwipe = isPortfolio && Boolean(gallery?.category?.toLowerCase().includes("[swipe]"));
-  const isHorizontalLayout = explicitSwipe ? true : (explicitGrid ? false : (isPortraitGallery || isFilmGallery));
+  const isHorizontalLayout = explicitSwipe;
   const isInstagramGrid = explicitGrid;
   const isMasonryPortfolio = isPortfolio && !explicitGrid && !explicitSwipe && !isHorizontalLayout;
 
@@ -1588,8 +1588,8 @@ export const ClientGallery: React.FC = () => {
                 : isInstagramGrid 
                   ? "grid grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
                   : isPortfolio 
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" 
-                  : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                  ? "columns-1 sm:columns-2 lg:columns-3 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500" 
+                  : "columns-2 md:columns-3 lg:columns-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
             }
           >
             {(() => {
@@ -1625,7 +1625,7 @@ export const ClientGallery: React.FC = () => {
                     onMouseDown={handleLongPressStart}
                     onMouseUp={handleLongPressEnd}
                     onMouseLeave={handleLongPressEnd}
-                    className={`group relative flex flex-col ${isFilmGallery ? "flex-none w-auto h-full min-w-[300px] snap-center justify-center items-center" : isPortraitGallery ? "flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative" : (isPortfolio ? "aspect-auto w-full block bg-slate-50 relative" : "aspect-square bg-slate-100")} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} content-vis-auto max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
+                    className={`group relative flex flex-col ${isHorizontalLayout ? "flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative" : (isPortfolio ? "aspect-auto w-full block bg-slate-50 relative mb-1 md:mb-2" : "aspect-auto w-full block bg-slate-100 relative mb-2 md:mb-4")} overflow-hidden break-inside-avoid shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} content-vis-auto max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
                     style={{
                       contentVisibility: "auto",
                       WebkitTouchCallout: "none",
@@ -1745,7 +1745,7 @@ export const ClientGallery: React.FC = () => {
                     ) : (
                       <video
                         src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                        className={`block transform transition-transform duration-[1.5s] ${isFilmGallery ? "w-auto h-full max-w-[90vw] object-contain mx-auto" : "w-full h-full object-cover"} ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} ${isFilmGallery ? "" : isPortfolio ? "pointer-events-none" : ""}`}
+                        className={`block transform transition-transform duration-[1.5s] w-full h-full object-cover ${isHorizontalLayout ? "" : "md:group-hover:scale-[1.02]"} ${isPortfolio ? "pointer-events-none" : ""}`}
                         controls={isFilmGallery || !isPortfolio}
                         controlsList={
                           isFileLocked(file.id) ? "nodownload nofullscreen" : "nodownload"
