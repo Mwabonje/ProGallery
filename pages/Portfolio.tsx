@@ -18,6 +18,16 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [settings, setSettings] = useState({
+  brandName: "MWABONJE",
+  heroLocation: "Lamu · Shela · Mombasa",
+  heroTitle: "Salt, light\n& *slow* hours",
+  heroSubtitle: "Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.",
+  contactLink: "https://mwabonjebooking.netlify.app/",
+  footerEmail: "hello@mwabonje.studio",
+  instagramLink: "https://www.instagram.com/mwabonje_/",
+  tiktokLink: "https://www.tiktok.com/@mwabonje_"
+});
   const selectedCategory = searchParams.get('category');
 
   useEffect(() => {
@@ -30,7 +40,17 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         const { data: galleriesData, error } = await query;
         if (error) throw error;
 
-        const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '');
+        
+        const settingsGal = (galleriesData || []).find(g => g.category === 'SETTINGS');
+        if (settingsGal && settingsGal.title) {
+          try {
+            const parsed = JSON.parse(settingsGal.title);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          } catch(e) {}
+        }
+        
+        const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+
 
         const enrichedGalleries = await Promise.all(
           portfolioItems.map(async (gallery) => {
@@ -86,7 +106,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   return (
     <div className="mwabonje-wrapper">
       <Helmet>
-        <title>Mwabonje — Photography & Film, Kenyan Coast</title>
+        <title>{settings.brandName} — Photography & Film, Kenyan Coast</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
@@ -761,8 +781,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 <header className="mwabonje-header">
         <div className="mwabonje-container header-layout">
           <a href="#" className="brand-logo">
-            <div className="m-circle serif">M</div>
-            <span className="brand-text">MWABONJE</span>
+            <div className="m-circle serif">{settings.brandName.charAt(0)}</div>
+            <span className="brand-text">{settings.brandName}</span>
           </a>
           <nav className="primary-nav">
             <a href="#">HOME</a>
@@ -784,7 +804,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           </nav>
           
           <div className="header-actions">
-            <a href="https://mwabonjebooking.netlify.app/" className="enquire-btn">ENQUIRE</a>
+            <a href={settings.contactLink} className="enquire-btn" target="_blank" rel="noopener noreferrer">ENQUIRE</a>
             <div className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
               <div className="bars"><span></span><span></span><span></span></div>
             </div>
@@ -807,11 +827,11 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         <div className="hero-content mwabonje-container">
           <div className="hero-eyebrow">
             <span className="dot"></span>
-            <span>Lamu · Shela · Mombasa</span>
+            <span>{settings.heroLocation}</span>
           </div>
-          <h1 className="serif hero-title">Salt, light<br/>&amp; <em>slow</em> hours</h1>
+          <h1 className="serif hero-title" dangerouslySetInnerHTML={{ __html: settings.heroTitle.replace(/\n/g, '<br/>').replace(/\*(.*?)\*/g, '<em>$1</em>') }}></h1>
           <div className="hero-foot">
-            <p>Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.</p>
+            <p>{settings.heroSubtitle}</p>
             <div className="scroll-cue">
               <div className="stem"></div>
               Recent work
@@ -880,7 +900,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           <div className="mwabonje-container">
             <div className="about-me-grid">
               <div className="about-me-image">
-                <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt="Mwabonje" />
+                <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt={settings.brandName} />
               </div>
               <div className="about-me-content">
                 <h2 className="serif">
@@ -899,7 +919,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                     </>
                   )}
                 </div>
-                <a href="https://mwabonjebooking.netlify.app/" className="about-me-btn">Book a Session</a>
+                <a href={settings.contactLink} className="about-me-btn" target="_blank" rel="noopener noreferrer">Book a Session</a>
               </div>
             </div>
           </div>
@@ -924,13 +944,13 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           <div className="footer-top">
             <span className="serif">Let's shoot<br/>something.</span>
             <div className="footer-links">
-              <a href="https://www.instagram.com/mwabonje_/" target="_blank" rel="noopener noreferrer">Instagram</a>
-              <a href="https://www.tiktok.com/@mwabonje_?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer">TikTok</a>
+              {settings.instagramLink && <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer">Instagram</a>}
+              {settings.tiktokLink && <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer">TikTok</a>}
               <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer">WhatsApp</a>
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© 2026 Mwabonje Photography, All Rights Reserved</span>
+            <span>© {new Date().getFullYear()} {settings.brandName} Photography, All Rights Reserved</span>
             <span>Mombasa &amp; Lamu, Kenya</span>
           </div>
         </div>
@@ -938,7 +958,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
       <div className={`mwabonje-overlay ${isMenuOpen ? 'open' : ''}`}>
         <div className="overlay-head">
-          <span className="wordmark serif">Mwabonje</span>
+          <span className="wordmark serif">{settings.brandName}</span>
           <div className="close-btn" onClick={() => setIsMenuOpen(false)}>
             <span>Close</span>
             <div className="bars"><span></span><span></span><span></span></div>
@@ -967,7 +987,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         </div>
         <div className="overlay-foot">
           <span>Mombasa &amp; Lamu, Kenya</span>
-          <span>hello@mwabonje.studio</span>
+          <span>{settings.footerEmail}</span>
         </div>
       </div>
     </div>

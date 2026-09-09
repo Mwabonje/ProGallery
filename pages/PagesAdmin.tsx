@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Settings, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
+import { HomeSettingsModal } from '../components/HomeSettingsModal';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext'; // if it exists, otherwise get from session
 
 export const PagesAdmin: React.FC = () => {
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -21,8 +23,9 @@ export const PagesAdmin: React.FC = () => {
       path: '/',
       status: 'Live',
       lastEdited: 'Recently',
-      action: 'Edit hero & featured',
-      disabled: true,
+      action: 'Edit hero text',
+      onClick: () => setIsHomeModalOpen(true),
+      disabled: false,
     },
     {
       id: 'about',
@@ -100,6 +103,13 @@ export const PagesAdmin: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {isHomeModalOpen && userId && (
+        <HomeSettingsModal 
+          onClose={() => setIsHomeModalOpen(false)}
+          userId={userId}
+        />
+      )}
 
       {isAboutModalOpen && userId && (
         <AboutSettingsModal 
