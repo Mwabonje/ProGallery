@@ -501,7 +501,7 @@ export const Dashboard: React.FC = () => {
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
 
   return (
-    <div className="min-h-screen flex bg-[#F9F9F9] text-slate-800 font-sans">
+    <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
       {/* Dynamic old styles for components that still need them */}
       <style>{`
         .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }
