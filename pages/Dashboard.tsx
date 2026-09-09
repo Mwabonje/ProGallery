@@ -501,14 +501,14 @@ export const Dashboard: React.FC = () => {
   if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
 
   return (
-    <div className="h-screen w-full flex bg-[#F5F5F7] text-slate-800 font-sans overflow-hidden">
+    <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
       {/* Dynamic old styles for components that still need them */}
       <style>{`
         .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }
-        .ledger { background: #fff; border: 1px solid rgba(226, 232, 240, 0.6); border-radius: 16px; overflow: hidden; margin-bottom: 38px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .ledger-head { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; padding: 10px 20px; background: transparent; border-bottom: 1px solid rgba(226, 232, 240, 0.6); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; font-weight: 500; }
-        .ledger-row { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; align-items: center; padding: 12px 20px; border-bottom: 1px solid rgba(241, 245, 249, 0.8); font-size: 13px; font-weight: 500; transition: background .15s ease; cursor: pointer; color: #1e293b; }
-        .ledger-row:hover { background: #f8fafc; } .ledger-row:last-child { border-bottom: none; }
+        .ledger { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 38px; }
+        .ledger-head { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+        .ledger-row { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; align-items: center; padding: 11px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; transition: background .12s ease; cursor: pointer; }
+        .ledger-row:hover { background: #f8fafc; }
         .swatch { width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0; background-size: cover; background-position: center; }
         .status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -519,9 +519,9 @@ export const Dashboard: React.FC = () => {
       `}</style>
 
       {/* Sidebar */}
-      <div className="w-[240px] bg-[#F5F5F7] text-slate-600 h-screen sticky top-0 flex flex-col py-8 border-r border-slate-200/60 shrink-0 shrink-0">
+      <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
         <div className="px-6 mb-10">
-          <h1 className="text-slate-900 text-[18px] font-semibold tracking-tight">Mwabonje</h1>
+          <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
           <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
         </div>
         
@@ -529,7 +529,7 @@ export const Dashboard: React.FC = () => {
           <div>
             <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">General</h2>
             <div className="px-3">
-              <div onClick={() => navigate('/dashboard')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'dashboard' ? 'bg-black/5 text-black' : 'hover:text-black hover:bg-black/5'}`}>
+              <div onClick={() => navigate('/dashboard')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'dashboard' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <LayoutGrid className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Overview</span>
               </div>
@@ -539,32 +539,32 @@ export const Dashboard: React.FC = () => {
           <div>
             <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content</h2>
             <div className="px-3 space-y-0.5">
-              <div onClick={() => navigate('/dashboard?view=galleries')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'galleries' ? 'bg-black/5 text-black' : 'hover:text-black hover:bg-black/5'}`}>
+              <div onClick={() => navigate('/dashboard?view=galleries')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'galleries' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="flex items-center">
                   <ImageIcon className="w-[15px] h-[15px] mr-3" />
                   <span className="text-[13px] font-medium">Galleries</span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-black hover:bg-black/5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3" />
                   <span className="text-[13px] font-medium">Proposals</span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
               </div>
-              <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'delivery' ? 'bg-black/5 text-black' : 'hover:text-black hover:bg-black/5'}`}>
+              <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'delivery' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3" />
                   <span className="text-[13px] font-medium">Delivery</span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{clientDeliveriesCount}</span>
               </div>
-              <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'blogs' ? 'bg-black/5 text-black' : 'hover:text-black hover:bg-black/5'}`}>
+              <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'blogs' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Blog</span>
               </div>
-              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-black hover:bg-black/5">
+              <div className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Pages</span>
               </div>
@@ -574,7 +574,7 @@ export const Dashboard: React.FC = () => {
           <div>
             <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Business</h2>
             <div className="px-3 space-y-0.5">
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-black hover:bg-black/5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
@@ -583,7 +583,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-black hover:bg-black/5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -598,7 +598,7 @@ export const Dashboard: React.FC = () => {
           <div>
             <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">System</h2>
             <div className="px-3">
-              <div onClick={() => setIsAboutModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-black hover:bg-black/5">
+              <div onClick={() => setIsAboutModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
                 <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </div>
@@ -613,7 +613,7 @@ export const Dashboard: React.FC = () => {
             J
           </div>
           <div>
-            <div className="text-[13px] font-bold text-slate-900 leading-none">JAMBO</div>
+            <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
             <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
           </div>
         </div>
@@ -626,36 +626,36 @@ export const Dashboard: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-start mb-10">
               <div>
-                <h1 className="text-[32px] text-slate-900 mb-1 font-semibold tracking-tight">Overview</h1>
+                <h1 className="text-[34px] text-slate-900 mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
                 <p className="text-slate-500 text-[14px]">A working summary of galleries, client proposals, and orders across the site.</p>
               </div>
-              <button onClick={handleOpenCreateModal} className="bg-black hover:bg-slate-800 text-white px-5 py-2 rounded-full font-medium transition-colors text-[13.5px] shadow-sm">
+              <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
                 Upload to gallery
               </button>
             </div>
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
                 <p className="text-[12px] text-slate-500 mb-2 font-medium">Published photos</p>
-                <h3 className="text-[28px] text-slate-900 mb-1 font-semibold tracking-tight">
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
                   {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
                 </h3>
                 <p className="text-[11px] text-emerald-600">+42 this month</p>
               </div>
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
                 <p className="text-[12px] text-slate-500 mb-2 font-medium">Active proposals</p>
-                <h3 className="text-[28px] text-slate-900 mb-1 font-semibold tracking-tight">6</h3>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>6</h3>
                 <p className="text-[11px] text-slate-500">2 awaiting client review</p>
               </div>
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
                 <p className="text-[12px] text-slate-500 mb-2 font-medium">Print orders</p>
-                <h3 className="text-[28px] text-slate-900 mb-1 font-semibold tracking-tight">3</h3>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>3</h3>
                 <p className="text-[11px] text-red-500">1 unfulfilled</p>
               </div>
-              <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
                 <p className="text-[12px] text-slate-500 mb-2 font-medium">New messages</p>
-                <h3 className="text-[28px] text-slate-900 mb-1 font-semibold tracking-tight">4</h3>
+                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>4</h3>
                 <p className="text-[11px] text-slate-500">since last visit</p>
               </div>
             </div>
@@ -710,7 +710,7 @@ export const Dashboard: React.FC = () => {
         {currentView === 'galleries' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-[28px] text-slate-900 font-semibold tracking-tight">Galleries</h1>
+              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Galleries</h1>
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -719,10 +719,10 @@ export const Dashboard: React.FC = () => {
                     placeholder="Search galleries..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-full text-[13px] focus:outline-none focus:border-slate-400"
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
                   />
                 </div>
-                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-black text-white px-4 py-2 rounded-full hover:bg-slate-800 transition-colors text-[13px] font-medium flex items-center gap-2">
+                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
                   <Plus className="w-4 h-4" /> New Gallery
                 </button>
               </div>
@@ -789,7 +789,7 @@ export const Dashboard: React.FC = () => {
 {currentView === 'delivery' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-[28px] text-slate-900 mb-1 font-semibold tracking-tight">Delivery</h1>
+              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Delivery</h1>
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -798,10 +798,10 @@ export const Dashboard: React.FC = () => {
                     placeholder="Search galleries..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-full text-[13px] focus:outline-none focus:border-slate-400"
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
                   />
                 </div>
-                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-black text-white px-4 py-2 rounded-full hover:bg-slate-800 transition-colors text-[13px] font-medium flex items-center gap-2">
+                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
                   <Plus className="w-4 h-4" /> New Gallery
                 </button>
               </div>
