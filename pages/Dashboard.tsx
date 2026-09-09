@@ -623,7 +623,7 @@ export const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         {currentView === 'dashboard' && (
-          <div className="max-w-5xl px-12 py-10">
+          <div className="p-10 max-w-[1200px] mx-auto">
             {/* Header */}
             <div className="flex justify-between items-start mb-10">
               <div>
