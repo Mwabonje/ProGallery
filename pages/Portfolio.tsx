@@ -402,15 +402,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
 
   /* ---------- HERO ---------- */
-  .mwabonje-hero {
+    .mwabonje-hero {
     position:relative;
-    min-height:calc(100vh - 85px);
+    min-height:calc(100svh - 85px);
     display:flex;
     flex-direction:column;
     justify-content:flex-end;
-    padding:0 clamp(1.25rem, 4vw, 3rem) clamp(2rem, 5vw, 3.5rem);
+    padding:clamp(60px, 8vh, 120px) clamp(1.25rem, 4vw, 3rem) clamp(1.5rem, 4vh, 3.5rem);
     overflow:hidden;
-    padding-top: 120px;
   }
 
   .mwabonje-wrapper .hero-bg {
@@ -452,10 +451,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     50%{opacity:1; transform:scale(1.3);}
   }
 
-  .mwabonje-wrapper h1.hero-title {
+    .mwabonje-wrapper h1.hero-title {
     font-weight:400;
     line-height:.92;
-    font-size:clamp(3.2rem, 9.5vw, 8.5rem);
+    font-size:clamp(3.2rem, min(8vw, 16vh), 8.5rem);
     letter-spacing:-.01em;
     margin: 0;
   }
@@ -465,14 +464,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     color:var(--gold);
   }
 
-  .mwabonje-wrapper .hero-foot {
+    .mwabonje-wrapper .hero-foot {
     display:flex;
     justify-content:space-between;
     align-items:flex-end;
-    margin-top:2.5rem;
-    padding-top:1.75rem;
+    margin-top:clamp(1.5rem, 4vh, 2.5rem);
+    padding-top:clamp(1rem, 3vh, 1.75rem);
     border-top:1px solid var(--line-dark);
-    gap:2rem;
+    gap:clamp(1rem, 2vh, 2rem);
     flex-wrap:wrap;
   }
 
@@ -876,10 +875,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             <div className="m-circle serif">{settings.brandName.charAt(0)}</div>
             <span className="brand-text">{settings.brandName}</span>
           </a>
-          <nav className="primary-nav">
-            <a href="#">HOME</a>
+                              <nav className="primary-nav">
+            <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>HOME</a>
             <div className="nav-dropdown">
-              <a href="#work" className="active">PORTFOLIO</a>
+              <a href="#work" className="active" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }}>PORTFOLIO</a>
               <div className="nav-dropdown-content">
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}>COUPLES</a>
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>PORTRAITS</a>
@@ -889,10 +888,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}>PLACES & DETAILS</a>
               </div>
             </div>
-            <a href="#films">FILMS</a>
-            <a href="#about-me">ABOUT</a>
-            <a href="#">BLOG</a>
-            <a href="#">PRINTS</a>
+            <a href="#films" onClick={(e) => { e.preventDefault(); document.getElementById('films')?.scrollIntoView({ behavior: 'smooth' }); }}>FILMS</a>
+            <a href="#about-me" onClick={(e) => { e.preventDefault(); document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' }); }}>ABOUT</a>
+            <a href="/blog">BLOG</a>
+            <a href="/prints">PRINTS</a>
           </nav>
           
           <div className="header-actions">
