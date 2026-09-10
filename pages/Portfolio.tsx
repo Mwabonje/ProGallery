@@ -6,6 +6,7 @@ import { Gallery } from '../types';
 import { getOptimizedImageUrl } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
+import { ChevronDown } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -424,6 +425,11 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     margin: 0;
   }
 
+  @keyframes subtle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(5px); }
+  }
+  
   .mwabonje-wrapper .scroll-cue {
     font-size:.75rem;
     color:rgba(243,238,228,.5);
@@ -431,10 +437,17 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     align-items:center;
     gap:.6rem;
     white-space:nowrap;
+    cursor: pointer;
+    transition: color 0.3s;
   }
-  .mwabonje-wrapper .scroll-cue .stem {
-    width:1px; height:28px;
-    background:linear-gradient(to bottom, var(--gold), transparent);
+  
+  .mwabonje-wrapper .scroll-cue:hover {
+    color:rgba(243,238,228,.9);
+  }
+
+  .mwabonje-wrapper .scroll-cue .bounce-chevron {
+    animation: subtle-bounce 2s infinite ease-in-out;
+    color: var(--gold);
   }
 
   /* ---------- INDEX (light section) ---------- */
@@ -850,8 +863,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           <h1 className="serif hero-title" dangerouslySetInnerHTML={{ __html: settings.heroTitle.replace(/\n/g, '<br/>').replace(/\*(.*?)\*/g, '<em>$1</em>') }}></h1>
           <div className="hero-foot">
             <p>{settings.heroSubtitle}</p>
-            <div className="scroll-cue">
-              <div className="stem"></div>
+            <div className="scroll-cue" onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}>
+              <ChevronDown className="bounce-chevron" size={18} />
               Recent work
             </div>
           </div>
