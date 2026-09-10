@@ -344,7 +344,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   /* ---------- HERO ---------- */
   .mwabonje-hero {
     position:relative;
-    min-height:100vh;
+    min-height:calc(100vh - 85px);
     display:flex;
     flex-direction:column;
     justify-content:flex-end;
