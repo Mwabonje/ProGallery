@@ -14,7 +14,52 @@ interface PortfolioGallery extends Gallery {
   coverType?: string | null;
 }
 
+
+const CardMedia = ({ gallery }: { gallery: any }) => {
+  const [loaded, setLoaded] = useState(false);
+  
+  if (gallery.coverType?.startsWith('video')) {
+    return (
+      <video 
+        src={gallery.coverUrl!} 
+        autoPlay muted loop playsInline 
+        onLoadedData={() => setLoaded(true)}
+        style={{ 
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+          objectFit: 'cover', zIndex: 0,
+          opacity: loaded ? 1 : 0, transition: 'opacity 0.5s ease'
+        }}
+      />
+    );
+  }
+  
+  return (
+    <>
+      {!loaded && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
+          background: 'rgba(255,255,255,0.05)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="subtle-spinner"></div>
+        </div>
+      )}
+      <img 
+        src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)}
+        alt={gallery.client_name}
+        onLoad={() => setLoaded(true)}
+        style={{ 
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+          objectFit: 'cover', zIndex: 0,
+          opacity: loaded ? 1 : 0, transition: 'opacity 0.5s ease'
+        }}
+      />
+    </>
+  );
+};
+
 export function Portfolio({ photographerId }: { photographerId?: string }) {
+
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -342,6 +387,20 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     width:22px; height:1px; background:var(--ink);
   }
 
+  
+  .mwabonje-wrapper .subtle-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(243,238,228,.15);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+  }
+  @keyframes spinner {
+    to { transform: rotate(360deg); }
+  }
+
+
   /* ---------- HERO ---------- */
   .mwabonje-hero {
     position:relative;
@@ -477,6 +536,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     width:100%;
     height:100%;
     object-fit:cover;
+    opacity: 0;
+    transition: opacity 0.5s ease;
   }
   
   .about-me-content h2 {
@@ -896,17 +957,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                    key={gallery.id} 
                    className={`mwabonje-card c${classIndex}`}
                    >
-                   {gallery.coverType?.startsWith('video') ? (
-                     <video 
-                       src={gallery.coverUrl!} 
-                       autoPlay muted loop playsInline 
-                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
-                     />
-                   ) : (
-                     <div 
-                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, backgroundImage: `url(${getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                     />
-                   )}
+                   <CardMedia gallery={gallery} />
                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, background: 'linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%)', pointerEvents: 'none' }}></div>
                    <span 
                      className="tag"
@@ -930,8 +981,23 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         <section className="mwabonje-about" id="about-me">
           <div className="mwabonje-container">
             <div className="about-me-grid">
-              <div className="about-me-image">
-                <img src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} alt={settings.brandName} />
+              <div className="about-me-image" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="subtle-spinner" style={{ position: 'absolute' }}></div>
+                <img 
+                  src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} 
+                  alt={settings.brandName} 
+                  style={{ position: 'relative', zIndex: 1 }}
+                  onLoad={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    const spinner = e.currentTarget.previousElementSibling;
+                    if (spinner) spinner.style.opacity = '0';
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    const spinner = e.currentTarget.previousElementSibling;
+                    if (spinner) spinner.style.opacity = '0';
+                  }}
+                />
               </div>
               <div className="about-me-content">
                 <h2 className="serif">

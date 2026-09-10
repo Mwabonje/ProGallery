@@ -289,21 +289,31 @@ export const Prints: React.FC = () => {
                                                     }}
                                                 />
                                             ) : print.file_url ? (
+                                                <>
+                                                <div id={`print-skeleton-${print.id}`} className="absolute inset-0 flex items-center justify-center bg-slate-100 z-10 pointer-events-none transition-opacity duration-300">
+                                                    <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin"></div>
+                                                </div>
                                                 <img 
                                                     src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
                                                     alt={print.client_name}
-                                                    className={`${mediaClass} pointer-events-none`}
+                                                    className={`${mediaClass} pointer-events-none opacity-0 transition-opacity duration-300`}
                                                     draggable={false}
                                                     onContextMenu={(e) => e.preventDefault()}
                                                     style={{ WebkitTouchCallout: 'none', userSelect: 'none', pointerEvents: 'none' }}
                                                     loading="lazy"
-                                                    onLoad={(e) => handleMediaLoad(print.id, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)}
+                                                    onLoad={(e) => {
+                                                        e.currentTarget.style.opacity = '1';
+                                                        const skeleton = document.getElementById(`print-skeleton-${print.id}`);
+                                                        if (skeleton) skeleton.style.opacity = '0';
+                                                        handleMediaLoad(print.id, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight);
+                                                    }}
                                                     ref={(img) => {
                                                         if (img && img.complete && img.naturalWidth) {
                                                             handleMediaLoad(print.id, img.naturalWidth, img.naturalHeight);
                                                         }
                                                     }}
                                                 />
+                                                </>
                                             ) : null}
                                         </div>
                                     </div>

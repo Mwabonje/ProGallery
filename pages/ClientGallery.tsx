@@ -2302,6 +2302,9 @@ export const ClientGallery: React.FC = () => {
 
             {lightboxFile.file_type === "image" ? (
               <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+                <div id={`lightbox-loader-${lightboxFile.id}`} className="absolute flex items-center justify-center inset-0 pointer-events-none z-10">
+                  <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                </div>
                 <img
                   key={lightboxFile.id}
                   src={getOptimizedImageUrl(
@@ -2310,8 +2313,12 @@ export const ClientGallery: React.FC = () => {
                     undefined,
                     85,
                   )}
+                  onLoad={() => {
+                    const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
+                    if (loader) loader.style.display = 'none';
+                  }}
                   alt="Gallery item preview"
-                  className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300"
+                  className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300 relative z-20"
                   style={{ WebkitTouchCallout: "none", userSelect: "none" }}
                   onContextMenu={(e) => {
                     e.preventDefault();
