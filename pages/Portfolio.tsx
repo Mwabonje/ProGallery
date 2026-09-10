@@ -77,6 +77,21 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 });
   const selectedCategory = searchParams.get('category');
 
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = window.scrollY;
+      const windowHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (windowHeight <= 0) return;
+      setScrollProgress(Math.min(1, Math.max(0, totalScroll / windowHeight)));
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Init
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
@@ -868,6 +883,24 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   }
 `}</style>
       </Helmet>
+
+      {/* Progress Bar */}
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0,
+        height: '3px',
+        background: 'transparent',
+        zIndex: 9999,
+        pointerEvents: 'none'
+      }}>
+        <div style={{
+          height: '100%',
+          background: 'var(--gold, #B9922F)',
+          width: `${scrollProgress * 100}%`,
+          transformOrigin: 'left',
+          transition: 'width 0.1s ease-out'
+        }} />
+      </div>
 
 <header className="mwabonje-header">
         <div className="mwabonje-container header-layout">
