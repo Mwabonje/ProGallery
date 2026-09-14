@@ -848,8 +848,8 @@ export const GalleryManager: React.FC = () => {
       )}
 
       {/* Topbar */}
-      <div className="bg-white border-b border-slate-200 px-6 md:px-10 py-6 md:py-8 mb-8">
-        <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1200px] mx-auto">
+      <div className="bg-white border-b border-slate-200 py-6 md:py-8 mb-8">
+        <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1200px] mx-auto px-6 md:px-10">
         <div>
             {isEditingMeta ? (
                 <div className="space-y-3 w-full max-w-xl mb-4">
