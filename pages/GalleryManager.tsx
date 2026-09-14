@@ -1041,10 +1041,10 @@ export const GalleryManager: React.FC = () => {
                     <div className="text-[11px] text-slate-400 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
                   </div>
                   <button 
-                    onClick={() => updateSelectionStatus(!gallery.link_enabled)}
-                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${!gallery.link_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                    onClick={toggleSelectionMode}
+                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${gallery.selection_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
                   >
-                    <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${!gallery.link_enabled ? 'right-[2px]' : 'left-[2px]'}`}></div>
+                    <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${gallery.selection_enabled ? 'translate-x-4' : 'translate-x-0'}`} style={{ left: '2px' }}></div>
                   </button>
                 </div>
 
