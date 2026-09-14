@@ -532,7 +532,7 @@ export const ClientGallery: React.FC = () => {
     if (!isSelected && gallery.selection_limit && gallery.selection_limit > 0) {
       if (selectedFileIds.size >= gallery.selection_limit && !acceptedExtras) {
         const confirmExtras = window.confirm(
-          `You have reached the agreed limit of ${gallery.selection_limit} photos.\n\nDo you want to proceed with selecting extras?`,
+          `You have reached the agreed limit of ${gallery.selection_limit} photos.\n\nDo you wish to proceed and pay for the extras?`,
         );
         if (confirmExtras) {
           setAcceptedExtras(true);
@@ -643,9 +643,19 @@ export const ClientGallery: React.FC = () => {
 
   const submitSelection = async () => {
     if (!gallery) return;
+
+    let extraPhotos = 0;
+    if (gallery.selection_limit && gallery.selection_limit > 0 && selectedFileIds.size > gallery.selection_limit) {
+      extraPhotos = selectedFileIds.size - gallery.selection_limit;
+    }
+    
+    const extraMessage = extraPhotos > 0 
+      ? `\n\nYou have selected ${extraPhotos} extra photo${extraPhotos > 1 ? 's' : ''} which will be charged as extras.` 
+      : "";
+
     if (
       !confirm(
-        `Are you sure you want to submit your selection of ${selectedFileIds.size} photos? This will notify the photographer.`,
+        `Are you sure you want to submit your selection of ${selectedFileIds.size} photos?${extraMessage}\n\nThis will notify the photographer.`,
       )
     )
       return;
