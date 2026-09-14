@@ -848,7 +848,8 @@ export const GalleryManager: React.FC = () => {
       )}
 
       {/* Topbar */}
-      <div className="flex justify-between items-end mb-6 flex-wrap gap-4 pt-6 md:pt-10">
+      <div className="bg-white border-b border-slate-200 px-6 md:px-10 py-6 md:py-8 mb-8">
+        <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1200px] mx-auto">
         <div>
             {isEditingMeta ? (
                 <div className="space-y-3 w-full max-w-xl mb-4">
@@ -958,7 +959,10 @@ export const GalleryManager: React.FC = () => {
           </button>
         </div>
       </div>
+      </div>
 
+      {/* Main Content Wrapper */}
+      <div className="px-6 md:px-10 max-w-[1200px] mx-auto">
       {/* Banner */}
       {!isPortfolio && gallery.selection_status === 'submitted' && (
           <div className="flex justify-between items-center bg-rose-50 border border-rose-200 border-l-[3px] border-l-rose-600 rounded-[3px] px-4 py-3.5 mb-6 flex-wrap gap-4">
@@ -1541,6 +1545,7 @@ export const GalleryManager: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

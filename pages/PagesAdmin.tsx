@@ -3,7 +3,6 @@ import { Settings, FileText, ExternalLink, Image as ImageIcon } from 'lucide-rea
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { HomeSettingsModal } from '../components/HomeSettingsModal';
 import { supabase } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext'; // if it exists, otherwise get from session
 
 export const PagesAdmin: React.FC = () => {
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);

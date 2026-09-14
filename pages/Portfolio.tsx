@@ -1022,12 +1022,12 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                   onLoad={(e) => {
                     e.currentTarget.style.opacity = '1';
                     const spinner = e.currentTarget.previousElementSibling;
-                    if (spinner) spinner.style.opacity = '0';
+                    if (spinner) (spinner as HTMLElement).style.opacity = '0';
                   }}
                   onError={(e) => {
                     e.currentTarget.style.opacity = '1';
                     const spinner = e.currentTarget.previousElementSibling;
-                    if (spinner) spinner.style.opacity = '0';
+                    if (spinner) (spinner as HTMLElement).style.opacity = '0';
                   }}
                 />
               </div>
