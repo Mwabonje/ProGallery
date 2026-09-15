@@ -1323,7 +1323,7 @@ export const ClientGallery: React.FC = () => {
       />
       {/* Header */}
       <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
+        <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
             <h1
               className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? "text-slate-900 tracking-widest uppercase font-sans" : "text-slate-900"}`}
@@ -1574,7 +1574,7 @@ export const ClientGallery: React.FC = () => {
         className={
           isHorizontalLayout
             ? "w-full overflow-hidden"
-            : "max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8"
+            : "max-w-[1600px] mx-auto px-2 md:px-4 py-4 md:py-8"
         }
       >
         {isSelectionMode && viewFilter === "all" && (
@@ -1960,7 +1960,7 @@ export const ClientGallery: React.FC = () => {
       {/* Selection Mode Bottom Bar */}
       {isSelectionMode && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-30">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div
                 className="flex items-center gap-2 cursor-pointer group"

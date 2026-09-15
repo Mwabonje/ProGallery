@@ -849,7 +849,7 @@ export const GalleryManager: React.FC = () => {
 
       {/* Topbar */}
       <div className="bg-white border-b border-slate-200 py-6 md:py-8 mb-8">
-        <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1200px] mx-auto px-6 md:px-10">
+        <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1600px] mx-auto px-6 md:px-10">
         <div>
             {isEditingMeta ? (
                 <div className="space-y-3 w-full max-w-xl mb-4">
@@ -962,7 +962,7 @@ export const GalleryManager: React.FC = () => {
         </div>
       </div>
       {/* Main Content Wrapper */}
-      <div className="px-6 md:px-10 max-w-[1200px] mx-auto">
+      <div className="px-6 md:px-10 max-w-[1600px] mx-auto">
       {/* Banner */}
       {!isPortfolio && gallery.selection_status === 'submitted' && (
           <div className="flex justify-between items-center bg-rose-50 border border-rose-200 border-l-[3px] border-l-rose-600 rounded-[3px] px-4 py-3.5 mb-6 flex-wrap gap-4">
@@ -978,7 +978,7 @@ export const GalleryManager: React.FC = () => {
       )}
 
       {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[296px_1fr_296px] gap-6 xl:gap-7 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[300px_1fr_300px] 2xl:grid-cols-[340px_1fr_340px] gap-6 xl:gap-7 items-start">
         
         {/* Left Column */}
         <div className="flex flex-col">
