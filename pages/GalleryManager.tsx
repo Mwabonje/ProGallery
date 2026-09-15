@@ -981,7 +981,7 @@ export const GalleryManager: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[300px_1fr_300px] 2xl:grid-cols-[340px_1fr_340px] gap-6 xl:gap-7 items-start">
         
         {/* Left Column */}
-        <div className="flex flex-col">
+        <div className="flex flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
           {!isPortfolio && (
             <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
@@ -1082,7 +1082,7 @@ export const GalleryManager: React.FC = () => {
 
         {/* Center Column */}
         <div 
-          className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] transition-colors"
+          className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] lg:h-[calc(100vh-48px)] lg:sticky lg:top-6 transition-colors"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -1258,7 +1258,7 @@ export const GalleryManager: React.FC = () => {
         </div>
 
         {/* Right Column */}
-        <div className="flex flex-col">
+        <div className="flex flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
             <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
               <span className="text-[14px] opacity-60">●</span> Gallery settings
