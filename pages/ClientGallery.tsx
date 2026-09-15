@@ -78,6 +78,22 @@ export const ClientGallery: React.FC = () => {
     expired: boolean;
   } | null>(null);
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (windowHeight > 0) {
+        setScrollProgress(totalScroll / windowHeight);
+      } else {
+        setScrollProgress(0);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const [galleryPassword, setGalleryPassword] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passwordInput, setPasswordInput] = useState("");
@@ -549,6 +565,11 @@ export const ClientGallery: React.FC = () => {
       newSet.delete(file.id);
       setToast({ message: "Removed from favorites", type: "info" });
     } else {
+      if (gallery.selection_limit > 0 && selectedFileIds.size === gallery.selection_limit) {
+        if (!window.confirm(`You have reached the agreed limit of ${gallery.selection_limit} photos. Any additional photos selected will be charged as extras.\n\nDo you wish to continue and pay for extras?`)) {
+          return;
+        }
+      }
       newSet.add(file.id);
       setToast({ message: "Added to favorites", type: "success" });
     }
@@ -672,12 +693,8 @@ export const ClientGallery: React.FC = () => {
       setSelectionSubmitted(true);
       setGallery({
         ...gallery,
-        selection_status: "submitted",
-        link_enabled: false,
+        selection_status: "submitted"
       });
-      setError(
-        "This gallery is currently unavailable. Please contact the photographer.",
-      );
 
       alert(
         "Selection submitted successfully! The photographer has been notified.",
@@ -1282,6 +1299,10 @@ export const ClientGallery: React.FC = () => {
     <div
       className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? "pb-24" : ""}`}
     >
+      {/* Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
+        <div className="h-full bg-emerald-500 transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }} />
+      </div>
       <SEO 
         title={gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"}
         description={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.` : "Explore professional photography galleries by Mwabonje."}

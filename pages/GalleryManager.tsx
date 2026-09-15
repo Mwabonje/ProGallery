@@ -958,9 +958,9 @@ export const GalleryManager: React.FC = () => {
              {!gallery.link_enabled ? 'Disabled' : gallery.selection_status === 'submitted' ? 'Locked (Submitted)' : 'Active'}
           </button>
         </div>
-      </div>
-      </div>
 
+        </div>
+      </div>
       {/* Main Content Wrapper */}
       <div className="px-6 md:px-10 max-w-[1200px] mx-auto">
       {/* Banner */}
@@ -978,7 +978,7 @@ export const GalleryManager: React.FC = () => {
       )}
 
       {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[296px_1fr] gap-7 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[296px_1fr_296px] gap-6 xl:gap-7 items-start">
         
         {/* Left Column */}
         <div className="flex flex-col">
@@ -1034,135 +1034,6 @@ export const GalleryManager: React.FC = () => {
 
           <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
             <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
-              <span className="text-[14px] opacity-60">●</span> Gallery settings
-            </h2>
-
-            {!isPortfolio && (
-                <>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <label className="block text-[11.5px] text-slate-500 mb-1 font-medium">Client selection</label>
-                    <div className="text-[11px] text-slate-400 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
-                  </div>
-                  <button 
-                    onClick={toggleSelectionMode}
-                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${gallery.selection_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${gallery.selection_enabled ? 'translate-x-4' : 'translate-x-0'}`} style={{ left: '2px' }}></div>
-                  </button>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Client unlock PIN</label>
-                  <input 
-                      type="text" 
-                      value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
-                      readOnly
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-600 cursor-not-allowed"
-                  />
-                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Share this PIN with clients if they need to unlock submitted selections.</div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Agreed number of photos</label>
-                  <input 
-                      type="number" 
-                      value={localLimit}
-                      onChange={(e) => setLocalLimit(e.target.value ? Number(e.target.value) : '')}
-                      onBlur={() => updateSelectionLimit(Number(localLimit) || 0)}
-                      placeholder="Unlimited"
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
-                  />
-                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Set to 0 or leave blank for unlimited. If greater than 0, clients are asked to confirm before selecting extras.</div>
-                </div>
-                </>
-            )}
-
-            <div className="mb-4">
-              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium flex justify-between items-center">
-                 <span>Password protection</span>
-                 <button 
-                     type="button"
-                     onClick={() => {
-                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-                        let pass = '';
-                        for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-                        if (passwordInputRef.current) {
-                            passwordInputRef.current.value = pass;
-                            supabase.from('galleries').update({ password: pass }).eq('id', gallery.id).then(() => {
-                                fetchGalleryData();
-                                toast.success("Password generated & saved");
-                            });
-                        }
-                     }}
-                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
-                 >
-                     Generate
-                 </button>
-              </label>
-              <div className="flex gap-2">
-                  <input 
-                      ref={passwordInputRef}
-                      type="text" 
-                      placeholder="Leave blank for public"
-                      defaultValue={gallery.password || ''}
-                      onBlur={(e) => {
-                          if (e.target.value !== (gallery.password || '')) {
-                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => {
-                                  fetchGalleryData();
-                                  toast.success("Password updated");
-                              });
-                          }
-                      }}
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
-                  />
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">If set, visitors must enter this password to view the gallery.</div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Link Expiration (Hours)</label>
-              <div className="flex gap-2">
-                  <input 
-                      type="number"
-                      value={expiryHours}
-                      onChange={(e) => setExpiryHours(Number(e.target.value))}
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
-                  />
-                  <button 
-                    onClick={handleExtendExpiration}
-                    className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
-                  >
-                    Apply
-                  </button>
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Updates all files to expire N hours from now.</div>
-            </div>
-            
-            {isPrintsGallery && (
-                <div className="mb-0">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Downloads before clearing <span className="font-normal text-slate-400">— e.g. for prints</span></label>
-                  <div className="flex gap-2">
-                      <input 
-                          type="number"
-                          value={downloadsBeforeClearing}
-                          onChange={(e) => setDownloadsBeforeClearing(e.target.value ? Number(e.target.value) : '')}
-                          placeholder="0 = Unlimited"
-                          className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
-                      />
-                      <button 
-                        onClick={updatePayment}
-                        className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
-                      >
-                        Save
-                      </button>
-                  </div>
-                </div>
-            )}
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
-            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
               <span className="text-[14px] opacity-60">●</span> Gallery stats
             </h2>
             <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 text-[13px] text-slate-700">
@@ -1209,7 +1080,7 @@ export const GalleryManager: React.FC = () => {
 
         </div>
 
-        {/* Right Column */}
+        {/* Center Column */}
         <div 
           className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] transition-colors"
           onDragOver={handleDragOver}
@@ -1384,6 +1255,132 @@ export const GalleryManager: React.FC = () => {
               })}
             </div>
           )}
+        </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col">
+          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
+            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+              <span className="text-[14px] opacity-60">●</span> Gallery settings
+            </h2>
+            {!isPortfolio && (
+                <>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <label className="block text-[11.5px] text-slate-500 mb-1 font-medium">Client selection</label>
+                    <div className="text-[11px] text-slate-400 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
+                  </div>
+                  <button 
+                    onClick={toggleSelectionMode}
+                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${gallery.selection_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${gallery.selection_enabled ? 'translate-x-4' : 'translate-x-0'}`} style={{ left: '2px' }}></div>
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Client unlock PIN</label>
+                  <input 
+                      type="text" 
+                      value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
+                      readOnly
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-600 cursor-not-allowed"
+                  />
+                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Share this PIN with clients if they need to unlock submitted selections.</div>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Agreed number of photos</label>
+                  <input 
+                      type="number" 
+                      value={localLimit}
+                      onChange={(e) => setLocalLimit(e.target.value ? Number(e.target.value) : '')}
+                      onBlur={() => updateSelectionLimit(Number(localLimit) || 0)}
+                      placeholder="Unlimited"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Set to 0 or leave blank for unlimited. If greater than 0, clients are asked to confirm before selecting extras.</div>
+                </div>
+                </>
+            )}
+            <div className="mb-4">
+              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium flex justify-between items-center">
+                 <span>Password protection</span>
+                 <button 
+                     type="button"
+                     onClick={() => {
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                        let pass = '';
+                        for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                        if (passwordInputRef.current) {
+                            passwordInputRef.current.value = pass;
+                            supabase.from('galleries').update({ password: pass }).eq('id', gallery.id).then(() => {
+                                fetchGalleryData();
+                                toast.success("Password generated & saved");
+                            });
+                        }
+                     }}
+                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
+                 >
+                     Generate
+                 </button>
+              </label>
+              <div className="flex gap-2">
+                  <input 
+                      ref={passwordInputRef}
+                      type="text" 
+                      placeholder="Leave blank for public"
+                      defaultValue={gallery.password || ''}
+                      onBlur={(e) => {
+                          if (e.target.value !== (gallery.password || '')) {
+                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => {
+                                  fetchGalleryData();
+                                  toast.success("Password updated");
+                              });
+                          }
+                      }}
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">If set, visitors must enter this password to view the gallery.</div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Link Expiration (Hours)</label>
+              <div className="flex gap-2">
+                  <input 
+                      type="number"
+                      value={expiryHours}
+                      onChange={(e) => setExpiryHours(Number(e.target.value))}
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                  />
+                  <button 
+                    onClick={handleExtendExpiration}
+                    className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                  >
+                    Apply
+                  </button>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Updates all files to expire N hours from now.</div>
+            </div>
+            {isPrintsGallery && (
+                <div className="mb-0">
+                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Downloads before clearing <span className="font-normal text-slate-400">— e.g. for prints</span></label>
+                  <div className="flex gap-2">
+                      <input 
+                          type="number"
+                          value={downloadsBeforeClearing}
+                          onChange={(e) => setDownloadsBeforeClearing(e.target.value ? Number(e.target.value) : '')}
+                          placeholder="0 = Unlimited"
+                          className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                      />
+                      <button 
+                        onClick={updatePayment}
+                        className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                      >
+                        Save
+                      </button>
+                  </div>
+                </div>
+            )}
+          </div>
         </div>
 
       </div>
