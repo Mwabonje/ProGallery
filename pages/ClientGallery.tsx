@@ -1080,10 +1080,27 @@ export const ClientGallery: React.FC = () => {
     if (e && "stopPropagation" in e) e.stopPropagation();
     if (!lightboxFile) return;
     const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
-    if (index > 0) {
-      setLightboxFileWithTracking(displayedFiles[index - 1]);
-    } else {
-      setLightboxFileWithTracking(displayedFiles[displayedFiles.length - 1]);
+    if (index !== -1) {
+      let prevIndex = index - 1;
+      while (prevIndex >= 0) {
+        if (!isPortfolio && isFileLocked(displayedFiles[prevIndex].id)) {
+          prevIndex--;
+        } else {
+          break;
+        }
+      }
+      if (prevIndex >= 0) {
+        setLightboxFileWithTracking(displayedFiles[prevIndex]);
+      } else {
+        // wrap around
+        let lastUnlocked = displayedFiles.length - 1;
+        while (lastUnlocked >= 0 && !isPortfolio && isFileLocked(displayedFiles[lastUnlocked].id)) {
+          lastUnlocked--;
+        }
+        if (lastUnlocked >= 0) {
+           setLightboxFileWithTracking(displayedFiles[lastUnlocked]);
+        }
+      }
     }
   };
 
@@ -1091,10 +1108,27 @@ export const ClientGallery: React.FC = () => {
     if (e && "stopPropagation" in e) e.stopPropagation();
     if (!lightboxFile) return;
     const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
-    if (index !== -1 && index < displayedFiles.length - 1) {
-      setLightboxFileWithTracking(displayedFiles[index + 1]);
-    } else {
-      setLightboxFileWithTracking(displayedFiles[0]);
+    if (index !== -1) {
+      let nextIndex = index + 1;
+      while (nextIndex < displayedFiles.length) {
+        if (!isPortfolio && isFileLocked(displayedFiles[nextIndex].id)) {
+          nextIndex++;
+        } else {
+          break;
+        }
+      }
+      if (nextIndex < displayedFiles.length) {
+        setLightboxFileWithTracking(displayedFiles[nextIndex]);
+      } else {
+        // wrap around
+        let firstUnlocked = 0;
+        while (firstUnlocked < displayedFiles.length && !isPortfolio && isFileLocked(displayedFiles[firstUnlocked].id)) {
+          firstUnlocked++;
+        }
+        if (firstUnlocked < displayedFiles.length) {
+          setLightboxFileWithTracking(displayedFiles[firstUnlocked]);
+        }
+      }
     }
   };
 
@@ -1643,7 +1677,11 @@ export const ClientGallery: React.FC = () => {
                     key={file.id}
                     onClick={() => {
                       if (!isPortfolio) {
-                        setLightboxFile(file);
+                        if (isFileLocked(file.id)) {
+                          setShowBalanceWarningModal(true);
+                          return;
+                        }
+                        setLightboxFileWithTracking(file);
                       }
                     }}
                     onContextMenu={(e) => {
@@ -2567,7 +2605,11 @@ export const ClientGallery: React.FC = () => {
                   id={`thumbnail-${file.id}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setLightboxFile(file);
+                    if (!isPortfolio && isFileLocked(file.id)) {
+                      setShowBalanceWarningModal(true);
+                      return;
+                    }
+                    setLightboxFileWithTracking(file);
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
