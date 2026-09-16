@@ -33,6 +33,7 @@ export const AboutSettingsModal = ({
                     .select('*')
                     .eq('photographer_id', userId)
                     .eq('category', 'ABOUT')
+                    .order('created_at', { ascending: false })
                     .limit(1);
 
                 if (error) throw error;

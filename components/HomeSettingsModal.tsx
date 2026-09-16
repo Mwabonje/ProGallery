@@ -32,6 +32,7 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                     .select('*')
                     .eq('photographer_id', userId)
                     .eq('category', 'SETTINGS')
+                    .order('created_at', { ascending: false })
                     .limit(1);
 
                 if (error) throw error;
