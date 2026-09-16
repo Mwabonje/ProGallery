@@ -61,6 +61,7 @@ const CardMedia = ({ gallery }: { gallery: any }) => {
 export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
+  const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -102,9 +103,28 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         const { data: galleriesData, error } = await query;
         if (error) throw error;
 
-        
-        
-        const settingsGal = (galleriesData || []).find(g => g.category === 'SETTINGS');
+        let allGalleries = galleriesData || [];
+        if (!photographerId && allGalleries.length > 0) {
+            const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+            if (mostRecentPortfolio) {
+                allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
+            }
+        }
+
+        const settingsGal = allGalleries.find(g => g.category === 'SETTINGS');
+        const aboutGal = allGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
+        if (aboutGal) {
+            const { data: aboutFiles } = await supabase
+              .from('files')
+              .select('file_url')
+              .eq('gallery_id', aboutGal.id)
+              .neq('file_path', 'GALLERY_PASSWORD')
+              .order('created_at', { ascending: false })
+              .limit(1);
+            if (aboutFiles && aboutFiles.length > 0) {
+                setAboutGallery({ ...aboutGal, coverUrl: aboutFiles[0].file_url, baseCategory: 'ABOUT' } as any);
+            }
+        }
         if (settingsGal) {
           if (settingsGal.title) {
             try {
@@ -126,7 +146,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           }
         }
         
-        const portfolioItems = (galleriesData || []).filter(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+        const portfolioItems = allGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
 
 
 
@@ -174,8 +194,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const aboutGallery = galleries.find(g => g.client_name === '_ABOUT_' || g.baseCategory === 'ABOUT');
-  const portfolioGalleries = galleries.filter(g => g.id !== aboutGallery?.id);
+  const portfolioGalleries = galleries;
 
   const filteredGalleries = selectedCategory 
     ? portfolioGalleries.filter(g => g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())) 
