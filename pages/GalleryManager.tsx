@@ -56,6 +56,7 @@ export const GalleryManager: React.FC = () => {
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
   const [renameBaseName, setRenameBaseName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [renameTargetFile, setRenameTargetFile] = useState<GalleryFile | null>(null);
 
   const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
   const [showEditedIndicator, setShowEditedIndicator] = useState(false);
@@ -206,7 +207,7 @@ export const GalleryManager: React.FC = () => {
         const sanitized = sanitizeName(f.name);
         // Compare with existing file names
         const isDuplicate = files.some(existingFile => {
-            const existingName = existingFile.file_path.split('/').pop();
+            const existingName = existingFile.title || existingFile.file_path.split('/').pop();
             return existingName === sanitized;
         });
         
@@ -602,7 +603,7 @@ export const GalleryManager: React.FC = () => {
     const rows = [
       ["File Name", "Uploaded At", "Status", "Edited"],
       ...selectedFiles.map(f => [
-        f.file_path.split('/').pop() || 'unknown',
+        f.title || f.file_path.split('/').pop() || 'unknown',
         new Date(f.created_at).toLocaleString(),
         "Selected",
         f.is_edited ? "Yes" : "No"
@@ -641,19 +642,37 @@ export const GalleryManager: React.FC = () => {
   
   const handleRenameSelected = () => {
     if (checkedFiles.length === 0) return;
-    setRenameBaseName('Gallery');
+    setRenameTargetFile(null);
+    if (checkedFiles.length === 1) {
+      const file = files.find(f => f.id === checkedFiles[0]);
+      const currentName = file?.title || file?.file_path.split('/').pop() || file?.file_url.split('/').pop() || '';
+      const nameWithoutExt = currentName.includes('.') ? currentName.substring(0, currentName.lastIndexOf('.')) : currentName;
+      setRenameBaseName(nameWithoutExt);
+    } else {
+      setRenameBaseName(gallery?.title || gallery?.client_name || 'Gallery');
+    }
+    setIsRenameModalOpen(true);
+  };
+
+  const handleOpenSingleRename = (file: GalleryFile) => {
+    setRenameTargetFile(file);
+    const currentName = file.title || file.file_path.split('/').pop() || file.file_url.split('/').pop() || '';
+    const nameWithoutExt = currentName.includes('.') ? currentName.substring(0, currentName.lastIndexOf('.')) : currentName;
+    setRenameBaseName(nameWithoutExt);
     setIsRenameModalOpen(true);
   };
 
   const confirmRenameSelected = async () => {
-    if (checkedFiles.length === 0 || !renameBaseName.trim()) return;
+    const filesToRename = renameTargetFile 
+      ? [renameTargetFile] 
+      : files.filter(f => checkedFiles.includes(f.id));
+
+    if (filesToRename.length === 0 || !renameBaseName.trim()) return;
     setIsRenaming(true);
 
-    const filesToRename = files.filter(f => checkedFiles.includes(f.id));
-    
     try {
         const updates = filesToRename.map((f, i) => {
-            const oldName = f.file_path.split('/').pop() || '';
+            const oldName = f.title || f.file_path.split('/').pop() || f.file_url.split('/').pop() || '';
             const ext = oldName.includes('.') ? oldName.substring(oldName.lastIndexOf('.')) : '';
             
             let strippedPattern = renameBaseName.trim();
@@ -662,13 +681,19 @@ export const GalleryManager: React.FC = () => {
             }
             
             const seq = String(i + 1).padStart(3, '0');
-            const newName = `${strippedPattern}_${seq}${ext}`;
+            const newName = filesToRename.length === 1
+                ? `${strippedPattern}${ext}`
+                : `${strippedPattern}_${seq}${ext}`;
             
             return { id: f.id, title: newName };
         });
         
         for (const update of updates) {
-            await supabase.from('files').update({ title: update.title }).eq('id', update.id);
+            const { error } = await supabase.from('files').update({ title: update.title }).eq('id', update.id);
+            if (error) {
+                console.error("Supabase update error:", error);
+                throw error;
+            }
         }
         
         setFiles(prev => prev.map(f => {
@@ -677,10 +702,13 @@ export const GalleryManager: React.FC = () => {
         }));
         
         setCheckedFiles([]);
+        setRenameTargetFile(null);
         setIsRenameModalOpen(false);
-    } catch (e) {
+        setRenameBaseName('');
+        toast.success(`Successfully renamed ${updates.length} ${updates.length === 1 ? 'file' : 'files'}`);
+    } catch (e: any) {
         console.error("Rename failed", e);
-        alert("Failed to rename files");
+        toast.error("Failed to rename files: " + (e?.message || 'Unknown error'));
     } finally {
         setIsRenaming(false);
     }
@@ -1053,7 +1081,7 @@ export const GalleryManager: React.FC = () => {
                   const csvRows = [
                       ["Filename", "Client Selected", "Main Selection", "Extra Selection", "Edited", "Downloads"],
                       ...files.map(f => [
-                          (f.file_url.split('/').pop() || 'file'),
+                          (f.title || f.file_url.split('/').pop() || 'file'),
                           clientSelections.includes(f.id) ? 'Yes' : 'No',
                           mainSelections.includes(f.id) ? 'Yes' : 'No',
                           limit > 0 && clientSelections.indexOf(f.id) >= limit ? 'Yes' : 'No',
@@ -1202,7 +1230,14 @@ export const GalleryManager: React.FC = () => {
                         </div>
                         
                         <div className="min-w-0">
-                            <div className="font-mono text-[12.5px] font-medium text-slate-900 truncate" title={(file.file_url.split('/').pop() || 'file')}>{(file.file_url.split('/').pop() || 'file')}</div>
+                            <div 
+                                className="font-mono text-[12.5px] font-medium text-slate-900 truncate flex items-center gap-1.5 group cursor-pointer" 
+                                title={file.title || (file.file_url.split('/').pop() || 'file')}
+                                onClick={() => handleOpenSingleRename(file)}
+                            >
+                                <span className="truncate">{file.title || (file.file_url.split('/').pop() || 'file')}</span>
+                                <Edit2 className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </div>
                             <div className="md:hidden text-[11px] text-slate-500 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
                             <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                 {isSelected && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-emerald-600 text-white">Selected</span>}
@@ -1240,6 +1275,13 @@ export const GalleryManager: React.FC = () => {
                                     <Star className={`w-4 h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
                                 </button>
                             )}
+                            <button
+                                onClick={() => handleOpenSingleRename(file)}
+                                className="hover:text-slate-900 transition-colors hidden sm:block"
+                                title="Rename"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
                             <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors" title="View Original">
                                 <Eye className="w-4 h-4" />
                             </a>
@@ -1398,7 +1440,7 @@ export const GalleryManager: React.FC = () => {
                   <span>{isZipping ? 'Zipping...' : 'Download'}</span>
               </button>
               <button
-                  onClick={() => setIsRenameModalOpen(true)}
+                  onClick={handleRenameSelected}
                   disabled={isZipping}
                   className="flex items-center gap-2 text-sm font-medium hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap hidden sm:flex"
               >
@@ -1496,40 +1538,61 @@ export const GalleryManager: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto">
             <div className="p-6 md:p-8">
-              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">Rename Selected Files</h2>
+              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">
+                {renameTargetFile || checkedFiles.length === 1 ? 'Rename File' : 'Rename Selected Files'}
+              </h2>
               <p className="text-slate-500 text-[13px] mb-6">
-                Enter a base name (e.g., 'Wedding'). {checkedFiles.length} files will be sequentially named 'Wedding_001', 'Wedding_002', etc.
+                {renameTargetFile || checkedFiles.length === 1
+                  ? 'Enter a new name for this file.'
+                  : `Enter a base name (e.g., 'Wedding'). ${checkedFiles.length} files will be sequentially named 'Wedding_001', 'Wedding_002', etc.`
+                }
               </p>
               
-              <div className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); confirmRenameSelected(); }} className="space-y-4">
                 <div>
                   <label className="block text-[11.5px] font-medium text-slate-700 mb-1">
-                    Base Name
+                    {renameTargetFile || checkedFiles.length === 1 ? 'File Name' : 'Base Name'}
                   </label>
                   <input
                     type="text"
                     value={renameBaseName}
                     onChange={(e) => setRenameBaseName(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-200 rounded-[3px] bg-slate-50 hover:bg-slate-100 focus:bg-white focus:outline-none focus:border-slate-300 transition-all font-sans text-[13px]"
-                    placeholder="Enter base name"
+                    placeholder={renameTargetFile || checkedFiles.length === 1 ? "Enter file name" : "Enter base name"}
                     autoFocus
                   />
                   {renameBaseName.trim() && (
                     <p className="text-xs text-slate-500 mt-2">
-                      Preview: <span className="font-mono text-slate-700">{renameBaseName.trim()}_001.jpg</span>
+                      Preview:{' '}
+                      <span className="font-mono text-slate-700">
+                        {(() => {
+                          const target = renameTargetFile || (checkedFiles.length === 1 ? files.find(f => f.id === checkedFiles[0]) : null);
+                          const oldName = target ? (target.title || target.file_path.split('/').pop() || target.file_url.split('/').pop() || '') : (files[0]?.title || files[0]?.file_path.split('/').pop() || '.jpg');
+                          const ext = oldName.includes('.') ? oldName.substring(oldName.lastIndexOf('.')) : '.jpg';
+                          let stripped = renameBaseName.trim();
+                          if (stripped.includes('.')) stripped = stripped.substring(0, stripped.lastIndexOf('.'));
+                          return (renameTargetFile || checkedFiles.length === 1)
+                            ? `${stripped}${ext}`
+                            : `${stripped}_001${ext}, ${stripped}_002${ext}...`;
+                        })()}
+                      </span>
                     </p>
                   )}
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button
-                    onClick={() => setIsRenameModalOpen(false)}
+                    type="button"
+                    onClick={() => {
+                      setIsRenameModalOpen(false);
+                      setRenameTargetFile(null);
+                    }}
                     disabled={isRenaming}
                     className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-transparent rounded-[3px] transition-colors font-medium text-[12.5px] disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={confirmRenameSelected}
+                    type="submit"
                     disabled={isRenaming || !renameBaseName.trim()}
                     className="bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-[3px] font-medium text-[12.5px] transition-colors flex items-center gap-2"
                   >
@@ -1537,7 +1600,7 @@ export const GalleryManager: React.FC = () => {
                     {isRenaming ? 'Renaming...' : 'Rename'}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

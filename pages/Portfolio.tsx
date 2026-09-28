@@ -936,6 +936,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>PORTRAITS</a>
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Wedding')}>WEDDING</a>
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}>EVENTS</a>
+                <a href="#" onClick={(e) => handleCategoryClick(e, 'NSSF')}>NSSF</a>
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}>HOSPITALITY</a>
                 <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}>PLACES & DETAILS</a>
               </div>
@@ -1119,6 +1120,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>Portraits</a>
             <a href="#" onClick={(e) => handleCategoryClick(e, 'Wedding')}>Wedding</a>
             <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}>Events</a>
+            <a href="#" onClick={(e) => handleCategoryClick(e, 'NSSF')}>NSSF</a>
           </div>
           <div className="overlay-group">
             <div className="group-label">Places</div>

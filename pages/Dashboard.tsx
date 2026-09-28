@@ -939,6 +939,7 @@ export const Dashboard: React.FC = () => {
                     "Maternity", 
                     "Boudoir", 
                     "Fine Art",
+                    "NSSF",
                     ...galleries.map(g => g.category ? g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim() : '').filter(c => Boolean(c) && c.toUpperCase() !== 'ABOUT')
                   ])).map(cat => (
                     <option key={cat as string} value={cat as string} />

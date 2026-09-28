@@ -392,6 +392,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                   <option value="Places & Travel">Places &amp; Travel</option>
                   <option value="Commercial">Commercial</option>
                   <option value="Events">Events</option>
+                  <option value="NSSF">NSSF</option>
                   <option value="Photography Tips">Photography Tips</option>
                   <option value="Maternity">Maternity</option>
                   <option value="Personal">Personal</option>
