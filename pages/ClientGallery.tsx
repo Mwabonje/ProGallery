@@ -115,6 +115,7 @@ export const ClientGallery: React.FC = () => {
   const [viewFilter, setViewFilter] = useState<
     "all" | "selected" | "main" | "extras"
   >("all");
+  const [failedFileIds, setFailedFileIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info" | "download";
@@ -881,7 +882,7 @@ export const ClientGallery: React.FC = () => {
       setDownloadStatusText("Preparing list...");
 
       const CONCURRENCY_LIMIT = 3;
-      const queue = [...files];
+      const queue = files.filter((f) => !failedFileIds.has(f.id));
       const activePromises: Promise<void>[] = [];
 
       const processFile = async (file: GalleryFile) => {
@@ -997,7 +998,8 @@ export const ClientGallery: React.FC = () => {
         const parts = url.split('/');
         const filename = parts.pop();
         if (!filename) return url;
-        return parts.join('/') + '/watermark_' + filename + '.jpg';
+        const baseName = filename.replace(/\.[^/.]+$/, "");
+        return parts.join('/') + '/watermark_' + baseName + '.jpg';
     };
 
     if (isFileLocked(file.id) && !isPortfolio) {
@@ -1053,13 +1055,13 @@ export const ClientGallery: React.FC = () => {
     limit > 0 ? selectedArray.slice(0, limit) : selectedArray;
   const extraSelections = limit > 0 ? selectedArray.slice(limit) : [];
 
-  let displayedFiles = files;
+  let displayedFiles = files.filter((f) => !failedFileIds.has(f.id));
   if (viewFilter === "selected")
-    displayedFiles = files.filter((f) => selectedFileIds.has(f.id));
+    displayedFiles = displayedFiles.filter((f) => selectedFileIds.has(f.id));
   if (viewFilter === "main")
-    displayedFiles = files.filter((f) => mainSelections.includes(f.id));
+    displayedFiles = displayedFiles.filter((f) => mainSelections.includes(f.id));
   if (viewFilter === "extras")
-    displayedFiles = files.filter((f) => extraSelections.includes(f.id));
+    displayedFiles = displayedFiles.filter((f) => extraSelections.includes(f.id));
 
   const setLightboxFileWithTracking = (file: GalleryFile | null) => {
     setLightboxFile(file);
@@ -1696,7 +1698,7 @@ export const ClientGallery: React.FC = () => {
                     onMouseDown={handleLongPressStart}
                     onMouseUp={handleLongPressEnd}
                     onMouseLeave={handleLongPressEnd}
-                    className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : (isPortfolio ? "aspect-auto w-full inline-block bg-slate-50 relative mb-1 md:mb-2" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4")} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
+                    className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : (isPortfolio ? "aspect-auto w-full inline-block bg-slate-50 relative mb-1 md:mb-2 min-h-[160px]" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]")} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
                     style={{
                       WebkitTouchCallout: "none",
                       userSelect: "none",
@@ -1753,8 +1755,14 @@ export const ClientGallery: React.FC = () => {
                             const target = e.target as HTMLImageElement;
                             if (!target.dataset.retried) {
                               target.dataset.retried = "true";
-                              // Fallback to original image if watermarked version fails
-                              target.src = rewriteUrlToR2(file.file_url) || "";
+                              const directUrl = rewriteUrlToR2(file.file_url) || "";
+                              if (directUrl && directUrl !== target.src) {
+                                target.src = directUrl;
+                              } else {
+                                setFailedFileIds((prev) => new Set(prev).add(file.id));
+                              }
+                            } else {
+                              setFailedFileIds((prev) => new Set(prev).add(file.id));
                             }
                           }}
                           onContextMenu={(e) => e.preventDefault()}
@@ -1793,8 +1801,14 @@ export const ClientGallery: React.FC = () => {
                               target.removeAttribute("sizes");
                               if (!target.dataset.retried) {
                                 target.dataset.retried = "true";
-                                // Fallback to original image if watermarked version fails
-                                target.src = rewriteUrlToR2(file.file_url) || "";
+                                const directUrl = rewriteUrlToR2(file.file_url) || "";
+                                if (directUrl && directUrl !== target.src) {
+                                  target.src = directUrl;
+                                } else {
+                                  setFailedFileIds((prev) => new Set(prev).add(file.id));
+                                }
+                              } else {
+                                setFailedFileIds((prev) => new Set(prev).add(file.id));
                               }
                             }}
                             onContextMenu={(e) => e.preventDefault()}
