@@ -371,8 +371,6 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                                 file_url: publicUrl,
                                 file_path: filePath,
                                 file_type: dbFileType,
-                                thumbnail_url: thumbPublicUrl || null,
-                                thumbnail_path: thumbFilePath || null,
                                 expires_at: expiresAt.toISOString()
                             }]);
                         dbError = error;
