@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -54,6 +54,28 @@ export const Dashboard: React.FC = () => {
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
   const [realStorageUsedMB, setRealStorageUsedMB] = useState<number>(0);
+  const [isPurging, setIsPurging] = useState(false);
+
+  const handlePurgeExpired = async () => {
+    if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
+    setIsPurging(true);
+    try {
+      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+      const res = await fetch(isNetlify ? '/.netlify/functions/purge-expired' : '/api/purge-expired', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Cleanup complete!\nPurged ${data.purgedCount || 0} expired files (${data.purgedR2Objects || 0} objects removed from Cloudflare R2).`);
+        fetchStorageUsage();
+        fetchData();
+      } else {
+        alert(data.error || "Failed to purge expired files");
+      }
+    } catch (e: any) {
+      alert("Error purging expired files: " + e.message);
+    } finally {
+      setIsPurging(false);
+    }
+  };
 
   const toggleGallerySelection = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
@@ -339,15 +361,38 @@ export const Dashboard: React.FC = () => {
     }
 
     try {
-        // Delete all files in the gallery prefix from Cloudflare R2
         const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+
+        // 1. Query all files belonging to this gallery from DB first
+        const { data: filesData } = await supabase
+            .from('files')
+            .select('file_path')
+            .eq('gallery_id', galleryId);
+            
+        if (filesData && filesData.length > 0) {
+            const paths = filesData.map(f => f.file_path).filter(Boolean);
+            if (paths.length > 0) {
+                await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filePaths: paths })
+                });
+            }
+        }
+
+        // 2. Delete all files in the gallery folder from Cloudflare R2
+        await fetch(isNetlify ? '/.netlify/functions/delete-folder' : '/api/delete-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folderPath: `galleries/${galleryId}` })
+        });
         await fetch(isNetlify ? '/.netlify/functions/delete-folder' : '/api/delete-folder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ folderPath: galleryId })
         });
 
-        // Also clean up Supabase storage (backward compatibility if user had files before R2)
+        // 3. Also clean up Supabase storage (backward compatibility if user had files before R2)
         try {
             const deleteFolderContents = async (folder: string) => {
                 let hasMore = true;
@@ -372,25 +417,8 @@ export const Dashboard: React.FC = () => {
             };
             
             await deleteFolderContents(galleryId);
-            // And try to delete the folder itself
             await supabase.storage.from('gallery-files').remove([galleryId]);
         } catch (ignore) { }
-
-        // Also delete specifically referenced files if not in a prefix somehow
-        const { data: filesData } = await supabase
-            .from('files')
-            .select('file_path')
-            .eq('gallery_id', galleryId);
-            
-        if (filesData && filesData.length > 0) {
-            const paths = filesData.map(f => f.file_path);
-            const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-            await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filePaths: paths })
-            });
-        }
 
         const { error } = await supabase
             .from('galleries')
@@ -625,14 +653,59 @@ export const Dashboard: React.FC = () => {
         {currentView === 'dashboard' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             {/* Header */}
-            <div className="flex justify-between items-start mb-10">
+            <div className="flex justify-between items-start mb-8">
               <div>
                 <h1 className="text-[34px] text-slate-900 mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
-                <p className="text-slate-500 text-[14px]">A working summary of galleries, client proposals, and orders across the site.</p>
+                <p className="text-slate-500 text-[14px]">A working summary of galleries, client proposals, and storage usage.</p>
               </div>
               <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
                 Upload to gallery
               </button>
+            </div>
+
+            {/* Cloudflare R2 Storage Meter */}
+            <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex-1 w-full">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[13px] font-semibold text-slate-800">Cloudflare R2 Storage (10 GB Free Tier)</span>
+                  </div>
+                  <span className="text-[12.5px] font-mono font-medium text-slate-700">
+                    {(realStorageUsedMB / 1024).toFixed(2)} GB / 10.00 GB ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100))}%)
+                  </span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/60">
+                  <div 
+                    className={`h-full transition-all duration-500 ${
+                      (realStorageUsedMB / 1024) > 8.5 ? 'bg-rose-500' : (realStorageUsedMB / 1024) > 6.5 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.max(2, Math.min(100, ((realStorageUsedMB / 1024) / 10) * 100))}%` }}
+                  />
+                </div>
+                <div className="flex justify-between items-center mt-2 text-[11px] text-slate-500">
+                  <span>Portfolio lookbooks stay permanently stored. Client deliveries expire after their active delivery window.</span>
+                  <span className="font-mono">{(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handlePurgeExpired}
+                  disabled={isPurging}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 px-3.5 py-2 rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                  title="Purge expired delivery files from Cloudflare R2 to keep storage under 10 GB"
+                >
+                  {isPurging ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" /> : <Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                  Purge Expired Deliveries
+                </button>
+                <button
+                  onClick={fetchStorageUsage}
+                  className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-[6px] transition-colors border border-slate-200 cursor-pointer"
+                  title="Refresh Cloudflare R2 storage usage"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Metrics Grid */}

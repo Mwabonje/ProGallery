@@ -105,11 +105,28 @@ async function startServer() {
 
     try {
       const { filePath, filePaths } = req.body;
-      const pathsToDelete = filePaths || (filePath ? [filePath] : []);
+      const rawPaths = filePaths || (filePath ? [filePath] : []);
 
-      if (pathsToDelete.length === 0) {
+      if (rawPaths.length === 0) {
         return res.status(400).json({ error: "No files to delete" });
       }
+
+      // Automatically include corresponding watermark copies in R2
+      const allPaths = new Set<string>();
+      for (const p of rawPaths) {
+        if (!p || typeof p !== "string") continue;
+        allPaths.add(p);
+        const dir = p.substring(0, p.lastIndexOf("/"));
+        const name = p.split("/").pop();
+        if (dir && name) {
+          allPaths.add(`${dir}/watermark_${name}`);
+          allPaths.add(`${dir}/watermark_${name}.jpg`);
+          const baseName = name.replace(/\.[^/.]+$/, "");
+          allPaths.add(`${dir}/watermark_${baseName}.jpg`);
+        }
+      }
+
+      const pathsToDelete = Array.from(allPaths);
 
       for (let i = 0; i < pathsToDelete.length; i += 1000) {
         const chunk = pathsToDelete.slice(i, i + 1000);
@@ -123,10 +140,134 @@ async function startServer() {
         await s3.send(command);
       }
       
-      res.json({ success: true });
+      res.json({ success: true, deletedCount: pathsToDelete.length });
     } catch (e) {
       console.error("Delete error:", e);
       res.status(500).json({ error: "Failed to delete file(s) from R2." });
+    }
+  });
+
+  // Return Cloudflare R2 storage usage statistics
+  app.get("/api/storage-stats", async (req, res) => {
+    if (!s3 || !isR2Configured) {
+      return res.status(500).json({ error: "R2 is not configured" });
+    }
+
+    try {
+      let totalBytes = 0;
+      let totalCount = 0;
+      let continuationToken = undefined;
+
+      do {
+        const listCmd = new ListObjectsV2Command({
+          Bucket: R2_BUCKET_NAME!,
+          ContinuationToken: continuationToken,
+        });
+        const listRes = (await s3.send(listCmd)) as any;
+        if (listRes.Contents) {
+          totalCount += listRes.Contents.length;
+          for (const item of listRes.Contents) {
+            totalBytes += item.Size || 0;
+          }
+        }
+        continuationToken = listRes.NextContinuationToken;
+      } while (continuationToken);
+
+      const totalGB = totalBytes / (1024 * 1024 * 1024);
+      const limitGB = 10;
+      const usagePercentage = Math.min(100, Math.round((totalGB / limitGB) * 100));
+
+      res.json({
+        totalBytes,
+        totalGB: Number(totalGB.toFixed(2)),
+        limitGB,
+        usagePercentage,
+        totalFiles: totalCount,
+      });
+    } catch (e: any) {
+      console.error("Storage stats error:", e);
+      res.status(500).json({ error: "Failed to fetch storage stats" });
+    }
+  });
+
+  // Automatically purge expired delivery files from R2 and Supabase
+  app.post("/api/purge-expired", async (req, res) => {
+    if (!s3 || !isR2Configured) {
+      return res.status(500).json({ error: "R2 is not configured" });
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const filesRes = await fetch(
+        `${supabaseUrl}/rest/v1/files?expires_at=lt.${now}&select=id,file_path,gallery_id`,
+        {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+        }
+      );
+      const expiredFiles = (await filesRes.json()) as any;
+
+      if (!Array.isArray(expiredFiles) || expiredFiles.length === 0) {
+        return res.json({
+          success: true,
+          purgedCount: 0,
+          message: "No expired files found to purge.",
+        });
+      }
+
+      const pathsToDelete = new Set<string>();
+      const fileIdsToDelete: string[] = [];
+
+      for (const f of expiredFiles) {
+        fileIdsToDelete.push(f.id);
+        if (f.file_path) {
+          pathsToDelete.add(f.file_path);
+          const dir = f.file_path.substring(0, f.file_path.lastIndexOf("/"));
+          const name = f.file_path.split("/").pop();
+          if (dir && name) {
+            pathsToDelete.add(`${dir}/watermark_${name}`);
+            pathsToDelete.add(`${dir}/watermark_${name}.jpg`);
+            const baseName = name.replace(/\.[^/.]+$/, "");
+            pathsToDelete.add(`${dir}/watermark_${baseName}.jpg`);
+          }
+        }
+      }
+
+      const pathsArray = Array.from(pathsToDelete);
+      for (let i = 0; i < pathsArray.length; i += 1000) {
+        const chunk = pathsArray.slice(i, i + 1000);
+        await s3.send(
+          new DeleteObjectsCommand({
+            Bucket: R2_BUCKET_NAME!,
+            Delete: {
+              Objects: chunk.map((Key: string) => ({ Key })),
+              Quiet: true,
+            },
+          })
+        );
+      }
+
+      for (let i = 0; i < fileIdsToDelete.length; i += 100) {
+        const idChunk = fileIdsToDelete.slice(i, i + 100);
+        await fetch(`${supabaseUrl}/rest/v1/files?id=in.(${idChunk.join(",")})`, {
+          method: "DELETE",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        purgedCount: fileIdsToDelete.length,
+        purgedR2Objects: pathsArray.length,
+      });
+    } catch (e: any) {
+      console.error("Purge expired error:", e);
+      res.status(500).json({ error: "Failed to purge expired files: " + e.message });
     }
   });
 
@@ -147,11 +288,11 @@ async function startServer() {
         Prefix: folderPath.endsWith("/") ? folderPath : folderPath + "/",
       });
 
-      const listResult = await s3.send(listCommand) as any;
+      const listResult = (await s3.send(listCommand)) as any;
 
       if (listResult.Contents && listResult.Contents.length > 0) {
         const pathsToDelete = listResult.Contents.map((obj: any) => obj.Key);
-        
+
         for (let i = 0; i < pathsToDelete.length; i += 1000) {
           const chunk = pathsToDelete.slice(i, i + 1000);
           const command = new DeleteObjectsCommand({
@@ -164,7 +305,7 @@ async function startServer() {
           await s3.send(command);
         }
       }
-      
+
       res.json({ success: true });
     } catch (e) {
       console.error("Delete folder error:", e);

@@ -247,11 +247,15 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
                 const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
                 
-                // 1. Get Presigned URL from Backend
+                // 1. Get Presigned URL from Backend (organized by gallery)
                 const presignRes = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileName: file.name, fileType: mimeType }),
+                    body: JSON.stringify({ 
+                        fileName: file.name, 
+                        fileType: mimeType,
+                        folderPath: `galleries/${galleryId}`
+                    }),
                     signal: controller.signal
                 });
 
@@ -319,11 +323,15 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
                             const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
                             
-                            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+                            const cleanBaseName = file.name.replace(/\.[^/.]+$/, "");
                             const thumbPresignRes = await fetch(apiUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fileName: 'watermark_' + file.name + '.jpg', fileType: 'image/jpeg', folderPath }),
+                                body: JSON.stringify({ 
+                                    fileName: `watermark_${cleanBaseName}.jpg`, 
+                                    fileType: 'image/jpeg', 
+                                    folderPath: `galleries/${galleryId}` 
+                                }),
                                 signal: controller.signal
                             });
                             
@@ -363,6 +371,8 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                                 file_url: publicUrl,
                                 file_path: filePath,
                                 file_type: dbFileType,
+                                thumbnail_url: thumbPublicUrl || null,
+                                thumbnail_path: thumbFilePath || null,
                                 expires_at: expiresAt.toISOString()
                             }]);
                         dbError = error;
