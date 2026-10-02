@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import cors from "cors";
 import path from "path";
+import { Readable } from "stream";
 import { S3Client, PutObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createServer as createViteServer } from "vite";
@@ -313,16 +314,93 @@ async function startServer() {
     }
   });
 
-  // Proxy the download to bypass CORS if Cloudflare bucket doesn't have CORS setup
-  // While Cloudflare supports CORS, proxying makes it zero-setup for the user.
-  // We'll redirect instead of streaming to save server bandwidth since Cloudflare R2 is fast, 
-  // wait actually, for zip generation JSZip needs the actual data, so JSZip fetches the public URL
-  // The public URL requires CORS if fetched directly via XHR/fetch!
-  // BUT the user just sets up Cloudflare. Let's tell the user to set CORS OR proxy it.
-  // Actually, wait, R2 public bucket access DOES NOT support CORS easily unless on a custom domain according to old docs.
-  // Actually, R2 supports CORS. But it's easier to just fetch proxy if needed, though for large zips it's bad.
-  // Given we are downloading photos locally to browser to zip, we MUST have CORS on Cloudflare R2.
-  // We'll instruct the user.
+  // Robust download proxy endpoint with Content-Disposition attachment
+  // This allows mobile browsers (iOS Safari, Android Chrome, in-app webviews) to natively download files without client-side memory exhaustion or popup blocks
+  app.get("/api/download", async (req, res) => {
+    try {
+      const fileUrl = req.query.url as string;
+      const fileName = (req.query.name as string) || "download";
+      const fileKey = req.query.key as string;
+
+      if (!fileUrl && !fileKey) {
+        return res.status(400).json({ error: "Missing url or key parameter" });
+      }
+
+      let stream: any = null;
+      let contentType = "application/octet-stream";
+      let contentLength: number | undefined;
+
+      // Clean the key from URL or parameter
+      let targetKey = fileKey;
+      if (!targetKey && fileUrl) {
+        try {
+          const parsed = new URL(fileUrl);
+          targetKey = parsed.pathname.replace(/^\/+/, "");
+        } catch {
+          targetKey = fileUrl.replace(/^https?:\/\/[^\/]+\//, "");
+        }
+      }
+
+      // Try reading directly from S3 / R2 if configured
+      if (s3 && isR2Configured && targetKey) {
+        try {
+          const getCmd = new GetObjectCommand({
+            Bucket: R2_BUCKET_NAME!,
+            Key: targetKey,
+          });
+          const s3Res = await s3.send(getCmd);
+          stream = s3Res.Body;
+          contentType = s3Res.ContentType || "application/octet-stream";
+          contentLength = s3Res.ContentLength;
+        } catch (s3Err: any) {
+          console.warn("Direct R2 fetch failed for key:", targetKey, s3Err?.message);
+        }
+      }
+
+      // Fallback: fetch via HTTP if direct S3 stream failed or not configured
+      if (!stream && fileUrl) {
+        try {
+          const fetchRes = await fetch(fileUrl);
+          if (fetchRes.ok && fetchRes.body) {
+            contentType = fetchRes.headers.get("content-type") || "application/octet-stream";
+            const cl = fetchRes.headers.get("content-length");
+            if (cl) contentLength = parseInt(cl, 10);
+            stream = Readable.fromWeb(fetchRes.body as any);
+          }
+        } catch (fetchErr) {
+          console.error("HTTP proxy fetch failed:", fetchErr);
+        }
+      }
+
+      if (!stream) {
+        return res.status(404).send("File not found or unavailable.");
+      }
+
+      // Encode filename for Content-Disposition header
+      const safeFileName = fileName.replace(/["'\r\n]/g, "_");
+      const encodedFileName = encodeURIComponent(safeFileName);
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
+      );
+      res.setHeader("Content-Type", contentType);
+      if (contentLength) {
+        res.setHeader("Content-Length", contentLength);
+      }
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      if (req.method === "HEAD") {
+        return res.end();
+      }
+
+      stream.pipe(res);
+    } catch (err: any) {
+      console.error("Download endpoint error:", err);
+      if (!res.headersSent) {
+        res.status(500).send("Error downloading file");
+      }
+    }
+  });
 
   app.get("/api/storage-usage", async (req, res) => {
     if (!s3 || !isR2Configured) {

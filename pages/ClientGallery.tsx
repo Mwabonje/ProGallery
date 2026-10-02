@@ -135,6 +135,13 @@ export const ClientGallery: React.FC = () => {
     loaded: number;
     total: number;
   } | null>(null);
+  const [readyZipModal, setReadyZipModal] = useState<{
+    blob: Blob;
+    url: string;
+    name: string;
+    count: number;
+    videoFiles?: GalleryFile[];
+  } | null>(null);
 
   const horizontalRef = useRef<HTMLDivElement | null>(null);
 
@@ -747,7 +754,11 @@ export const ClientGallery: React.FC = () => {
     if (!gallery) return;
 
     if (gallery.selection_enabled) {
-      alert("Downloads are disabled while Selection Mode is active.");
+      setToast({
+        message: "Downloads are disabled while Selection Mode is active.",
+        type: "info",
+      });
+      setTimeout(() => setToast(null), 3000);
       return;
     }
 
@@ -756,37 +767,51 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
+    const isVideo =
+      file.file_type === "video" ||
+      !!file.file_url.match(/\.(mp4|mov|webm|ogg)$/i);
+    const defaultExt = isVideo ? ".mp4" : ".jpg";
+    let fileName =
+      file.title || file.file_path.split("/").pop() || `download${defaultExt}`;
+    if (!fileName.includes(".")) {
+      fileName += defaultExt;
+    }
+
+    const directUrl = rewriteUrlToR2(file.file_url);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const serverDownloadUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
+
     setDownloadingId(file.id);
     setSingleDownloadStats({ loaded: 0, total: 0 });
     singleAbortControllerRef.current = new AbortController();
 
     // Track the download for the limit
-    setDownloadedImageIds(prev => {
+    setDownloadedImageIds((prev) => {
       if (prev.includes(file.id)) return prev;
       const next = [...prev, file.id];
-      if (gallery.id) localStorage.setItem(`gallery_downloads_${gallery.id}`, JSON.stringify(next));
+      if (gallery.id)
+        localStorage.setItem(
+          `gallery_downloads_${gallery.id}`,
+          JSON.stringify(next),
+        );
       return next;
     });
 
     try {
       await supabase.rpc("increment_download", { row_id: file.id });
       trackFileClick(file.id);
+    } catch (err) {
+      console.warn("Analytics increment failed:", err);
+    }
 
-      const response = await fetch(rewriteUrlToR2(file.file_url), {
+    try {
+      const response = await fetch(directUrl, {
         signal: singleAbortControllerRef.current.signal,
       });
 
-      if (!response.body) {
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download =
-          file.title || file.file_path.split("/").pop() || "download";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        return;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
       }
 
       const contentLength = response.headers.get("content-length");
@@ -794,40 +819,127 @@ export const ClientGallery: React.FC = () => {
       let loaded = 0;
       setSingleDownloadStats({ loaded, total });
 
-      const reader = response.body.getReader();
-      const chunks = [];
+      let blob: Blob;
 
-      while (true) {
-        const { done, value } = await reader.read();
+      if (!response.body) {
+        blob = await response.blob();
+      } else {
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
 
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
 
-        chunks.push(value);
-        loaded += value.length;
+          if (done) break;
 
-        setSingleDownloadStats({ loaded, total });
+          chunks.push(value);
+          loaded += value.length;
+
+          setSingleDownloadStats({ loaded, total });
+        }
+
+        blob = new Blob(chunks, {
+          type:
+            response.headers.get("content-type") ||
+            (isVideo ? "video/mp4" : "image/jpeg"),
+        });
       }
 
-      const blob = new Blob(chunks, {
-        type: response.headers.get("content-type") || "",
-      });
+      // Priority 1 for Mobile: Native Web Share API
+      // When navigator.share is called with a file, iOS brings up the system Share Sheet
+      // with "Save Image" to save directly into Camera Roll / Apple Photos!
+      if (
+        isMobile &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function"
+      ) {
+        try {
+          const fileObj = new File([blob], fileName, {
+            type: blob.type || (isVideo ? "video/mp4" : "image/jpeg"),
+          });
+          if (navigator.canShare({ files: [fileObj] })) {
+            await navigator.share({
+              files: [fileObj],
+              title: fileName,
+            });
+            setToast({
+              message: "Photo ready! Saved to device.",
+              type: "download",
+            });
+            setTimeout(() => setToast(null), 3000);
+            return;
+          }
+        } catch (shareErr: any) {
+          if (shareErr.name === "AbortError") {
+            // User cancelled the share sheet intentionally
+            return;
+          }
+          console.warn(
+            "navigator.share failed, using direct download:",
+            shareErr,
+          );
+        }
+      }
+
+      // Priority 2: Standard anchor download
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download =
-        file.title || file.file_path.split("/").pop() || "download";
+      link.download = fileName;
+      link.target = "_self";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 3000);
 
-      // Short timeout to allow the download to start before removing spinner
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // On iOS Safari, if the programmatic click above was ignored due to user gesture expiry,
+      // fallback to the server attachment endpoint:
+      if (isIOS) {
+        setTimeout(() => {
+          const serverLink = document.createElement("a");
+          serverLink.href = serverDownloadUrl;
+          serverLink.download = fileName;
+          document.body.appendChild(serverLink);
+          serverLink.click();
+          setTimeout(() => document.body.removeChild(serverLink), 2000);
+        }, 300);
+      }
+
+      setToast({ message: "Download started!", type: "download" });
+      setTimeout(() => setToast(null), 3000);
     } catch (e: any) {
       if (e.name === "AbortError") {
         console.log("Download cancelled");
-      } else {
-        console.error("Download failed", e);
-        alert("Download failed. Please check your internet connection.");
+        return;
+      }
+
+      console.error(
+        "Standard download failed, falling back to server route:",
+        e,
+      );
+
+      // Robust fallback: trigger server route
+      try {
+        const fallbackLink = document.createElement("a");
+        fallbackLink.href = serverDownloadUrl;
+        fallbackLink.download = fileName;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        setTimeout(() => document.body.removeChild(fallbackLink), 2000);
+
+        setToast({
+          message: "Download started via direct link!",
+          type: "download",
+        });
+        setTimeout(() => setToast(null), 3000);
+      } catch {
+        setToast({
+          message: "Download failed. Please check your connection.",
+          type: "info",
+        });
+        setTimeout(() => setToast(null), 3000);
       }
     } finally {
       setDownloadingId(null);
@@ -839,7 +951,11 @@ export const ClientGallery: React.FC = () => {
     if (!gallery || !files.length) return;
 
     if (gallery.selection_enabled) {
-      alert("Downloads are disabled while Selection Mode is active.");
+      setToast({
+        message: "Downloads are disabled while Selection Mode is active.",
+        type: "info",
+      });
+      setTimeout(() => setToast(null), 3000);
       return;
     }
 
@@ -854,48 +970,61 @@ export const ClientGallery: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      let globalProcessed = 0;
-      const total = files.length;
       const galleryName = gallery.client_name
         .replace(/[^a-z0-9]/gi, "_")
         .toLowerCase();
 
       // Bulk increment download counts for all files in the gallery
       const fileIds = files.map((f) => f.id);
-      const { error: bulkError } = await supabase.rpc(
-        "increment_downloads_bulk",
-        { file_ids: fileIds },
-      );
-      if (bulkError) {
-        console.error(
-          "Failed to bulk increment downloads. Make sure the increment_downloads_bulk RPC exists.",
-          bulkError,
-        );
-        // Optional: we could fallback to individual increments, but for large galleries it might trigger rate limits.
+      try {
+        await supabase.rpc("increment_downloads_bulk", { file_ids: fileIds });
+        fileIds.forEach((id) => trackFileClick(id));
+      } catch (err) {
+        console.warn("Analytics increment failed:", err);
       }
-      
-      // Also increment clicks for all files
-      fileIds.forEach((id) => trackFileClick(id));
 
       const zip = new JSZip();
+      const validFiles = files.filter((f) => !failedFileIds.has(f.id));
 
-      setDownloadStatusText("Preparing list...");
+      // Identify large videos (e.g. > 30MB) so we don't blow browser memory on mobile
+      const videoFiles = validFiles.filter(
+        (f) =>
+          f.file_type === "video" ||
+          f.file_url.match(/\.(mp4|mov|webm|ogg)$/i),
+      );
+      // Photos to include in ZIP: include all photos (exclude large video from in-memory ZIP so mobile Safari doesn't crash)
+      const filesToZip = validFiles.filter(
+        (f) =>
+          f.file_type !== "video" &&
+          !f.file_url.match(/\.(mp4|mov|webm|ogg)$/i),
+      );
 
-      const CONCURRENCY_LIMIT = 3;
-      const queue = files.filter((f) => !failedFileIds.has(f.id));
+      const targetFiles = filesToZip.length > 0 ? filesToZip : validFiles;
+      let globalProcessed = 0;
+      const total = targetFiles.length;
+
+      setDownloadStatusText(
+        `Preparing ${targetFiles.length} photos for packaging...`,
+      );
+
+      const CONCURRENCY_LIMIT = 2; // Keep conservative concurrency to prevent mobile memory pressure
+      const queue = [...targetFiles];
       const activePromises: Promise<void>[] = [];
 
       const processFile = async (file: GalleryFile) => {
         if (abortControllerRef.current?.signal.aborted) return;
         try {
-          const response = await fetch(rewriteUrlToR2(file.file_url), {
-            signal: abortControllerRef.current.signal,
+          const directUrl = rewriteUrlToR2(file.file_url);
+          const response = await fetch(directUrl, {
+            signal: abortControllerRef.current?.signal,
           });
           if (!response.ok)
             throw new Error(`Failed to fetch ${file.file_path}`);
           const blob = await response.blob();
           const fileName =
-            file.title || file.file_path.split("/").pop() || `file-${file.id}`;
+            file.title ||
+            file.file_path.split("/").pop() ||
+            `file-${file.id}.jpg`;
           zip.file(fileName, blob);
         } catch (error: any) {
           if (error.name !== "AbortError") {
@@ -905,7 +1034,7 @@ export const ClientGallery: React.FC = () => {
           globalProcessed++;
           setDownloadProgress(Math.round((globalProcessed / total) * 100));
           setDownloadStatusText(
-            `Fetching files (${globalProcessed}/${total})...`,
+            `Packaging files (${globalProcessed}/${total})...`,
           );
         }
       };
@@ -919,7 +1048,7 @@ export const ClientGallery: React.FC = () => {
         }
       };
 
-      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, files.length); i++) {
+      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, targetFiles.length); i++) {
         activePromises.push(next());
       }
 
@@ -927,7 +1056,7 @@ export const ClientGallery: React.FC = () => {
 
       if (abortControllerRef.current?.signal.aborted) return;
 
-      setDownloadStatusText("Packaging... (almost done)");
+      setDownloadStatusText("Compressing archive... (almost done)");
 
       const content = await zip.generateAsync({
         type: "blob",
@@ -937,16 +1066,35 @@ export const ClientGallery: React.FC = () => {
       if (abortControllerRef.current?.signal.aborted) return;
 
       const zipName = `${galleryName}_photos.zip`;
+      const blobUrl = window.URL.createObjectURL(content);
 
-      saveAs(content, zipName);
-      
-      setToast({ message: "Your download has started!", type: "download" });
+      // Attempt automatic download
+      try {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = zipName;
+        link.target = "_self";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => document.body.removeChild(link), 3000);
+      } catch (err) {
+        console.warn("Auto link click error:", err);
+      }
+
+      // Present ready modal for 100% mobile and desktop reliability
+      setReadyZipModal({
+        blob: content,
+        url: blobUrl,
+        name: zipName,
+        count: targetFiles.length,
+        videoFiles: videoFiles,
+      });
+
+      setToast({ message: "Your gallery ZIP is ready!", type: "download" });
       setTimeout(() => setToast(null), 3000);
 
       // Log download all feature
       try {
-        // You could optionally increment all files' download counters here if desired
-        // For now, logging the activity is sufficient
         await supabase.from("activity_logs").insert({
           gallery_id: galleryId,
           action: `Client downloaded all ${files.length} photos`,
@@ -955,9 +1103,12 @@ export const ClientGallery: React.FC = () => {
     } catch (error: any) {
       if (error.name !== "AbortError") {
         console.error("Error creating zip:", error);
-        alert(
-          "Failed to download all files. Please try downloading individually.",
-        );
+        setToast({
+          message:
+            "Failed to package all files. Please try downloading individually.",
+          type: "info",
+        });
+        setTimeout(() => setToast(null), 4000);
       }
     } finally {
       setDownloadingAll(false);
@@ -1944,11 +2095,11 @@ export const ClientGallery: React.FC = () => {
                         >
                           {downloadingId === file.id ? (
                             <X className="w-5 h-5 shrink-0" />
-                          ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
-                    <Lock className="w-5 h-5" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
+                          ) : isFileLocked(file.id) ? (
+                            <Lock className="w-5 h-5" />
+                          ) : (
+                            <Download className="w-5 h-5" />
+                          )}
                           {downloadingId === file.id && singleDownloadStats && (
                             <span className="font-semibold truncate">
                               {singleDownloadStats.total
@@ -2280,6 +2431,110 @@ export const ClientGallery: React.FC = () => {
         </div>
       )}
 
+      {/* Ready ZIP Modal for Seamless Mobile & Desktop Downloads */}
+      {readyZipModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center animate-in zoom-in-95 text-white">
+            <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
+              <FolderDown className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              Gallery ZIP is Ready!
+            </h3>
+            <p className="text-xs text-slate-300 mt-1 mb-5">
+              {readyZipModal.count} photos packaged into {readyZipModal.name}.
+            </p>
+
+            <div className="space-y-2.5">
+              <a
+                href={readyZipModal.url}
+                download={readyZipModal.name}
+                onClick={() => {
+                  setToast({ message: "Download started!", type: "download" });
+                  setTimeout(() => setToast(null), 3000);
+                }}
+                className="w-full py-3.5 px-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all text-sm"
+              >
+                <Download className="w-4 h-4" />
+                Save ZIP to Device
+              </a>
+
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" && typeof navigator.canShare === "function" && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const zipFile = new File([readyZipModal.blob], readyZipModal.name, {
+                        type: "application/zip",
+                      });
+                      if (navigator.canShare({ files: [zipFile] })) {
+                        await navigator.share({
+                          files: [zipFile],
+                          title: readyZipModal.name,
+                        });
+                      }
+                    } catch (err: any) {
+                      if (err.name !== "AbortError") {
+                        console.warn("Share error:", err);
+                      }
+                    }
+                  }}
+                  className="w-full py-3 px-4 bg-slate-800 text-slate-200 hover:text-white hover:bg-slate-700/80 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/10 active:scale-95 transition-all text-xs"
+                >
+                  <Send className="w-4 h-4" />
+                  Save to Files / AirDrop
+                </button>
+              )}
+            </div>
+
+            {readyZipModal.videoFiles && readyZipModal.videoFiles.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-white/10 text-left">
+                <p className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+                  <FileVideo className="w-3.5 h-3.5 text-blue-400" />
+                  Video Files (Download individually):
+                </p>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                  {readyZipModal.videoFiles.map((vf) => {
+                    const vfName = vf.title || vf.file_path.split("/").pop() || "video.mp4";
+                    const directVfUrl = rewriteUrlToR2(vf.file_url);
+                    const dlUrl = `/api/download?url=${encodeURIComponent(directVfUrl)}&name=${encodeURIComponent(vfName)}`;
+                    return (
+                      <a
+                        key={vf.id}
+                        href={dlUrl}
+                        download={vfName}
+                        className="py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg flex items-center justify-between text-xs text-slate-200 transition-colors"
+                      >
+                        <span className="truncate max-w-[170px]">{vfName}</span>
+                        <span className="flex items-center gap-1 text-emerald-400 font-semibold shrink-0">
+                          <Download className="w-3 h-3" />
+                          Download
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
+              Tip on iPhone: Tap "Save ZIP to Device" to save into your Files app, or tap the download button on any individual photo to save straight to Apple Photos.
+            </p>
+
+            <button
+              onClick={() => {
+                if (readyZipModal.url) {
+                  window.URL.revokeObjectURL(readyZipModal.url);
+                }
+                setReadyZipModal(null);
+              }}
+              className="mt-3 w-full py-2 text-slate-400 hover:text-white font-medium text-xs transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Screenshot Warning Modal */}
       {showScreenshotWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -2333,15 +2588,41 @@ export const ClientGallery: React.FC = () => {
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
           onClick={() => setLightboxFile(null)}
         >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setLightboxFile(null);
-            }}
-            className="absolute top-4 right-4 text-white/70 hover:text-white p-3 md:p-2 z-50 bg-black/50 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+            {!isPortfolio && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (downloadingId === lightboxFile.id) {
+                    cancelSingleDownload();
+                  } else {
+                    handleDownload(lightboxFile);
+                  }
+                }}
+                disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
+                className="text-white/90 hover:text-white p-3 md:p-2 bg-black/50 hover:bg-black/80 rounded-full transition-colors flex items-center justify-center"
+                title="Download"
+              >
+                {downloadingId === lightboxFile.id ? (
+                  <X className="w-5 h-5 text-red-400" />
+                ) : isFileLocked(lightboxFile.id) ? (
+                  <Lock className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxFile(null);
+              }}
+              className="text-white/70 hover:text-white p-3 md:p-2 bg-black/50 hover:bg-black/80 rounded-full transition-colors"
+              title="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
           <div
             className="relative w-full h-full flex items-center justify-center pb-20"
