@@ -341,26 +341,17 @@ async function startServer() {
         }
       }
 
-      const rangeHeader = req.headers.range;
-      let isPartial = false;
-      let contentRange: string | undefined;
-
       // Try reading directly from S3 / R2 if configured
       if (s3 && isR2Configured && targetKey) {
         try {
           const getCmd = new GetObjectCommand({
             Bucket: R2_BUCKET_NAME!,
             Key: targetKey,
-            ...(rangeHeader ? { Range: rangeHeader } : {}),
           });
           const s3Res = await s3.send(getCmd);
           stream = s3Res.Body;
           contentType = s3Res.ContentType || "application/octet-stream";
           contentLength = s3Res.ContentLength;
-          if (s3Res.ContentRange) {
-            isPartial = true;
-            contentRange = s3Res.ContentRange;
-          }
         } catch (s3Err: any) {
           console.warn("Direct R2 fetch failed for key:", targetKey, s3Err?.message);
         }
@@ -369,14 +360,8 @@ async function startServer() {
       // Fallback: fetch via HTTP if direct S3 stream failed or not configured
       if (!stream && fileUrl) {
         try {
-          const headers: Record<string, string> = {};
-          if (rangeHeader) headers["Range"] = rangeHeader;
-          const fetchRes = await fetch(fileUrl, { headers });
+          const fetchRes = await fetch(fileUrl);
           if (fetchRes.ok && fetchRes.body) {
-            if (fetchRes.status === 206) {
-              isPartial = true;
-              contentRange = fetchRes.headers.get("content-range") || undefined;
-            }
             contentType = fetchRes.headers.get("content-type") || "application/octet-stream";
             const cl = fetchRes.headers.get("content-length");
             if (cl) contentLength = parseInt(cl, 10);
@@ -395,46 +380,18 @@ async function startServer() {
       const safeFileName = fileName.replace(/["'\r\n]/g, "_");
       const encodedFileName = encodeURIComponent(safeFileName);
 
-      // Ensure proper MIME type for photos/videos so mobile OS recognizes it as a gallery photo/video
-      const lowerName = safeFileName.toLowerCase();
-      if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
-        contentType = "image/jpeg";
-      } else if (lowerName.endsWith(".png")) {
-        contentType = "image/png";
-      } else if (lowerName.endsWith(".webp")) {
-        contentType = "image/webp";
-      } else if (lowerName.endsWith(".mp4")) {
-        contentType = "video/mp4";
-      } else if (lowerName.endsWith(".mov")) {
-        contentType = "video/quicktime";
-      }
-
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
       );
       res.setHeader("Content-Type", contentType);
-      res.setHeader("Accept-Ranges", "bytes");
-      if (isPartial && contentRange) {
-        res.status(206);
-        res.setHeader("Content-Range", contentRange);
-      } else {
-        res.status(200);
-      }
       if (contentLength) {
         res.setHeader("Content-Length", contentLength);
       }
       res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Content-Disposition, Accept-Ranges");
       if (req.method === "HEAD") {
         return res.end();
       }
-
-      res.on("close", () => {
-        if (stream && typeof stream.destroy === "function") {
-          stream.destroy();
-        }
-      });
 
       stream.pipe(res);
     } catch (err: any) {

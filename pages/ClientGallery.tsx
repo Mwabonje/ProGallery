@@ -22,7 +22,6 @@ import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import { supabase } from "../services/supabase";
 import { Gallery, GalleryFile } from "../types";
@@ -142,12 +141,6 @@ export const ClientGallery: React.FC = () => {
     name: string;
     count: number;
     videoFiles?: GalleryFile[];
-  } | null>(null);
-  const [iosSaveModal, setIosSaveModal] = useState<{
-    file: GalleryFile;
-    blob: Blob;
-    blobUrl: string;
-    fileName: string;
   } | null>(null);
 
   const horizontalRef = useRef<HTMLDivElement | null>(null);
@@ -757,39 +750,6 @@ export const ClientGallery: React.FC = () => {
     }
   };
 
-  const getFileDownloadInfo = (file: GalleryFile | null) => {
-    if (!file) return { fileName: "photo.jpg", directUrl: "", downloadUrl: "", isVideo: false };
-    const isVideo =
-      file.file_type === "video" ||
-      !!file.file_url.match(/\.(mp4|mov|webm|ogg)$/i);
-    const defaultExt = isVideo ? ".mp4" : ".jpg";
-    let fileName =
-      file.title || file.file_path.split("/").pop() || `download${defaultExt}`;
-    if (!fileName.includes(".")) {
-      fileName += defaultExt;
-    }
-    const directUrl = rewriteUrlToR2(file.file_url);
-    const downloadUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
-    return { fileName, directUrl, downloadUrl, isVideo };
-  };
-
-  const handleTrackDownload = (file: GalleryFile) => {
-    if (!gallery) return;
-    setDownloadedImageIds((prev) => {
-      if (prev.includes(file.id)) return prev;
-      const next = [...prev, file.id];
-      if (gallery.id)
-        localStorage.setItem(
-          `gallery_downloads_${gallery.id}`,
-          JSON.stringify(next),
-        );
-      return next;
-    });
-
-    supabase.rpc("increment_download", { row_id: file.id }).catch(console.warn);
-    trackFileClick(file.id);
-  };
-
   const handleDownload = async (file: GalleryFile) => {
     if (!gallery) return;
 
@@ -807,122 +767,179 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
-    const { fileName, directUrl, downloadUrl, isVideo } = getFileDownloadInfo(file);
-    handleTrackDownload(file);
-
-    // Cancel any ongoing single download
-    if (singleAbortControllerRef.current) {
-      singleAbortControllerRef.current.abort();
+    const isVideo =
+      file.file_type === "video" ||
+      !!file.file_url.match(/\.(mp4|mov|webm|ogg)$/i);
+    const defaultExt = isVideo ? ".mp4" : ".jpg";
+    let fileName =
+      file.title || file.file_path.split("/").pop() || `download${defaultExt}`;
+    if (!fileName.includes(".")) {
+      fileName += defaultExt;
     }
-    const controller = new AbortController();
-    singleAbortControllerRef.current = controller;
-    setDownloadingId(file.id);
-    setSingleDownloadStats(null);
 
-    setToast({
-      message: isVideo ? "Downloading video..." : "Downloading photo to your gallery...",
-      type: "download",
+    const directUrl = rewriteUrlToR2(file.file_url);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const serverDownloadUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
+
+    setDownloadingId(file.id);
+    setSingleDownloadStats({ loaded: 0, total: 0 });
+    singleAbortControllerRef.current = new AbortController();
+
+    // Track the download for the limit
+    setDownloadedImageIds((prev) => {
+      if (prev.includes(file.id)) return prev;
+      const next = [...prev, file.id];
+      if (gallery.id)
+        localStorage.setItem(
+          `gallery_downloads_${gallery.id}`,
+          JSON.stringify(next),
+        );
+      return next;
     });
 
     try {
-      // 1. Fetch file directly as real Blob
-      let blob: Blob;
-      const targetFetchUrl = directUrl || downloadUrl;
+      await supabase.rpc("increment_download", { row_id: file.id });
+      trackFileClick(file.id);
+    } catch (err) {
+      console.warn("Analytics increment failed:", err);
+    }
 
-      try {
-        const response = await fetch(targetFetchUrl, {
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        blob = await response.blob();
-      } catch (directErr: any) {
-        if (directErr.name === "AbortError") throw directErr;
-        // Fallback to server proxy endpoint
-        const proxyRes = await fetch(downloadUrl, { signal: controller.signal });
-        if (!proxyRes.ok) throw new Error(`Server returned ${proxyRes.status}`);
-        blob = await proxyRes.blob();
+    try {
+      const response = await fetch(directUrl, {
+        signal: singleAbortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
       }
 
-      // Check device platform
-      const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const contentLength = response.headers.get("content-length");
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      let loaded = 0;
+      setSingleDownloadStats({ loaded, total });
 
-      const blobUrl = window.URL.createObjectURL(blob);
+      let blob: Blob;
 
-      // On Android / Desktop / PC / Mac:
-      if (!isIOS) {
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = fileName;
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(() => {
-          try {
-            document.body.removeChild(a);
-          } catch {}
-        }, 5000);
-
-        // Keep blob URL active for 2 minutes to allow mobile OS download manager to write complete file
-        setTimeout(() => {
-          try {
-            window.URL.revokeObjectURL(blobUrl);
-          } catch {}
-        }, 120000);
-
-        setToast({
-          message: isVideo ? "Video saved to device!" : "Photo downloaded to your gallery!",
-          type: "download",
-        });
-        setTimeout(() => setToast(null), 3500);
+      if (!response.body) {
+        blob = await response.blob();
       } else {
-        // On iOS:
-        // Trigger device download to Files app
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = fileName;
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          try {
-            document.body.removeChild(a);
-          } catch {}
-        }, 5000);
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
 
-        if (!isVideo) {
-          // Open the Camera Roll save helper modal so iPhone users can save straight to Apple Photos
-          setIosSaveModal({
-            file,
-            blob,
-            blobUrl,
-            fileName,
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          chunks.push(value);
+          loaded += value.length;
+
+          setSingleDownloadStats({ loaded, total });
+        }
+
+        blob = new Blob(chunks, {
+          type:
+            response.headers.get("content-type") ||
+            (isVideo ? "video/mp4" : "image/jpeg"),
+        });
+      }
+
+      // Priority 1 for Mobile: Native Web Share API
+      // When navigator.share is called with a file, iOS brings up the system Share Sheet
+      // with "Save Image" to save directly into Camera Roll / Apple Photos!
+      if (
+        isMobile &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function"
+      ) {
+        try {
+          const fileObj = new File([blob], fileName, {
+            type: blob.type || (isVideo ? "video/mp4" : "image/jpeg"),
           });
-          setToast({
-            message: "Tap 'Save to Photos' to add to Camera Roll",
-            type: "download",
-          });
-          setTimeout(() => setToast(null), 4000);
-        } else {
-          setToast({
-            message: "Video saved to device!",
-            type: "download",
-          });
-          setTimeout(() => setToast(null), 3500);
+          if (navigator.canShare({ files: [fileObj] })) {
+            await navigator.share({
+              files: [fileObj],
+              title: fileName,
+            });
+            setToast({
+              message: "Photo ready! Saved to device.",
+              type: "download",
+            });
+            setTimeout(() => setToast(null), 3000);
+            return;
+          }
+        } catch (shareErr: any) {
+          if (shareErr.name === "AbortError") {
+            // User cancelled the share sheet intentionally
+            return;
+          }
+          console.warn(
+            "navigator.share failed, using direct download:",
+            shareErr,
+          );
         }
       }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        console.error("Single download failed:", err);
+
+      // Priority 2: Standard anchor download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      link.target = "_self";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 3000);
+
+      // On iOS Safari, if the programmatic click above was ignored due to user gesture expiry,
+      // fallback to the server attachment endpoint:
+      if (isIOS) {
+        setTimeout(() => {
+          const serverLink = document.createElement("a");
+          serverLink.href = serverDownloadUrl;
+          serverLink.download = fileName;
+          document.body.appendChild(serverLink);
+          serverLink.click();
+          setTimeout(() => document.body.removeChild(serverLink), 2000);
+        }, 300);
+      }
+
+      setToast({ message: "Download started!", type: "download" });
+      setTimeout(() => setToast(null), 3000);
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        console.log("Download cancelled");
+        return;
+      }
+
+      console.error(
+        "Standard download failed, falling back to server route:",
+        e,
+      );
+
+      // Robust fallback: trigger server route
+      try {
+        const fallbackLink = document.createElement("a");
+        fallbackLink.href = serverDownloadUrl;
+        fallbackLink.download = fileName;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        setTimeout(() => document.body.removeChild(fallbackLink), 2000);
+
         setToast({
-          message: "Download failed. Please check your connection and try again.",
+          message: "Download started via direct link!",
+          type: "download",
+        });
+        setTimeout(() => setToast(null), 3000);
+      } catch {
+        setToast({
+          message: "Download failed. Please check your connection.",
           type: "info",
         });
-        setTimeout(() => setToast(null), 4000);
+        setTimeout(() => setToast(null), 3000);
       }
     } finally {
       setDownloadingId(null);
@@ -998,31 +1015,16 @@ export const ClientGallery: React.FC = () => {
         if (abortControllerRef.current?.signal.aborted) return;
         try {
           const directUrl = rewriteUrlToR2(file.file_url);
-          let response: Response | null = null;
-          try {
-            response = await fetch(directUrl, {
-              signal: abortControllerRef.current?.signal,
-            });
-            if (!response.ok) response = null;
-          } catch {
-            response = null;
-          }
-
+          const response = await fetch(directUrl, {
+            signal: abortControllerRef.current?.signal,
+          });
+          if (!response.ok)
+            throw new Error(`Failed to fetch ${file.file_path}`);
+          const blob = await response.blob();
           const fileName =
             file.title ||
             file.file_path.split("/").pop() ||
             `file-${file.id}.jpg`;
-
-          if (!response) {
-            const serverUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
-            response = await fetch(serverUrl, {
-              signal: abortControllerRef.current?.signal,
-            });
-          }
-
-          if (!response.ok)
-            throw new Error(`Failed to fetch ${file.file_path}`);
-          const blob = await response.blob();
           zip.file(fileName, blob);
         } catch (error: any) {
           if (error.name !== "AbortError") {
@@ -2020,23 +2022,30 @@ export const ClientGallery: React.FC = () => {
                                 handleDownload(file);
                               }
                             }}
-                            disabled={downloadingId !== null && downloadingId !== file.id}
-                            className={`pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm ${
-                              downloadingId === file.id ? "bg-amber-50 text-amber-700" : ""
-                            }`}
+                            disabled={
+                              downloadingId !== null &&
+                              downloadingId !== file.id
+                            }
+                            className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
                           >
                             {downloadingId === file.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                              <X className="w-4 h-4 text-red-500" />
                             ) : isFileLocked(file.id) ? (
                               <Lock className="w-4 h-4" />
                             ) : (
                               <Download className="w-4 h-4" />
                             )}
-                            <span>
+                            <span
+                              className={
+                                downloadingId === file.id ? "text-red-600" : ""
+                              }
+                            >
                               {downloadingId === file.id
-                                ? singleDownloadStats && singleDownloadStats.total
-                                  ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%`
-                                  : "Downloading..."
+                                ? singleDownloadStats
+                                  ? singleDownloadStats.total
+                                    ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
+                                    : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
+                                  : "Cancel"
                                 : isFileLocked(file.id)
                                   ? "Locked"
                                   : "Download"}
@@ -2072,22 +2081,31 @@ export const ClientGallery: React.FC = () => {
                               handleDownload(file);
                             }
                           }}
-                          disabled={downloadingId !== null && downloadingId !== file.id}
-                          className={`flex items-center justify-center p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${
-                            isFileLocked(file.id)
-                              ? "bg-slate-100/90 text-slate-800"
-                              : downloadingId === file.id
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-white/90 text-slate-900"
-                          }`}
-                          title="Download"
+                          disabled={
+                            downloadingId !== null && downloadingId !== file.id
+                          }
+                          className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-3"} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                                ${
+                                  isFileLocked(file.id)
+                                    ? "bg-slate-100/90 text-slate-800"
+                                    : "bg-white/90 text-slate-900"
+                                }
+                                ${downloadingId === file.id ? "!bg-red-50 !text-red-600 !border-red-200" : ""}
+                                `}
                         >
                           {downloadingId === file.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-amber-700" />
+                            <X className="w-5 h-5 shrink-0" />
                           ) : isFileLocked(file.id) ? (
                             <Lock className="w-5 h-5" />
                           ) : (
                             <Download className="w-5 h-5" />
+                          )}
+                          {downloadingId === file.id && singleDownloadStats && (
+                            <span className="font-semibold truncate">
+                              {singleDownloadStats.total
+                                ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%`
+                                : `${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}M`}
+                            </span>
                           )}
                         </button>
                       )}
@@ -2440,6 +2458,32 @@ export const ClientGallery: React.FC = () => {
                 <Download className="w-4 h-4" />
                 Save ZIP to Device
               </a>
+
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" && typeof navigator.canShare === "function" && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const zipFile = new File([readyZipModal.blob], readyZipModal.name, {
+                        type: "application/zip",
+                      });
+                      if (navigator.canShare({ files: [zipFile] })) {
+                        await navigator.share({
+                          files: [zipFile],
+                          title: readyZipModal.name,
+                        });
+                      }
+                    } catch (err: any) {
+                      if (err.name !== "AbortError") {
+                        console.warn("Share error:", err);
+                      }
+                    }
+                  }}
+                  className="w-full py-3 px-4 bg-slate-800 text-slate-200 hover:text-white hover:bg-slate-700/80 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/10 active:scale-95 transition-all text-xs"
+                >
+                  <Send className="w-4 h-4" />
+                  Save to Files / AirDrop
+                </button>
+              )}
             </div>
 
             {readyZipModal.videoFiles && readyZipModal.videoFiles.length > 0 && (
@@ -2482,118 +2526,6 @@ export const ClientGallery: React.FC = () => {
                   window.URL.revokeObjectURL(readyZipModal.url);
                 }
                 setReadyZipModal(null);
-              }}
-              className="mt-3 w-full py-2 text-slate-400 hover:text-white font-medium text-xs transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* iOS Save to Photos (Camera Roll) Modal */}
-      {iosSaveModal && (
-        <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center animate-in slide-in-from-bottom-6 sm:zoom-in-95 text-white">
-            <div className="w-12 h-12 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-rose-500/30">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              Save Photo to iPhone Photos
-            </h3>
-            <p className="text-xs text-slate-300 mt-1 mb-4 leading-relaxed">
-              Apple requires choosing <span className="font-semibold text-white">"Save Image"</span> to store photos directly in your Camera Roll album.
-            </p>
-
-            <div className="relative rounded-xl overflow-hidden mb-4 border border-white/15 bg-black/50 p-2 flex items-center justify-center">
-              <img
-                src={iosSaveModal.blobUrl}
-                alt="Download preview"
-                className="max-h-52 rounded-lg object-contain pointer-events-auto"
-                style={{ WebkitTouchCallout: "default", userSelect: "auto" }}
-              />
-            </div>
-
-            <div className="space-y-2.5">
-              <button
-                onClick={async () => {
-                  try {
-                    const shareFile = new File([iosSaveModal.blob], iosSaveModal.fileName, {
-                      type: iosSaveModal.blob.type || "image/jpeg",
-                    });
-                    if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
-                      await navigator.share({
-                        files: [shareFile],
-                        title: iosSaveModal.fileName,
-                      });
-                      setToast({ message: "Photo saved to your Photos!", type: "download" });
-                      setTimeout(() => setToast(null), 3000);
-                      setIosSaveModal(null);
-                    } else {
-                      window.open(iosSaveModal.blobUrl, "_blank");
-                    }
-                  } catch (e: any) {
-                    if (e.name !== "AbortError") {
-                      const a = document.createElement("a");
-                      a.style.display = "none";
-                      a.href = iosSaveModal.blobUrl;
-                      a.download = iosSaveModal.fileName;
-                      a.rel = "noopener";
-                      document.body.appendChild(a);
-                      a.click();
-                      setTimeout(() => {
-                        try {
-                          document.body.removeChild(a);
-                        } catch {}
-                      }, 5000);
-                    }
-                  }
-                }}
-                className="w-full py-3 px-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-rose-600" />
-                  <span>Save to Photos App</span>
-                </div>
-                <span className="text-[11px] text-slate-500 font-normal">
-                  Tap "Save Image" in the menu that opens
-                </span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const a = document.createElement("a");
-                  a.style.display = "none";
-                  a.href = iosSaveModal.blobUrl;
-                  a.download = iosSaveModal.fileName;
-                  a.rel = "noopener";
-                  document.body.appendChild(a);
-                  a.click();
-                  setTimeout(() => {
-                    try {
-                      document.body.removeChild(a);
-                    } catch {}
-                  }, 5000);
-                  setToast({ message: "Download started!", type: "download" });
-                  setTimeout(() => setToast(null), 3000);
-                }}
-                className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/15 text-slate-200 font-medium rounded-xl flex items-center justify-center gap-2 text-xs transition-colors"
-              >
-                <FolderDown className="w-3.5 h-3.5" />
-                Download to Files app
-              </button>
-            </div>
-
-            <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
-              Tip: You can also press and hold the photo above, then tap <strong>"Save to Photos"</strong>.
-            </p>
-
-            <button
-              onClick={() => {
-                if (iosSaveModal.blobUrl) {
-                  window.URL.revokeObjectURL(iosSaveModal.blobUrl);
-                }
-                setIosSaveModal(null);
               }}
               className="mt-3 w-full py-2 text-slate-400 hover:text-white font-medium text-xs transition-colors"
             >
