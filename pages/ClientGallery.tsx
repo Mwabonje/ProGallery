@@ -779,7 +779,6 @@ export const ClientGallery: React.FC = () => {
 
     const directUrl = rewriteUrlToR2(file.file_url);
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const serverDownloadUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
 
     setDownloadingId(file.id);
@@ -805,10 +804,60 @@ export const ClientGallery: React.FC = () => {
       console.warn("Analytics increment failed:", err);
     }
 
+    // ON MOBILE (Android / iOS):
+    // Directly trigger native download so it downloads straight into the phone's Photo Gallery / Downloads.
+    // We do NOT use navigator.share (which opens the share sheet).
+    // The server attachment route sets Content-Disposition: attachment, which makes the mobile browser
+    // download directly without navigating away.
+    if (isMobile) {
+      try {
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = serverDownloadUrl;
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+          } catch {}
+        }, 12000);
+
+        setToast({
+          message: "Downloading photo directly to your gallery...",
+          type: "download",
+        });
+        setTimeout(() => setToast(null), 3500);
+
+        setTimeout(() => {
+          setDownloadingId(null);
+          setSingleDownloadStats(null);
+        }, 1200);
+        return;
+      } catch {
+        window.location.href = serverDownloadUrl;
+        setDownloadingId(null);
+        setSingleDownloadStats(null);
+        return;
+      }
+    }
+
+    // ON DESKTOP:
     try {
-      const response = await fetch(directUrl, {
-        signal: singleAbortControllerRef.current.signal,
-      });
+      let response: Response | null = null;
+      try {
+        response = await fetch(directUrl, {
+          signal: singleAbortControllerRef.current.signal,
+        });
+        if (!response.ok) response = null;
+      } catch {
+        response = null;
+      }
+
+      // If directUrl failed (CORS or network), use server proxy route
+      if (!response) {
+        response = await fetch(serverDownloadUrl, {
+          signal: singleAbortControllerRef.current.signal,
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch file: ${response.statusText}`);
@@ -845,43 +894,6 @@ export const ClientGallery: React.FC = () => {
         });
       }
 
-      // Priority 1 for Mobile: Native Web Share API
-      // When navigator.share is called with a file, iOS brings up the system Share Sheet
-      // with "Save Image" to save directly into Camera Roll / Apple Photos!
-      if (
-        isMobile &&
-        typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function"
-      ) {
-        try {
-          const fileObj = new File([blob], fileName, {
-            type: blob.type || (isVideo ? "video/mp4" : "image/jpeg"),
-          });
-          if (navigator.canShare({ files: [fileObj] })) {
-            await navigator.share({
-              files: [fileObj],
-              title: fileName,
-            });
-            setToast({
-              message: "Photo ready! Saved to device.",
-              type: "download",
-            });
-            setTimeout(() => setToast(null), 3000);
-            return;
-          }
-        } catch (shareErr: any) {
-          if (shareErr.name === "AbortError") {
-            // User cancelled the share sheet intentionally
-            return;
-          }
-          console.warn(
-            "navigator.share failed, using direct download:",
-            shareErr,
-          );
-        }
-      }
-
-      // Priority 2: Standard anchor download
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -892,22 +904,9 @@ export const ClientGallery: React.FC = () => {
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
-      }, 3000);
+      }, 4000);
 
-      // On iOS Safari, if the programmatic click above was ignored due to user gesture expiry,
-      // fallback to the server attachment endpoint:
-      if (isIOS) {
-        setTimeout(() => {
-          const serverLink = document.createElement("a");
-          serverLink.href = serverDownloadUrl;
-          serverLink.download = fileName;
-          document.body.appendChild(serverLink);
-          serverLink.click();
-          setTimeout(() => document.body.removeChild(serverLink), 2000);
-        }, 300);
-      }
-
-      setToast({ message: "Download started!", type: "download" });
+      setToast({ message: "Download complete!", type: "download" });
       setTimeout(() => setToast(null), 3000);
     } catch (e: any) {
       if (e.name === "AbortError") {
@@ -916,31 +915,26 @@ export const ClientGallery: React.FC = () => {
       }
 
       console.error(
-        "Standard download failed, falling back to server route:",
+        "Standard download failed, falling back to direct server route:",
         e,
       );
 
       // Robust fallback: trigger server route
-      try {
-        const fallbackLink = document.createElement("a");
-        fallbackLink.href = serverDownloadUrl;
-        fallbackLink.download = fileName;
-        document.body.appendChild(fallbackLink);
-        fallbackLink.click();
-        setTimeout(() => document.body.removeChild(fallbackLink), 2000);
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = serverDownloadUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe);
+        } catch {}
+      }, 10000);
 
-        setToast({
-          message: "Download started via direct link!",
-          type: "download",
-        });
-        setTimeout(() => setToast(null), 3000);
-      } catch {
-        setToast({
-          message: "Download failed. Please check your connection.",
-          type: "info",
-        });
-        setTimeout(() => setToast(null), 3000);
-      }
+      setToast({
+        message: "Download started!",
+        type: "download",
+      });
+      setTimeout(() => setToast(null), 3000);
     } finally {
       setDownloadingId(null);
       setSingleDownloadStats(null);
@@ -1015,16 +1009,31 @@ export const ClientGallery: React.FC = () => {
         if (abortControllerRef.current?.signal.aborted) return;
         try {
           const directUrl = rewriteUrlToR2(file.file_url);
-          const response = await fetch(directUrl, {
-            signal: abortControllerRef.current?.signal,
-          });
-          if (!response.ok)
-            throw new Error(`Failed to fetch ${file.file_path}`);
-          const blob = await response.blob();
+          let response: Response | null = null;
+          try {
+            response = await fetch(directUrl, {
+              signal: abortControllerRef.current?.signal,
+            });
+            if (!response.ok) response = null;
+          } catch {
+            response = null;
+          }
+
           const fileName =
             file.title ||
             file.file_path.split("/").pop() ||
             `file-${file.id}.jpg`;
+
+          if (!response) {
+            const serverUrl = `/api/download?url=${encodeURIComponent(directUrl)}&name=${encodeURIComponent(fileName)}`;
+            response = await fetch(serverUrl, {
+              signal: abortControllerRef.current?.signal,
+            });
+          }
+
+          if (!response.ok)
+            throw new Error(`Failed to fetch ${file.file_path}`);
+          const blob = await response.blob();
           zip.file(fileName, blob);
         } catch (error: any) {
           if (error.name !== "AbortError") {
@@ -2458,32 +2467,6 @@ export const ClientGallery: React.FC = () => {
                 <Download className="w-4 h-4" />
                 Save ZIP to Device
               </a>
-
-              {typeof navigator !== "undefined" && typeof navigator.share === "function" && typeof navigator.canShare === "function" && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const zipFile = new File([readyZipModal.blob], readyZipModal.name, {
-                        type: "application/zip",
-                      });
-                      if (navigator.canShare({ files: [zipFile] })) {
-                        await navigator.share({
-                          files: [zipFile],
-                          title: readyZipModal.name,
-                        });
-                      }
-                    } catch (err: any) {
-                      if (err.name !== "AbortError") {
-                        console.warn("Share error:", err);
-                      }
-                    }
-                  }}
-                  className="w-full py-3 px-4 bg-slate-800 text-slate-200 hover:text-white hover:bg-slate-700/80 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/10 active:scale-95 transition-all text-xs"
-                >
-                  <Send className="w-4 h-4" />
-                  Save to Files / AirDrop
-                </button>
-              )}
             </div>
 
             {readyZipModal.videoFiles && readyZipModal.videoFiles.length > 0 && (
