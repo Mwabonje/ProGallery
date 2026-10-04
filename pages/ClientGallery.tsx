@@ -143,12 +143,6 @@ export const ClientGallery: React.FC = () => {
     count: number;
     videoFiles?: GalleryFile[];
   } | null>(null);
-  const [iosSaveModal, setIosSaveModal] = useState<{
-    file: GalleryFile;
-    blob: Blob;
-    blobUrl: string;
-    fileName: string;
-  } | null>(null);
 
   const horizontalRef = useRef<HTMLDivElement | null>(null);
 
@@ -843,78 +837,34 @@ export const ClientGallery: React.FC = () => {
         blob = await proxyRes.blob();
       }
 
-      // Check device platform
-      const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
+      // Create temporary anchor tag with download attribute and trigger programmatic click
+      // This forces direct file download on all devices (iOS, Android, Desktop) without share sheets
       const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.style.display = "none";
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
 
-      // On Android / Desktop / PC / Mac:
-      if (!isIOS) {
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = fileName;
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(link);
+        } catch {}
+      }, 2000);
 
-        setTimeout(() => {
-          try {
-            document.body.removeChild(a);
-          } catch {}
-        }, 5000);
+      // Keep blob URL active for 60 seconds to allow browser to finish writing all bytes
+      setTimeout(() => {
+        try {
+          window.URL.revokeObjectURL(blobUrl);
+        } catch {}
+      }, 60000);
 
-        // Keep blob URL active for 2 minutes to allow mobile OS download manager to write complete file
-        setTimeout(() => {
-          try {
-            window.URL.revokeObjectURL(blobUrl);
-          } catch {}
-        }, 120000);
-
-        setToast({
-          message: isVideo ? "Video saved to device!" : "Photo downloaded to your gallery!",
-          type: "download",
-        });
-        setTimeout(() => setToast(null), 3500);
-      } else {
-        // On iOS:
-        // Trigger device download to Files app
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = fileName;
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          try {
-            document.body.removeChild(a);
-          } catch {}
-        }, 5000);
-
-        if (!isVideo) {
-          // Open the Camera Roll save helper modal so iPhone users can save straight to Apple Photos
-          setIosSaveModal({
-            file,
-            blob,
-            blobUrl,
-            fileName,
-          });
-          setToast({
-            message: "Tap 'Save to Photos' to add to Camera Roll",
-            type: "download",
-          });
-          setTimeout(() => setToast(null), 4000);
-        } else {
-          setToast({
-            message: "Video saved to device!",
-            type: "download",
-          });
-          setTimeout(() => setToast(null), 3500);
-        }
-      }
+      setToast({
+        message: isVideo ? "Video download started!" : "Photo download started!",
+        type: "download",
+      });
+      setTimeout(() => setToast(null), 3500);
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Single download failed:", err);
@@ -2491,117 +2441,7 @@ export const ClientGallery: React.FC = () => {
         </div>
       )}
 
-      {/* iOS Save to Photos (Camera Roll) Modal */}
-      {iosSaveModal && (
-        <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center animate-in slide-in-from-bottom-6 sm:zoom-in-95 text-white">
-            <div className="w-12 h-12 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-rose-500/30">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              Save Photo to iPhone Photos
-            </h3>
-            <p className="text-xs text-slate-300 mt-1 mb-4 leading-relaxed">
-              Apple requires choosing <span className="font-semibold text-white">"Save Image"</span> to store photos directly in your Camera Roll album.
-            </p>
 
-            <div className="relative rounded-xl overflow-hidden mb-4 border border-white/15 bg-black/50 p-2 flex items-center justify-center">
-              <img
-                src={iosSaveModal.blobUrl}
-                alt="Download preview"
-                className="max-h-52 rounded-lg object-contain pointer-events-auto"
-                style={{ WebkitTouchCallout: "default", userSelect: "auto" }}
-              />
-            </div>
-
-            <div className="space-y-2.5">
-              <button
-                onClick={async () => {
-                  try {
-                    const shareFile = new File([iosSaveModal.blob], iosSaveModal.fileName, {
-                      type: iosSaveModal.blob.type || "image/jpeg",
-                    });
-                    if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
-                      await navigator.share({
-                        files: [shareFile],
-                        title: iosSaveModal.fileName,
-                      });
-                      setToast({ message: "Photo saved to your Photos!", type: "download" });
-                      setTimeout(() => setToast(null), 3000);
-                      setIosSaveModal(null);
-                    } else {
-                      window.open(iosSaveModal.blobUrl, "_blank");
-                    }
-                  } catch (e: any) {
-                    if (e.name !== "AbortError") {
-                      const a = document.createElement("a");
-                      a.style.display = "none";
-                      a.href = iosSaveModal.blobUrl;
-                      a.download = iosSaveModal.fileName;
-                      a.rel = "noopener";
-                      document.body.appendChild(a);
-                      a.click();
-                      setTimeout(() => {
-                        try {
-                          document.body.removeChild(a);
-                        } catch {}
-                      }, 5000);
-                    }
-                  }
-                }}
-                className="w-full py-3 px-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-rose-600" />
-                  <span>Save to Photos App</span>
-                </div>
-                <span className="text-[11px] text-slate-500 font-normal">
-                  Tap "Save Image" in the menu that opens
-                </span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const a = document.createElement("a");
-                  a.style.display = "none";
-                  a.href = iosSaveModal.blobUrl;
-                  a.download = iosSaveModal.fileName;
-                  a.rel = "noopener";
-                  document.body.appendChild(a);
-                  a.click();
-                  setTimeout(() => {
-                    try {
-                      document.body.removeChild(a);
-                    } catch {}
-                  }, 5000);
-                  setToast({ message: "Download started!", type: "download" });
-                  setTimeout(() => setToast(null), 3000);
-                }}
-                className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/15 text-slate-200 font-medium rounded-xl flex items-center justify-center gap-2 text-xs transition-colors"
-              >
-                <FolderDown className="w-3.5 h-3.5" />
-                Download to Files app
-              </button>
-            </div>
-
-            <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
-              Tip: You can also press and hold the photo above, then tap <strong>"Save to Photos"</strong>.
-            </p>
-
-            <button
-              onClick={() => {
-                if (iosSaveModal.blobUrl) {
-                  window.URL.revokeObjectURL(iosSaveModal.blobUrl);
-                }
-                setIosSaveModal(null);
-              }}
-              className="mt-3 w-full py-2 text-slate-400 hover:text-white font-medium text-xs transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Screenshot Warning Modal */}
       {showScreenshotWarning && (
