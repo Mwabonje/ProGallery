@@ -380,6 +380,20 @@ async function startServer() {
       const safeFileName = fileName.replace(/["'\r\n]/g, "_");
       const encodedFileName = encodeURIComponent(safeFileName);
 
+      // Ensure proper MIME type for photos/videos so mobile OS recognizes it as a gallery photo/video
+      const lowerName = safeFileName.toLowerCase();
+      if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+        contentType = "image/jpeg";
+      } else if (lowerName.endsWith(".png")) {
+        contentType = "image/png";
+      } else if (lowerName.endsWith(".webp")) {
+        contentType = "image/webp";
+      } else if (lowerName.endsWith(".mp4")) {
+        contentType = "video/mp4";
+      } else if (lowerName.endsWith(".mov")) {
+        contentType = "video/quicktime";
+      }
+
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
