@@ -825,7 +825,7 @@ export const ClientGallery: React.FC = () => {
     });
 
     try {
-      // 1. Fetch file as real Blob
+      // 1. Fetch file directly as real Blob
       let blob: Blob;
       const targetFetchUrl = directUrl || downloadUrl;
 
@@ -834,28 +834,7 @@ export const ClientGallery: React.FC = () => {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const contentLength = response.headers.get("content-length");
-        const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-        if (response.body && total > 0 && typeof ReadableStream !== "undefined") {
-          const reader = response.body.getReader();
-          let receivedLength = 0;
-          const chunks: Uint8Array[] = [];
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-            receivedLength += value.length;
-            setSingleDownloadStats({ loaded: receivedLength, total });
-          }
-
-          const mimeType = isVideo ? "video/mp4" : (response.headers.get("content-type") || "image/jpeg");
-          blob = new Blob(chunks, { type: mimeType });
-        } else {
-          blob = await response.blob();
-        }
+        blob = await response.blob();
       } catch (directErr: any) {
         if (directErr.name === "AbortError") throw directErr;
         // Fallback to server proxy endpoint
@@ -873,32 +852,47 @@ export const ClientGallery: React.FC = () => {
 
       // On Android / Desktop / PC / Mac:
       if (!isIOS) {
-        try {
-          saveAs(blob, fileName);
-        } catch {
-          const a = document.createElement("a");
-          a.href = blobUrl;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            try {
-              document.body.removeChild(a);
-            } catch {}
-          }, 1000);
-        }
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = fileName;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          try {
+            document.body.removeChild(a);
+          } catch {}
+        }, 5000);
+
+        // Keep blob URL active for 2 minutes to allow mobile OS download manager to write complete file
+        setTimeout(() => {
+          try {
+            window.URL.revokeObjectURL(blobUrl);
+          } catch {}
+        }, 120000);
 
         setToast({
-          message: isVideo ? "Video saved directly to your device!" : "Photo downloaded directly to your gallery!",
+          message: isVideo ? "Video saved to device!" : "Photo downloaded to your gallery!",
           type: "download",
         });
         setTimeout(() => setToast(null), 3500);
       } else {
         // On iOS:
         // Trigger device download to Files app
-        try {
-          saveAs(blob, fileName);
-        } catch {}
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = fileName;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try {
+            document.body.removeChild(a);
+          } catch {}
+        }, 5000);
 
         if (!isVideo) {
           // Open the Camera Roll save helper modal so iPhone users can save straight to Apple Photos
@@ -2534,14 +2528,24 @@ export const ClientGallery: React.FC = () => {
                       });
                       setToast({ message: "Photo saved to your Photos!", type: "download" });
                       setTimeout(() => setToast(null), 3000);
-                      if (iosSaveModal.blobUrl) window.URL.revokeObjectURL(iosSaveModal.blobUrl);
                       setIosSaveModal(null);
                     } else {
                       window.open(iosSaveModal.blobUrl, "_blank");
                     }
                   } catch (e: any) {
                     if (e.name !== "AbortError") {
-                      saveAs(iosSaveModal.blob, iosSaveModal.fileName);
+                      const a = document.createElement("a");
+                      a.style.display = "none";
+                      a.href = iosSaveModal.blobUrl;
+                      a.download = iosSaveModal.fileName;
+                      a.rel = "noopener";
+                      document.body.appendChild(a);
+                      a.click();
+                      setTimeout(() => {
+                        try {
+                          document.body.removeChild(a);
+                        } catch {}
+                      }, 5000);
                     }
                   }
                 }}
@@ -2558,8 +2562,19 @@ export const ClientGallery: React.FC = () => {
 
               <button
                 onClick={() => {
-                  saveAs(iosSaveModal.blob, iosSaveModal.fileName);
-                  setToast({ message: "File downloaded to device!", type: "download" });
+                  const a = document.createElement("a");
+                  a.style.display = "none";
+                  a.href = iosSaveModal.blobUrl;
+                  a.download = iosSaveModal.fileName;
+                  a.rel = "noopener";
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                    try {
+                      document.body.removeChild(a);
+                    } catch {}
+                  }, 5000);
+                  setToast({ message: "Download started!", type: "download" });
                   setTimeout(() => setToast(null), 3000);
                 }}
                 className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/15 text-slate-200 font-medium rounded-xl flex items-center justify-center gap-2 text-xs transition-colors"
