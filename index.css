@@ -2,12 +2,21 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
 }
 
+.font-editorial {
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+}
+
+.font-signature {
+  font-family: "Caveat", "Alex Brush", cursive;
+}
 
 body, html {
   overflow-x: hidden;
   width: 100%;
+  background-color: #FAF8F5;
+  color: #181B19;
 }

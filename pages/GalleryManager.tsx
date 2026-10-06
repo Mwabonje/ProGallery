@@ -169,7 +169,25 @@ export const GalleryManager: React.FC = () => {
       }
     }
 
-    setFiles(allFiles);
+    // Extract password file and filter it out so it doesn't appear in photos list
+    const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
+    let loadedPass = pwFile?.caption || '';
+    if (!loadedPass) {
+        try {
+            const sRes = await fetch(`/api/gallery/${id}/password`);
+            if (sRes.ok) {
+                const sData = await sRes.json();
+                if (sData.password) loadedPass = sData.password;
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+    setGalleryPassword(loadedPass);
+    if (passwordInputRef.current) {
+        passwordInputRef.current.value = loadedPass;
+    }
+    setFiles(allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD'));
 
     // Get Selections - Always fetch these so the photographer can see them even if they disabled the mode
     const { data: selectionData } = await supabase
@@ -468,34 +486,64 @@ export const GalleryManager: React.FC = () => {
 
   const updatePassword = async (newPassword: string) => {
       if (!gallery) return;
+      const cleanPass = (newPassword || '').trim();
       try {
-          if (!newPassword.trim()) {
-              await supabase.from('files').delete().match({ gallery_id: gallery.id, file_path: 'GALLERY_PASSWORD' });
+          // 1. Sync with backend API
+          try {
+              await fetch(`/api/gallery/${gallery.id}/password`, {
+                  method: cleanPass ? 'POST' : 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: cleanPass ? JSON.stringify({ password: cleanPass }) : undefined
+              });
+          } catch (e) {
+              console.warn("Backend password endpoint error (non-fatal):", e);
+          }
+
+          // 2. Sync with Supabase files table
+          if (!cleanPass) {
+              await supabase
+                  .from('files')
+                  .delete()
+                  .eq('gallery_id', gallery.id)
+                  .eq('file_path', 'GALLERY_PASSWORD');
               setGalleryPassword('');
-              toast.success("Password protection removed");
+              if (passwordInputRef.current) passwordInputRef.current.value = '';
+              toast.success("Password protection removed (gallery is public)");
               return;
           }
 
-          const { data: existing } = await supabase.from('files').select('id').match({ gallery_id: gallery.id, file_path: 'GALLERY_PASSWORD' }).single();
+          const { data: existing } = await supabase
+              .from('files')
+              .select('id')
+              .eq('gallery_id', gallery.id)
+              .eq('file_path', 'GALLERY_PASSWORD')
+              .maybeSingle();
 
-          if (existing) {
-              const { error } = await supabase.from('files').update({ caption: newPassword.trim() }).eq('id', existing.id);
-              if (error) throw error;
+          if (existing && existing.id) {
+              const { error } = await supabase
+                  .from('files')
+                  .update({ caption: cleanPass })
+                  .eq('id', existing.id);
+              if (error) console.warn("Supabase password update warning:", error);
           } else {
-              const { error } = await supabase.from('files').insert([{
-                  gallery_id: gallery.id,
-                  file_url: 'PASSWORD_SETTING',
-                  file_path: 'GALLERY_PASSWORD',
-                  file_type: 'image',
-                  caption: newPassword.trim(),
-                  expires_at: new Date(Date.now() + 100*365*24*60*60*1000).toISOString()
-              }]);
-              if (error) throw error;
+              const { error } = await supabase
+                  .from('files')
+                  .insert([{
+                      gallery_id: gallery.id,
+                      file_url: 'PASSWORD_SETTING',
+                      file_path: 'GALLERY_PASSWORD',
+                      file_type: 'image',
+                      caption: cleanPass,
+                      expires_at: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString()
+                  }]);
+              if (error) console.warn("Supabase password insert warning:", error);
           }
-          setGalleryPassword(newPassword.trim());
-          toast.success("Password updated");
+
+          setGalleryPassword(cleanPass);
+          if (passwordInputRef.current) passwordInputRef.current.value = cleanPass;
+          toast.success("Password protection active & saved");
       } catch (error: any) {
-          console.error("Error updating password", error);
+          console.error("Error updating password:", error);
           toast.error("Failed to update password");
       }
   };
@@ -1354,13 +1402,10 @@ export const GalleryManager: React.FC = () => {
                         for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
                         if (passwordInputRef.current) {
                             passwordInputRef.current.value = pass;
-                            supabase.from('galleries').update({ password: pass }).eq('id', gallery.id).then(() => {
-                                fetchGalleryData();
-                                toast.success("Password generated & saved");
-                            });
                         }
+                        updatePassword(pass);
                      }}
-                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
+                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
                  >
                      Generate
                  </button>
@@ -1370,19 +1415,53 @@ export const GalleryManager: React.FC = () => {
                       ref={passwordInputRef}
                       type="text" 
                       placeholder="Leave blank for public"
-                      defaultValue={gallery.password || ''}
+                      defaultValue={galleryPassword}
+                      key={`pw_${galleryPassword}`}
+                      onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                              e.preventDefault();
+                              updatePassword((e.target as HTMLInputElement).value);
+                          }
+                      }}
                       onBlur={(e) => {
-                          if (e.target.value !== (gallery.password || '')) {
-                              supabase.from('galleries').update({ password: e.target.value }).eq('id', gallery.id).then(() => {
-                                  fetchGalleryData();
-                                  toast.success("Password updated");
-                              });
+                          if (e.target.value !== galleryPassword) {
+                              updatePassword(e.target.value);
                           }
                       }}
                       className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
                   />
+                  {galleryPassword ? (
+                      <button
+                          type="button"
+                          onClick={() => updatePassword('')}
+                          className="px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:text-rose-800 border border-slate-200 hover:border-rose-300 rounded-[3px] bg-white whitespace-nowrap transition-colors cursor-pointer"
+                          title="Remove password"
+                      >
+                          Clear
+                      </button>
+                  ) : (
+                      <button
+                          type="button"
+                          onClick={() => {
+                              if (passwordInputRef.current) {
+                                  updatePassword(passwordInputRef.current.value);
+                              }
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 border border-slate-200 rounded-[3px] bg-white whitespace-nowrap transition-colors cursor-pointer"
+                      >
+                          Save
+                      </button>
+                  )}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">If set, visitors must enter this password to view the gallery.</div>
+              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">
+                 {galleryPassword ? (
+                     <span className="text-emerald-600 font-medium flex items-center gap-1">
+                        <Lock className="w-3 h-3 inline" /> Protected with password (required to view)
+                     </span>
+                 ) : (
+                     'If set, visitors must enter this password to view the gallery.'
+                 )}
+              </div>
             </div>
             <div className="mb-4">
               <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Link Expiration (Hours)</label>

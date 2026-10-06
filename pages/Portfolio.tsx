@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -14,44 +13,74 @@ interface PortfolioGallery extends Gallery {
   coverType?: string | null;
 }
 
-
-const CardMedia = ({ gallery }: { gallery: any }) => {
+const CardImage: React.FC<{ gallery: PortfolioGallery }> = ({ gallery }) => {
   const [loaded, setLoaded] = useState(false);
-  
-  if (gallery.coverType?.startsWith('video')) {
+  const coverType = gallery.coverType;
+
+  if (coverType && coverType.startsWith('video')) {
     return (
-      <video 
-        src={gallery.coverUrl!} 
-        autoPlay muted loop playsInline 
+      <video
+        src={gallery.coverUrl!}
+        autoPlay
+        muted
+        loop
+        playsInline
         onLoadedData={() => setLoaded(true)}
-        style={{ 
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
-          objectFit: 'cover', zIndex: 0,
-          opacity: loaded ? 1 : 0, transition: 'opacity 0.5s ease'
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 0.5s ease',
         }}
       />
     );
   }
-  
+
   return (
     <>
       {!loaded && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
-          background: 'rgba(255,255,255,0.05)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="subtle-spinner"></div>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+            background: 'rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="subtle-spinner" />
         </div>
       )}
-      <img 
+      <img
         src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)}
         alt={gallery.client_name}
         onLoad={() => setLoaded(true)}
-        style={{ 
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
-          objectFit: 'cover', zIndex: 0,
-          opacity: loaded ? 1 : 0, transition: 'opacity 0.5s ease'
+        onError={(e) => {
+          if (e.currentTarget.src !== gallery.coverUrl) {
+            e.currentTarget.src = gallery.coverUrl!;
+          }
+          setLoaded(true);
+        }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 0.5s ease',
         }}
       />
     </>
@@ -59,40 +88,40 @@ const CardMedia = ({ gallery }: { gallery: any }) => {
 };
 
 export function Portfolio({ photographerId }: { photographerId?: string }) {
-
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
   const [settings, setSettings] = useState({
-  brandName: "MWABONJE",
-  heroLocation: "Lamu · Shela · Mombasa",
-  heroTitle: "Salt, light\n& *slow* hours",
-  heroSubtitle: "Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.",
-  contactLink: "https://mwabonjebooking.netlify.app/",
-  footerEmail: "hello@mwabonje.studio",
-  instagramLink: "https://www.instagram.com/mwabonje_/",
-  tiktokLink: "https://www.tiktok.com/@mwabonje_"
-});
+    brandName: 'MWABONJE',
+    heroLocation: 'Lamu · Shela · Mombasa',
+    heroTitle: 'Salt, light & *slow* hours',
+    heroSubtitle:
+      'Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.',
+    contactLink: 'https://mwabonjebooking.netlify.app/',
+    footerEmail: 'hello@mwabonje.studio',
+    instagramLink: 'https://www.instagram.com/mwabonje_/',
+    tiktokLink: 'https://www.tiktok.com/@mwabonje_',
+  });
   const selectedCategory = searchParams.get('category');
-
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Track scroll progress
   useEffect(() => {
     const handleScroll = () => {
-      const totalScroll = window.scrollY;
-      const windowHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (windowHeight <= 0) return;
-      setScrollProgress(Math.min(1, Math.max(0, totalScroll / windowHeight)));
+      const scrollY = window.scrollY;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight <= 0) return;
+      setScrollProgress(Math.min(1, Math.max(0, scrollY / scrollHeight)));
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Init
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Fetch portfolio galleries and settings
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
@@ -105,50 +134,67 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
         let allGalleries = galleriesData || [];
         if (!photographerId && allGalleries.length > 0) {
-            const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
-            if (mostRecentPortfolio) {
-                allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
-            }
+          const mostRecentPortfolio = allGalleries.find(
+            (g) =>
+              g.category &&
+              g.category.trim() !== '' &&
+              g.category !== 'SETTINGS' &&
+              g.category !== 'ABOUT' &&
+              g.category.toLowerCase().trim() !== 'delivery'
+          );
+          if (mostRecentPortfolio) {
+            allGalleries = allGalleries.filter(
+              (g) => g.photographer_id === mostRecentPortfolio.photographer_id
+            );
+          }
         }
 
-        const settingsGal = allGalleries.find(g => g.category === 'SETTINGS');
-        const aboutGal = allGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
+        const settingsGal = allGalleries.find((g) => g.category === 'SETTINGS');
+        const aboutGal = allGalleries.find(
+          (g) => g.client_name === '__ABOUT__' || g.category === 'ABOUT'
+        );
+
         if (aboutGal) {
-            const { data: aboutFiles } = await supabase
-              .from('files')
-              .select('file_url')
-              .eq('gallery_id', aboutGal.id)
-              .neq('file_path', 'GALLERY_PASSWORD')
-              .order('created_at', { ascending: false })
-              .limit(1);
-            if (aboutFiles && aboutFiles.length > 0) {
-                setAboutGallery({ ...aboutGal, coverUrl: aboutFiles[0].file_url, baseCategory: 'ABOUT' } as any);
-            }
+          const { data: aboutFiles } = await supabase
+            .from('files')
+            .select('file_url')
+            .eq('gallery_id', aboutGal.id)
+            .neq('file_path', 'GALLERY_PASSWORD')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (aboutFiles && aboutFiles.length > 0 && aboutFiles[0].file_url) {
+            setAboutGallery({ ...aboutGal, coverUrl: aboutFiles[0].file_url, baseCategory: 'ABOUT' });
+          }
         }
+
         if (settingsGal) {
           if (settingsGal.title) {
             try {
               const parsed = JSON.parse(settingsGal.title);
-              setSettings(prev => ({ ...prev, ...parsed }));
-            } catch(e) {}
+              setSettings((prev) => ({ ...prev, ...parsed }));
+            } catch {}
           }
-          
-          const { data: settingsFiles } = await supabase
-              .from('files')
-              .select('file_url')
-              .eq('gallery_id', settingsGal.id)
-              .neq('file_path', 'GALLERY_PASSWORD')
-              .order('created_at', { ascending: false })
-              .limit(1);
-              
-          if (settingsFiles && settingsFiles.length > 0) {
-              setHeroImageUrl(settingsFiles[0].file_url);
+          const { data: heroFiles } = await supabase
+            .from('files')
+            .select('file_url')
+            .eq('gallery_id', settingsGal.id)
+            .neq('file_path', 'GALLERY_PASSWORD')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (heroFiles && heroFiles.length > 0 && heroFiles[0].file_url) {
+            setHeroImage(heroFiles[0].file_url);
           }
         }
-        
-        const portfolioItems = allGalleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
 
-
+        // Filter strictly to PORTFOLIO galleries only (excludes client delivery galleries)
+        const portfolioItems = allGalleries.filter(
+          (g) =>
+            g.category &&
+            g.category.trim() !== '' &&
+            g.category !== 'SETTINGS' &&
+            g.category !== 'ABOUT' &&
+            g.category.toLowerCase().trim() !== 'delivery'
+        );
 
         const enrichedGalleries = await Promise.all(
           portfolioItems.map(async (gallery) => {
@@ -162,15 +208,18 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
             return {
               ...gallery,
-              baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
+              baseCategory: (
+                gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || ''
+              ).toUpperCase(),
               coverUrl: files && files.length > 0 ? files[0].file_url : null,
               coverType: files && files.length > 0 ? files[0].file_type : null,
             };
           })
         );
-        setGalleries(enrichedGalleries.filter(g => g.coverUrl));
+
+        setGalleries(enrichedGalleries.filter((g) => g.coverUrl));
       } catch (error) {
-        console.error("Error loading portfolio:", error);
+        console.error('Error loading portfolio:', error);
       } finally {
         setLoading(false);
       }
@@ -179,26 +228,27 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     fetchPortfolio();
   }, [photographerId]);
 
+  // Handle ESC key for menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsMenuOpen(false);
+      if (e.key === 'Escape') setMenuOpen(false);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleCategoryClick = (e: React.MouseEvent, category: string) => {
+  const handleCategorySelect = (e: React.MouseEvent, category: string) => {
     e.preventDefault();
     setSearchParams({ category });
-    setIsMenuOpen(false);
+    setMenuOpen(false);
     document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const portfolioGalleries = galleries;
-
-  const filteredGalleries = selectedCategory 
-    ? portfolioGalleries.filter(g => g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())) 
-    : portfolioGalleries;
+  const filteredGalleries = selectedCategory
+    ? galleries.filter((g) =>
+        g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())
+      )
+    : galleries;
 
   return (
     <div className="mwabonje-wrapper">
@@ -206,777 +256,776 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         <title>{settings.brandName} — Photography & Film, Kenyan Coast</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
-        <style>{`  :root{
-    --ink:#0E1310;
-    --ink-soft:#161C18;
-    --paper:#F3EEE4;
-    --paper-dim:#E9E2D2;
-    --gold:#B9922F;
-    --teal:#1F3D39;
-    --line-dark: rgba(243,238,228,.14);
-    --line-light: rgba(14,19,16,.14);
-  }
-
-  /* Scoped Globals */
-  .mwabonje-wrapper {
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Inter', sans-serif;
-    font-weight:400;
-    -webkit-font-smoothing:antialiased;
-    min-height: 100vh;
-    overflow-x: hidden;
-    width: 100%;
-  }
-
-  .mwabonje-wrapper * { box-sizing:border-box; }
-  .mwabonje-wrapper a { color:inherit; text-decoration:none; }
-
-  .mwabonje-wrapper .serif {
-    font-family:'Fraunces', serif;
-    font-optical-sizing:auto;
-  }
-
-  .mwabonje-wrapper .mono-tag {
-    font-family:'Inter', sans-serif;
-    font-size:.7rem;
-    letter-spacing:.06em;
-    color:var(--gold);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ---------- NAV ---------- */
-  .mwabonje-header {
-    position:sticky;
-    top:0; left:0; right:0;
-    z-index:100;
-    padding:1.4rem clamp(1.25rem, 4vw, 3rem);
-    background:var(--paper);
-    color:var(--ink);
-    border-bottom:1px solid rgba(14,19,16,0.06);
-  }
-
-  .header-layout {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-
-  .brand-logo {
-    display:flex;
-    align-items:center;
-    gap:0.75rem;
-    color:var(--ink);
-    text-decoration:none;
-  }
-
-  .m-circle {
-    width:36px;
-    height:36px;
-    border:1px solid var(--ink);
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1.15rem;
-    font-style:italic;
-  }
-
-  .brand-text {
-    font-weight:600;
-    letter-spacing:0.18em;
-    font-size:0.8rem;
-  }
-
-  .primary-nav {
-    display:flex;
-    align-items:center;
-    gap:clamp(1.5rem, 2.5vw, 2.5rem);
-  }
-
-  .nav-dropdown {
-    position: relative;
-    padding: 1.5rem 0;
-    margin: -1.5rem 0;
-  }
-
-  .nav-dropdown-content {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: var(--paper);
-    min-width: 180px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    border: 1px solid rgba(14,19,16,0.06);
-    display: flex;
-    flex-direction: column;
-    padding: 0.5rem 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s ease;
-    z-index: 1000;
-  }
-
-  .nav-dropdown:hover .nav-dropdown-content {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .nav-dropdown-content a {
-    padding: 0.8rem 1.5rem;
-    font-size: 0.7rem;
-    width: 100%;
-    text-align: left;
-    display: block;
-  }
-  
-  .nav-dropdown-content a:hover {
-    background: rgba(14,19,16,0.03);
-    color: var(--ink);
-  }
-
-  .primary-nav > a, .nav-dropdown > a {
-    font-size:0.75rem;
-    font-weight:500;
-    letter-spacing:0.1em;
-    color:rgba(14,19,16,.65);
-    text-decoration:none;
-    display:flex;
-    align-items:center;
-    gap:0.25rem;
-    transition:color 0.2s ease;
-    position: relative;
-  }
-  
-  .primary-nav > a::after, .nav-dropdown > a::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    transform: scaleX(0);
-    height: 1px;
-    bottom: -4px;
-    left: 0;
-    background-color: var(--ink);
-    transform-origin: bottom right;
-    transition: transform 0.3s ease;
-  }
-
-  .primary-nav > a:hover::after, .nav-dropdown > a:hover::after,
-  .primary-nav > a.active::after, .nav-dropdown > a.active::after {
-    transform: scaleX(1);
-    transform-origin: bottom left;
-  }
-
-  .primary-nav > a.active, .nav-dropdown > a.active {
-    color:var(--ink);
-  }
-
-  .primary-nav > a:hover, .nav-dropdown > a:hover {
-    color:var(--ink);
-  }
-
-  .primary-nav a .dot {
-    font-size:1.2rem;
-    line-height:0;
-    margin-top:-2px;
-  }
-  
-  .header-actions {
-    display:flex;
-    align-items:center;
-    gap: 1rem;
-  }
-
-  .enquire-btn {
-    border:1px solid var(--ink);
-    padding:0.65rem 1.6rem;
-    font-size:0.75rem;
-    font-weight:500;
-    letter-spacing:0.1em;
-    color:var(--ink);
-    text-decoration:none;
-    transition:background 0.3s ease, color 0.3s ease;
-  }
-
-  .enquire-btn:hover {
-    background:var(--ink);
-    color:var(--paper);
-  }
-
-  .mobile-menu-btn {
-    display:none;
-  }
-
-  .mobile-menu-btn .bars {
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    cursor:pointer;
-  }
-  
-  .mobile-menu-btn .bars span {
-    width:22px; height:1px; background:var(--ink);
-  }
-
-  
-  .mwabonje-wrapper .subtle-spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(243,238,228,.15);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spinner 0.8s linear infinite;
-  }
-  @keyframes spinner {
-    to { transform: rotate(360deg); }
-  }
-
-
-  /* ---------- HERO ---------- */
-    .mwabonje-hero {
-    position:relative;
-    min-height:calc(100svh - 85px);
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-end;
-    padding:clamp(60px, 8vh, 120px) clamp(1.25rem, 4vw, 3rem) clamp(1.5rem, 4vh, 3.5rem);
-    overflow:hidden;
-  }
-
-  .mwabonje-wrapper .hero-bg {
-    position:absolute; inset:0;
-    background:
-      radial-gradient(circle at 22% 30%, rgba(185,146,47,.16), transparent 45%),
-      radial-gradient(circle at 78% 70%, rgba(31,61,57,.5), transparent 55%),
-      linear-gradient(180deg, #0A0E0C 0%, #10160F 55%, #0E1310 100%);
-  }
-
-  .mwabonje-wrapper .hero-bg::after {
-    content:'';
-    position:absolute; inset:0;
-    background-image:
-      repeating-linear-gradient(115deg, rgba(243,238,228,.025) 0px, rgba(243,238,228,.025) 1px, transparent 1px, transparent 90px);
-    opacity:.6;
-  }
-
-  .mwabonje-wrapper .hero-content {
-    position:relative;
-    z-index:2;
-  }
-
-  .mwabonje-wrapper .hero-eyebrow {
-    display:flex;
-    align-items:center;
-    gap:.6rem;
-    margin-bottom:1.5rem;
-    color:rgba(243,238,228,.55);
-    font-size:.85rem;
-  }
-  .mwabonje-wrapper .hero-eyebrow .dot {
-    width:6px; height:6px; border-radius:50%;
-    background:var(--gold);
-    animation:pulse 2.4s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%,100%{opacity:.4; transform:scale(1);}
-    50%{opacity:1; transform:scale(1.3);}
-  }
-
-    .mwabonje-wrapper h1.hero-title {
-    font-weight:400;
-    line-height:.92;
-    font-size:clamp(3.2rem, min(8vw, 16vh), 8.5rem);
-    letter-spacing:-.01em;
-    margin: 0;
-  }
-  .mwabonje-wrapper h1.hero-title em {
-    font-style:italic;
-    font-weight:300;
-    color:var(--gold);
-  }
-
-    .mwabonje-wrapper .hero-foot {
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    margin-top:clamp(1.5rem, 4vh, 2.5rem);
-    padding-top:clamp(1rem, 3vh, 1.75rem);
-    border-top:1px solid var(--line-dark);
-    gap:clamp(1rem, 2vh, 2rem);
-    flex-wrap:wrap;
-  }
-
-  .mwabonje-wrapper .hero-foot p {
-    max-width:65ch;
-    font-size:.95rem;
-    line-height:1.55;
-    color:rgba(243,238,228,.7);
-    margin: 0;
-  }
-
-  @keyframes subtle-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(5px); }
-  }
-  
-  .mwabonje-wrapper .scroll-cue {
-    font-size:.75rem;
-    color:rgba(243,238,228,.5);
-    display:flex;
-    align-items:center;
-    gap:.6rem;
-    white-space:nowrap;
-    cursor: pointer;
-    transition: color 0.3s;
-  }
-  
-  .mwabonje-wrapper .scroll-cue:hover {
-    color:rgba(243,238,228,.9);
-  }
-
-  .mwabonje-wrapper .scroll-cue .bounce-chevron {
-    animation: subtle-bounce 2s infinite ease-in-out;
-    color: var(--gold);
-  }
-
-  /* ---------- INDEX (light section) ---------- */
-/* ---------- ABOUT ME SECTION ---------- */
-  .mwabonje-about {
-    background:var(--paper);
-    color:var(--ink);
-    padding:clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
-  }
-  
-  .about-me-grid {
-    display:grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    gap:clamp(3rem, 8vw, 6rem);
-    align-items:center;
-  }
-  
-  .about-me-image {
-    position:relative;
-    width:100%;
-    aspect-ratio: 4/5;
-    border-radius:2px;
-    overflow:hidden;
-  }
-  
-  .about-me-image img {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  
-  .about-me-content h2 {
-    font-size:clamp(2.5rem, 5vw, 4.2rem);
-    line-height:1.05;
-    margin-bottom:2rem;
-    font-weight:400;
-  }
-  
-  .about-me-content .about-text {
-    font-size:clamp(1rem, 1.5vw, 1.1rem);
-    line-height:1.75;
-    color:rgba(14,19,16,.75);
-    display:flex;
-    flex-direction:column;
-    gap:1.2rem;
-    margin-bottom:2.5rem;
-    max-width: 50ch;
-  }
-  
-  .about-me-btn {
-    display:inline-flex;
-    align-items:center;
-    padding:.8rem 1.8rem;
-    border:1px solid var(--ink);
-    border-radius:999px;
-    font-size:.9rem;
-    transition:background .3s ease, color .3s ease;
-  }
-  
-  .about-me-btn:hover {
-    background:var(--ink);
-    color:var(--paper);
-  }
-
-  @media (max-width: 900px) {
-    .about-me-grid { grid-template-columns:1fr; }
-    .about-me-image { aspect-ratio: 1/1; }
-  }
-
-  .mwabonje-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  .mwabonje-index {
-    background:var(--paper);
-    color:var(--ink);
-    padding:clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
-  }
-
-  .mwabonje-wrapper .index-head {
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    gap:2rem;
-    margin-bottom:clamp(2.5rem, 6vw, 4rem);
-    border-bottom:1px solid var(--line-light);
-    padding-bottom:1.75rem;
-    flex-wrap:wrap;
-  }
-
-  .mwabonje-wrapper .index-head h2 {
-    font-size:clamp(1.9rem, 4vw, 2.6rem);
-    font-weight:400;
-    margin: 0;
-  }
-
-  .mwabonje-wrapper .index-head .count {
-    font-size:.85rem;
-    color:rgba(14,19,16,.55);
-    max-width:32ch;
-    text-align:right;
-    margin: 0;
-  }
-
-  .mwabonje-grid {
-    display:grid;
-    grid-template-columns:repeat(12, 1fr);
-    gap:1.5rem;
-  }
-
-  .mwabonje-card {
-    position:relative;
-    border-radius:2px;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-end;
-    min-height:420px;
-    padding:1.5rem;
-    color:var(--paper) !important;
-    transition: transform 0.3s ease;
-    text-decoration: none !important;
-  }
-  .mwabonje-card:hover {
-    transform: translateY(-4px);
-  }
-
-  .mwabonje-card .label {
-    position:relative; z-index:2;
-  }
-
-  .mwabonje-card .place {
-    font-family:'Fraunces', serif;
-    font-size:1.6rem;
-    margin-bottom:.4rem;
-    text-transform: capitalize;
-  }
-
-  .mwabonje-card .coords {
-    font-size:.72rem;
-    color:var(--gold);
-    letter-spacing:.03em;
-  }
-
-  .mwabonje-card::before {
-    content:'';
-    position:absolute; inset:0;
-    z-index:1;
-  }
-
-  .mwabonje-card.c1,
-  .mwabonje-card.c2,
-  .mwabonje-card.c3,
-  .mwabonje-card.c4,
-  .mwabonje-card.c5 {
-    grid-column: span 6;
-  }
-
-  .mwabonje-card .tag {
-    position:absolute; top:1.25rem; right:1.25rem; z-index:2;
-    font-size:.68rem;
-    color:rgba(243,238,228,.7);
-    border:1px solid rgba(243,238,228,.25);
-    padding:.3rem .7rem;
-    border-radius:999px;
-    background: rgba(0,0,0,0.2);
-    backdrop-filter: blur(4px);
-  }
-
-  /* ---------- ABOUT STRIP ---------- */
-  .mwabonje-strip {
-    background:var(--paper-dim);
-    color:var(--ink);
-    padding:clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
-    border-top:1px solid var(--line-light);
-  }
-
-  .strip-grid {
-    display:grid;
-    grid-template-columns:1.1fr 1fr;
-    gap:3rem;
-  }
-
-  .mwabonje-strip h3 {
-    font-family:'Fraunces', serif;
-    font-weight:400;
-    font-size:clamp(1.8rem, 3.2vw, 2.4rem);
-    line-height:1.25;
-    max-width:16ch;
-    margin: 0;
-  }
-
-  .mwabonje-strip .services {
-    display:flex;
-    flex-direction:column;
-    gap:0;
-  }
-  .mwabonje-strip .services a {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:1rem 0;
-    border-bottom:1px solid var(--line-light);
-    font-size:1.05rem;
-  }
-  .mwabonje-strip .services a:first-child { border-top:1px solid var(--line-light); }
-  .mwabonje-strip .services span.n {
-    font-size:.75rem;
-    color:rgba(14,19,16,.45);
-    font-family:'Inter', sans-serif;
-  }
-
-  /* ---------- FOOTER ---------- */
-  .mwabonje-footer {
-    background:var(--ink);
-    padding:clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 4vw, 3rem) 2rem;
-  }
-
-  .mwabonje-wrapper .footer-top {
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:2rem;
-    flex-wrap:wrap;
-    padding-bottom:2.5rem;
-    border-bottom:1px solid var(--line-dark);
-  }
-
-  .mwabonje-wrapper .footer-top .serif {
-    font-size:clamp(2rem, 5vw, 3.2rem);
-  }
-
-  .mwabonje-wrapper .footer-links {
-    display:flex;
-    gap:2.5rem;
-  }
-  .mwabonje-wrapper .footer-links a {
-    font-size:.9rem;
-    color:rgba(243,238,228,.75);
-    display:block;
-  }
-  .mwabonje-wrapper .footer-links a:hover { color:var(--gold); }
-
-  .mwabonje-wrapper .footer-bottom {
-    display:flex;
-    justify-content:space-between;
-    padding-top:1.5rem;
-    font-size:.78rem;
-    color:rgba(243,238,228,.45);
-    flex-wrap:wrap;
-    gap:.75rem;
-  }
-
-  /* ---------- OVERLAY MENU ---------- */
-  .mwabonje-overlay {
-    position:fixed; inset:0;
-    z-index:200;
-    background:#0E1310;
-    padding:clamp(1.25rem, 4vw, 3rem);
-    display:flex;
-    flex-direction:column;
-    opacity:0;
-    pointer-events:none;
-    transform:translateY(-12px);
-    transition:opacity .35s ease, transform .35s ease;
-  }
-  .mwabonje-overlay.open {
-    opacity:1;
-    pointer-events:auto;
-    transform:translateY(0);
-  }
-
-  .mwabonje-wrapper .overlay-head {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:clamp(2.5rem, 6vw, 4.5rem);
-  }
-
-  .mwabonje-wrapper .close-btn {
-    cursor:pointer;
-    font-size:.9rem;
-    display:flex;
-    align-items:center;
-    gap:.6rem;
-    border:1px solid var(--line-dark);
-    padding:.5rem 1.1rem;
-    border-radius:999px;
-  }
-
-  .mwabonje-wrapper .overlay-grid {
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:2.5rem 2rem;
-    flex:1;
-  }
-
-  .mwabonje-wrapper .overlay-group .group-label {
-    font-size:.72rem;
-    color:var(--gold);
-    letter-spacing:.04em;
-    margin-bottom:1.1rem;
-    padding-bottom:.9rem;
-    border-bottom:1px solid var(--line-dark);
-  }
-
-  .mwabonje-wrapper .overlay-group a {
-    display:block;
-    font-family:'Fraunces', serif;
-    font-size:clamp(1.3rem, 2.2vw, 1.7rem);
-    padding:.5rem 0;
-    color:rgba(243,238,228,.82);
-    transition:color .2s ease, transform .2s ease;
-  }
-  .mwabonje-wrapper .overlay-group a:hover {
-    color:var(--paper);
-    transform:translateX(6px);
-  }
-
-  .mwabonje-wrapper .overlay-foot {
-    margin-top:2rem;
-    padding-top:1.5rem;
-    border-top:1px solid var(--line-dark);
-    display:flex;
-    justify-content:space-between;
-    font-size:.85rem;
-    color:rgba(243,238,228,.5);
-    flex-wrap:wrap;
-    gap:1rem;
-  }
-
-  /* ---------- RESPONSIVE ---------- */
-  @media (max-width: 860px) {
-    .primary-nav { display:none; }
-    .enquire-btn { display:none; }
-    .mobile-menu-btn { display:block; }
-    .mwabonje-grid { grid-template-columns:repeat(1, 1fr); }
-    .mwabonje-card.c1, 
-    .mwabonje-card.c2,
-    .mwabonje-card.c3, 
-    .mwabonje-card.c4, 
-    .mwabonje-card.c5 { grid-column:span 1; min-height:340px; }
-    .strip-grid { grid-template-columns:1fr; }
-    .mwabonje-wrapper .overlay-grid { grid-template-columns:repeat(2,1fr); }
-  }
-
-  @media (max-width: 520px) {
-    .mwabonje-wrapper .overlay-grid { grid-template-columns:1fr; }
-    .mwabonje-wrapper .hero-foot { flex-direction:column; align-items:flex-start; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .mwabonje-wrapper { scroll-behavior:auto; }
-    .mwabonje-wrapper .hero-eyebrow .dot { animation:none; }
-    .mwabonje-wrapper * { transition:none !important; }
-  }
-`}</style>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
+        <style>{`
+          :root {
+            --ink: #0E1310;
+            --ink-soft: #161C18;
+            --paper: #F3EEE4;
+            --paper-dim: #E9E2D2;
+            --gold: #B9922F;
+            --teal: #1F3D39;
+            --line-dark: rgba(243,238,228,.14);
+            --line-light: rgba(14,19,16,.14);
+          }
+          .mwabonje-wrapper {
+            background: var(--ink);
+            color: var(--paper);
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+            width: 100%;
+          }
+          .mwabonje-wrapper * { box-sizing: border-box; }
+          .mwabonje-wrapper a { color: inherit; text-decoration: none; }
+          .mwabonje-wrapper .serif {
+            font-family: 'Fraunces', serif;
+            font-optical-sizing: auto;
+          }
+          .mwabonje-wrapper .mono-tag {
+            font-family: 'Inter', sans-serif;
+            font-size: .7rem;
+            letter-spacing: .06em;
+            color: var(--gold);
+            font-variant-numeric: tabular-nums;
+          }
+          /* NAV */
+          .mwabonje-header {
+            position: sticky;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 1.4rem clamp(1.25rem, 4vw, 3rem);
+            background: var(--paper);
+            color: var(--ink);
+            border-bottom: 1px solid rgba(14,19,16,0.06);
+          }
+          .header-layout {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--ink);
+            text-decoration: none;
+          }
+          .m-circle {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--ink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            font-style: italic;
+          }
+          .brand-text {
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            font-size: 0.8rem;
+          }
+          .primary-nav {
+            display: flex;
+            align-items: center;
+            gap: clamp(1.5rem, 2.5vw, 2.5rem);
+          }
+          .nav-dropdown {
+            position: relative;
+            padding: 1.5rem 0;
+            margin: -1.5rem 0;
+          }
+          .nav-dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--paper);
+            min-width: 180px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid rgba(14,19,16,0.06);
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1000;
+          }
+          .nav-dropdown:hover .nav-dropdown-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+          }
+          .nav-dropdown-content a {
+            padding: 0.8rem 1.5rem;
+            font-size: 0.7rem;
+            width: 100%;
+            text-align: left;
+            display: block;
+          }
+          .nav-dropdown-content a:hover {
+            background: rgba(14,19,16,0.03);
+            color: var(--ink);
+          }
+          .primary-nav > a, .nav-dropdown > a {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            color: rgba(14,19,16,.65);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s ease;
+            position: relative;
+          }
+          .primary-nav > a::after, .nav-dropdown > a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            transform: scaleX(0);
+            height: 1px;
+            bottom: -4px;
+            left: 0;
+            background-color: var(--ink);
+            transform-origin: bottom right;
+            transition: transform 0.3s ease;
+          }
+          .primary-nav > a:hover::after, .nav-dropdown > a:hover::after,
+          .primary-nav > a.active::after, .nav-dropdown > a.active::after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
+          }
+          .primary-nav > a.active, .nav-dropdown > a.active {
+            color: var(--ink);
+          }
+          .primary-nav > a:hover, .nav-dropdown > a:hover {
+            color: var(--ink);
+          }
+          .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+          }
+          .enquire-btn {
+            border: 1px solid var(--ink);
+            padding: 0.65rem 1.6rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            color: var(--ink);
+            text-decoration: none;
+            transition: background 0.3s ease, color 0.3s ease;
+          }
+          .enquire-btn:hover {
+            background: var(--ink);
+            color: var(--paper);
+          }
+          .mobile-menu-btn {
+            display: none;
+          }
+          .mobile-menu-btn .bars {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+          }
+          .mobile-menu-btn .bars span {
+            width: 22px; height: 1px; background: var(--ink);
+          }
+          .mwabonje-wrapper .subtle-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(243,238,228,.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spinner 0.8s linear infinite;
+          }
+          @keyframes spinner {
+            to { transform: rotate(360deg); }
+          }
+          /* HERO */
+          .mwabonje-hero {
+            position: relative;
+            min-height: calc(100svh - 85px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: clamp(60px, 8vh, 120px) clamp(1.25rem, 4vw, 3rem) clamp(1.5rem, 4vh, 3.5rem);
+            overflow: hidden;
+          }
+          .mwabonje-wrapper .hero-bg {
+            position: absolute; inset: 0;
+            background:
+              radial-gradient(circle at 22% 30%, rgba(185,146,47,.16), transparent 45%),
+              radial-gradient(circle at 78% 70%, rgba(31,61,57,.5), transparent 55%),
+              linear-gradient(180deg, #0A0E0C 0%, #10160F 55%, #0E1310 100%);
+          }
+          .mwabonje-wrapper .hero-bg::after {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: repeating-linear-gradient(115deg, rgba(243,238,228,.025) 0px, rgba(243,238,228,.025) 1px, transparent 1px, transparent 90px);
+            opacity: .6;
+          }
+          .mwabonje-wrapper .hero-content {
+            position: relative;
+            z-index: 2;
+          }
+          .mwabonje-wrapper .hero-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-bottom: 1.5rem;
+            color: rgba(243,238,228,.55);
+            font-size: .85rem;
+          }
+          .mwabonje-wrapper .hero-eyebrow .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--gold);
+            animation: pulse 2.4s ease-in-out infinite;
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: .4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+          }
+          .mwabonje-wrapper h1.hero-title {
+            font-weight: 400;
+            line-height: .92;
+            font-size: clamp(3.2rem, min(8vw, 16vh), 8.5rem);
+            letter-spacing: -.01em;
+            margin: 0;
+          }
+          .mwabonje-wrapper h1.hero-title em {
+            font-style: italic;
+            font-weight: 300;
+            color: var(--gold);
+          }
+          .mwabonje-wrapper .hero-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: clamp(1.5rem, 4vh, 2.5rem);
+            padding-top: clamp(1rem, 3vh, 1.75rem);
+            border-top: 1px solid var(--line-dark);
+            gap: clamp(1rem, 2vh, 2rem);
+            flex-wrap: wrap;
+          }
+          .mwabonje-wrapper .hero-foot p {
+            max-width: 65ch;
+            font-size: .95rem;
+            line-height: 1.55;
+            color: rgba(243,238,228,.7);
+            margin: 0;
+          }
+          @keyframes subtle-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+          }
+          .mwabonje-wrapper .scroll-cue {
+            font-size: .75rem;
+            color: rgba(243,238,228,.5);
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: color 0.3s;
+          }
+          .mwabonje-wrapper .scroll-cue:hover {
+            color: rgba(243,238,228,.9);
+          }
+          .mwabonje-wrapper .scroll-cue .bounce-chevron {
+            animation: subtle-bounce 2s infinite ease-in-out;
+            color: var(--gold);
+          }
+          /* INDEX */
+          .mwabonje-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+          }
+          .mwabonje-index {
+            background: var(--paper);
+            color: var(--ink);
+            padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
+          }
+          .mwabonje-wrapper .index-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 2rem;
+            margin-bottom: clamp(2.5rem, 6vw, 4rem);
+            border-bottom: 1px solid var(--line-light);
+            padding-bottom: 1.75rem;
+            flex-wrap: wrap;
+          }
+          .mwabonje-wrapper .index-head h2 {
+            font-size: clamp(1.9rem, 4vw, 2.6rem);
+            font-weight: 400;
+            margin: 0;
+          }
+          .mwabonje-wrapper .index-head .count {
+            font-size: .85rem;
+            color: rgba(14,19,16,.55);
+            max-width: 32ch;
+            text-align: right;
+            margin: 0;
+          }
+          .mwabonje-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+          }
+          .mwabonje-card {
+            position: relative;
+            border-radius: 2px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 420px;
+            padding: 1.5rem;
+            color: var(--paper) !important;
+            transition: transform 0.3s ease;
+            text-decoration: none !important;
+          }
+          .mwabonje-card:hover {
+            transform: translateY(-4px);
+          }
+          .mwabonje-card .label {
+            position: relative; z-index: 2;
+          }
+          .mwabonje-card .place {
+            font-family: 'Fraunces', serif;
+            font-size: 1.6rem;
+            margin-bottom: .4rem;
+            text-transform: capitalize;
+          }
+          .mwabonje-card .coords {
+            font-size: .72rem;
+            color: var(--gold);
+            letter-spacing: .03em;
+          }
+          .mwabonje-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            z-index: 1;
+          }
+          .mwabonje-card.c1,
+          .mwabonje-card.c2,
+          .mwabonje-card.c3,
+          .mwabonje-card.c4,
+          .mwabonje-card.c5 {
+            grid-column: span 6;
+          }
+          .mwabonje-card .tag {
+            position: absolute; top: 1.25rem; right: 1.25rem; z-index: 2;
+            font-size: .68rem;
+            color: rgba(243,238,228,.7);
+            border: 1px solid rgba(243,238,228,.25);
+            padding: .3rem .7rem;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
+          }
+          /* ABOUT ME */
+          .mwabonje-about {
+            background: var(--paper);
+            color: var(--ink);
+            padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
+          }
+          .about-me-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: clamp(3rem, 8vw, 6rem);
+            align-items: center;
+          }
+          .about-me-image {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/5;
+            border-radius: 2px;
+            overflow: hidden;
+          }
+          .about-me-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+          }
+          .about-me-content h2 {
+            font-size: clamp(2.5rem, 5vw, 4.2rem);
+            line-height: 1.05;
+            margin-bottom: 2rem;
+            font-weight: 400;
+          }
+          .about-me-content .about-text {
+            font-size: clamp(1rem, 1.5vw, 1.1rem);
+            line-height: 1.75;
+            color: rgba(14,19,16,.75);
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+            max-width: 50ch;
+          }
+          .about-me-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: .8rem 1.8rem;
+            border: 1px solid var(--ink);
+            border-radius: 999px;
+            font-size: .9rem;
+            transition: background .3s ease, color .3s ease;
+          }
+          .about-me-btn:hover {
+            background: var(--ink);
+            color: var(--paper);
+          }
+          /* STRIP */
+          .mwabonje-strip {
+            background: var(--paper-dim);
+            color: var(--ink);
+            padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
+            border-top: 1px solid var(--line-light);
+          }
+          .strip-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 3rem;
+          }
+          .mwabonje-strip h3 {
+            font-family: 'Fraunces', serif;
+            font-weight: 400;
+            font-size: clamp(1.8rem, 3.2vw, 2.4rem);
+            line-height: 1.25;
+            max-width: 16ch;
+            margin: 0;
+          }
+          .mwabonje-strip .services {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+          }
+          .mwabonje-strip .services a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--line-light);
+            font-size: 1.05rem;
+          }
+          .mwabonje-strip .services a:first-child {
+            border-top: 1px solid var(--line-light);
+          }
+          .mwabonje-strip .services span.n {
+            font-size: .75rem;
+            color: rgba(14,19,16,.45);
+            font-family: 'Inter', sans-serif;
+          }
+          /* FOOTER */
+          .mwabonje-footer {
+            background: var(--ink);
+            padding: clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 4vw, 3rem) 2rem;
+          }
+          .mwabonje-wrapper .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2rem;
+            flex-wrap: wrap;
+            padding-bottom: 2.5rem;
+            border-bottom: 1px solid var(--line-dark);
+          }
+          .mwabonje-wrapper .footer-top .serif {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+          }
+          .mwabonje-wrapper .footer-links {
+            display: flex;
+            gap: 2.5rem;
+          }
+          .mwabonje-wrapper .footer-links a {
+            font-size: .9rem;
+            color: rgba(243,238,228,.75);
+            display: block;
+          }
+          .mwabonje-wrapper .footer-links a:hover { color: var(--gold); }
+          .mwabonje-wrapper .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 1.5rem;
+            font-size: .78rem;
+            color: rgba(243,238,228,.45);
+            flex-wrap: wrap;
+            gap: .75rem;
+          }
+          /* OVERLAY */
+          .mwabonje-overlay {
+            position: fixed; inset: 0;
+            z-index: 200;
+            background: #0E1310;
+            padding: clamp(1.25rem, 4vw, 3rem);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-12px);
+            transition: opacity .35s ease, transform .35s ease;
+          }
+          .mwabonje-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+          }
+          .mwabonje-wrapper .overlay-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+          }
+          .mwabonje-wrapper .close-btn {
+            cursor: pointer;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            border: 1px solid var(--line-dark);
+            padding: .5rem 1.1rem;
+            border-radius: 999px;
+          }
+          .mwabonje-wrapper .overlay-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2.5rem 2rem;
+            flex: 1;
+          }
+          .mwabonje-wrapper .overlay-group .group-label {
+            font-size: .72rem;
+            color: var(--gold);
+            letter-spacing: .04em;
+            margin-bottom: 1.1rem;
+            padding-bottom: .9rem;
+            border-bottom: 1px solid var(--line-dark);
+          }
+          .mwabonje-wrapper .overlay-group a {
+            display: block;
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+            padding: .5rem 0;
+            color: rgba(243,238,228,.82);
+            transition: color .2s ease, transform .2s ease;
+          }
+          .mwabonje-wrapper .overlay-group a:hover {
+            color: var(--paper);
+            transform: translateX(6px);
+          }
+          .mwabonje-wrapper .overlay-foot {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--line-dark);
+            display: flex;
+            justify-content: space-between;
+            font-size: .85rem;
+            color: rgba(243,238,228,.5);
+            flex-wrap: wrap;
+            gap: 1rem;
+          }
+          /* RESPONSIVE */
+          @media (max-width: 860px) {
+            .primary-nav { display: none; }
+            .enquire-btn { display: none; }
+            .mobile-menu-btn { display: block; }
+            .mwabonje-grid { grid-template-columns: repeat(1, 1fr); }
+            .mwabonje-card.c1,
+            .mwabonje-card.c2,
+            .mwabonje-card.c3,
+            .mwabonje-card.c4,
+            .mwabonje-card.c5 { grid-column: span 1; min-height: 340px; }
+            .strip-grid { grid-template-columns: 1fr; }
+            .mwabonje-wrapper .overlay-grid { grid-template-columns: repeat(2, 1fr); }
+            .about-me-grid { grid-template-columns: 1fr; }
+            .about-me-image { aspect-ratio: 1/1; }
+          }
+          @media (max-width: 520px) {
+            .mwabonje-wrapper .overlay-grid { grid-template-columns: 1fr; }
+            .mwabonje-wrapper .hero-foot { flex-direction: column; align-items: flex-start; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .mwabonje-wrapper { scroll-behavior: auto; }
+            .mwabonje-wrapper .hero-eyebrow .dot { animation: none; }
+            .mwabonje-wrapper * { transition: none !important; }
+          }
+        `}</style>
       </Helmet>
 
-      {/* Progress Bar */}
-      <div style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0,
-        height: '3px',
-        background: 'transparent',
-        zIndex: 9999,
-        pointerEvents: 'none'
-      }}>
-        <div style={{
-          height: '100%',
-          background: 'var(--gold, #B9922F)',
-          width: `${scrollProgress * 100}%`,
-          transformOrigin: 'left',
-          transition: 'width 0.1s ease-out'
-        }} />
+      {/* Scroll indicator bar */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: 'transparent',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            background: 'var(--gold, #B9922F)',
+            width: `${scrollProgress * 100}%`,
+            transformOrigin: 'left',
+            transition: 'width 0.1s ease-out',
+          }}
+        />
       </div>
 
-<header className="mwabonje-header">
+      {/* Header */}
+      <header className="mwabonje-header">
         <div className="mwabonje-container header-layout">
           <a href="#" className="brand-logo">
             <div className="m-circle serif">{settings.brandName.charAt(0)}</div>
             <span className="brand-text">{settings.brandName}</span>
           </a>
-                              <nav className="primary-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>HOME</a>
+
+          <nav className="primary-nav">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              HOME
+            </a>
             <div className="nav-dropdown">
-              <a href="#work" className="active" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }}>PORTFOLIO</a>
+              <a
+                href="#work"
+                className="active"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                PORTFOLIO
+              </a>
               <div className="nav-dropdown-content">
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}>COUPLES</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>PORTRAITS</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Wedding')}>WEDDING</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}>EVENTS</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'NSSF')}>NSSF</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}>HOSPITALITY</a>
-                <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}>PLACES & DETAILS</a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
+                  COUPLES
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
+                  PORTRAITS
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Wedding')}>
+                  WEDDING
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
+                  EVENTS
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'NSSF')}>
+                  NSSF
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
+                  HOSPITALITY
+                </a>
+                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
+                  PLACES & DETAILS
+                </a>
               </div>
             </div>
-            <a href="#films" onClick={(e) => { e.preventDefault(); document.getElementById('films')?.scrollIntoView({ behavior: 'smooth' }); }}>FILMS</a>
-            <a href="#about-me" onClick={(e) => { e.preventDefault(); document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' }); }}>ABOUT</a>
-            <a href="/blog">BLOG</a>
-            <a href="/prints">PRINTS</a>
+            <a
+              href="#films"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('films')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              FILMS
+            </a>
+            <a
+              href="#about-me"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              ABOUT
+            </a>
+            <Link to="/blog">BLOG</Link>
+            <Link to="/prints">PRINTS</Link>
           </nav>
-          
+
           <div className="header-actions">
-            <a href={settings.contactLink} className="enquire-btn" target="_blank" rel="noopener noreferrer">ENQUIRE</a>
-            <div className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
-              <div className="bars"><span></span><span></span><span></span></div>
+            <a
+              href={settings.contactLink}
+              className="enquire-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ENQUIRE
+            </a>
+            <div className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
+              <div className="bars">
+                <span />
+                <span />
+                <span />
+              </div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Hero Section */}
       <section className="mwabonje-hero">
-        <div 
+        <div
           className="hero-bg"
-          style={(heroImageUrl || (galleries.length > 0 && galleries[0].coverUrl)) ? {
-            backgroundImage: `
-              linear-gradient(180deg, rgba(10,14,12,0.4) 0%, rgba(10,14,12,0.8) 100%), 
-              url(${getOptimizedImageUrl(heroImageUrl || galleries[0].coverUrl!, 1920, 1080, 80)})
-            `,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          } : {}}
-        ></div>
+          style={
+            heroImage || (galleries.length > 0 && galleries[0].coverUrl)
+              ? {
+                  backgroundImage: `linear-gradient(180deg, rgba(10,14,12,0.4) 0%, rgba(10,14,12,0.8) 100%), url(${getOptimizedImageUrl(
+                    heroImage || galleries[0].coverUrl!,
+                    1920,
+                    1080,
+                    80
+                  )})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }
+              : {}
+          }
+        />
         <div className="hero-content mwabonje-container">
           <div className="hero-eyebrow">
-            <span className="dot"></span>
+            <span className="dot" />
             <span>{settings.heroLocation}</span>
           </div>
-          <h1 className="serif hero-title" dangerouslySetInnerHTML={{ __html: settings.heroTitle.replace(/\n/g, '<br/>').replace(/\*(.*?)\*/g, '<em>$1</em>') }}></h1>
+          <h1
+            className="serif hero-title"
+            dangerouslySetInnerHTML={{
+              __html: settings.heroTitle
+                .replace(/\n/g, '<br/>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>'),
+            }}
+          />
           <div className="hero-foot">
             <p>{settings.heroSubtitle}</p>
-            <div className="scroll-cue" onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}>
+            <div
+              className="scroll-cue"
+              onClick={() => {
+                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               <ChevronDown className="bounce-chevron" size={18} />
               Recent work
             </div>
@@ -984,159 +1033,304 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         </div>
       </section>
 
+      {/* Work / Portfolio Section */}
       <section className="mwabonje-index" id="work">
         <div className="mwabonje-container">
           <div className="index-head">
             <h2 className="serif">
-              {selectedCategory ? `${selectedCategory} places` : "Recent places"}
+              {selectedCategory ? `${selectedCategory} places` : 'Recent places'}
               {selectedCategory && (
-                <span 
-                  style={{ fontSize: '1rem', marginLeft: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', color: 'rgba(14,19,16,0.6)' }}
+                <span
+                  style={{
+                    fontSize: '1rem',
+                    marginLeft: '1rem',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    color: 'rgba(14,19,16,0.6)',
+                  }}
                   onClick={() => setSearchParams({})}
                 >
                   (Clear filter)
                 </span>
               )}
             </h2>
-            <p className="count">{filteredGalleries.length > 0 ? `${filteredGalleries.length} locations shot over the last season, from lantern-lit courtyards to open water.` : "Loading recent places..."}</p>
+            <p className="count">
+              {filteredGalleries.length > 0
+                ? `${filteredGalleries.length} locations shot over the last season, from lantern-lit courtyards to open water.`
+                : loading
+                ? 'Loading recent places...'
+                : 'No portfolio items found.'}
+            </p>
           </div>
+
           <div className="mwabonje-grid">
-            {filteredGalleries.map((gallery, index) => {
-               const classIndex = (index % 5) + 1;
-               return (
-                 <Link 
-                   to={`/${generateSlug(gallery.client_name)}`}
-                   key={gallery.id} 
-                   className={`mwabonje-card c${classIndex}`}
-                   >
-                   <CardMedia gallery={gallery} />
-                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, background: 'linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%)', pointerEvents: 'none' }}></div>
-                   <span 
-                     className="tag"
-                     onClick={(e) => handleCategoryClick(e, gallery.baseCategory || 'Photography')}
-                     style={{ cursor: 'pointer' }}
-                   >
-                     {gallery.baseCategory || 'Photography'}
-                   </span>
-                   <div className="label">
-                     <div className="place serif">{gallery.client_name.toLowerCase()}</div>
-                     <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
-                   </div>
-                 </Link>
-               );
+            {filteredGalleries.map((gallery, idx) => {
+              const colSpanClass = `c${(idx % 5) + 1}`;
+              return (
+                <Link
+                  key={gallery.id}
+                  to={`/${generateSlug(gallery.client_name)}`}
+                  className={`mwabonje-card ${colSpanClass}`}
+                >
+                  <CardImage gallery={gallery} />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      zIndex: 1,
+                      background:
+                        'linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <span
+                    className="tag"
+                    onClick={(e) =>
+                      handleCategorySelect(e, gallery.baseCategory || 'Photography')
+                    }
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {gallery.baseCategory || 'Photography'}
+                  </span>
+                  <div className="label">
+                    <div className="place serif">{gallery.client_name.toLowerCase()}</div>
+                    <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
+                  </div>
+                </Link>
+              );
             })}
           </div>
         </div>
       </section>
 
-{aboutGallery && (
+      {/* About Section */}
+      {aboutGallery && (
         <section className="mwabonje-about" id="about-me">
           <div className="mwabonje-container">
             <div className="about-me-grid">
-              <div className="about-me-image" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="subtle-spinner" style={{ position: 'absolute' }}></div>
-                <img 
-                  src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)} 
-                  alt={settings.brandName} 
+              <div
+                className="about-me-image"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div className="subtle-spinner" style={{ position: 'absolute' }} />
+                <img
+                  src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)}
+                  alt={settings.brandName}
                   style={{ position: 'relative', zIndex: 1 }}
                   onLoad={(e) => {
                     e.currentTarget.style.opacity = '1';
-                    const spinner = e.currentTarget.previousElementSibling;
-                    if (spinner) (spinner as HTMLElement).style.opacity = '0';
+                    const prev = e.currentTarget.previousElementSibling as HTMLElement;
+                    if (prev) prev.style.opacity = '0';
                   }}
                   onError={(e) => {
+                    if (e.currentTarget.src !== aboutGallery.coverUrl) {
+                      e.currentTarget.src = aboutGallery.coverUrl!;
+                    }
                     e.currentTarget.style.opacity = '1';
-                    const spinner = e.currentTarget.previousElementSibling;
-                    if (spinner) (spinner as HTMLElement).style.opacity = '0';
+                    const prev = e.currentTarget.previousElementSibling as HTMLElement;
+                    if (prev) prev.style.opacity = '0';
                   }}
                 />
               </div>
               <div className="about-me-content">
                 <h2 className="serif">
-                  Capturing the<br/>
-                  <em>Essence</em> of<br/>
+                  Capturing the
+                  <br />
+                  <em>Essence</em> of
+                  <br />
                   the Moment.
                 </h2>
                 <div className="about-text">
-                  {aboutGallery.title ? aboutGallery.title.split('\n').map((p, i) => (
-                    <p key={i}>{p}</p>
-                  )) : (
+                  {aboutGallery.title ? (
+                    aboutGallery.title.split('\n\n').map((para, i) => <p key={i}>{para}</p>)
+                  ) : (
                     <>
-                      <p>I am an East African photographer specializing in hospitality, portraits, and documentary visual storytelling.</p>
-                      <p>For me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.</p>
+                      <p>
+                        I am an East African photographer specializing in hospitality, portraits,
+                        and documentary visual storytelling.
+                      </p>
+                      <p>
+                        For me, photography is more than just clicking a button; it is about
+                        preserving fleeting moments, translating emotions into visuals, and
+                        crafting narratives that transcend time.
+                      </p>
                       <p>Available for travel worldwide. Let's create something beautiful together.</p>
                     </>
                   )}
                 </div>
-                <a href={settings.contactLink} className="about-me-btn" target="_blank" rel="noopener noreferrer">Book a Session</a>
+                <a
+                  href={settings.contactLink}
+                  className="about-me-btn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Book a Session
+                </a>
               </div>
             </div>
           </div>
         </section>
       )}
 
+      {/* Studio Strip */}
       <section className="mwabonje-strip" id="about">
         <div className="mwabonje-container strip-grid">
-          <h3 className="serif">Studio work spanning couples, hospitality, and the coast itself.</h3>
+          <h3 className="serif">
+            Studio work spanning couples, hospitality, and the coast itself.
+          </h3>
           <div className="services">
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}><span>Couples &amp; weddings</span><span className="n">01</span></a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}><span>Hospitality &amp; hotels</span><span className="n">02</span></a>
-            <a href="#films" id="films"><span>Film &amp; documentary</span><span className="n">03</span></a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}><span>Portraits &amp; events</span><span className="n">04</span></a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}><span>Places &amp; details</span><span className="n">05</span></a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
+              <span>Couples & weddings</span>
+              <span className="n">01</span>
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
+              <span>Hospitality & hotels</span>
+              <span className="n">02</span>
+            </a>
+            <a
+              href="#films"
+              id="films"
+              onClick={(e) => {
+                e.preventDefault();
+                handleCategorySelect(e, 'Films');
+              }}
+            >
+              <span>Film & documentary</span>
+              <span className="n">03</span>
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
+              <span>Portraits & events</span>
+              <span className="n">04</span>
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
+              <span>Places & details</span>
+              <span className="n">05</span>
+            </a>
           </div>
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="mwabonje-footer" id="contact">
         <div className="mwabonje-container">
           <div className="footer-top">
-            <span className="serif">Let's shoot<br/>something.</span>
+            <span className="serif">
+              Let's shoot
+              <br />
+              something.
+            </span>
             <div className="footer-links">
-              {settings.instagramLink && <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer">Instagram</a>}
-              {settings.tiktokLink && <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer">TikTok</a>}
-              <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              {settings.instagramLink && (
+                <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer">
+                  Instagram
+                </a>
+              )}
+              {settings.tiktokLink && (
+                <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer">
+                  TikTok
+                </a>
+              )}
+              <a
+                href="https://wa.me/254705268604"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp
+              </a>
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} {settings.brandName} Photography, All Rights Reserved</span>
-            <span>Mombasa &amp; Lamu, Kenya</span>
+            <span>
+              © {new Date().getFullYear()} {settings.brandName} Photography, All Rights Reserved
+            </span>
+            <span>Mombasa & Lamu, Kenya</span>
           </div>
         </div>
       </footer>
 
-      <div className={`mwabonje-overlay ${isMenuOpen ? 'open' : ''}`}>
+      {/* Overlay Menu */}
+      <div className={`mwabonje-overlay ${menuOpen ? 'open' : ''}`}>
         <div className="overlay-head">
           <span className="wordmark serif">{settings.brandName}</span>
-          <div className="close-btn" onClick={() => setIsMenuOpen(false)}>
+          <div className="close-btn" onClick={() => setMenuOpen(false)}>
             <span>Close</span>
-            <div className="bars"><span></span><span></span><span></span></div>
+            <div className="bars">
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
         </div>
         <div className="overlay-grid">
           <div className="overlay-group">
             <div className="group-label">People</div>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Couples')}>Couples</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>Portraits</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Wedding')}>Wedding</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Events')}>Events</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'NSSF')}>NSSF</a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
+              Couples
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
+              Portraits
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Wedding')}>
+              Wedding
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
+              Events
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'NSSF')}>
+              NSSF
+            </a>
           </div>
           <div className="overlay-group">
             <div className="group-label">Places</div>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Airbnb')}>Hospitality</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Places')}>Places &amp; details</a>
-            <a href="#" onClick={(e) => handleCategoryClick(e, 'Portraits')}>Places &amp; portraits</a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
+              Hospitality
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
+              Places & details
+            </a>
+            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
+              Places & portraits
+            </a>
           </div>
           <div className="overlay-group">
             <div className="group-label">Studio</div>
-            <a href="#" onClick={() => setIsMenuOpen(false)}>Films</a>
-            <a href="#" onClick={() => setIsMenuOpen(false)}>About</a>
-            <a href="https://mwabonjebooking.netlify.app/" onClick={() => setIsMenuOpen(false)}>Contact</a>
+            <a
+              href="#work"
+              onClick={(e) => {
+                handleCategorySelect(e, 'Films');
+              }}
+            >
+              Films
+            </a>
+            <a
+              href="#about-me"
+              onClick={() => {
+                setMenuOpen(false);
+                document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              About
+            </a>
+            <a
+              href={settings.contactLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
+              Contact
+            </a>
           </div>
         </div>
         <div className="overlay-foot">
-          <span>Mombasa &amp; Lamu, Kenya</span>
+          <span>Mombasa & Lamu, Kenya</span>
           <span>{settings.footerEmail}</span>
         </div>
       </div>

@@ -481,13 +481,45 @@ export const ClientGallery: React.FC = () => {
       
       const galleryPass = galData.password && galData.password.trim() !== '' ? galData.password : null;
       const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
-      const activePass = galleryPass || (pwFile ? pwFile.caption : null);
+      let activePass = galleryPass || (pwFile ? pwFile.caption : null);
+
+      if (!activePass) {
+          try {
+              const res = await fetch(`/api/gallery/${activeGalleryId}/password`);
+              if (res.ok) {
+                  const sData = await res.json();
+                  if (sData.password && sData.password.trim() !== '') {
+                      activePass = sData.password.trim();
+                  }
+              }
+          } catch (e) {
+              // ignore
+          }
+      }
+
+      if (!activePass) {
+          try {
+              const { data: directPw } = await supabase
+                  .from('files')
+                  .select('caption')
+                  .eq('gallery_id', activeGalleryId)
+                  .eq('file_path', 'GALLERY_PASSWORD')
+                  .maybeSingle();
+              if (directPw && directPw.caption && directPw.caption.trim() !== '') {
+                  activePass = directPw.caption.trim();
+              }
+          } catch (e) {
+              // ignore
+          }
+      }
 
       if (activePass) {
           setGalleryPassword(activePass);
-          const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`);
-          if (savedAuth === activePass) {
+          const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`) || (galleryId ? sessionStorage.getItem(`auth_${galleryId}`) : null);
+          if (savedAuth && savedAuth.trim() === activePass.trim()) {
               setIsAuthenticated(true);
+          } else {
+              setIsAuthenticated(false);
           }
       } else {
           setIsAuthenticated(true);
@@ -1448,9 +1480,16 @@ export const ClientGallery: React.FC = () => {
                   
                   <form onSubmit={(e) => {
                       e.preventDefault();
-                      if (passwordInput === galleryPassword) {
+                      const entered = passwordInput.trim();
+                      const target = (galleryPassword || '').trim();
+                      if (entered && entered === target) {
                           setIsAuthenticated(true);
-                          sessionStorage.setItem(`auth_${gallery?.id}`, passwordInput);
+                          if (gallery?.id) {
+                              sessionStorage.setItem(`auth_${gallery.id}`, entered);
+                          }
+                          if (galleryId) {
+                              sessionStorage.setItem(`auth_${galleryId}`, entered);
+                          }
                       } else {
                           setPasswordError(true);
                       }

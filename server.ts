@@ -545,6 +545,56 @@ async function startServer() {
       res.json({ success: true, count: data.galleries[galleryId].views });
   });
 
+  // --- GALLERY PASSWORD MANAGEMENT ---
+  const GALLERY_PASSWORDS_FILE = path.join(process.cwd(), "data", "gallery_passwords.json");
+  const readGalleryPasswords = (): Record<string, string> => {
+    try {
+      if (fs.existsSync(GALLERY_PASSWORDS_FILE)) {
+        return JSON.parse(fs.readFileSync(GALLERY_PASSWORDS_FILE, "utf8"));
+      }
+    } catch (e) {
+      console.error("Error reading gallery passwords file:", e);
+    }
+    return {};
+  };
+
+  const writeGalleryPasswords = (passwords: Record<string, string>) => {
+    try {
+      const dir = path.dirname(GALLERY_PASSWORDS_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(GALLERY_PASSWORDS_FILE, JSON.stringify(passwords, null, 2), "utf8");
+    } catch (e) {
+      console.error("Error writing gallery passwords file:", e);
+    }
+  };
+
+  app.get("/api/gallery/:id/password", (req, res) => {
+    const { id } = req.params;
+    const passwords = readGalleryPasswords();
+    res.json({ password: passwords[id] || null });
+  });
+
+  app.post("/api/gallery/:id/password", (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+    const passwords = readGalleryPasswords();
+    if (password && typeof password === "string" && password.trim()) {
+      passwords[id] = password.trim();
+    } else {
+      delete passwords[id];
+    }
+    writeGalleryPasswords(passwords);
+    res.json({ success: true, password: passwords[id] || null });
+  });
+
+  app.delete("/api/gallery/:id/password", (req, res) => {
+    const { id } = req.params;
+    const passwords = readGalleryPasswords();
+    delete passwords[id];
+    writeGalleryPasswords(passwords);
+    res.json({ success: true, password: null });
+  });
+
   // --- RATE LIMITING FOR GALLERY ACCESS ---
   // Protect against brute-forcing gallery URLs by rate-limiting HTML page requests
   const galleryLimiter = rateLimit({
