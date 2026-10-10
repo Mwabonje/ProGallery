@@ -51,6 +51,11 @@ export const rewriteUrlToR2 = (url: string) => {
 export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 70) => {
   if (!url) return '';
   
+  if (url.includes('images.unsplash.com')) {
+    const base = url.split('?')[0];
+    return `${base}?auto=format&fit=crop&w=${width}${height ? `&h=${height}` : ''}&q=${quality}`;
+  }
+
   // HOTFIX for Supabase Egress: automatically rewrite old supabase.co URLs to use R2 proxy on the fly!
   try {
     const cleanUrl = rewriteUrlToR2(url);

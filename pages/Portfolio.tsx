@@ -5,7 +5,7 @@ import { Gallery } from '../types';
 import { getOptimizedImageUrl } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowUpRight, Play, ArrowRight } from 'lucide-react';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -13,77 +13,57 @@ interface PortfolioGallery extends Gallery {
   coverType?: string | null;
 }
 
-const CardImage: React.FC<{ gallery: PortfolioGallery }> = ({ gallery }) => {
-  const [loaded, setLoaded] = useState(false);
-  const coverType = gallery.coverType;
+const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
+  const isVideo = gallery.coverType?.startsWith('video') || (gallery.category && gallery.category.toLowerCase().includes('film'));
 
-  if (coverType && coverType.startsWith('video')) {
+  const primaryUrl = gallery.coverUrl ? getOptimizedImageUrl(gallery.coverUrl, 1000, 1200, 85) : '';
+  const [currentSrc, setCurrentSrc] = useState(primaryUrl);
+  const [hasError, setHasError] = useState(!primaryUrl);
+
+  useEffect(() => {
+    const nextUrl = gallery.coverUrl ? getOptimizedImageUrl(gallery.coverUrl, 1000, 1200, 85) : '';
+    setCurrentSrc(nextUrl);
+    setHasError(!nextUrl);
+  }, [gallery.coverUrl]);
+
+  if (isVideo && gallery.coverUrl) {
     return (
-      <video
-        src={gallery.coverUrl!}
-        autoPlay
-        muted
-        loop
-        playsInline
-        onLoadedData={() => setLoaded(true)}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0,
-          opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.5s ease',
-        }}
-      />
+      <div className="relative w-full h-full overflow-hidden bg-slate-900">
+        <video 
+          src={gallery.coverUrl} 
+          autoPlay 
+          muted 
+          loop 
+          playsInline 
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        />
+        <div className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
+          <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
-      {!loaded && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 0,
-            background: 'rgba(255,255,255,0.05)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div className="subtle-spinner" />
+    <div className="relative w-full h-full overflow-hidden bg-slate-900 flex items-center justify-center">
+      {currentSrc && !hasError ? (
+        <img 
+          src={currentSrc}
+          alt={gallery.client_name}
+          onError={() => setHasError(true)}
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 text-center text-white">
+          <span className="text-[10px] uppercase tracking-widest font-semibold text-slate-400 mb-2">
+            {gallery.baseCategory || 'PORTFOLIO'}
+          </span>
+          <span className="font-serif text-xl md:text-2xl font-light text-slate-200">
+            {gallery.client_name}
+          </span>
         </div>
       )}
-      <img
-        src={getOptimizedImageUrl(gallery.coverUrl!, 800, 1000, 80)}
-        alt={gallery.client_name}
-        onLoad={() => setLoaded(true)}
-        onError={(e) => {
-          if (e.currentTarget.src !== gallery.coverUrl) {
-            e.currentTarget.src = gallery.coverUrl!;
-          }
-          setLoaded(true);
-        }}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0,
-          opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.5s ease',
-        }}
-      />
-    </>
+    </div>
   );
 };
 
@@ -91,37 +71,23 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+
   const [settings, setSettings] = useState({
-    brandName: 'MWABONJE',
-    heroLocation: 'Lamu · Shela · Mombasa',
-    heroTitle: 'Salt, light & *slow* hours',
-    heroSubtitle:
-      'Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.',
-    contactLink: 'https://mwabonjebooking.netlify.app/',
-    footerEmail: 'hello@mwabonje.studio',
-    instagramLink: 'https://www.instagram.com/mwabonje_/',
-    tiktokLink: 'https://www.tiktok.com/@mwabonje_',
+    brandName: "MWABONJE",
+    heroLocation: "Lamu · Watamu · Mombasa",
+    heroTitle: "Hospitality, Portraits & Documentary Photography",
+    heroSubtitle: "Capturing light, architecture, and authentic coastal visual stories along the Kenyan coast.",
+    contactLink: "https://mwabonjebooking.netlify.app/",
+    footerEmail: "hello@mwabonje.studio",
+    instagramLink: "https://www.instagram.com/mwabonje_/",
+    tiktokLink: "https://www.tiktok.com/@mwabonje_"
   });
-  const selectedCategory = searchParams.get('category');
-  const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Track scroll progress
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollHeight <= 0) return;
-      setScrollProgress(Math.min(1, Math.max(0, scrollY / scrollHeight)));
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const selectedCategory = searchParams.get('category') || 'ALL';
 
-  // Fetch portfolio galleries and settings
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
@@ -134,26 +100,39 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
         let allGalleries = galleriesData || [];
         if (!photographerId && allGalleries.length > 0) {
-          const mostRecentPortfolio = allGalleries.find(
-            (g) =>
-              g.category &&
-              g.category.trim() !== '' &&
-              g.category !== 'SETTINGS' &&
-              g.category !== 'ABOUT' &&
-              g.category.toLowerCase().trim() !== 'delivery'
-          );
+          const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
           if (mostRecentPortfolio) {
-            allGalleries = allGalleries.filter(
-              (g) => g.photographer_id === mostRecentPortfolio.photographer_id
-            );
+            allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
           }
         }
 
-        const settingsGal = allGalleries.find((g) => g.category === 'SETTINGS');
-        const aboutGal = allGalleries.find(
-          (g) => g.client_name === '__ABOUT__' || g.category === 'ABOUT'
-        );
+        // 1. Settings Gallery
+        const settingsGal = allGalleries.find(g => g.category === 'SETTINGS');
+        if (settingsGal) {
+          if (settingsGal.title) {
+            try {
+              const parsed = JSON.parse(settingsGal.title);
+              setSettings(prev => ({ ...prev, ...parsed }));
+            } catch (e) {
+              // ignore
+            }
+          }
+          
+          const { data: settingsFiles } = await supabase
+            .from('files')
+            .select('file_url')
+            .eq('gallery_id', settingsGal.id)
+            .neq('file_path', 'GALLERY_PASSWORD')
+            .order('created_at', { ascending: false })
+            .limit(1);
+              
+          if (settingsFiles && settingsFiles.length > 0) {
+            setHeroImageUrl(settingsFiles[0].file_url);
+          }
+        }
 
+        // 2. About Gallery
+        const aboutGal = allGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
         if (aboutGal) {
           const { data: aboutFiles } = await supabase
             .from('files')
@@ -162,42 +141,42 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false })
             .limit(1);
-          if (aboutFiles && aboutFiles.length > 0 && aboutFiles[0].file_url) {
+          if (aboutFiles && aboutFiles.length > 0) {
             setAboutGallery({ ...aboutGal, coverUrl: aboutFiles[0].file_url, baseCategory: 'ABOUT' });
           }
         }
 
-        if (settingsGal) {
-          if (settingsGal.title) {
-            try {
-              const parsed = JSON.parse(settingsGal.title);
-              setSettings((prev) => ({ ...prev, ...parsed }));
-            } catch {}
-          }
-          const { data: heroFiles } = await supabase
-            .from('files')
-            .select('file_url')
-            .eq('gallery_id', settingsGal.id)
-            .neq('file_path', 'GALLERY_PASSWORD')
-            .order('created_at', { ascending: false })
-            .limit(1);
-          if (heroFiles && heroFiles.length > 0 && heroFiles[0].file_url) {
-            setHeroImage(heroFiles[0].file_url);
-          }
-        }
-
-        // Filter strictly to PORTFOLIO galleries only (excludes client delivery galleries)
-        const portfolioItems = allGalleries.filter(
-          (g) =>
-            g.category &&
-            g.category.trim() !== '' &&
-            g.category !== 'SETTINGS' &&
-            g.category !== 'ABOUT' &&
-            g.category.toLowerCase().trim() !== 'delivery'
+        // 3. Portfolio items - strictly exclude delivery galleries
+        const rawPortfolioItems = allGalleries.filter(
+          g => g.category && 
+               g.category.trim() !== '' && 
+               g.category.toLowerCase() !== 'delivery' &&
+               g.category !== 'SETTINGS' && 
+               g.category !== 'ABOUT'
         );
 
+        // Prioritize Tamu Hotel, Lamu, Kilele House at the top
+        const priorityOrder = ['tamu hotel', 'lamu', 'kilele house', 'kilelele house'];
+
+        const sortedItems = [...rawPortfolioItems].sort((a, b) => {
+          let nameA = a.client_name.trim().toLowerCase();
+          let nameB = b.client_name.trim().toLowerCase();
+          if (nameA === 'rafiki hotel') nameA = 'tamu hotel';
+          if (nameB === 'rafiki hotel') nameB = 'tamu hotel';
+
+          const indexA = priorityOrder.indexOf(nameA);
+          const indexB = priorityOrder.indexOf(nameB);
+
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        // Fetch cover image for each portfolio gallery
         const enrichedGalleries = await Promise.all(
-          portfolioItems.map(async (gallery) => {
+          sortedItems.map(async (gallery) => {
             const { data: files } = await supabase
               .from('files')
               .select('file_url, file_type')
@@ -206,20 +185,24 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               .order('created_at', { ascending: false })
               .limit(1);
 
+            let cleanName = gallery.client_name;
+            if (cleanName === 'RAFIKI HOTEL') cleanName = 'Tamu Hotel';
+
+            const rawCover = files && files.length > 0 ? files[0].file_url : null;
+
             return {
               ...gallery,
-              baseCategory: (
-                gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || ''
-              ).toUpperCase(),
-              coverUrl: files && files.length > 0 ? files[0].file_url : null,
+              client_name: cleanName,
+              baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
+              coverUrl: rawCover,
               coverType: files && files.length > 0 ? files[0].file_type : null,
             };
           })
         );
 
-        setGalleries(enrichedGalleries.filter((g) => g.coverUrl));
+        setGalleries(enrichedGalleries);
       } catch (error) {
-        console.error('Error loading portfolio:', error);
+        console.error("Error loading portfolio:", error);
       } finally {
         setLoading(false);
       }
@@ -228,1112 +211,430 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     fetchPortfolio();
   }, [photographerId]);
 
-  // Handle ESC key for menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') setIsMenuOpen(false);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleCategorySelect = (e: React.MouseEvent, category: string) => {
-    e.preventDefault();
-    setSearchParams({ category });
-    setMenuOpen(false);
-    document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+  const handleCategorySelect = (cat: string) => {
+    if (cat === 'ALL') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: cat });
+    }
   };
 
-  const filteredGalleries = selectedCategory
-    ? galleries.filter((g) =>
-        g.baseCategory?.toLowerCase().includes(selectedCategory.toLowerCase())
-      )
-    : galleries;
+  const categories = [
+    { label: 'ALL', value: 'ALL' },
+    { label: 'HOSPITALITY', value: 'AIRBNB' },
+    { label: 'PLACES & PORTRAITS', value: 'PLACES' },
+    { label: 'PORTRAITS', value: 'PORTRAITS' },
+    { label: 'WEDDINGS', value: 'WEDDING' },
+    { label: 'COUPLES', value: 'COUPLES' },
+    { label: 'FILMS', value: 'FILMS' },
+  ];
+
+  const filteredGalleries = selectedCategory === 'ALL'
+    ? galleries
+    : galleries.filter(g => {
+        const cat = (g.baseCategory || '').toUpperCase();
+        const sel = selectedCategory.toUpperCase();
+        if (sel === 'AIRBNB' || sel === 'HOSPITALITY') {
+          return cat.includes('AIRBNB') || cat.includes('HOSPITALITY');
+        }
+        if (sel === 'PLACES') {
+          return cat.includes('PLACES');
+        }
+        return cat.includes(sel);
+      });
+
+  // Hero Background image: prioritize configured hero image or top portfolio gallery image
+  const firstPortfolioCover = galleries.find(g => g.coverUrl)?.coverUrl || null;
+  const heroBg = heroImageUrl || firstPortfolioCover;
+
+  // About image: prioritize configured about image or top portrait portfolio image
+  const firstPortraitCover = galleries.find(g => g.baseCategory?.includes('PORTRAIT') && g.coverUrl)?.coverUrl || firstPortfolioCover;
+  const aboutImageSrc = aboutGallery?.coverUrl || firstPortraitCover;
 
   return (
-    <div className="mwabonje-wrapper">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>{settings.brandName} — Photography & Film, Kenyan Coast</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
-        <style>{`
-          :root {
-            --ink: #0E1310;
-            --ink-soft: #161C18;
-            --paper: #F3EEE4;
-            --paper-dim: #E9E2D2;
-            --gold: #B9922F;
-            --teal: #1F3D39;
-            --line-dark: rgba(243,238,228,.14);
-            --line-light: rgba(14,19,16,.14);
-          }
-          .mwabonje-wrapper {
-            background: var(--ink);
-            color: var(--paper);
-            font-family: 'Inter', sans-serif;
-            font-weight: 400;
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
-            overflow-x: hidden;
-            width: 100%;
-          }
-          .mwabonje-wrapper * { box-sizing: border-box; }
-          .mwabonje-wrapper a { color: inherit; text-decoration: none; }
-          .mwabonje-wrapper .serif {
-            font-family: 'Fraunces', serif;
-            font-optical-sizing: auto;
-          }
-          .mwabonje-wrapper .mono-tag {
-            font-family: 'Inter', sans-serif;
-            font-size: .7rem;
-            letter-spacing: .06em;
-            color: var(--gold);
-            font-variant-numeric: tabular-nums;
-          }
-          /* NAV */
-          .mwabonje-header {
-            position: sticky;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            padding: 1.4rem clamp(1.25rem, 4vw, 3rem);
-            background: var(--paper);
-            color: var(--ink);
-            border-bottom: 1px solid rgba(14,19,16,0.06);
-          }
-          .header-layout {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          .brand-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            color: var(--ink);
-            text-decoration: none;
-          }
-          .m-circle {
-            width: 36px;
-            height: 36px;
-            border: 1px solid var(--ink);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            font-style: italic;
-          }
-          .brand-text {
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            font-size: 0.8rem;
-          }
-          .primary-nav {
-            display: flex;
-            align-items: center;
-            gap: clamp(1.5rem, 2.5vw, 2.5rem);
-          }
-          .nav-dropdown {
-            position: relative;
-            padding: 1.5rem 0;
-            margin: -1.5rem 0;
-          }
-          .nav-dropdown-content {
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            background: var(--paper);
-            min-width: 180px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border: 1px solid rgba(14,19,16,0.06);
-            display: flex;
-            flex-direction: column;
-            padding: 0.5rem 0;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            z-index: 1000;
-          }
-          .nav-dropdown:hover .nav-dropdown-content {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0);
-          }
-          .nav-dropdown-content a {
-            padding: 0.8rem 1.5rem;
-            font-size: 0.7rem;
-            width: 100%;
-            text-align: left;
-            display: block;
-          }
-          .nav-dropdown-content a:hover {
-            background: rgba(14,19,16,0.03);
-            color: var(--ink);
-          }
-          .primary-nav > a, .nav-dropdown > a {
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            color: rgba(14,19,16,.65);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            transition: color 0.2s ease;
-            position: relative;
-          }
-          .primary-nav > a::after, .nav-dropdown > a::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            transform: scaleX(0);
-            height: 1px;
-            bottom: -4px;
-            left: 0;
-            background-color: var(--ink);
-            transform-origin: bottom right;
-            transition: transform 0.3s ease;
-          }
-          .primary-nav > a:hover::after, .nav-dropdown > a:hover::after,
-          .primary-nav > a.active::after, .nav-dropdown > a.active::after {
-            transform: scaleX(1);
-            transform-origin: bottom left;
-          }
-          .primary-nav > a.active, .nav-dropdown > a.active {
-            color: var(--ink);
-          }
-          .primary-nav > a:hover, .nav-dropdown > a:hover {
-            color: var(--ink);
-          }
-          .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-          }
-          .enquire-btn {
-            border: 1px solid var(--ink);
-            padding: 0.65rem 1.6rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            color: var(--ink);
-            text-decoration: none;
-            transition: background 0.3s ease, color 0.3s ease;
-          }
-          .enquire-btn:hover {
-            background: var(--ink);
-            color: var(--paper);
-          }
-          .mobile-menu-btn {
-            display: none;
-          }
-          .mobile-menu-btn .bars {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            cursor: pointer;
-          }
-          .mobile-menu-btn .bars span {
-            width: 22px; height: 1px; background: var(--ink);
-          }
-          .mwabonje-wrapper .subtle-spinner {
-            width: 24px;
-            height: 24px;
-            border: 2px solid rgba(243,238,228,.15);
-            border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spinner 0.8s linear infinite;
-          }
-          @keyframes spinner {
-            to { transform: rotate(360deg); }
-          }
-          /* HERO */
-          .mwabonje-hero {
-            position: relative;
-            min-height: calc(100svh - 85px);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: clamp(60px, 8vh, 120px) clamp(1.25rem, 4vw, 3rem) clamp(1.5rem, 4vh, 3.5rem);
-            overflow: hidden;
-          }
-          .mwabonje-wrapper .hero-bg {
-            position: absolute; inset: 0;
-            background:
-              radial-gradient(circle at 22% 30%, rgba(185,146,47,.16), transparent 45%),
-              radial-gradient(circle at 78% 70%, rgba(31,61,57,.5), transparent 55%),
-              linear-gradient(180deg, #0A0E0C 0%, #10160F 55%, #0E1310 100%);
-          }
-          .mwabonje-wrapper .hero-bg::after {
-            content: '';
-            position: absolute; inset: 0;
-            background-image: repeating-linear-gradient(115deg, rgba(243,238,228,.025) 0px, rgba(243,238,228,.025) 1px, transparent 1px, transparent 90px);
-            opacity: .6;
-          }
-          .mwabonje-wrapper .hero-content {
-            position: relative;
-            z-index: 2;
-          }
-          .mwabonje-wrapper .hero-eyebrow {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            margin-bottom: 1.5rem;
-            color: rgba(243,238,228,.55);
-            font-size: .85rem;
-          }
-          .mwabonje-wrapper .hero-eyebrow .dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--gold);
-            animation: pulse 2.4s ease-in-out infinite;
-          }
-          @keyframes pulse {
-            0%, 100% { opacity: .4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.3); }
-          }
-          .mwabonje-wrapper h1.hero-title {
-            font-weight: 400;
-            line-height: .92;
-            font-size: clamp(3.2rem, min(8vw, 16vh), 8.5rem);
-            letter-spacing: -.01em;
-            margin: 0;
-          }
-          .mwabonje-wrapper h1.hero-title em {
-            font-style: italic;
-            font-weight: 300;
-            color: var(--gold);
-          }
-          .mwabonje-wrapper .hero-foot {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-top: clamp(1.5rem, 4vh, 2.5rem);
-            padding-top: clamp(1rem, 3vh, 1.75rem);
-            border-top: 1px solid var(--line-dark);
-            gap: clamp(1rem, 2vh, 2rem);
-            flex-wrap: wrap;
-          }
-          .mwabonje-wrapper .hero-foot p {
-            max-width: 65ch;
-            font-size: .95rem;
-            line-height: 1.55;
-            color: rgba(243,238,228,.7);
-            margin: 0;
-          }
-          @keyframes subtle-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(5px); }
-          }
-          .mwabonje-wrapper .scroll-cue {
-            font-size: .75rem;
-            color: rgba(243,238,228,.5);
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: color 0.3s;
-          }
-          .mwabonje-wrapper .scroll-cue:hover {
-            color: rgba(243,238,228,.9);
-          }
-          .mwabonje-wrapper .scroll-cue .bounce-chevron {
-            animation: subtle-bounce 2s infinite ease-in-out;
-            color: var(--gold);
-          }
-          /* INDEX */
-          .mwabonje-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-          }
-          .mwabonje-index {
-            background: var(--paper);
-            color: var(--ink);
-            padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
-          }
-          .mwabonje-wrapper .index-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 2rem;
-            margin-bottom: clamp(2.5rem, 6vw, 4rem);
-            border-bottom: 1px solid var(--line-light);
-            padding-bottom: 1.75rem;
-            flex-wrap: wrap;
-          }
-          .mwabonje-wrapper .index-head h2 {
-            font-size: clamp(1.9rem, 4vw, 2.6rem);
-            font-weight: 400;
-            margin: 0;
-          }
-          .mwabonje-wrapper .index-head .count {
-            font-size: .85rem;
-            color: rgba(14,19,16,.55);
-            max-width: 32ch;
-            text-align: right;
-            margin: 0;
-          }
-          .mwabonje-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 1.5rem;
-          }
-          .mwabonje-card {
-            position: relative;
-            border-radius: 2px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            min-height: 420px;
-            padding: 1.5rem;
-            color: var(--paper) !important;
-            transition: transform 0.3s ease;
-            text-decoration: none !important;
-          }
-          .mwabonje-card:hover {
-            transform: translateY(-4px);
-          }
-          .mwabonje-card .label {
-            position: relative; z-index: 2;
-          }
-          .mwabonje-card .place {
-            font-family: 'Fraunces', serif;
-            font-size: 1.6rem;
-            margin-bottom: .4rem;
-            text-transform: capitalize;
-          }
-          .mwabonje-card .coords {
-            font-size: .72rem;
-            color: var(--gold);
-            letter-spacing: .03em;
-          }
-          .mwabonje-card::before {
-            content: '';
-            position: absolute; inset: 0;
-            z-index: 1;
-          }
-          .mwabonje-card.c1,
-          .mwabonje-card.c2,
-          .mwabonje-card.c3,
-          .mwabonje-card.c4,
-          .mwabonje-card.c5 {
-            grid-column: span 6;
-          }
-          .mwabonje-card .tag {
-            position: absolute; top: 1.25rem; right: 1.25rem; z-index: 2;
-            font-size: .68rem;
-            color: rgba(243,238,228,.7);
-            border: 1px solid rgba(243,238,228,.25);
-            padding: .3rem .7rem;
-            border-radius: 999px;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(4px);
-          }
-          /* ABOUT ME */
-          .mwabonje-about {
-            background: var(--paper);
-            color: var(--ink);
-            padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 3rem);
-          }
-          .about-me-grid {
-            display: grid;
-            grid-template-columns: 0.9fr 1.1fr;
-            gap: clamp(3rem, 8vw, 6rem);
-            align-items: center;
-          }
-          .about-me-image {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4/5;
-            border-radius: 2px;
-            overflow: hidden;
-          }
-          .about-me-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-          }
-          .about-me-content h2 {
-            font-size: clamp(2.5rem, 5vw, 4.2rem);
-            line-height: 1.05;
-            margin-bottom: 2rem;
-            font-weight: 400;
-          }
-          .about-me-content .about-text {
-            font-size: clamp(1rem, 1.5vw, 1.1rem);
-            line-height: 1.75;
-            color: rgba(14,19,16,.75);
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
-            margin-bottom: 2.5rem;
-            max-width: 50ch;
-          }
-          .about-me-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: .8rem 1.8rem;
-            border: 1px solid var(--ink);
-            border-radius: 999px;
-            font-size: .9rem;
-            transition: background .3s ease, color .3s ease;
-          }
-          .about-me-btn:hover {
-            background: var(--ink);
-            color: var(--paper);
-          }
-          /* STRIP */
-          .mwabonje-strip {
-            background: var(--paper-dim);
-            color: var(--ink);
-            padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
-            border-top: 1px solid var(--line-light);
-          }
-          .strip-grid {
-            display: grid;
-            grid-template-columns: 1.1fr 1fr;
-            gap: 3rem;
-          }
-          .mwabonje-strip h3 {
-            font-family: 'Fraunces', serif;
-            font-weight: 400;
-            font-size: clamp(1.8rem, 3.2vw, 2.4rem);
-            line-height: 1.25;
-            max-width: 16ch;
-            margin: 0;
-          }
-          .mwabonje-strip .services {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-          }
-          .mwabonje-strip .services a {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--line-light);
-            font-size: 1.05rem;
-          }
-          .mwabonje-strip .services a:first-child {
-            border-top: 1px solid var(--line-light);
-          }
-          .mwabonje-strip .services span.n {
-            font-size: .75rem;
-            color: rgba(14,19,16,.45);
-            font-family: 'Inter', sans-serif;
-          }
-          /* FOOTER */
-          .mwabonje-footer {
-            background: var(--ink);
-            padding: clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 4vw, 3rem) 2rem;
-          }
-          .mwabonje-wrapper .footer-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 2rem;
-            flex-wrap: wrap;
-            padding-bottom: 2.5rem;
-            border-bottom: 1px solid var(--line-dark);
-          }
-          .mwabonje-wrapper .footer-top .serif {
-            font-size: clamp(2rem, 5vw, 3.2rem);
-          }
-          .mwabonje-wrapper .footer-links {
-            display: flex;
-            gap: 2.5rem;
-          }
-          .mwabonje-wrapper .footer-links a {
-            font-size: .9rem;
-            color: rgba(243,238,228,.75);
-            display: block;
-          }
-          .mwabonje-wrapper .footer-links a:hover { color: var(--gold); }
-          .mwabonje-wrapper .footer-bottom {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 1.5rem;
-            font-size: .78rem;
-            color: rgba(243,238,228,.45);
-            flex-wrap: wrap;
-            gap: .75rem;
-          }
-          /* OVERLAY */
-          .mwabonje-overlay {
-            position: fixed; inset: 0;
-            z-index: 200;
-            background: #0E1310;
-            padding: clamp(1.25rem, 4vw, 3rem);
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-12px);
-            transition: opacity .35s ease, transform .35s ease;
-          }
-          .mwabonje-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-          }
-          .mwabonje-wrapper .overlay-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
-          }
-          .mwabonje-wrapper .close-btn {
-            cursor: pointer;
-            font-size: .9rem;
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            border: 1px solid var(--line-dark);
-            padding: .5rem 1.1rem;
-            border-radius: 999px;
-          }
-          .mwabonje-wrapper .overlay-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2.5rem 2rem;
-            flex: 1;
-          }
-          .mwabonje-wrapper .overlay-group .group-label {
-            font-size: .72rem;
-            color: var(--gold);
-            letter-spacing: .04em;
-            margin-bottom: 1.1rem;
-            padding-bottom: .9rem;
-            border-bottom: 1px solid var(--line-dark);
-          }
-          .mwabonje-wrapper .overlay-group a {
-            display: block;
-            font-family: 'Fraunces', serif;
-            font-size: clamp(1.3rem, 2.2vw, 1.7rem);
-            padding: .5rem 0;
-            color: rgba(243,238,228,.82);
-            transition: color .2s ease, transform .2s ease;
-          }
-          .mwabonje-wrapper .overlay-group a:hover {
-            color: var(--paper);
-            transform: translateX(6px);
-          }
-          .mwabonje-wrapper .overlay-foot {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--line-dark);
-            display: flex;
-            justify-content: space-between;
-            font-size: .85rem;
-            color: rgba(243,238,228,.5);
-            flex-wrap: wrap;
-            gap: 1rem;
-          }
-          /* RESPONSIVE */
-          @media (max-width: 860px) {
-            .primary-nav { display: none; }
-            .enquire-btn { display: none; }
-            .mobile-menu-btn { display: block; }
-            .mwabonje-grid { grid-template-columns: repeat(1, 1fr); }
-            .mwabonje-card.c1,
-            .mwabonje-card.c2,
-            .mwabonje-card.c3,
-            .mwabonje-card.c4,
-            .mwabonje-card.c5 { grid-column: span 1; min-height: 340px; }
-            .strip-grid { grid-template-columns: 1fr; }
-            .mwabonje-wrapper .overlay-grid { grid-template-columns: repeat(2, 1fr); }
-            .about-me-grid { grid-template-columns: 1fr; }
-            .about-me-image { aspect-ratio: 1/1; }
-          }
-          @media (max-width: 520px) {
-            .mwabonje-wrapper .overlay-grid { grid-template-columns: 1fr; }
-            .mwabonje-wrapper .hero-foot { flex-direction: column; align-items: flex-start; }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .mwabonje-wrapper { scroll-behavior: auto; }
-            .mwabonje-wrapper .hero-eyebrow .dot { animation: none; }
-            .mwabonje-wrapper * { transition: none !important; }
-          }
-        `}</style>
+        <title>{settings.brandName} — East African Photography & Film, Kenyan Coast</title>
+        <meta name="description" content="East African photographer based in Malindi and Lamu specializing in hospitality, portraits, weddings, and documentary visual storytelling." />
       </Helmet>
 
-      {/* Scroll indicator bar */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: 'transparent',
-          zIndex: 9999,
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            background: 'var(--gold, #B9922F)',
-            width: `${scrollProgress * 100}%`,
-            transformOrigin: 'left',
-            transition: 'width 0.1s ease-out',
-          }}
-        />
-      </div>
+      {/* Modern Editorial Header */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 group">
+            <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 group-hover:text-slate-600 transition-colors">
+              {settings.brandName}
+            </span>
+          </Link>
 
-      {/* Header */}
-      <header className="mwabonje-header">
-        <div className="mwabonje-container header-layout">
-          <a href="#" className="brand-logo">
-            <div className="m-circle serif">{settings.brandName.charAt(0)}</div>
-            <span className="brand-text">{settings.brandName}</span>
-          </a>
-
-          <nav className="primary-nav">
-            <a
-              href="#"
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600">
+            <a 
+              href="#work" 
               onClick={(e) => {
                 e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+              }} 
+              className="hover:text-slate-950 transition-colors"
             >
-              HOME
+              Portfolio
             </a>
-            <div className="nav-dropdown">
-              <a
-                href="#work"
-                className="active"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                PORTFOLIO
-              </a>
-              <div className="nav-dropdown-content">
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
-                  COUPLES
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
-                  PORTRAITS
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Wedding')}>
-                  WEDDING
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
-                  EVENTS
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'NSSF')}>
-                  NSSF
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
-                  HOSPITALITY
-                </a>
-                <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
-                  PLACES & DETAILS
-                </a>
-              </div>
-            </div>
-            <a
-              href="#films"
+            <a 
+              href="#films" 
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById('films')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+                handleCategorySelect('FILMS');
+                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+              }} 
+              className="hover:text-slate-950 transition-colors"
             >
-              FILMS
+              Films
             </a>
-            <a
-              href="#about-me"
+            <Link to="/prints" className="hover:text-slate-950 transition-colors">
+              Prints
+            </Link>
+            <Link to="/blog" className="hover:text-slate-950 transition-colors">
+              Journal
+            </Link>
+            <a 
+              href="#about" 
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+                document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+              }} 
+              className="hover:text-slate-950 transition-colors"
             >
-              ABOUT
+              About
             </a>
-            <Link to="/blog">BLOG</Link>
-            <Link to="/prints">PRINTS</Link>
           </nav>
 
-          <div className="header-actions">
-            <a
-              href={settings.contactLink}
-              className="enquire-btn"
-              target="_blank"
+          {/* Right Action */}
+          <div className="flex items-center gap-4">
+            <a 
+              href={settings.contactLink} 
+              target="_blank" 
               rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 text-white rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 transition-all shadow-sm hover:shadow"
             >
-              ENQUIRE
+              Enquire
             </a>
-            <div className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
-              <div className="bars">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)} 
+              className="md:hidden p-2 text-slate-900 hover:text-slate-600 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
+            <div className="flex flex-col space-y-4 text-xs font-semibold tracking-widest uppercase text-slate-800">
+              <a 
+                href="#work" 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="py-2 border-b border-slate-100"
+              >
+                Portfolio
+              </a>
+              <a 
+                href="#films" 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleCategorySelect('FILMS');
+                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="py-2 border-b border-slate-100"
+              >
+                Films
+              </a>
+              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-100">
+                Prints
+              </Link>
+              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-100">
+                Journal
+              </Link>
+              <a 
+                href="#about" 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="py-2 border-b border-slate-100"
+              >
+                About
+              </a>
+              <a 
+                href={settings.contactLink} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-block text-center mt-2 px-6 py-3 bg-slate-900 text-white rounded-full font-bold"
+              >
+                Book a Session
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="mwabonje-hero">
-        <div
-          className="hero-bg"
-          style={
-            heroImage || (galleries.length > 0 && galleries[0].coverUrl)
-              ? {
-                  backgroundImage: `linear-gradient(180deg, rgba(10,14,12,0.4) 0%, rgba(10,14,12,0.8) 100%), url(${getOptimizedImageUrl(
-                    heroImage || galleries[0].coverUrl!,
-                    1920,
-                    1080,
-                    80
-                  )})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }
-              : {}
-          }
+      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-100 hover:scale-105"
+          style={{ 
+            backgroundImage: heroBg 
+              ? `linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%), url(${getOptimizedImageUrl(heroBg, 1920, 1080, 85)})` 
+              : 'radial-gradient(ellipse at 50% 40%, #1e293b 0%, #0f172a 70%, #020617 100%)'
+          }}
         />
-        <div className="hero-content mwabonje-container">
-          <div className="hero-eyebrow">
-            <span className="dot" />
+        
+        <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] md:text-xs tracking-widest uppercase font-semibold text-white/90 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>{settings.heroLocation}</span>
           </div>
-          <h1
-            className="serif hero-title"
-            dangerouslySetInnerHTML={{
-              __html: settings.heroTitle
-                .replace(/\n/g, '<br/>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>'),
-            }}
-          />
-          <div className="hero-foot">
-            <p>{settings.heroSubtitle}</p>
-            <div
-              className="scroll-cue"
-              onClick={() => {
-                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <ChevronDown className="bounce-chevron" size={18} />
-              Recent work
-            </div>
-          </div>
+
+          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-normal tracking-tight text-white mb-6 leading-[1.1] max-w-3xl">
+            {settings.heroTitle}
+          </h1>
+
+          <p className="font-sans text-sm md:text-lg text-slate-200/90 max-w-2xl font-light leading-relaxed mb-10">
+            {settings.heroSubtitle}
+          </p>
+
+          <button 
+            onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-white/80 hover:text-white transition-colors cursor-pointer group"
+          >
+            <span>Explore Works</span>
+            <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-1" />
+          </button>
         </div>
       </section>
 
-      {/* Work / Portfolio Section */}
-      <section className="mwabonje-index" id="work">
-        <div className="mwabonje-container">
-          <div className="index-head">
-            <h2 className="serif">
-              {selectedCategory ? `${selectedCategory} places` : 'Recent places'}
-              {selectedCategory && (
-                <span
-                  style={{
-                    fontSize: '1rem',
-                    marginLeft: '1rem',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    color: 'rgba(14,19,16,0.6)',
-                  }}
-                  onClick={() => setSearchParams({})}
-                >
-                  (Clear filter)
-                </span>
-              )}
+      {/* Portfolio Showcase Section */}
+      <section id="work" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-slate-100 gap-6">
+          <div>
+            <h2 className="font-serif text-3xl md:text-5xl font-normal text-slate-900 tracking-tight mb-3">
+              Selected Works
             </h2>
-            <p className="count">
-              {filteredGalleries.length > 0
-                ? `${filteredGalleries.length} locations shot over the last season, from lantern-lit courtyards to open water.`
-                : loading
-                ? 'Loading recent places...'
-                : 'No portfolio items found.'}
+            <p className="text-slate-500 text-sm md:text-base max-w-xl">
+              Curated architectural spaces, hospitality retreats, and intimate moments captured along East Africa&apos;s coastline.
             </p>
           </div>
 
-          <div className="mwabonje-grid">
-            {filteredGalleries.map((gallery, idx) => {
-              const colSpanClass = `c${(idx % 5) + 1}`;
+          {/* Filter Categories */}
+          <div className="flex flex-wrap items-center gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => handleCategorySelect(cat.value)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
+                  selectedCategory.toUpperCase() === cat.value.toUpperCase()
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Portfolio Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="aspect-[4/5] bg-slate-100 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : filteredGalleries.length === 0 ? (
+          <div className="text-center py-24 bg-slate-50 rounded-2xl border border-slate-100">
+            <p className="text-slate-500 text-base font-serif italic mb-4">No galleries found in this collection.</p>
+            <button 
+              onClick={() => handleCategorySelect('ALL')}
+              className="text-xs uppercase tracking-widest font-bold text-slate-900 hover:underline"
+            >
+              View All Works
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredGalleries.map((gallery) => {
+              const displayCategory = gallery.baseCategory || 'PHOTOGRAPHY';
+              const slug = generateSlug(gallery.client_name);
+
               return (
                 <Link
                   key={gallery.id}
-                  to={`/${generateSlug(gallery.client_name)}`}
-                  className={`mwabonje-card ${colSpanClass}`}
+                  to={`/${slug}`}
+                  className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100"
                 >
-                  <CardImage gallery={gallery} />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      zIndex: 1,
-                      background:
-                        'linear-gradient(180deg, transparent 30%, rgba(10,14,12,.92) 100%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <span
-                    className="tag"
-                    onClick={(e) =>
-                      handleCategorySelect(e, gallery.baseCategory || 'Photography')
-                    }
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {gallery.baseCategory || 'Photography'}
-                  </span>
-                  <div className="label">
-                    <div className="place serif">{gallery.client_name.toLowerCase()}</div>
-                    <div className="coords">2°16′S 40°54′E — Kenyan Coast</div>
+                  {/* Card Media Image or Video */}
+                  <CardMedia gallery={gallery} />
+
+                  {/* Gentle Gradient Shadow on Lower Half */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none" />
+
+                  {/* Top Badge */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold tracking-widest uppercase text-slate-900 shadow-sm">
+                      {displayCategory}
+                    </span>
+                  </div>
+
+                  {/* Bottom Information */}
+                  <div className="absolute bottom-0 inset-x-0 p-6 z-10 flex items-end justify-between">
+                    <div>
+                      <h3 className="font-serif text-2xl md:text-3xl font-medium text-white tracking-wide group-hover:translate-x-1 transition-transform duration-300">
+                        {gallery.client_name}
+                      </h3>
+                      <p className="text-slate-300 text-xs tracking-wider uppercase mt-1 font-sans">
+                        View Gallery
+                      </p>
+                    </div>
+
+                    <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-slate-900 transition-all duration-300">
+                      <ArrowUpRight className="w-5 h-5" />
+                    </div>
                   </div>
                 </Link>
               );
             })}
           </div>
-        </div>
+        )}
       </section>
 
       {/* About Section */}
-      {aboutGallery && (
-        <section className="mwabonje-about" id="about-me">
-          <div className="mwabonje-container">
-            <div className="about-me-grid">
-              <div
-                className="about-me-image"
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div className="subtle-spinner" style={{ position: 'absolute' }} />
-                <img
-                  src={getOptimizedImageUrl(aboutGallery.coverUrl!, 1000, 1250, 80)}
-                  alt={settings.brandName}
-                  style={{ position: 'relative', zIndex: 1 }}
-                  onLoad={(e) => {
-                    e.currentTarget.style.opacity = '1';
-                    const prev = e.currentTarget.previousElementSibling as HTMLElement;
-                    if (prev) prev.style.opacity = '0';
-                  }}
-                  onError={(e) => {
-                    if (e.currentTarget.src !== aboutGallery.coverUrl) {
-                      e.currentTarget.src = aboutGallery.coverUrl!;
-                    }
-                    e.currentTarget.style.opacity = '1';
-                    const prev = e.currentTarget.previousElementSibling as HTMLElement;
-                    if (prev) prev.style.opacity = '0';
-                  }}
+      <section id="about" className="py-24 bg-slate-50 border-t border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-6 md:px-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Image */}
+            <div className="relative aspect-[3/4] max-w-md mx-auto md:max-w-none w-full rounded-2xl overflow-hidden shadow-xl bg-slate-900 flex items-center justify-center">
+              {aboutImageSrc ? (
+                <img 
+                  src={getOptimizedImageUrl(aboutImageSrc, 900, 1200, 85)}
+                  alt="Michael Mwabonje Ringa"
+                  className="w-full h-full object-cover"
                 />
-              </div>
-              <div className="about-me-content">
-                <h2 className="serif">
-                  Capturing the
-                  <br />
-                  <em>Essence</em> of
-                  <br />
-                  the Moment.
-                </h2>
-                <div className="about-text">
-                  {aboutGallery.title ? (
-                    aboutGallery.title.split('\n\n').map((para, i) => <p key={i}>{para}</p>)
-                  ) : (
-                    <>
-                      <p>
-                        I am an East African photographer specializing in hospitality, portraits,
-                        and documentary visual storytelling.
-                      </p>
-                      <p>
-                        For me, photography is more than just clicking a button; it is about
-                        preserving fleeting moments, translating emotions into visuals, and
-                        crafting narratives that transcend time.
-                      </p>
-                      <p>Available for travel worldwide. Let's create something beautiful together.</p>
-                    </>
-                  )}
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 p-8 text-center text-white">
+                  <span className="font-serif text-3xl font-light tracking-wide text-slate-200">
+                    MWABONJE
+                  </span>
+                  <span className="text-xs uppercase tracking-widest text-slate-400 mt-2">
+                    Studio & Field
+                  </span>
                 </div>
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="space-y-6">
+              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                About the Photographer
+              </span>
+              <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-slate-900 leading-tight">
+                Preserving fleeting moments, translating emotions into visuals.
+              </h2>
+              
+              <div className="space-y-4 text-slate-600 leading-relaxed text-sm md:text-base font-light">
+                {aboutGallery?.title ? (
+                  aboutGallery.title.split('\n').filter(Boolean).map((paragraph, i) => (
+                    <p key={i}>{paragraph}</p>
+                  ))
+                ) : (
+                  <>
+                    <p>
+                      I am Michael Mwabonje Ringa, an East African photographer based in Malindi specializing in hospitality, portraits, weddings, and documentary visual storytelling.
+                    </p>
+                    <p>
+                      My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it. For me, photography is more than just clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.
+                    </p>
+                    <p>
+                      Available for travel worldwide. Let&apos;s create something timeless together.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-4 flex flex-wrap gap-4">
                 <a
                   href={settings.contactLink}
-                  className="about-me-btn"
                   target="_blank"
                   rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 transition-all shadow-md"
                 >
-                  Book a Session
+                  <span>Book a Session</span>
+                  <ArrowRight className="w-4 h-4" />
                 </a>
+                <Link
+                  to="/prints"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-white border border-slate-200 text-slate-800 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all"
+                >
+                  <span>Browse Fine Art Prints</span>
+                </Link>
               </div>
             </div>
-          </div>
-        </section>
-      )}
-
-      {/* Studio Strip */}
-      <section className="mwabonje-strip" id="about">
-        <div className="mwabonje-container strip-grid">
-          <h3 className="serif">
-            Studio work spanning couples, hospitality, and the coast itself.
-          </h3>
-          <div className="services">
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
-              <span>Couples & weddings</span>
-              <span className="n">01</span>
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
-              <span>Hospitality & hotels</span>
-              <span className="n">02</span>
-            </a>
-            <a
-              href="#films"
-              id="films"
-              onClick={(e) => {
-                e.preventDefault();
-                handleCategorySelect(e, 'Films');
-              }}
-            >
-              <span>Film & documentary</span>
-              <span className="n">03</span>
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
-              <span>Portraits & events</span>
-              <span className="n">04</span>
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
-              <span>Places & details</span>
-              <span className="n">05</span>
-            </a>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="mwabonje-footer" id="contact">
-        <div className="mwabonje-container">
-          <div className="footer-top">
-            <span className="serif">
-              Let's shoot
-              <br />
-              something.
+      {/* Editorial Footer */}
+      <footer className="bg-slate-950 text-white py-20 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10 pb-12 border-b border-white/10">
+          <div>
+            <span className="font-serif text-3xl font-bold tracking-widest text-white">
+              {settings.brandName}
             </span>
-            <div className="footer-links">
-              {settings.instagramLink && (
-                <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer">
-                  Instagram
-                </a>
-              )}
-              {settings.tiktokLink && (
-                <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer">
-                  TikTok
-                </a>
-              )}
-              <a
-                href="https://wa.me/254705268604"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                WhatsApp
+            <p className="text-slate-400 text-xs tracking-wider uppercase mt-2">
+              East African Photography &amp; Film Studio
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
+            {settings.instagramLink && (
+              <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                Instagram
               </a>
-            </div>
+            )}
+            {settings.tiktokLink && (
+              <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                TikTok
+              </a>
+            )}
+            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+              WhatsApp
+            </a>
+            {settings.footerEmail && (
+              <a href={`mailto:${settings.footerEmail}`} className="hover:text-white transition-colors">
+                Email
+              </a>
+            )}
           </div>
-          <div className="footer-bottom">
-            <span>
-              © {new Date().getFullYear()} {settings.brandName} Photography, All Rights Reserved
-            </span>
-            <span>Mombasa & Lamu, Kenya</span>
-          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+          <p>© {new Date().getFullYear()} {settings.brandName} Photography. All Rights Reserved.</p>
+          <p>Mombasa, Lamu &amp; Malindi, Kenya</p>
         </div>
       </footer>
-
-      {/* Overlay Menu */}
-      <div className={`mwabonje-overlay ${menuOpen ? 'open' : ''}`}>
-        <div className="overlay-head">
-          <span className="wordmark serif">{settings.brandName}</span>
-          <div className="close-btn" onClick={() => setMenuOpen(false)}>
-            <span>Close</span>
-            <div className="bars">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        </div>
-        <div className="overlay-grid">
-          <div className="overlay-group">
-            <div className="group-label">People</div>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Couples')}>
-              Couples
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
-              Portraits
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Wedding')}>
-              Wedding
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Events')}>
-              Events
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'NSSF')}>
-              NSSF
-            </a>
-          </div>
-          <div className="overlay-group">
-            <div className="group-label">Places</div>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Airbnb')}>
-              Hospitality
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Places')}>
-              Places & details
-            </a>
-            <a href="#work" onClick={(e) => handleCategorySelect(e, 'Portraits')}>
-              Places & portraits
-            </a>
-          </div>
-          <div className="overlay-group">
-            <div className="group-label">Studio</div>
-            <a
-              href="#work"
-              onClick={(e) => {
-                handleCategorySelect(e, 'Films');
-              }}
-            >
-              Films
-            </a>
-            <a
-              href="#about-me"
-              onClick={() => {
-                setMenuOpen(false);
-                document.getElementById('about-me')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              About
-            </a>
-            <a
-              href={settings.contactLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMenuOpen(false)}
-            >
-              Contact
-            </a>
-          </div>
-        </div>
-        <div className="overlay-foot">
-          <span>Mombasa & Lamu, Kenya</span>
-          <span>{settings.footerEmail}</span>
-        </div>
-      </div>
     </div>
   );
 }

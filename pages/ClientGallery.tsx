@@ -32,6 +32,7 @@ import {
   getOptimizedImageUrl,
   rewriteUrlToR2,
 } from "../utils/formatters";
+import { getThemedLookbookImages } from "../utils/portfolioImages";
 import { SEO } from "../components/SEO";
 // @ts-ignore
 import JSZip from "jszip";
@@ -1943,16 +1944,27 @@ export const ClientGallery: React.FC = () => {
                           fetchPriority={index < 4 ? "high" : "auto"}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            if (!target.dataset.retried) {
-                              target.dataset.retried = "true";
-                              const directUrl = rewriteUrlToR2(file.file_url) || "";
-                              if (directUrl && directUrl !== target.src) {
-                                target.src = directUrl;
+                            const skeleton = document.getElementById(`skeleton-${file.id}`);
+                            if (skeleton) skeleton.style.display = 'none';
+
+                            if (isPortfolio) {
+                              const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
+                              const fallbackPhoto = lookbook[index % lookbook.length];
+                              if (target.src !== fallbackPhoto) {
+                                target.src = fallbackPhoto;
+                              }
+                            } else {
+                              if (!target.dataset.retried) {
+                                target.dataset.retried = "true";
+                                const directUrl = rewriteUrlToR2(file.file_url) || "";
+                                if (directUrl && directUrl !== target.src) {
+                                  target.src = directUrl;
+                                } else {
+                                  setFailedFileIds((prev) => new Set(prev).add(file.id));
+                                }
                               } else {
                                 setFailedFileIds((prev) => new Set(prev).add(file.id));
                               }
-                            } else {
-                              setFailedFileIds((prev) => new Set(prev).add(file.id));
                             }
                           }}
                           onContextMenu={(e) => e.preventDefault()}
@@ -2731,7 +2743,17 @@ export const ClientGallery: React.FC = () => {
                   }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.dataset.retried) {
+                    const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
+                    if (loader) loader.style.display = 'none';
+
+                    if (isPortfolio) {
+                      const idx = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
+                      const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
+                      const fallbackPhoto = lookbook[Math.max(0, idx) % lookbook.length];
+                      if (target.src !== fallbackPhoto) {
+                        target.src = fallbackPhoto;
+                      }
+                    } else if (!target.dataset.retried) {
                       target.dataset.retried = "true";
                       // Fallback to original image if watermarked version fails
                       target.src = rewriteUrlToR2(lightboxFile.file_url) || "";
@@ -2971,6 +2993,15 @@ export const ClientGallery: React.FC = () => {
                     )}
                     alt=""
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      if (isPortfolio) {
+                        const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
+                        const fallbackPhoto = lookbook[index % lookbook.length];
+                        if (e.currentTarget.src !== fallbackPhoto) {
+                          e.currentTarget.src = fallbackPhoto;
+                        }
+                      }
+                    }}
                   />
                 </button>
               ))}

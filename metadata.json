@@ -1,5 +1,8 @@
 {
   "name": "Mwabonje",
   "description": "Secure, time-limited client gallery delivery system for professional photographers.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

@@ -796,8 +796,8 @@ export const Dashboard: React.FC = () => {
                     className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
                   />
                 </div>
-                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> New Gallery
+                <button onClick={() => { setNewCategory('Hospitality'); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> New Portfolio Gallery
                 </button>
               </div>
             </div>
