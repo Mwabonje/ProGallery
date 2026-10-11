@@ -67,6 +67,29 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
   );
 };
 
+const renderHeroTitle = (title: string) => {
+  if (!title) return null;
+  const lines = title.split('\n');
+  return lines.map((line, lineIdx) => {
+    const parts = line.split(/(\*[^*]+\*)/g);
+    return (
+      <React.Fragment key={lineIdx}>
+        {lineIdx > 0 && <br />}
+        {parts.map((part, partIdx) => {
+          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+            return (
+              <em key={partIdx} className="italic font-serif font-light">
+                {part.slice(1, -1)}
+              </em>
+            );
+          }
+          return part;
+        })}
+      </React.Fragment>
+    );
+  });
+};
+
 export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
@@ -77,9 +100,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   const [settings, setSettings] = useState({
     brandName: "MWABONJE",
-    heroLocation: "Lamu · Watamu · Mombasa",
-    heroTitle: "Hospitality, Portraits & Documentary Photography",
-    heroSubtitle: "Capturing light, architecture, and authentic coastal visual stories along the Kenyan coast.",
+    heroLocation: "Malindi · Watamu · Lamu",
+    heroTitle: "Visual Storyteller\n& *Lifestyle* Photographer",
+    heroSubtitle: "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.",
     contactLink: "https://mwabonjebooking.netlify.app/",
     footerEmail: "hello@mwabonje.studio",
     instagramLink: "https://www.instagram.com/mwabonje_/",
@@ -109,6 +132,22 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           if (settingsGal.title) {
             try {
               const parsed = JSON.parse(settingsGal.title);
+              // Migrate or upgrade old "Salt, light" title to the requested "Visual Storyteller & Lifestyle Photographer"
+              if (!parsed.heroTitle || parsed.heroTitle.includes('Salt, light') || parsed.heroTitle.includes('*slow*') || parsed.heroTitle === 'Hospitality, Portraits & Documentary Photography') {
+                parsed.heroTitle = "Visual Storyteller\n& *Lifestyle* Photographer";
+                if (!parsed.heroSubtitle || (parsed.heroSubtitle.includes('quiet architecture') && !parsed.heroSubtitle.includes('lifestyle'))) {
+                  parsed.heroSubtitle = "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.";
+                }
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                  if (session?.user?.id) {
+                    supabase
+                      .from('galleries')
+                      .update({ title: JSON.stringify(parsed), link_enabled: true })
+                      .eq('id', settingsGal.id)
+                      .then(() => {});
+                  }
+                }).catch(() => {});
+              }
               setSettings(prev => ({ ...prev, ...parsed }));
               if (parsed.heroImageUrl) {
                 setHeroImageUrl(parsed.heroImageUrl);
@@ -287,8 +326,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>{settings.brandName} — East African Photography & Film, Kenyan Coast</title>
-        <meta name="description" content="East African photographer based in Malindi and Lamu specializing in hospitality, portraits, weddings, and documentary visual storytelling." />
+        <title>{settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast</title>
+        <meta name="description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
       </Helmet>
 
       {/* Modern Editorial Header */}
@@ -435,7 +474,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           </div>
 
           <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-normal tracking-tight text-white mb-6 leading-[1.1] max-w-3xl">
-            {settings.heroTitle}
+            {renderHeroTitle(settings.heroTitle)}
           </h1>
 
           <p className="font-sans text-sm md:text-lg text-slate-200/90 max-w-2xl font-light leading-relaxed mb-10">
@@ -587,7 +626,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 ) : (
                   <>
                     <p>
-                      I am Michael Mwabonje Ringa, an East African photographer based in Malindi specializing in hospitality, portraits, weddings, and documentary visual storytelling.
+                      I am Michael Mwabonje Ringa, an East African visual storyteller and lifestyle photographer based in Malindi, capturing hospitality, portraits, weddings, and authentic coastal narratives.
                     </p>
                     <p>
                       My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it. For me, photography is more than just clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.

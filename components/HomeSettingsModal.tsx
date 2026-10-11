@@ -14,9 +14,9 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
     
     const [settings, setSettings] = useState({
         brandName: "MWABONJE",
-        heroLocation: "Lamu · Shela · Mombasa",
-        heroTitle: "Salt, light\n& *slow* hours",
-        heroSubtitle: "Photography and film on the Kenyan coast — hospitality, weddings, and the quiet architecture of the places in between.",
+        heroLocation: "Malindi · Watamu · Lamu",
+        heroTitle: "Visual Storyteller\n& *Lifestyle* Photographer",
+        heroSubtitle: "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.",
         contactLink: "https://mwabonjebooking.netlify.app/",
         footerEmail: "hello@mwabonje.studio",
         instagramLink: "https://www.instagram.com/mwabonje_/",
@@ -44,6 +44,15 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                     if (gal.title) {
                         try {
                             const parsed = JSON.parse(gal.title);
+                            if (!parsed.heroTitle || parsed.heroTitle.includes('Salt, light') || parsed.heroTitle.includes('*slow*') || parsed.heroTitle === 'Hospitality, Portraits & Documentary Photography') {
+                                parsed.heroTitle = "Visual Storyteller\n& *Lifestyle* Photographer";
+                                parsed.heroSubtitle = "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.";
+                                supabase
+                                    .from('galleries')
+                                    .update({ title: JSON.stringify(parsed), link_enabled: true })
+                                    .eq('id', gal.id)
+                                    .then(() => {});
+                            }
                             setSettings(prev => ({ ...prev, ...parsed }));
                             if (parsed.heroImageUrl) {
                                 setCoverUrl(parsed.heroImageUrl);

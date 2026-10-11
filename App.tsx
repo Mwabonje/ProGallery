@@ -40,6 +40,28 @@ const App: React.FC = () => {
             .in('category', ['SETTINGS', 'ABOUT'])
             .eq('link_enabled', false)
             .then(() => {});
+
+          supabase
+            .from('galleries')
+            .select('id, title')
+            .eq('photographer_id', session.user.id)
+            .eq('category', 'SETTINGS')
+            .then(({ data: gals }) => {
+              if (gals && gals.length > 0) {
+                for (const g of gals) {
+                  if (g.title) {
+                    try {
+                      const p = JSON.parse(g.title);
+                      if (p.heroTitle && (p.heroTitle.includes('Salt, light') || p.heroTitle.includes('*slow*') || p.heroTitle === 'Hospitality, Portraits & Documentary Photography')) {
+                        p.heroTitle = "Visual Storyteller\n& *Lifestyle* Photographer";
+                        p.heroSubtitle = "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.";
+                        supabase.from('galleries').update({ title: JSON.stringify(p), link_enabled: true }).eq('id', g.id).then(() => {});
+                      }
+                    } catch(e) {}
+                  }
+                }
+              }
+            }).catch(() => {});
         }
       }).catch((err) => {
         console.warn("Supabase session check failed:", err);
@@ -61,6 +83,28 @@ const App: React.FC = () => {
           .in('category', ['SETTINGS', 'ABOUT'])
           .eq('link_enabled', false)
           .then(() => {});
+
+        supabase
+          .from('galleries')
+          .select('id, title')
+          .eq('photographer_id', session.user.id)
+          .eq('category', 'SETTINGS')
+          .then(({ data: gals }) => {
+            if (gals && gals.length > 0) {
+              for (const g of gals) {
+                if (g.title) {
+                  try {
+                    const p = JSON.parse(g.title);
+                    if (p.heroTitle && (p.heroTitle.includes('Salt, light') || p.heroTitle.includes('*slow*') || p.heroTitle === 'Hospitality, Portraits & Documentary Photography')) {
+                      p.heroTitle = "Visual Storyteller\n& *Lifestyle* Photographer";
+                      p.heroSubtitle = "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.";
+                      supabase.from('galleries').update({ title: JSON.stringify(p), link_enabled: true }).eq('id', g.id).then(() => {});
+                    }
+                  } catch(e) {}
+                }
+              }
+            }
+          }).catch(() => {});
       }
     });
 
