@@ -32,6 +32,15 @@ const App: React.FC = () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         setLoading(false);
+        if (session?.user?.id) {
+          supabase
+            .from('galleries')
+            .update({ link_enabled: true })
+            .eq('photographer_id', session.user.id)
+            .in('category', ['SETTINGS', 'ABOUT'])
+            .eq('link_enabled', false)
+            .then(() => {});
+        }
       }).catch((err) => {
         console.warn("Supabase session check failed:", err);
         setLoading(false);
@@ -44,6 +53,15 @@ const App: React.FC = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
+      if (session?.user?.id) {
+        supabase
+          .from('galleries')
+          .update({ link_enabled: true })
+          .eq('photographer_id', session.user.id)
+          .in('category', ['SETTINGS', 'ABOUT'])
+          .eq('link_enabled', false)
+          .then(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();

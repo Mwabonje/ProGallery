@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 
 interface PrintItem {
     id: string;
@@ -168,7 +169,23 @@ export const Prints: React.FC = () => {
                     }
                 }
 
-                setPrints(allPrints);
+                const validPrints = allPrints.filter(p => isRealPortfolioUrl(p.file_url));
+                if (validPrints.length > 0) {
+                    setPrints(validPrints);
+                } else {
+                    const authenticPrintUrls = getThemedLookbookImages('prints', 'prints');
+                    const defaultPrints: PrintItem[] = authenticPrintUrls.map((url, idx) => ({
+                        id: `print-${idx}`,
+                        file_url: url,
+                        file_type: 'image',
+                        client_name: 'Coastal Fine Art Print',
+                        title: `Coastal Print 0${idx + 1}`,
+                        caption: "Archival cotton rag print from Mwabonje's coastal Kenya portfolio series.",
+                        description: 'Museum-grade archival cotton rag paper printed with pigment inks for lasting vibrancy.',
+                        price: '15,000'
+                    }));
+                    setPrints(defaultPrints);
+                }
             } catch (error) {
                 console.error("Error loading prints:", error);
             } finally {
@@ -310,6 +327,14 @@ export const Prints: React.FC = () => {
                                                     ref={(img) => {
                                                         if (img && img.complete && img.naturalWidth) {
                                                             handleMediaLoad(print.id, img.naturalWidth, img.naturalHeight);
+                                                        }
+                                                    }}
+                                                    onError={(e) => {
+                                                        const target = e.currentTarget;
+                                                        if (!target.dataset.failed) {
+                                                            target.dataset.failed = 'true';
+                                                            const fallbackList = getThemedLookbookImages('prints', 'prints');
+                                                            target.src = getOptimizedImageUrl(fallbackList[0], 1200, undefined, 85);
                                                         }
                                                     }}
                                                 />

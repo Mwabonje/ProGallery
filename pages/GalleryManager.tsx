@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { generateSlug } from '../utils/slug';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
@@ -187,7 +188,39 @@ export const GalleryManager: React.FC = () => {
     if (passwordInputRef.current) {
         passwordInputRef.current.value = loadedPass;
     }
-    setFiles(allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD'));
+    const actualFiles = allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD');
+    const isPortfolioGal = Boolean(
+      galData.category && 
+      galData.category.trim() !== '' && 
+      galData.category.toLowerCase().trim() !== 'delivery' &&
+      galData.category !== 'SETTINGS' &&
+      galData.category !== 'ABOUT'
+    );
+
+    if (isPortfolioGal) {
+      const validFiles = actualFiles.filter(f => isRealPortfolioUrl(f.file_url));
+      if (validFiles.length > 0) {
+        setFiles(validFiles);
+      } else {
+        const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
+        const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
+          id: `portfolio-${id}-${idx}`,
+          gallery_id: id,
+          file_url: url,
+          file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
+          file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
+          title: `${galData.client_name} 0${idx + 1}`,
+          caption: galData.client_name,
+          download_count: 0,
+          is_edited: false,
+          created_at: galData.created_at,
+          expires_at: '2126-10-10T00:00:00.000Z',
+        }));
+        setFiles(syntheticFiles);
+      }
+    } else {
+      setFiles(actualFiles);
+    }
 
     // Get Selections - Always fetch these so the photographer can see them even if they disabled the mode
     const { data: selectionData } = await supabase

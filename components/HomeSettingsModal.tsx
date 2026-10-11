@@ -44,11 +44,22 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                     if (gal.title) {
                         try {
                             const parsed = JSON.parse(gal.title);
-                            setSettings({ ...settings, ...parsed });
+                            setSettings(prev => ({ ...prev, ...parsed }));
+                            if (parsed.heroImageUrl) {
+                                setCoverUrl(parsed.heroImageUrl);
+                            }
                         } catch(e) {}
                     }
+
+                    // CRITICAL FIX: Ensure link_enabled is true so public and incognito visitors can view it!
+                    if (gal.link_enabled !== true) {
+                        await supabase
+                            .from('galleries')
+                            .update({ link_enabled: true })
+                            .eq('id', gal.id);
+                    }
                 } else {
-                    // Create the SETTINGS gallery if it doesn't exist so we can upload files
+                    // Create the SETTINGS gallery with link_enabled: true for public/incognito viewing
                     const { data: newGal, error: insertError } = await supabase
                         .from('galleries')
                         .insert([{
@@ -58,7 +69,7 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                             category: 'SETTINGS',
                             agreed_balance: 0,
                             amount_paid: 0,
-                            link_enabled: false,
+                            link_enabled: true,
                             selection_enabled: false,
                             selection_status: 'pending'
                         }])
@@ -82,7 +93,7 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                         .order('created_at', { ascending: false })
                         .limit(1);
                         
-                    if (files && files.length > 0) {
+                    if (files && files.length > 0 && files[0].file_url) {
                         setCoverUrl(files[0].file_url);
                     }
                 }
@@ -100,12 +111,19 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
     const handleSave = async () => {
         setSaving(true);
         try {
-            const settingsJson = JSON.stringify(settings);
+            const updatedSettings = {
+                ...settings,
+                heroImageUrl: coverUrl || (settings as any).heroImageUrl || undefined
+            };
+            const settingsJson = JSON.stringify(updatedSettings);
             
             if (galleryId) {
                 const { error } = await supabase
                     .from('galleries')
-                    .update({ title: settingsJson })
+                    .update({ 
+                        title: settingsJson,
+                        link_enabled: true // Always ensure link_enabled is true
+                    })
                     .eq('id', galleryId);
                 if (error) throw error;
             }
@@ -125,23 +143,51 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
         const file = e.target.files[0];
         
         try {
+            // Guarantee gallery is publicly viewable before and after upload
+            await supabase
+                .from('galleries')
+                .update({ link_enabled: true })
+                .eq('id', galleryId);
+
             await uploadFiles(galleryId, [file], 87600); // 10 years expiry
             
-            // Wait a moment for upload to complete and fetch the new cover
-            setTimeout(async () => {
+            // Check for new cover and immediately persist to settings
+            const fetchAndPersistCover = async () => {
                 const { data: files } = await supabase
-                        .from('files')
-                        .select('file_url')
-                        .eq('gallery_id', galleryId)
-                        .neq('file_path', 'GALLERY_PASSWORD')
-                        .order('created_at', { ascending: false })
-                        .limit(1);
-                        
-                if (files && files.length > 0) {
-                    setCoverUrl(files[0].file_url);
+                    .from('files')
+                    .select('file_url')
+                    .eq('gallery_id', galleryId)
+                    .neq('file_path', 'GALLERY_PASSWORD')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                    
+                if (files && files.length > 0 && files[0].file_url) {
+                    const newUrl = files[0].file_url;
+                    setCoverUrl(newUrl);
+                    const updated = { ...settings, heroImageUrl: newUrl };
+                    setSettings(updated);
+                    await supabase
+                        .from('galleries')
+                        .update({ 
+                            title: JSON.stringify(updated),
+                            link_enabled: true 
+                        })
+                        .eq('id', galleryId);
                     toast.success("Hero image updated successfully!");
+                    return true;
                 }
-            }, 3000);
+                return false;
+            };
+
+            let success = await fetchAndPersistCover();
+            if (!success) {
+                setTimeout(async () => {
+                    success = await fetchAndPersistCover();
+                    if (!success) {
+                        setTimeout(fetchAndPersistCover, 2500);
+                    }
+                }, 1500);
+            }
             
         } catch (error: any) {
             toast.error(error.message || "Upload failed");
@@ -200,14 +246,44 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                                     onChange={handleFileChange}
                                 />
                                 
-                                <button 
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={uploading}
-                                    className="w-full px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium disabled:opacity-50"
-                                >
-                                    {coverUrl ? 'Change Hero Image' : 'Upload Hero Image'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button 
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {coverUrl ? 'Change Hero Image' : 'Upload Hero Image'}
+                                    </button>
+                                    {coverUrl && (
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                setCoverUrl(null);
+                                                const updated = { ...settings, heroImageUrl: null };
+                                                setSettings(updated as any);
+                                                if (galleryId) {
+                                                    await supabase
+                                                        .from('files')
+                                                        .delete()
+                                                        .eq('gallery_id', galleryId);
+                                                    await supabase
+                                                        .from('galleries')
+                                                        .update({ 
+                                                            title: JSON.stringify(updated),
+                                                            link_enabled: true 
+                                                        })
+                                                        .eq('id', galleryId);
+                                                }
+                                                toast.success("Hero image removed. Portfolio cover will be used as fallback.");
+                                            }}
+                                            disabled={uploading}
+                                            className="px-3 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
                                 <p className="text-xs text-slate-500 mt-2">
                                     If no image is uploaded, the site will automatically use the cover image from your most recent portfolio gallery.
                                 </p>

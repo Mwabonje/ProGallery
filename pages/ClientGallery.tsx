@@ -32,7 +32,8 @@ import {
   getOptimizedImageUrl,
   rewriteUrlToR2,
 } from "../utils/formatters";
-import { getThemedLookbookImages } from "../utils/portfolioImages";
+import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
+
 import { SEO } from "../components/SEO";
 // @ts-ignore
 import JSZip from "jszip";
@@ -526,12 +527,41 @@ export const ClientGallery: React.FC = () => {
           setIsAuthenticated(true);
       }
 
-      if (actualFiles.length === 0) {
-        setError(
-          "This gallery link has expired. Please contact the photographer to request access.",
-        );
+      const isPortfolioGal = Boolean(
+        galData.category && 
+        galData.category.trim() !== "" && 
+        galData.category.toLowerCase().trim() !== "delivery"
+      );
+
+      if (isPortfolioGal) {
+        const validFiles = actualFiles.filter(f => isRealPortfolioUrl(f.file_url));
+        if (validFiles.length > 0) {
+          setFiles(validFiles);
+        } else {
+          const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
+          const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
+            id: `portfolio-${activeGalleryId}-${idx}`,
+            gallery_id: activeGalleryId,
+            file_url: url,
+            file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
+            file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
+            title: `${galData.client_name} ${idx + 1}`,
+            caption: galData.client_name,
+            download_count: 0,
+            is_edited: false,
+            created_at: galData.created_at,
+            expires_at: '2126-10-10T00:00:00.000Z',
+          }));
+          setFiles(syntheticFiles);
+        }
       } else {
-        setFiles(actualFiles);
+        if (actualFiles.length === 0) {
+          setError(
+            "This gallery link has expired. Please contact the photographer to request access.",
+          );
+        } else {
+          setFiles(actualFiles);
+        }
       }
 
       // Load Selections if enabled
@@ -1947,24 +1977,16 @@ export const ClientGallery: React.FC = () => {
                             const skeleton = document.getElementById(`skeleton-${file.id}`);
                             if (skeleton) skeleton.style.display = 'none';
 
-                            if (isPortfolio) {
-                              const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
-                              const fallbackPhoto = lookbook[index % lookbook.length];
-                              if (target.src !== fallbackPhoto) {
-                                target.src = fallbackPhoto;
-                              }
-                            } else {
-                              if (!target.dataset.retried) {
-                                target.dataset.retried = "true";
-                                const directUrl = rewriteUrlToR2(file.file_url) || "";
-                                if (directUrl && directUrl !== target.src) {
-                                  target.src = directUrl;
-                                } else {
-                                  setFailedFileIds((prev) => new Set(prev).add(file.id));
-                                }
+                            if (!target.dataset.retried) {
+                              target.dataset.retried = "true";
+                              const directUrl = rewriteUrlToR2(file.file_url) || file.file_url || "";
+                              if (directUrl && directUrl !== target.src) {
+                                target.src = directUrl;
                               } else {
                                 setFailedFileIds((prev) => new Set(prev).add(file.id));
                               }
+                            } else {
+                              setFailedFileIds((prev) => new Set(prev).add(file.id));
                             }
                           }}
                           onContextMenu={(e) => e.preventDefault()}

@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
+import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { BlogAdmin } from "./BlogAdmin";
@@ -244,9 +245,34 @@ export const Dashboard: React.FC = () => {
           const downloadCount = (allFiles || []).reduce((acc, f) => acc + (f.download_count || 0), 0);
           const gallerySizeBytes = (allFiles || []).reduce((acc, f) => acc + (0 || 0), 0);
 
+          const isPortfolioGal = Boolean(
+            gallery.category && 
+            gallery.category.trim() !== '' && 
+            gallery.category.toLowerCase().trim() !== 'delivery' &&
+            gallery.category !== 'SETTINGS' && 
+            gallery.category !== 'ABOUT'
+          );
+
+          let coverUrl = coverFile ? coverFile.file_url : null;
+          let itemCount = count || 0;
+
+          if (isPortfolioGal) {
+            if (!coverUrl || !isRealPortfolioUrl(coverUrl)) {
+              coverUrl = getThemedCoverImage(gallery.client_name, gallery.category);
+            }
+            const themedLookbook = getThemedLookbookImages(gallery.client_name, gallery.category);
+            if (itemCount === 0 || !allFiles?.some(f => isRealPortfolioUrl(f.file_url))) {
+              itemCount = themedLookbook.length;
+            }
+          }
+
+          const coverType = (coverUrl && coverUrl.match(/\.(mp4|webm|mov|ogg)(\?|$)/i)) 
+            ? 'video' 
+            : (coverFile ? coverFile.file_type : 'image');
+
           return {
             ...gallery,
-            itemCount: count || 0,
+            itemCount,
             downloadCount,
             gallerySizeBytes,
             analytics: {
@@ -254,8 +280,8 @@ export const Dashboard: React.FC = () => {
                 clicks: ad.clicks || 0,
                 viewToday, clickToday, view7d, click7d, view30d, click30d
             },
-            coverUrl: coverFile ? coverFile.file_url : null,
-            coverType: coverFile ? coverFile.file_type : null,
+            coverUrl,
+            coverType,
             expires_at: coverFile ? coverFile.expires_at : null,
           };
         })

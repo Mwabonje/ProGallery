@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
 import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { isRealPortfolioUrl, REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
 
 export const AboutSettingsModal = ({ 
     onClose,
@@ -202,14 +203,17 @@ export const AboutSettingsModal = ({
                             <label className="block text-sm font-medium text-slate-700">Profile Image</label>
                             
                             <div className="aspect-[3/4] relative bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                                {coverUrl ? (
-                                    <img src={coverUrl} alt="About" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                        <ImageIcon className="w-8 h-8" />
-                                        <span className="text-xs">No image uploaded</span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const displaySrc = (coverUrl && isRealPortfolioUrl(coverUrl)) ? coverUrl : REAL_ABOUT_IMAGE_URL;
+                                    return displaySrc ? (
+                                        <img src={displaySrc} alt="About" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                            <ImageIcon className="w-8 h-8" />
+                                            <span className="text-xs">No image uploaded</span>
+                                        </div>
+                                    );
+                                })()}
                                 
                                 {uploading && (
                                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">

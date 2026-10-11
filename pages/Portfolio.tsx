@@ -98,21 +98,21 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         const { data: galleriesData, error } = await query;
         if (error) throw error;
 
-        let allGalleries = galleriesData || [];
-        if (!photographerId && allGalleries.length > 0) {
-          const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
-          if (mostRecentPortfolio) {
-            allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
-          }
-        }
+        const rawGalleries = galleriesData || [];
 
-        // 1. Settings Gallery
-        const settingsGal = allGalleries.find(g => g.category === 'SETTINGS');
+        // 1. Settings Gallery: Lookup directly from raw galleries so it is NEVER stripped out
+        const settingsGal = (photographerId 
+          ? rawGalleries.find(g => g.category === 'SETTINGS' && g.photographer_id === photographerId) 
+          : null) || rawGalleries.find(g => g.category === 'SETTINGS');
+
         if (settingsGal) {
           if (settingsGal.title) {
             try {
               const parsed = JSON.parse(settingsGal.title);
               setSettings(prev => ({ ...prev, ...parsed }));
+              if (parsed.heroImageUrl) {
+                setHeroImageUrl(parsed.heroImageUrl);
+              }
             } catch (e) {
               // ignore
             }
@@ -126,13 +126,16 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             .order('created_at', { ascending: false })
             .limit(1);
               
-          if (settingsFiles && settingsFiles.length > 0) {
+          if (settingsFiles && settingsFiles.length > 0 && settingsFiles[0].file_url) {
             setHeroImageUrl(settingsFiles[0].file_url);
           }
         }
 
-        // 2. About Gallery
-        const aboutGal = allGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
+        // 2. About Gallery: Lookup directly from raw galleries
+        const aboutGal = (photographerId 
+          ? rawGalleries.find(g => (g.client_name === '__ABOUT__' || g.category === 'ABOUT') && g.photographer_id === photographerId) 
+          : null) || rawGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
+
         if (aboutGal) {
           const { data: aboutFiles } = await supabase
             .from('files')
@@ -141,8 +144,30 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false })
             .limit(1);
-          if (aboutFiles && aboutFiles.length > 0) {
+          if (aboutFiles && aboutFiles.length > 0 && aboutFiles[0].file_url) {
             setAboutGallery({ ...aboutGal, coverUrl: aboutFiles[0].file_url, baseCategory: 'ABOUT' });
+          }
+        }
+
+        // Auto-heal: If an authenticated session is active, ensure settings galleries are link_enabled: true
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user?.id) {
+            supabase
+              .from('galleries')
+              .update({ link_enabled: true })
+              .eq('photographer_id', session.user.id)
+              .in('category', ['SETTINGS', 'ABOUT'])
+              .eq('link_enabled', false)
+              .then(() => {});
+          }
+        }).catch(() => {});
+
+        // 3. Filter portfolio items for display
+        let allGalleries = [...rawGalleries];
+        if (!photographerId && allGalleries.length > 0) {
+          const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+          if (mostRecentPortfolio) {
+            allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
           }
         }
 
@@ -398,7 +423,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-100 hover:scale-105"
           style={{ 
             backgroundImage: heroBg 
-              ? `linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%), url(${getOptimizedImageUrl(heroBg, 1920, 1080, 85)})` 
+              ? `linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%), url("${getOptimizedImageUrl(heroBg, 1920, 1080, 85)}")` 
               : 'radial-gradient(ellipse at 50% 40%, #1e293b 0%, #0f172a 70%, #020617 100%)'
           }}
         />

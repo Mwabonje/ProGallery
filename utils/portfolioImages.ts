@@ -1,212 +1,203 @@
-// Curated thematic coastal portfolio images for Mwabonje Studio
-// Categorized by gallery to ensure genuine, high-res Kenyan coastal editorial visual stories
+// Authentic coastal portfolio photography by Mwabonje Studio (Michael Mwabonje Ringa)
+// Sourced from the photographer's genuine portfolio work stored in Cloudflare R2
 
 export interface ThemedGalleryAsset {
   coverUrl: string;
   images: string[];
+  isVideo?: boolean;
 }
 
+const R2_BASE = 'https://pub-722a104adad649c9bb882d954680ee50.r2.dev';
+
+export const REAL_HERO_IMAGE_URL = `${R2_BASE}/portfolio/hospitality/tamu_hotel_01.jpg`;
+export const REAL_ABOUT_IMAGE_URL = `${R2_BASE}/portfolio/about/mwabonje_portrait.jpg`;
+
 export const PORTFOLIO_THEMED_IMAGES: Record<string, ThemedGalleryAsset> = {
-  // 1. TAMU HOTEL (Coastal Luxury Hospitality)
-  'tamu hotel': {
-    coverUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=85',
+  "tamu hotel": {
+    coverUrl: `${R2_BASE}/portfolio/hospitality/tamu_hotel_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/hospitality/tamu_hotel_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/tamu_hotel_02.jpg`,
+      `${R2_BASE}/portfolio/hospitality/dacoum_villa_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/kilele_house_01.jpg`,
     ]
   },
-
-  // 2. LAMU (Places & Portraits, Swahili Island Heritage)
-  'lamu': {
-    coverUrl: 'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1600&q=85',
+  "kilele house": {
+    coverUrl: `${R2_BASE}/portfolio/hospitality/kilele_house_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/hospitality/kilele_house_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/kilele_house_02.jpg`,
+      `${R2_BASE}/portfolio/hospitality/tamu_hotel_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/dacoum_villa_02.jpg`,
     ]
   },
-
-  // 3. KILELE HOUSE (Private Coastal Villa Architecture)
-  'kilele house': {
-    coverUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+  "dacoum": {
+    coverUrl: `${R2_BASE}/portfolio/hospitality/dacoum_villa_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/hospitality/dacoum_villa_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/dacoum_villa_02.jpg`,
+      `${R2_BASE}/portfolio/hospitality/kilele_house_02.jpg`,
+      `${R2_BASE}/portfolio/hospitality/tamu_hotel_02.jpg`,
     ]
   },
-
-  // 4. DACOUM (AirBnb / Hospitality)
-  'dacoum': {
-    coverUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85',
+  "mangrove - mida": {
+    coverUrl: `${R2_BASE}/portfolio/hospitality/mangrove_mida_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/hospitality/mangrove_mida_01.jpg`,
+      `${R2_BASE}/portfolio/places/watamu_coast_01.jpg`,
+      `${R2_BASE}/portfolio/places/lamu_dhow_01.jpg`,
     ]
   },
-
-  // 5. MANGROVE - MIDA (Coastal Ecology & Architecture)
-  'mangrove - mida': {
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
+  "lamu": {
+    coverUrl: `${R2_BASE}/portfolio/places/lamu_dhow_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/places/lamu_dhow_01.jpg`,
+      `${R2_BASE}/portfolio/places/lamu_lanes_01.jpg`,
+      `${R2_BASE}/portfolio/hospitality/kilele_house_01.jpg`,
+      `${R2_BASE}/portfolio/prints/fine_art_coastal_01.jpg`,
     ]
   },
-
-  // 6. WATAMU (Places & Details)
-  'watamu': {
-    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
+  "watamu": {
+    coverUrl: `${R2_BASE}/portfolio/places/watamu_coast_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/places/watamu_coast_01.jpg`,
+      `${R2_BASE}/portfolio/places/watamu_coral_01.jpg`,
+      `${R2_BASE}/portfolio/places/malindi_shore_01.jpg`,
     ]
   },
-
-  // 7. MALINDI (Places & Portraits)
-  'malindi': {
-    coverUrl: 'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1600&q=85',
+  "malindi": {
+    coverUrl: `${R2_BASE}/portfolio/places/malindi_shore_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/places/malindi_shore_01.jpg`,
+      `${R2_BASE}/portfolio/places/watamu_coast_01.jpg`,
+      `${R2_BASE}/portfolio/places/watamu_coral_01.jpg`,
     ]
   },
-
-  // 8. CHIEDZA & LEWIS (Beach Wedding)
-  'chiedza & lewis': {
-    coverUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=85',
+  "chiedza & lewis": {
+    coverUrl: `${R2_BASE}/portfolio/weddings/chiedza_lewis_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/weddings/chiedza_lewis_01.jpg`,
+      `${R2_BASE}/portfolio/weddings/chiedza_lewis_02.jpg`,
+      `${R2_BASE}/portfolio/weddings/raffaella_wedding_01.jpg`,
+      `${R2_BASE}/portfolio/couples/yashvi_jay_01.jpg`,
     ]
   },
-
-  // 9. RAFFAELLA (Wedding)
-  'raffaella': {
-    coverUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=85',
+  "raffaella": {
+    coverUrl: `${R2_BASE}/portfolio/weddings/raffaella_wedding_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/weddings/raffaella_wedding_01.jpg`,
+      `${R2_BASE}/portfolio/weddings/chiedza_lewis_01.jpg`,
+      `${R2_BASE}/portfolio/weddings/chiedza_lewis_02.jpg`,
     ]
   },
-
-  // 10. YASHVI & JAY (Couples)
-  'yashvi & jay': {
-    coverUrl: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1600&q=85',
+  "yashvi & jay": {
+    coverUrl: `${R2_BASE}/portfolio/couples/yashvi_jay_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/couples/yashvi_jay_01.jpg`,
+      `${R2_BASE}/portfolio/couples/yashvi_jay_02.jpg`,
+      `${R2_BASE}/portfolio/couples/wanjira_kevin_01.jpg`,
+      `${R2_BASE}/portfolio/couples/ambrah_don_01.jpg`,
     ]
   },
-
-  // 11. WANJIRA & KEVIN (Couples)
-  'wanjira & kevin': {
-    coverUrl: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1600&q=85',
+  "wanjira & kevin": {
+    coverUrl: `${R2_BASE}/portfolio/couples/wanjira_kevin_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/couples/wanjira_kevin_01.jpg`,
+      `${R2_BASE}/portfolio/couples/yashvi_jay_01.jpg`,
+      `${R2_BASE}/portfolio/couples/ambrah_don_01.jpg`,
     ]
   },
-
-  // 12. AMBRAH & DON (Couples)
-  'ambrah & don': {
-    coverUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=1600&q=85',
+  "ambrah & don": {
+    coverUrl: `${R2_BASE}/portfolio/couples/ambrah_don_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/couples/ambrah_don_01.jpg`,
+      `${R2_BASE}/portfolio/couples/yashvi_jay_02.jpg`,
+      `${R2_BASE}/portfolio/couples/wanjira_kevin_01.jpg`,
     ]
   },
-
-  // 13. EDITORIAL (Portraits)
-  'editorial': {
-    coverUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
+  "warehouse party": {
+    coverUrl: `${R2_BASE}/portfolio/events/warehouse_party_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/events/warehouse_party_01.jpg`,
+      `${R2_BASE}/portfolio/events/warehouse_party_02.jpg`,
     ]
   },
-
-  // 14. LIFESTYLE (Portraits)
-  'lifestyle': {
-    coverUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1600&q=85',
+  "creative portraits": {
+    coverUrl: `${R2_BASE}/portfolio/portraits/creative_portrait_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/portraits/creative_portrait_01.jpg`,
+      `${R2_BASE}/portfolio/portraits/creative_portrait_02.jpg`,
+      `${R2_BASE}/portfolio/portraits/barbar_portrait_01.jpg`,
+      `${R2_BASE}/portfolio/portraits/barbar_portrait_02.jpg`,
     ]
   },
-
-  // 15. CREATIVE PORTRAITS (Portraits)
-  'creative portraits': {
-    coverUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=85',
+  "editorial": {
+    coverUrl: `${R2_BASE}/portfolio/portraits/editorial_portrait_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/portraits/editorial_portrait_01.jpg`,
+      `${R2_BASE}/portfolio/portraits/editorial_portrait_02.jpg`,
+      `${R2_BASE}/portfolio/portraits/editorial_portrait_03.jpg`,
+      `${R2_BASE}/portfolio/portraits/barbar_portrait_03.jpg`,
     ]
   },
-
-  // 16. WAREHOUSE PARTY (Events)
-  'warehouse party': {
-    coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=85',
+  "lifestyle": {
+    coverUrl: `${R2_BASE}/portfolio/portraits/lifestyle_portrait_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/portraits/lifestyle_portrait_01.jpg`,
+      `${R2_BASE}/portfolio/portraits/lifestyle_portrait_02.jpg`,
+      `${R2_BASE}/portfolio/portraits/barbar_portrait_04.jpg`,
+      `${R2_BASE}/portfolio/portraits/creative_portrait_02.jpg`,
     ]
   },
-
-  // 17. MVUVI (Films)
-  'mvuvi': {
-    coverUrl: 'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=1600&q=85',
+  "prints": {
+    coverUrl: `${R2_BASE}/portfolio/prints/fine_art_coastal_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=85',
+      `${R2_BASE}/portfolio/prints/fine_art_coastal_01.jpg`,
+      `${R2_BASE}/portfolio/prints/fine_art_coastal_02.jpg`,
+      `${R2_BASE}/portfolio/prints/fine_art_coastal_03.jpg`,
+      `${R2_BASE}/portfolio/prints/fine_art_coastal_04.jpg`,
     ]
   },
-
-  // 18. MALINDI SUNSET (Films)
-  'malindi sunset': {
-    coverUrl: 'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1600&q=85',
+  "mvuvi": {
+    coverUrl: `${R2_BASE}/portfolio/places/lamu_dhow_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=1600&q=85',
-    ]
+      `${R2_BASE}/portfolio/places/lamu_dhow_01.jpg`,
+    ],
+    isVideo: true
   },
-
-  // 19. PRINTS
-  'prints': {
-    coverUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1600&q=85',
+  "malindi sunset": {
+    coverUrl: `${R2_BASE}/portfolio/places/malindi_shore_01.jpg`,
     images: [
-      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1600&q=85',
-    ]
+      `${R2_BASE}/portfolio/places/malindi_shore_01.jpg`,
+    ],
+    isVideo: true
   },
-
-  // 20. ABOUT
-  '__about__': {
-    coverUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
-    images: [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1600&q=85',
-    ]
+  "about": {
+    coverUrl: REAL_ABOUT_IMAGE_URL,
+    images: [REAL_ABOUT_IMAGE_URL]
   }
+};
+
+export const isRealPortfolioUrl = (url?: string | null): boolean => {
+  if (!url) return false;
+  // Previously dead 177 / 178 uploads
+  if (url.includes('/uploads/177') || url.includes('/uploads/178')) {
+    return false;
+  }
+  // Generic placeholders
+  if (url.includes('images.unsplash.com')) {
+    return false;
+  }
+  // Delivery uploads (uploads/179... from Golf Chenda, Sumayah, Cancer Awareness, Absa Mangrove)
+  // are strictly meant for client deliveries, NOT portfolio
+  if (url.includes('/uploads/179')) {
+    return false;
+  }
+  // Authentic portfolio storage
+  if (url.includes('/portfolio/') || url.includes('mwabonje.carrd.co')) {
+    return true;
+  }
+  return false;
 };
 
 export const getThemedCoverImage = (clientName?: string, category?: string): string => {
@@ -232,13 +223,22 @@ export const getThemedCoverImage = (clientName?: string, category?: string): str
     return PORTFOLIO_THEMED_IMAGES['tamu hotel'].coverUrl;
   }
   if (cat.includes('film')) {
-    return PORTFOLIO_THEMED_IMAGES['mvuvi'].coverUrl;
+    return PORTFOLIO_THEMED_IMAGES['malindi sunset'].coverUrl;
   }
   if (cat.includes('place')) {
     return PORTFOLIO_THEMED_IMAGES['lamu'].coverUrl;
   }
+  if (cat.includes('event')) {
+    return PORTFOLIO_THEMED_IMAGES['warehouse party'].coverUrl;
+  }
+  if (cat.includes('print')) {
+    return PORTFOLIO_THEMED_IMAGES['prints'].coverUrl;
+  }
+  if (cat.includes('about')) {
+    return REAL_ABOUT_IMAGE_URL;
+  }
 
-  return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85';
+  return REAL_HERO_IMAGE_URL;
 };
 
 export const getThemedLookbookImages = (clientName?: string, category?: string): string[] => {
@@ -264,7 +264,19 @@ export const getThemedLookbookImages = (clientName?: string, category?: string):
     return PORTFOLIO_THEMED_IMAGES['tamu hotel'].images;
   }
   if (cat.includes('film')) {
-    return PORTFOLIO_THEMED_IMAGES['mvuvi'].images;
+    return PORTFOLIO_THEMED_IMAGES['malindi sunset'].images;
+  }
+  if (cat.includes('place')) {
+    return PORTFOLIO_THEMED_IMAGES['lamu'].images;
+  }
+  if (cat.includes('event')) {
+    return PORTFOLIO_THEMED_IMAGES['warehouse party'].images;
+  }
+  if (cat.includes('print')) {
+    return PORTFOLIO_THEMED_IMAGES['prints'].images;
+  }
+  if (cat.includes('about')) {
+    return [REAL_ABOUT_IMAGE_URL];
   }
 
   return PORTFOLIO_THEMED_IMAGES['lamu'].images;

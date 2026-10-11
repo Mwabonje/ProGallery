@@ -11,7 +11,17 @@ export const PagesAdmin: React.FC = () => {
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUserId(session.user.id);
+      if (session) {
+        setUserId(session.user.id);
+        // Auto-heal any existing SETTINGS galleries so they are visible to public/incognito
+        supabase
+          .from('galleries')
+          .update({ link_enabled: true })
+          .eq('photographer_id', session.user.id)
+          .eq('category', 'SETTINGS')
+          .eq('link_enabled', false)
+          .then(() => {});
+      }
     });
   }, []);
 
