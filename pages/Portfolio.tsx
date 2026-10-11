@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
-import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { getOptimizedImageUrl } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play, ArrowRight } from 'lucide-react';
@@ -16,28 +16,15 @@ interface PortfolioGallery extends Gallery {
 const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
   const isVideo = gallery.coverType?.startsWith('video') || (gallery.category && gallery.category.toLowerCase().includes('film'));
 
-  const rawUrl = gallery.coverUrl ? rewriteUrlToR2(gallery.coverUrl) : '';
-  const optimizedUrl = rawUrl ? getOptimizedImageUrl(rawUrl, 1000, 1200, 85) : '';
-  const [currentSrc, setCurrentSrc] = useState(optimizedUrl || rawUrl);
-  const [retried, setRetried] = useState(false);
-  const [hasError, setHasError] = useState(!rawUrl);
+  const primaryUrl = gallery.coverUrl ? getOptimizedImageUrl(gallery.coverUrl, 1000, 1200, 85) : '';
+  const [currentSrc, setCurrentSrc] = useState(primaryUrl);
+  const [hasError, setHasError] = useState(!primaryUrl);
 
   useEffect(() => {
-    const raw = gallery.coverUrl ? rewriteUrlToR2(gallery.coverUrl) : '';
-    const opt = raw ? getOptimizedImageUrl(raw, 1000, 1200, 85) : '';
-    setCurrentSrc(opt || raw);
-    setRetried(false);
-    setHasError(!raw);
+    const nextUrl = gallery.coverUrl ? getOptimizedImageUrl(gallery.coverUrl, 1000, 1200, 85) : '';
+    setCurrentSrc(nextUrl);
+    setHasError(!nextUrl);
   }, [gallery.coverUrl]);
-
-  const handleError = () => {
-    if (!retried && rawUrl && currentSrc !== rawUrl) {
-      setRetried(true);
-      setCurrentSrc(rawUrl);
-    } else {
-      setHasError(true);
-    }
-  };
 
   if (isVideo && gallery.coverUrl) {
     return (
@@ -63,7 +50,7 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
         <img 
           src={currentSrc}
           alt={gallery.client_name}
-          onError={handleError}
+          onError={() => setHasError(true)}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
       ) : (
@@ -172,10 +159,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           
           const { data: settingsFiles } = await supabase
             .from('files')
-            .select('file_url, file_path')
+            .select('file_url')
             .eq('gallery_id', settingsGal.id)
             .neq('file_path', 'GALLERY_PASSWORD')
-            .not('file_path', 'ilike', '%screenshot%')
             .order('created_at', { ascending: false })
             .limit(1);
               
@@ -233,7 +219,22 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                g.category !== 'ABOUT'
         );
 
+        // Prioritize Tamu Hotel, Lamu, Kilele House at the top
+        const priorityOrder = ['tamu hotel', 'lamu', 'kilele house', 'kilelele house'];
+
         const sortedItems = [...rawPortfolioItems].sort((a, b) => {
+          let nameA = a.client_name.trim().toLowerCase();
+          let nameB = b.client_name.trim().toLowerCase();
+          if (nameA === 'rafiki hotel') nameA = 'tamu hotel';
+          if (nameB === 'rafiki hotel') nameB = 'tamu hotel';
+
+          const indexA = priorityOrder.indexOf(nameA);
+          const indexB = priorityOrder.indexOf(nameB);
+
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
@@ -248,11 +249,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               .order('created_at', { ascending: false })
               .limit(1);
 
+            let cleanName = gallery.client_name;
+            if (cleanName === 'RAFIKI HOTEL') cleanName = 'Tamu Hotel';
+
             const rawCover = files && files.length > 0 ? files[0].file_url : null;
 
             return {
               ...gallery,
-              client_name: gallery.client_name,
+              client_name: cleanName,
               baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
               coverUrl: rawCover,
               coverType: files && files.length > 0 ? files[0].file_type : null,
@@ -591,13 +595,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 <img 
                   src={getOptimizedImageUrl(aboutImageSrc, 900, 1200, 85)}
                   alt="Michael Mwabonje Ringa"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = 'true';
-                      target.src = rewriteUrlToR2(aboutImageSrc) || aboutImageSrc;
-                    }
-                  }}
                   className="w-full h-full object-cover"
                 />
               ) : (

@@ -180,13 +180,25 @@ export const PORTFOLIO_THEMED_IMAGES: Record<string, ThemedGalleryAsset> = {
 
 export const isRealPortfolioUrl = (url?: string | null): boolean => {
   if (!url) return false;
+  // Previously dead 177 / 178 uploads
+  if (url.includes('/uploads/177') || url.includes('/uploads/178')) {
+    return false;
+  }
   // Generic placeholders
   if (url.includes('images.unsplash.com')) {
     return false;
   }
-  return true;
+  // Delivery uploads (uploads/179... from Golf Chenda, Sumayah, Cancer Awareness, Absa Mangrove)
+  // are strictly meant for client deliveries, NOT portfolio
+  if (url.includes('/uploads/179')) {
+    return false;
+  }
+  // Authentic portfolio storage
+  if (url.includes('/portfolio/') || url.includes('mwabonje.carrd.co')) {
+    return true;
+  }
+  return false;
 };
-
 
 export const getThemedCoverImage = (clientName?: string, category?: string): string => {
   const name = (clientName || '').toLowerCase().trim();

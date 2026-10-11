@@ -1,6 +1,6 @@
 {
   "name": "Mwabonje",
-  "description": "Visual Storyteller & Lifestyle Photographer based on the Kenyan coast.",
+  "description": "Secure, time-limited client gallery delivery system for professional photographers.",
   "requestFramePermissions": [],
   "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
