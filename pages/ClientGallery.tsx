@@ -534,9 +534,8 @@ export const ClientGallery: React.FC = () => {
       );
 
       if (isPortfolioGal) {
-        const validFiles = actualFiles.filter(f => isRealPortfolioUrl(f.file_url));
-        if (validFiles.length > 0) {
-          setFiles(validFiles);
+        if (actualFiles.length > 0) {
+          setFiles(actualFiles);
         } else {
           const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
           const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
