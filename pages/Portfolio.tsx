@@ -6,6 +6,7 @@ import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play, ArrowRight } from 'lucide-react';
+import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -163,7 +164,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               }
               setSettings(prev => ({ ...prev, ...parsed }));
               if (parsed.heroImageUrl) {
-                setHeroImageUrl(parsed.heroImageUrl);
+                if (!parsed.heroImageUrl.includes('/uploads/177') && !parsed.heroImageUrl.includes('/uploads/178') && !parsed.heroImageUrl.toLowerCase().includes('screenshot')) {
+                  setHeroImageUrl(parsed.heroImageUrl);
+                }
               }
             } catch (e) {
               // ignore
@@ -176,11 +179,16 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             .eq('gallery_id', settingsGal.id)
             .neq('file_path', 'GALLERY_PASSWORD')
             .not('file_path', 'ilike', '%screenshot%')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
               
-          if (settingsFiles && settingsFiles.length > 0 && settingsFiles[0].file_url) {
-            setHeroImageUrl(settingsFiles[0].file_url);
+          const validHeroFile = settingsFiles?.find(f => 
+            f.file_url && 
+            !f.file_url.includes('/uploads/177') && 
+            !f.file_url.includes('/uploads/178') && 
+            !f.file_url.toLowerCase().includes('screenshot')
+          );
+          if (validHeroFile) {
+            setHeroImageUrl(validHeroFile.file_url);
           }
         }
 
@@ -313,7 +321,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
   // Hero Background image: prioritize configured hero image or top portfolio gallery image
   const firstPortfolioCover = galleries.find(g => g.coverUrl)?.coverUrl || null;
-  const heroBg = heroImageUrl || firstPortfolioCover;
+  const heroBg = heroImageUrl || firstPortfolioCover || REAL_HERO_IMAGE_URL;
 
   // About image: prioritize configured about image or top portrait portfolio image
   const firstPortraitCover = galleries.find(g => g.baseCategory?.includes('PORTRAIT') && g.coverUrl)?.coverUrl || firstPortfolioCover;
@@ -454,14 +462,20 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
       {/* Hero Section */}
       <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-100 hover:scale-105"
-          style={{ 
-            backgroundImage: heroBg 
-              ? `linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%), url("${getOptimizedImageUrl(heroBg, 1920, 1080, 85)}")` 
-              : 'radial-gradient(ellipse at 50% 40%, #1e293b 0%, #0f172a 70%, #020617 100%)'
+        {/* Hero Background Image */}
+        <img 
+          src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)} 
+          alt="Hero"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100 hover:scale-105"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== REAL_HERO_IMAGE_URL) {
+              target.src = REAL_HERO_IMAGE_URL;
+            }
           }}
         />
+        {/* Dark Vignette Overlay for Text Legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-950/60 to-slate-950/80 pointer-events-none" />
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center flex flex-col items-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] md:text-xs tracking-widest uppercase font-semibold text-white/90 mb-6">
