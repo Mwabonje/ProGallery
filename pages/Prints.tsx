@@ -6,6 +6,7 @@ import { supabase } from '../services/supabase';
 import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface PrintItem {
     id: string;
@@ -197,7 +198,7 @@ export const Prints: React.FC = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col">
+        <div className="min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white flex flex-col transition-colors duration-300">
             <Helmet>
                 <title>Fine Art Prints | Shop | Mwabonje</title>
                 <meta name="description" content="A curated collection of archival quality prints from Mwabonje's portfolio collections. Each piece is printed on museum-grade cotton rag paper to preserve the visual storytelling." />
@@ -227,7 +228,7 @@ export const Prints: React.FC = () => {
                     })}
                 </script>
             </Helmet>
-            <header className="w-full flex items-center justify-between p-4 md:p-8 bg-white border-b border-slate-100 sticky top-0 z-50 transition-all duration-300">
+            <header className="w-full flex items-center justify-between p-4 md:p-8 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-300">
                 <button 
                     onClick={() => {
                         if (window.history.state && window.history.state.idx > 0) {
@@ -236,22 +237,25 @@ export const Prints: React.FC = () => {
                             navigate('/');
                         }
                     }}
-                    className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-xs tracking-widest font-bold"
+                    className="flex items-center gap-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-xs tracking-widest font-bold"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     BACK
                 </button>
-                <div className="font-sans tracking-widest uppercase text-xl font-bold flex-1 text-center pr-16 md:pr-[70px]">
+                <div className="font-sans tracking-widest uppercase text-xl font-bold flex-1 text-center text-slate-900 dark:text-white">
                     PRINTS
+                </div>
+                <div className="flex items-center gap-2">
+                    <ThemeToggle className="text-slate-600 dark:text-amber-300" />
                 </div>
             </header>
 
             <main className="flex-1 max-w-[1400px] mx-auto w-full p-6 md:p-12">
                 <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-16">
-                    <h1 className="text-2xl md:text-4xl font-sans tracking-widest uppercase text-slate-800 mb-4 font-bold">
+                    <h1 className="text-2xl md:text-4xl font-sans tracking-widest uppercase text-slate-800 dark:text-white mb-4 font-bold">
                         Fine Art Prints
                     </h1>
-                    <p className="max-w-xl text-slate-500 leading-relaxed text-sm md:text-base">
+                    <p className="max-w-xl text-slate-500 dark:text-slate-400 leading-relaxed text-sm md:text-base">
                         A curated collection of archival quality prints from my portfolio collections. 
                         Each piece is printed on museum-grade cotton rag paper to ensure longevity and exceptional color reproduction.
                     </p>
@@ -289,7 +293,7 @@ export const Prints: React.FC = () => {
                                     key={print.id}
                                     className="block relative flex flex-col items-center w-full md:w-auto px-4 md:px-0"
                                 >
-                                    <div className="bg-white border-[6px] md:border-[16px] border-[#151515] relative shadow-2xl flex items-center justify-center p-4 md:p-6 lg:p-8 w-fit shrink-0">
+                                    <div className="bg-white dark:bg-[#181c24] border-[6px] md:border-[16px] border-[#151515] dark:border-[#0a0a0a] relative shadow-2xl flex items-center justify-center p-4 md:p-6 lg:p-8 w-fit shrink-0 transition-colors duration-300">
                                         <div className="relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
                                             {print.file_type === 'video' ? (
                                                 <video 
@@ -307,8 +311,8 @@ export const Prints: React.FC = () => {
                                                 />
                                             ) : print.file_url ? (
                                                 <>
-                                                <div id={`print-skeleton-${print.id}`} className="absolute inset-0 flex items-center justify-center bg-slate-100 z-10 pointer-events-none transition-opacity duration-300">
-                                                    <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin"></div>
+                                                <div id={`print-skeleton-${print.id}`} className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 z-10 pointer-events-none transition-opacity duration-300">
+                                                    <div className="w-5 h-5 border-2 border-slate-200 dark:border-slate-700 border-t-slate-400 dark:border-t-slate-300 rounded-full animate-spin"></div>
                                                 </div>
                                                 <img 
                                                     src={getOptimizedImageUrl(print.file_url, 1200, undefined, 85)} 
@@ -344,32 +348,32 @@ export const Prints: React.FC = () => {
                                     </div>
                                     {(print.title?.trim() || (print.description ?? print.caption)?.trim() || print.print_size?.trim() || print.material?.trim() || print.price?.trim()) ? (
                                         <div className="mt-5 md:mt-6 text-center w-0 min-w-full break-words">
-                                            {print.title?.trim() && <h3 className="font-sans text-lg font-medium text-slate-900 mb-1">{print.title}</h3>}
+                                            {print.title?.trim() && <h3 className="font-sans text-lg font-medium text-slate-900 dark:text-white mb-1">{print.title}</h3>}
                                             {(print.description ?? print.caption)?.trim() && (
-                                                <p className="text-sm md:text-base text-slate-600 leading-relaxed font-sans italic">
+                                                <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-sans italic">
                                                     {(print.description ?? print.caption ?? '').trim()}
                                                 </p>
                                             )}
                                             {(print.print_size?.trim() || print.material?.trim()) && (
-                                                <div className="text-xs text-slate-400 uppercase tracking-widest mt-3 flex flex-wrap justify-center items-center gap-2">
+                                                <div className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-3 flex flex-wrap justify-center items-center gap-2">
                                                     {print.print_size?.trim() && <span>{print.print_size}</span>}
                                                     {print.print_size?.trim() && print.material?.trim() && <span className="opacity-50">|</span>}
                                                     {print.material?.trim() && <span>{print.material}</span>}
                                                 </div>
                                             )}
                                             {print.price?.trim() && (
-                                                <p className="text-md font-bold text-slate-700 mt-2">{print.price}</p>
+                                                <p className="text-md font-bold text-slate-700 dark:text-amber-400 mt-2">{print.price}</p>
                                             )}
                                             
                                             <div className="mt-5 flex justify-center">
                                                 {cart.find(c => c.id === print.id) ? (
-                                                    <button className="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold tracking-widest uppercase border border-emerald-200">
+                                                    <button className="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold tracking-widest uppercase border border-emerald-200 dark:border-emerald-800">
                                                         <Check className="w-3 h-3" /> Added to Cart
                                                     </button>
                                                 ) : (
                                                     <button 
                                                         onClick={() => addToCart(print)} 
-                                                        className="flex items-center justify-center gap-1.5 px-5 py-2 bg-slate-900 text-white rounded-full text-xs font-bold tracking-widest uppercase hover:bg-slate-800 transition-colors active:scale-[0.98] shadow-md border border-slate-900"
+                                                        className="flex items-center justify-center gap-1.5 px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-bold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors active:scale-[0.98] shadow-md border border-slate-900 dark:border-white"
                                                     >
                                                         <ShoppingCart className="w-3.5 h-3.5" />
                                                         Add to Cart
@@ -384,8 +388,8 @@ export const Prints: React.FC = () => {
                     </div>
                 ) : (
                     <div className="h-[20vh] flex flex-col items-center justify-center text-center mt-12">
-                        <div className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-sm">
-                            <p className="text-slate-400 tracking-[0.2em] text-[10px] uppercase font-bold">No prints available yet</p>
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 px-8 py-4 rounded-sm">
+                            <p className="text-slate-400 dark:text-slate-500 tracking-[0.2em] text-[10px] uppercase font-bold">No prints available yet</p>
                         </div>
                     </div>
                 )}
@@ -407,51 +411,51 @@ export const Prints: React.FC = () => {
             {/* Cart Modal / Sidebar */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex justify-end">
-                    <div className="bg-[#f3f4f6] w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right overflow-hidden">
-                        <div className="px-6 py-5 flex items-center justify-between shrink-0">
-                            <h2 className="font-sans text-xl font-bold text-slate-800">Your Cart</h2>
+                    <div className="bg-[#f3f4f6] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right overflow-hidden transition-colors duration-300">
+                        <div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-slate-200/60 dark:border-slate-800">
+                            <h2 className="font-sans text-xl font-bold text-slate-800 dark:text-white">Your Cart</h2>
                             <button 
                                 onClick={() => setIsCartOpen(false)} 
-                                className="p-2 bg-white rounded-full text-slate-400 hover:text-slate-800 transition-colors shadow-sm"
+                                className="p-2 bg-white dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors shadow-sm"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         
                         {submitSuccess ? (
-                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-emerald-50 h-full">
-                                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-emerald-50 dark:bg-emerald-950/40 h-full">
+                                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
                                     <Check className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-sans font-bold text-slate-900 mb-2">Request Submitted!</h3>
-                                <p className="text-slate-600 text-sm mb-6">We have received your print request and will get back to you shortly.</p>
+                                <h3 className="text-xl font-sans font-bold text-slate-900 dark:text-white mb-2">Request Submitted!</h3>
+                                <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">We have received your print request and will get back to you shortly.</p>
                                 <button 
                                     onClick={() => {
                                         setSubmitSuccess(false);
                                         setIsCartOpen(false);
                                     }}
-                                    className="px-6 py-3 bg-slate-900 text-white rounded-[16px] hover:bg-slate-800 transition-colors text-sm font-medium"
+                                    className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-[16px] hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors text-sm font-medium"
                                 >
                                     Close
                                 </button>
                             </div>
                         ) : (
                             <>
-                                <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 scrollbar-hide flex flex-col gap-4">
+                                <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 scrollbar-hide flex flex-col gap-4 mt-4">
                                     {cart.length === 0 ? (
-                                        <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center h-full bg-white rounded-[24px]">
-                                            <ShoppingCart className="w-12 h-12 text-slate-200 mb-4" />
+                                        <div className="text-center text-slate-500 dark:text-slate-400 py-12 flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900/80 rounded-[24px] border border-slate-200/40 dark:border-slate-800">
+                                            <ShoppingCart className="w-12 h-12 text-slate-200 dark:text-slate-700 mb-4" />
                                             <p className="font-medium">Your cart is empty</p>
                                             <button 
-                                                onClick={() => setIsCartOpen(false)}
-                                                className="mt-4 text-sm text-slate-400 hover:text-slate-700 underline underline-offset-4"
+                                                onClick={() => setIsCartOpen(false)} 
+                                                className="mt-4 text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline underline-offset-4"
                                             >   
                                                 Continue browsing prints
                                             </button>
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="bg-white rounded-[24px] p-2 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                            <div className="bg-white dark:bg-slate-900/90 rounded-[24px] p-2 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-200/50 dark:border-slate-800">
                                                 {cart.map((item, index) => (
                                                     <div key={item.id}>
                                                         <div className="flex gap-4 p-3 relative group items-center">
@@ -459,34 +463,34 @@ export const Prints: React.FC = () => {
                                                                 {item.file_type === 'video' ? (
                                                                     <video 
                                                                         src={`${rewriteUrlToR2(item.file_url)}#t=0.001`} 
-                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100"
+                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100 dark:bg-slate-800"
                                                                         muted playsInline preload="metadata"
                                                                     />
                                                                 ) : (
                                                                     <img 
                                                                         src={getOptimizedImageUrl(item.file_url, 200, undefined, 80)} 
                                                                         alt={item.title || 'Print'} 
-                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100" 
+                                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[16px] shadow-sm bg-slate-100 dark:bg-slate-800" 
                                                                     />
                                                                 )}
                                                             </div>
                                                             <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                                                                <h4 className="font-sans font-bold text-slate-800 text-sm truncate">{item.title || item.client_name}</h4>
-                                                                <p className="text-[11px] font-medium text-slate-400 mt-0.5 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
-                                                                <p className="font-bold text-slate-900 mt-1.5 text-sm">{item.price || 'Price on request'}</p>
+                                                                <h4 className="font-sans font-bold text-slate-800 dark:text-white text-sm truncate">{item.title || item.client_name}</h4>
+                                                                <p className="text-[11px] font-medium text-slate-400 dark:text-slate-400 mt-0.5 truncate">{item.print_size} {item.material && `| ${item.material}`}</p>
+                                                                <p className="font-bold text-slate-900 dark:text-amber-400 mt-1.5 text-sm">{item.price || 'Price on request'}</p>
                                                                 
                                                                 <div className="flex items-center gap-3 mt-3">
-                                                                    <button type="button" onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors">
+                                                                    <button type="button" onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                                                         <Minus className="w-3 h-3" />
                                                                     </button>
-                                                                    <span className="text-xs font-bold text-slate-700 w-3 text-center">{item.quantity}</span>
-                                                                    <button type="button" onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm">
+                                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 w-3 text-center">{item.quantity}</span>
+                                                                    <button type="button" onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm">
                                                                         <Plus className="w-3 h-3" />
                                                                     </button>
 
                                                                     <button 
                                                                         onClick={() => removeFromCart(item.id)} 
-                                                                        className="ml-auto p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors" 
+                                                                        className="ml-auto p-1.5 text-slate-300 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full transition-colors" 
                                                                         title="Remove Item"
                                                                     >
                                                                         <Trash2 className="w-4 h-4" />
@@ -494,18 +498,18 @@ export const Prints: React.FC = () => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {index < cart.length - 1 && <div className="h-px bg-slate-50 mx-4" />}
+                                                        {index < cart.length - 1 && <div className="h-px bg-slate-100 dark:bg-slate-800 mx-4" />}
                                                     </div>
                                                 ))}
                                             </div>
                                             
-                                            <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                                <h3 className="font-sans font-bold text-slate-800 mb-4 text-sm">Contact & Delivery</h3>
+                                            <div className="bg-white dark:bg-slate-900/90 rounded-[24px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-200/50 dark:border-slate-800">
+                                                <h3 className="font-sans font-bold text-slate-800 dark:text-white mb-4 text-sm">Contact & Delivery</h3>
                                                 <div className="space-y-3">
-                                                    <input form="cart-form" type="text" name="name" required pattern="^\s*\S+\s+\S+.*$" title="Please enter your first and last name" placeholder="First and Last Name" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-base md:text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <input form="cart-form" type="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address" placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-base md:text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <input form="cart-form" type="tel" name="phone" required pattern="^\+?[0-9\s\-()]{7,20}$" title="Please enter a valid phone number" placeholder="Phone Number" className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-base md:text-sm placeholder:text-slate-400 font-medium text-slate-800" />
-                                                    <textarea form="cart-form" name="notes" required placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none focus:ring-2 focus:ring-slate-200 text-base md:text-sm placeholder:text-slate-400 resize-none font-medium text-slate-800" />
+                                                    <input form="cart-form" type="text" name="name" required pattern="^\s*\S+\s+\S+.*$" title="Please enter your first and last name" placeholder="First and Last Name" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-transparent dark:border-slate-700/80 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-base md:text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-slate-800 dark:text-slate-100" />
+                                                    <input form="cart-form" type="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address" placeholder="Email Address" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-transparent dark:border-slate-700/80 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-base md:text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-slate-800 dark:text-slate-100" />
+                                                    <input form="cart-form" type="tel" name="phone" required pattern="^\+?[0-9\s\-()]{7,20}$" title="Please enter a valid phone number" placeholder="Phone Number" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-transparent dark:border-slate-700/80 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-base md:text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-slate-800 dark:text-slate-100" />
+                                                    <textarea form="cart-form" name="notes" required placeholder="Delivery Address & Notes" rows={2} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-transparent dark:border-slate-700/80 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-base md:text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none font-medium text-slate-800 dark:text-slate-100" />
                                                 </div>
                                             </div>
                                         </>
@@ -513,9 +517,9 @@ export const Prints: React.FC = () => {
                                 </div>
 
                                 {cart.length > 0 && (
-                                    <div className="bg-white rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] shrink-0 pb-8">
+                                    <div className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] dark:shadow-none border-t border-slate-200/50 dark:border-slate-800 shrink-0 pb-8">
                                         {submitError && (
-                                            <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-xs border border-rose-100 rounded-xl font-medium">
+                                            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-100 dark:border-rose-900/60 rounded-xl font-medium">
                                                 {submitError}
                                             </div>
                                         )}
@@ -524,7 +528,7 @@ export const Prints: React.FC = () => {
                                         </form>
 
                                         <div className="space-y-3 mb-6 text-sm">
-                                            <div className="flex justify-between items-center text-slate-800 font-bold pt-1">
+                                            <div className="flex justify-between items-center text-slate-800 dark:text-white font-bold pt-1">
                                                 <span className="text-base">Total</span>
                                                 <span className="text-lg">
                                                     {computedSubtotal > 0 
@@ -534,7 +538,7 @@ export const Prints: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <button disabled={isSubmitting} type="submit" form="cart-form" className={`w-full bg-slate-900 text-white py-4 rounded-[16px] hover:bg-slate-800 transition-all font-bold text-[15px] shadow-sm flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>
+                                        <button disabled={isSubmitting} type="submit" form="cart-form" className={`w-full bg-slate-900 dark:bg-white text-white dark:text-slate-950 py-4 rounded-[16px] hover:bg-slate-800 dark:hover:bg-slate-100 transition-all font-bold text-[15px] shadow-sm flex justify-center items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>
                                             {isSubmitting ? 'Submitting...' : 'Submit Request'}
                                         </button>
                                     </div>

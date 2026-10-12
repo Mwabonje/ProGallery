@@ -40,7 +40,21 @@
       /* Optimization for smooth scrolling on large lists */
       .content-vis-auto { content-visibility: auto; }
     </style>
-
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('mwabonje_theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (saved === 'dark' || (!saved && prefersDark)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {}
+      })();
+    </script>
 </head>
   <body>
     <div id="root"></div>

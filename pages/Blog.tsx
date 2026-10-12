@@ -5,6 +5,7 @@ import { calculateReadingTime } from '../utils/blogData';
 import { BlogPost } from '../types';
 import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -54,7 +55,7 @@ export const Blog: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -107,15 +108,17 @@ export const Blog: React.FC = () => {
       </Helmet>
 
       {/* Header */}
-      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 flex flex-col items-center border-b border-slate-100">
+      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 flex flex-col items-center border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
         <div className="w-full max-w-5xl mx-auto flex justify-between items-center relative">
-          <Link to="/" className="text-slate-400 hover:text-slate-900 transition-colors" aria-label="Back to Portfolio">
+          <Link to="/" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Back to Portfolio">
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl md:text-3xl lg:text-[40px] uppercase tracking-wider font-bold text-slate-800 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h1 className="text-2xl md:text-3xl lg:text-[40px] uppercase tracking-wider font-bold text-slate-800 dark:text-white text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Journal
           </h1>
-          <div className="w-6"></div> {/* Spacer to center the title */}
+          <div className="flex items-center">
+            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
+          </div>
         </div>
       </header>
 
@@ -126,14 +129,14 @@ export const Blog: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center text-slate-500 py-12">
+          <div className="text-center text-slate-500 dark:text-slate-400 py-12">
             <p>No journal entries found. Check back later!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
             {posts.map((post) => (
               <article key={post.id} className="group flex flex-col h-full">
-                <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 mb-4 md:mb-6" aria-label={`Read ${post.title}`}>
+                <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 dark:bg-slate-800 mb-4 md:mb-6" aria-label={`Read ${post.title}`}>
                   {post.cover_image && (
                     <img 
                       src={post.cover_image} 
@@ -143,22 +146,22 @@ export const Blog: React.FC = () => {
                     />
                   )}
                 </Link>
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 dark:text-slate-400 font-semibold">
                   <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
                   <span>{post.category}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:inline-block"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 hidden sm:inline-block"></span>
                   <span className="hidden sm:inline-block">{calculateReadingTime(post.content)} min read</span>
                 </div>
                 <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block group">
-                  <h2 className="text-2xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  <h2 className="text-2xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {post.title}
                   </h2>
                 </Link>
-                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-4">
+                <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-4">
                   {post.excerpt}
                 </p>
-                <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
+                <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 dark:text-slate-200 hover:text-slate-500 dark:hover:text-white transition-colors mt-auto">
                   Read More
                 </Link>
               </article>

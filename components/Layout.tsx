@@ -3,6 +3,7 @@ import { LogOut, Camera, LayoutDashboard, FileText, Loader2, Menu, X, Users, Tre
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useUpload } from '../contexts/UploadContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,9 +44,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isPages = location.search.includes('view=pages');
 
   return (
-    <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
+    <div className="h-screen w-full flex bg-[#F9F9F9] dark:bg-[#0b0f17] text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300">
       {/* Sidebar */}
-      <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
+      <div className="w-[240px] bg-[#111111] dark:bg-[#080c14] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] dark:border-slate-800/80 shrink-0">
         <div className="px-6 mb-10">
           <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
           <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
@@ -148,7 +149,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
         )}
 
-        <div className="pt-4 px-6 flex justify-between items-center gap-3">
+        <div className="pt-4 px-6 flex justify-between items-center gap-3 border-t border-[#222] dark:border-slate-800/80">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
                 J
@@ -158,9 +159,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="text-slate-500 hover:text-white transition-colors">
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle className="text-slate-400 hover:text-white" />
+            <button onClick={handleLogout} className="text-slate-500 hover:text-white transition-colors p-1" title="Sign out">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

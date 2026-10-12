@@ -7,6 +7,7 @@ import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play, ArrowRight } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -328,30 +329,30 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const aboutImageSrc = aboutGallery?.coverUrl || firstPortraitCover;
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
         <title>{settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast</title>
         <meta name="description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
       </Helmet>
 
       {/* Modern Editorial Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all duration-200">
+      <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 group-hover:text-slate-600 transition-colors">
+            <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
               {settings.brandName}
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600">
+          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600 dark:text-slate-300">
             <a 
               href="#work" 
               onClick={(e) => {
                 e.preventDefault();
                 document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
               }} 
-              className="hover:text-slate-950 transition-colors"
+              className="hover:text-slate-950 dark:hover:text-white transition-colors"
             >
               Portfolio
             </a>
@@ -362,14 +363,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 handleCategorySelect('FILMS');
                 document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
               }} 
-              className="hover:text-slate-950 transition-colors"
+              className="hover:text-slate-950 dark:hover:text-white transition-colors"
             >
               Films
             </a>
-            <Link to="/prints" className="hover:text-slate-950 transition-colors">
+            <Link to="/prints" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               Prints
             </Link>
-            <Link to="/blog" className="hover:text-slate-950 transition-colors">
+            <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               Journal
             </Link>
             <a 
@@ -378,19 +379,20 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 e.preventDefault();
                 document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
               }} 
-              className="hover:text-slate-950 transition-colors"
+              className="hover:text-slate-950 dark:hover:text-white transition-colors"
             >
               About
             </a>
           </nav>
 
           {/* Right Action */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
             <a 
               href={settings.contactLink} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 text-white rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 transition-all shadow-sm hover:shadow"
+              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm hover:shadow"
             >
               Enquire
             </a>
@@ -398,7 +400,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             {/* Mobile Menu Button */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className="md:hidden p-2 text-slate-900 hover:text-slate-600 transition-colors"
+              className="md:hidden p-2 text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -408,15 +410,15 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
         {/* Mobile Navigation Drawer */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
-            <div className="flex flex-col space-y-4 text-xs font-semibold tracking-widest uppercase text-slate-800">
+          <div className="md:hidden bg-[#FAF8F5] dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
+            <div className="flex flex-col space-y-4 text-xs font-semibold tracking-widest uppercase text-slate-800 dark:text-slate-200">
               <a 
                 href="#work" 
                 onClick={() => {
                   setIsMenuOpen(false);
                   document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="py-2 border-b border-slate-100"
+                }} 
+                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
               >
                 Portfolio
               </a>
@@ -426,15 +428,15 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                   setIsMenuOpen(false);
                   handleCategorySelect('FILMS');
                   document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="py-2 border-b border-slate-100"
+                }} 
+                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
               >
                 Films
               </a>
-              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-100">
+              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 Prints
               </Link>
-              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-100">
+              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 Journal
               </Link>
               <a 
@@ -442,16 +444,20 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 onClick={() => {
                   setIsMenuOpen(false);
                   document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="py-2 border-b border-slate-100"
+                }} 
+                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
               >
                 About
               </a>
+              <div className="py-2 border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Theme</span>
+                <ThemeToggle showLabel />
+              </div>
               <a 
                 href={settings.contactLink} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="inline-block text-center mt-2 px-6 py-3 bg-slate-900 text-white rounded-full font-bold"
+                className="inline-block text-center mt-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full font-bold"
               >
                 Book a Session
               </a>
@@ -503,12 +509,12 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
       {/* Portfolio Showcase Section */}
       <section id="work" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-slate-100 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-slate-200/60 dark:border-slate-800 gap-6">
           <div>
-            <h2 className="font-serif text-3xl md:text-5xl font-normal text-slate-900 tracking-tight mb-3">
+            <h2 className="font-serif text-3xl md:text-5xl font-normal text-slate-900 dark:text-white tracking-tight mb-3">
               Selected Works
             </h2>
-            <p className="text-slate-500 text-sm md:text-base max-w-xl">
+            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-xl">
               Curated architectural spaces, hospitality retreats, and intimate moments captured along East Africa&apos;s coastline.
             </p>
           </div>
@@ -521,8 +527,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 onClick={() => handleCategorySelect(cat.value)}
                 className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
                   selectedCategory.toUpperCase() === cat.value.toUpperCase()
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-sm'
+                    : 'bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300/80 dark:hover:bg-slate-700 hover:text-slate-950 dark:hover:text-white'
                 }`}
               >
                 {cat.label}
@@ -539,11 +545,11 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             ))}
           </div>
         ) : filteredGalleries.length === 0 ? (
-          <div className="text-center py-24 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="text-slate-500 text-base font-serif italic mb-4">No galleries found in this collection.</p>
+          <div className="text-center py-24 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+            <p className="text-slate-500 dark:text-slate-400 text-base font-serif italic mb-4">No galleries found in this collection.</p>
             <button 
               onClick={() => handleCategorySelect('ALL')}
-              className="text-xs uppercase tracking-widest font-bold text-slate-900 hover:underline"
+              className="text-xs uppercase tracking-widest font-bold text-slate-900 dark:text-white hover:underline"
             >
               View All Works
             </button>
@@ -558,7 +564,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 <Link
                   key={gallery.id}
                   to={`/${slug}`}
-                  className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100"
+                  className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800"
                 >
                   {/* Card Media Image or Video */}
                   <CardMedia gallery={gallery} />
@@ -568,7 +574,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
                   {/* Top Badge */}
                   <div className="absolute top-4 left-4 z-10">
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold tracking-widest uppercase text-slate-900 shadow-sm">
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[10px] font-bold tracking-widest uppercase text-slate-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10">
                       {displayCategory}
                     </span>
                   </div>
@@ -596,7 +602,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-24 bg-slate-50 border-t border-b border-slate-100">
+      <section id="about" className="py-24 bg-slate-100/70 dark:bg-[#0c1017] border-t border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Image */}
@@ -628,14 +634,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
             {/* Content */}
             <div className="space-y-6">
-              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">
+              <span className="text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">
                 About the Photographer
               </span>
-              <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-slate-900 leading-tight">
+              <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-slate-900 dark:text-white leading-tight">
                 Preserving fleeting moments, translating emotions into visuals.
               </h2>
               
-              <div className="space-y-4 text-slate-600 leading-relaxed text-sm md:text-base font-light">
+              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base font-light">
                 {aboutGallery?.title ? (
                   aboutGallery.title.split('\n').filter(Boolean).map((paragraph, i) => (
                     <p key={i}>{paragraph}</p>
@@ -660,14 +666,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                   href={settings.contactLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 transition-all shadow-md"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md"
                 >
                   <span>Book a Session</span>
                   <ArrowRight className="w-4 h-4" />
                 </a>
                 <Link
                   to="/prints"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-white border border-slate-200 text-slate-800 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                 >
                   <span>Browse Fine Art Prints</span>
                 </Link>

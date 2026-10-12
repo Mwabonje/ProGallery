@@ -35,6 +35,7 @@ import {
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 
 import { SEO } from "../components/SEO";
+import { ThemeToggle } from "../components/ThemeToggle";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -1553,7 +1554,7 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen bg-white text-slate-900 select-none ${isSelectionMode ? "pb-24" : ""}`}
+      className={`min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : ""}`}
     >
       {/* Scroll Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
@@ -1578,23 +1579,23 @@ export const ClientGallery: React.FC = () => {
         }}
       />
       {/* Header */}
-      <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 border-b border-slate-100">
+      <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
           <div>
             <h1
-              className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? "text-slate-900 tracking-widest uppercase font-sans" : "text-slate-900"}`}
+              className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? "text-slate-900 dark:text-white tracking-widest uppercase font-sans" : "text-slate-900 dark:text-white"}`}
             >
               {viewFilter !== "all" ? (
                 <button
                   onClick={() => setViewFilter("all")}
-                  className="md:hidden mr-1 p-2 -ml-2 text-slate-400"
+                  className="md:hidden mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 >
                   <ArrowLeft className="w-6 h-6" />
                 </button>
               ) : isPortfolio ? (
                 <button
                   onClick={() => navigate(`/`)}
-                  className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors"
+                  className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   <ArrowLeft className="w-6 h-6" />
                 </button>
@@ -1608,7 +1609,7 @@ export const ClientGallery: React.FC = () => {
                     : gallery?.client_name}
             </h1>
             {!isPortfolio && (
-              <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500">
+              <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 {displayedFiles.length} items
               </p>
             )}
@@ -1685,6 +1686,7 @@ export const ClientGallery: React.FC = () => {
                 )}
               </>
             ) : null}
+            <ThemeToggle className="ml-1" />
           </div>
         </div>
 

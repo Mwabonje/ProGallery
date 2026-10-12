@@ -183,13 +183,13 @@ export const AboutSettingsModal = ({
     }
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                    <h2 className="text-lg font-semibold text-slate-900">Edit About Section</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+            <div className="bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200/60 dark:border-slate-800 transition-colors">
+                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#0f172a] shrink-0">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Edit About Section</h2>
                     <button 
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                         disabled={saving || uploading}
                     >
                         <X className="w-5 h-5" />
@@ -200,15 +200,15 @@ export const AboutSettingsModal = ({
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Image Section */}
                         <div className="flex flex-col gap-3">
-                            <label className="block text-sm font-medium text-slate-700">Profile Image</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Profile Image</label>
                             
-                            <div className="aspect-[3/4] relative bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                            <div className="aspect-[3/4] relative bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                                 {(() => {
                                     const displaySrc = (coverUrl && isRealPortfolioUrl(coverUrl)) ? coverUrl : REAL_ABOUT_IMAGE_URL;
                                     return displaySrc ? (
                                         <img src={displaySrc} alt="About" className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2">
                                             <ImageIcon className="w-8 h-8" />
                                             <span className="text-xs">No image uploaded</span>
                                         </div>
@@ -216,9 +216,9 @@ export const AboutSettingsModal = ({
                                 })()}
                                 
                                 {uploading && (
-                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">
-                                       <Loader2 className="w-6 h-6 text-slate-600 animate-spin mb-2" />
-                                       <span className="text-sm font-medium text-slate-600 mb-3">Uploading...</span>
+                                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">
+                                       <Loader2 className="w-6 h-6 text-slate-600 dark:text-slate-300 animate-spin mb-2" />
+                                       <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Uploading...</span>
                                        <button 
                                            type="button"
                                            onClick={(e) => {
@@ -226,7 +226,7 @@ export const AboutSettingsModal = ({
                                                e.stopPropagation();
                                                cancelUpload();
                                            }}
-                                           className="px-3 py-1.5 bg-white border border-slate-200 shadow-sm rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                           className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                                        >
                                            Cancel Upload
                                        </button>
@@ -246,7 +246,7 @@ export const AboutSettingsModal = ({
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={uploading}
-                                className="w-full px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium disabled:opacity-50"
+                                className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50"
                             >
                                 {coverUrl ? 'Change Image' : 'Upload Image'}
                             </button>
@@ -254,36 +254,36 @@ export const AboutSettingsModal = ({
 
                         {/* Text Section */}
                         <div className="flex flex-col gap-3">
-                            <label htmlFor="aboutText" className="block text-sm font-medium text-slate-700">
+                            <label htmlFor="aboutText" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                                 About Text (Markdown / Paragraphs)
                             </label>
                             <textarea
                                 id="aboutText"
                                 value={aboutText}
                                 onChange={(e) => setAboutText(e.target.value)}
-                                className="w-full flex-1 min-h-[300px] px-4 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all resize-none text-sm leading-relaxed"
+                                className="w-full flex-1 min-h-[300px] px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all resize-none text-sm leading-relaxed text-slate-900 dark:text-slate-100"
                                 placeholder="Enter your about text here..."
                             />
                         </div>
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                    <div className="text-sm text-slate-500 flex items-center gap-2">
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex justify-between items-center shrink-0">
+                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         {autoSaveStatus === 'saving' && (
                             <><Loader2 className="w-4 h-4 animate-spin" /> Auto-saving...</>
                         )}
                         {autoSaveStatus === 'saved' && (
-                            <><span className="text-green-600 font-medium">✓ Saved</span></>
+                            <><span className="text-green-600 dark:text-green-400 font-medium">✓ Saved</span></>
                         )}
                         {autoSaveStatus === 'error' && (
-                            <><span className="text-red-500 font-medium">Auto-save failed</span></>
+                            <><span className="text-red-500 dark:text-rose-400 font-medium">Auto-save failed</span></>
                         )}
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-200 border border-transparent rounded-lg transition-colors"
+                            className="px-4 py-2 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent rounded-lg transition-colors"
                             disabled={saving || uploading}
                         >
                             Cancel
@@ -291,7 +291,7 @@ export const AboutSettingsModal = ({
                         <button
                             onClick={handleSave}
                             disabled={saving || uploading}
-                            className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-medium rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 transition-colors flex items-center gap-2"
                         >
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                             {saving ? (lastSavedTextRef.current === aboutText ? 'Close' : 'Saving...') : (lastSavedTextRef.current === aboutText ? 'Close' : 'Save Changes')}

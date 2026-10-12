@@ -8,6 +8,8 @@ import { GalleryManager } from './pages/GalleryManager';
 import { ClientGallery } from './pages/ClientGallery';
 import { Session } from '@supabase/supabase-js';
 import { UploadProvider } from './contexts/UploadContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeToggle } from './components/ThemeToggle';
 
 import { Toaster } from 'sonner';
 
@@ -114,44 +116,47 @@ const App: React.FC = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-400">Loading...</div>;
 
   return (
-    <UploadProvider>
-      <Toaster position="top-center" richColors />
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Portfolio />} />
-          <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
-          <Route path="/admin" element={!session ? <Navigate to="/login" /> : <Navigate to="/dashboard" />} />
-          <Route path="/g/:galleryId" element={<ClientGallery />} />
-          <Route path="/g/:galleryId/display" element={<LiveDisplay />} />
-          <Route path="/p/:photographerId" element={<Portfolio />} />
-          <Route path="/prints" element={<Prints />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
+    <ThemeProvider>
+      <UploadProvider>
+        <Toaster position="top-center" richColors />
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Portfolio />} />
+            <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
+            <Route path="/admin" element={!session ? <Navigate to="/login" /> : <Navigate to="/dashboard" />} />
+            <Route path="/g/:galleryId" element={<ClientGallery />} />
+            <Route path="/g/:galleryId/display" element={<LiveDisplay />} />
+            <Route path="/p/:photographerId" element={<Portfolio />} />
+            <Route path="/prints" element={<Prints />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
-          {/* Protected Photographer Routes */}
-          <Route path="/dashboard" element={
-            session ? (
-                <Dashboard />
-            ) : <Navigate to="/login" />
-          } />
-          
-          <Route path="/gallery/:id" element={
-            session ? (
-              <Layout>
-                <GalleryManager />
-              </Layout>
-            ) : <Navigate to="/login" />
-          } />
+            {/* Protected Photographer Routes */}
+            <Route path="/dashboard" element={
+              session ? (
+                  <Dashboard />
+              ) : <Navigate to="/login" />
+            } />
+            
+            <Route path="/gallery/:id" element={
+              session ? (
+                <Layout>
+                  <GalleryManager />
+                </Layout>
+              ) : <Navigate to="/login" />
+            } />
 
-          {/* Vanity URL for Galleries (must be last before catch-all) */}
-          <Route path="/:galleryId" element={<ClientGallery />} />
+            {/* Vanity URL for Galleries (must be last before catch-all) */}
+            <Route path="/:galleryId" element={<ClientGallery />} />
 
-          {/* Default */}
-          <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
-        </Routes>
-      </Router>
-    </UploadProvider>
+            {/* Default */}
+            <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+          </Routes>
+          <ThemeToggle variant="floating" />
+        </Router>
+      </UploadProvider>
+    </ThemeProvider>
   );
 };
 

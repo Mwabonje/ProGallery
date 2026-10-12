@@ -920,15 +920,15 @@ export const GalleryManager: React.FC = () => {
   const editedCount = files.filter(f => f.is_edited).length;
 
   return (
-    <div className="min-h-full bg-gray-50 text-slate-900 font-sans pb-20">
+    <div className="min-h-full bg-gray-50 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans pb-20 transition-colors duration-300">
       {schemaMissing && (
-        <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded text-rose-700 mb-6 mx-4 md:mx-8 mt-4">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border-l-4 border-rose-500 p-4 rounded text-rose-700 dark:text-rose-300 mb-6 mx-4 md:mx-8 mt-4">
           <h3 className="font-bold text-lg">Database Schema Update Required</h3>
           <p className="mt-1">
              The prints features cannot be saved correctly because some database columns are missing.
              To fix this, please run the following SQL command in your <strong>Supabase SQL Editor</strong>:
           </p>
-          <pre className="bg-rose-100 p-3 rounded mt-2 text-[10px] sm:text-xs font-mono text-rose-900 border border-rose-200 overflow-x-auto whitespace-pre-wrap">
+          <pre className="bg-rose-100 dark:bg-rose-900/40 p-3 rounded mt-2 text-[10px] sm:text-xs font-mono text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800 overflow-x-auto whitespace-pre-wrap">
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS title text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS description text;{'\n'}
             ALTER TABLE public.files ADD COLUMN IF NOT EXISTS print_size text;{'\n'}
@@ -957,7 +957,7 @@ export const GalleryManager: React.FC = () => {
       )}
 
       {/* Topbar */}
-      <div className="bg-white border-b border-slate-200 py-6 md:py-8 mb-8">
+      <div className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 py-6 md:py-8 mb-8 transition-colors">
         <div className="flex justify-between items-end flex-wrap gap-4 max-w-[1600px] mx-auto px-6 md:px-10">
         <div>
             {isEditingMeta ? (
@@ -967,14 +967,14 @@ export const GalleryManager: React.FC = () => {
                         value={editClientName}
                         onChange={(e) => setEditClientName(e.target.value)}
                         placeholder="Gallery Name / Client Name"
-                        className="w-full text-3xl font-serif font-medium tracking-tight text-slate-900 border-b border-slate-300 focus:border-slate-900 focus:outline-none bg-transparent pb-1"
+                        className="w-full text-3xl font-serif font-medium tracking-tight text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 focus:border-slate-900 dark:focus:border-white focus:outline-none bg-transparent pb-1"
                     />
                     <textarea
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         placeholder="Description or Subtitle (e.g., Print Details)"
                         rows={2}
-                        className="w-full text-slate-600 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none resize-none bg-white"
+                        className="w-full text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none resize-none bg-white dark:bg-slate-900"
                     />
                     <input
                         type="text"
@@ -982,7 +982,7 @@ export const GalleryManager: React.FC = () => {
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
                         placeholder="Category (e.g. Wedding, Portraits...)"
-                        className="w-full text-slate-700 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none bg-white"
+                        className="w-full text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none bg-white dark:bg-slate-900"
                     />
                     <datalist id="gallery-category-options">
                         {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
@@ -993,7 +993,7 @@ export const GalleryManager: React.FC = () => {
                         <select
                             value={editLayout}
                             onChange={(e) => setEditLayout(e.target.value as 'grid' | 'swipe')}
-                            className="w-full text-slate-700 border border-slate-200 rounded-[3px] p-2 text-[13px] focus:border-slate-300 focus:outline-none bg-white"
+                            className="w-full text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none bg-white dark:bg-slate-900"
                         >
                             <option value="grid">Grid Layout (Vertical Scroll)</option>
                             <option value="swipe">Swipe Layout (Horizontal Scroll)</option>
@@ -1002,7 +1002,7 @@ export const GalleryManager: React.FC = () => {
                     <div className="flex gap-2 pt-1">
                         <button
                             onClick={updateMeta}
-                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
                         >
                             Save Details
                         </button>
@@ -1014,7 +1014,7 @@ export const GalleryManager: React.FC = () => {
                                 setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
                                 setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
                             }}
-                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                            className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
                             Cancel
                         </button>
@@ -1023,19 +1023,19 @@ export const GalleryManager: React.FC = () => {
             ) : (
                 <div className="group flex items-start gap-3">
                     <div>
-                        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900 mb-1 flex items-center gap-3">
+                        <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-3">
                             {gallery.client_name}
                             {gallery.category && (
-                                <span className="text-[10px] font-sans font-bold tracking-widest uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded-sm">
+                                <span className="text-[10px] font-sans font-bold tracking-widest uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-sm">
                                     {gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}
                                 </span>
                             )}
                         </h1>
-                        <div className="font-mono text-[11.5px] text-slate-500">ID · {gallery.id.slice(0, 8)}</div>
+                        <div className="font-mono text-[11.5px] text-slate-500 dark:text-slate-400">ID · {gallery.id.slice(0, 8)}</div>
                     </div>
                     <button
                         onClick={() => setIsEditingMeta(true)}
-                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-[3px] opacity-0 group-hover:opacity-100 transition-all mt-1"
+                        className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded-[3px] opacity-0 group-hover:opacity-100 transition-all mt-1"
                         title="Edit Details"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -1045,13 +1045,13 @@ export const GalleryManager: React.FC = () => {
         </div>
         
         <div className="flex gap-2 flex-wrap">
-          <button onClick={handleCopyLink} className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
-            {linkCopied ? <><Check className="w-3.5 h-3.5 text-emerald-600"/> <span className="text-emerald-600">Copied</span></> : <><Copy className="w-3.5 h-3.5"/> Copy link</>}
+          <button onClick={handleCopyLink} className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5">
+            {linkCopied ? <><Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"/> <span className="text-emerald-600 dark:text-emerald-400">Copied</span></> : <><Copy className="w-3.5 h-3.5"/> Copy link</>}
           </button>
-          <a href={`/${gallery.id}/display`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-indigo-50 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors inline-flex items-center gap-1.5">
+          <a href={`/${gallery.id}/display`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-indigo-100 dark:border-indigo-950 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors inline-flex items-center gap-1.5">
             <LayoutGrid className="w-3.5 h-3.5" /> Live display
           </a>
-          <a href={`/${gallery.id}`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5">
+          <a href={`/${gallery.id}`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-900 dark:border-white bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5">
             <ExternalLink className="w-3.5 h-3.5" /> Client preview
           </a>
           <button onClick={() => {
@@ -1062,7 +1062,7 @@ export const GalleryManager: React.FC = () => {
               } else {
                   updateSelectionStatus(!gallery.link_enabled);
               }
-          }} className={`font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border transition-colors inline-flex items-center gap-1.5 ${!gallery.link_enabled || gallery.selection_status === 'submitted' ? 'bg-rose-600 border-rose-600 text-white hover:bg-rose-700' : 'border-slate-200 bg-white text-slate-900 hover:bg-slate-50'}`}>
+          }} className={`font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border transition-colors inline-flex items-center gap-1.5 ${!gallery.link_enabled || gallery.selection_status === 'submitted' ? 'bg-rose-600 border-rose-600 text-white hover:bg-rose-700' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
              {!gallery.link_enabled ? <Lock className="w-3.5 h-3.5" /> : gallery.selection_status === 'submitted' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
              {!gallery.link_enabled ? 'Disabled' : gallery.selection_status === 'submitted' ? 'Locked (Submitted)' : 'Active'}
           </button>
@@ -1093,68 +1093,68 @@ export const GalleryManager: React.FC = () => {
         <div className="flex flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
           {!isPortfolio && (
-            <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
-              <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] p-5 mb-5 transition-colors">
+              <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
                 <span className="text-[14px] opacity-60">●</span> Payment & access
               </h2>
               <div className="mb-4">
-                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Total agreed amount <span className="font-normal text-slate-400">— set 0 for volunteer</span></label>
+                <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Total agreed amount <span className="font-normal text-slate-400 dark:text-slate-500">— set 0 for volunteer</span></label>
                 <input 
                     type="number" 
                     value={agreedAmount}
                     onChange={(e) => setAgreedAmount(e.target.value ? Number(e.target.value) : '')}
                     placeholder="KES 0"
-                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Amount paid</label>
+                <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Amount paid</label>
                 <input 
                     type="number" 
                     value={paid}
                     onChange={(e) => setPaid(e.target.value ? Number(e.target.value) : '')}
                     placeholder="KES 0"
-                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                 />
               </div>
               <div className="mb-[14px]">
-                <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Remaining balance</label>
+                <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Remaining balance</label>
                 <input 
-                    type="text"
+                    type="text" 
                     value={Math.max(0, (Number(agreedAmount) || 0) - (Number(paid) || 0))}
                     disabled
                     placeholder="KES 0"
-                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-500 cursor-not-allowed"
+                    className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
                 />
               </div>
               {(Number(agreedAmount) || 0) === 0 && (
-                <div className="inline-flex items-center gap-1.5 text-[12px] text-indigo-600 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full mb-[14px] font-medium">
+                <div className="inline-flex items-center gap-1.5 text-[12px] text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1.5 rounded-full mb-[14px] font-medium border border-indigo-100 dark:border-indigo-900/40">
                   ♡ Volunteer / collaboration
                 </div>
               )}
               <button 
                 onClick={updatePayment}
-                className="w-full justify-center font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 text-white hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 mt-4"
+                className="w-full justify-center font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5 mt-4"
               >
                 {paymentUpdated ? <Check className="w-4 h-4" /> : 'Update payment'}
               </button>
             </div>
           )}
 
-          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
-            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] p-5 mb-5 transition-colors">
+            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
               <span className="text-[14px] opacity-60">●</span> Gallery stats
             </h2>
-            <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 text-[13px] text-slate-700">
-                <span>Total files</span><span className="font-serif text-[17px] text-slate-900">{files.length}</span>
+            <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 dark:border-slate-800 text-[13px] text-slate-700 dark:text-slate-300">
+                <span>Total files</span><span className="font-serif text-[17px] text-slate-900 dark:text-white">{files.length}</span>
             </div>
             {!isPortfolio && (
-                <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 text-[13px] text-slate-700">
-                    <span>Selected by client</span><span className="font-serif text-[17px] text-rose-600">{clientSelections.length}</span>
+                <div className="flex justify-between items-baseline py-2.5 border-b border-slate-100 dark:border-slate-800 text-[13px] text-slate-700 dark:text-slate-300">
+                    <span>Selected by client</span><span className="font-serif text-[17px] text-rose-600 dark:text-rose-400">{clientSelections.length}</span>
                 </div>
             )}
-            <div className="flex justify-between items-baseline py-2.5 text-[13px] text-slate-700">
-                <span>Total downloads</span><span className="font-serif text-[17px] text-slate-900">{files.reduce((acc, f) => acc + (f.download_count || 0), 0)}</span>
+            <div className="flex justify-between items-baseline py-2.5 text-[13px] text-slate-700 dark:text-slate-300">
+                <span>Total downloads</span><span className="font-serif text-[17px] text-slate-900 dark:text-white">{files.reduce((acc, f) => acc + (f.download_count || 0), 0)}</span>
             </div>
             
             <button 
@@ -1181,7 +1181,7 @@ export const GalleryManager: React.FC = () => {
                   link.click();
                   document.body.removeChild(link);
                }}
-               className="w-full justify-center mt-4 font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"
+               className="w-full justify-center mt-4 font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5"
             >
                Export selections (CSV)
             </button>
@@ -1191,14 +1191,14 @@ export const GalleryManager: React.FC = () => {
 
         {/* Center Column */}
         <div 
-          className="bg-white border border-slate-200 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] lg:h-[calc(100vh-48px)] lg:sticky lg:top-6 transition-colors"
+          className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] overflow-hidden flex flex-col relative min-h-[600px] lg:h-[calc(100vh-48px)] lg:sticky lg:top-6 transition-colors"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={isDragging ? { backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgb(16, 185, 129)' } : {}}
         >
-          <div className="px-5 pt-5 pb-4 flex justify-between items-center border-b border-slate-200 flex-wrap gap-4">
-            <h2 className="font-serif font-medium text-[18px] m-0 text-slate-900">Gallery content</h2>
+          <div className="px-5 pt-5 pb-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800 flex-wrap gap-4">
+            <h2 className="font-serif font-medium text-[18px] m-0 text-slate-900 dark:text-white">Gallery content</h2>
             <div className="flex items-center gap-2">
                 <input
                     type="file"
@@ -1218,31 +1218,31 @@ export const GalleryManager: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-200 flex-wrap gap-2.5">
+          <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex-wrap gap-2.5">
             <div className="flex gap-1.5 flex-wrap">
-              <div onClick={() => setViewFilter('all')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>All ({files.length})</div>
-              <div onClick={() => setViewFilter('selected')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'selected' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Selected ({clientSelections.length})</div>
+              <div onClick={() => setViewFilter('all')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>All ({files.length})</div>
+              <div onClick={() => setViewFilter('selected')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'selected' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Selected ({clientSelections.length})</div>
               {limit > 0 && (
                   <>
-                  <div onClick={() => setViewFilter('main')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'main' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Main ({mainSelections.length})</div>
-                  <div onClick={() => setViewFilter('extras')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'extras' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>Extras ({extraSelections.length})</div>
+                  <div onClick={() => setViewFilter('main')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'main' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Main ({mainSelections.length})</div>
+                  <div onClick={() => setViewFilter('extras')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'extras' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Extras ({extraSelections.length})</div>
                   </>
               )}
             </div>
-            <div className="flex items-center gap-3.5 text-[12px] text-slate-500">
-               <button onClick={() => setIsExtendModalOpen(true)} className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors" title="Reactivate / Extend Expiry">
+            <div className="flex items-center gap-3.5 text-[12px] text-slate-500 dark:text-slate-400">
+               <button onClick={() => setIsExtendModalOpen(true)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-slate-400 transition-colors" title="Reactivate / Extend Expiry">
                   <RefreshCw className="w-3.5 h-3.5" />
                </button>
             </div>
           </div>
           
           {uploading && (
-             <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+             <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="text-[13px] font-medium text-slate-700 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-emerald-600"/> Uploading...</span>
-                    <span className="text-[13px] font-medium text-emerald-600">{progress}%</span>
+                    <span className="text-[13px] font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-emerald-600"/> Uploading...</span>
+                    <span className="text-[13px] font-medium text-emerald-600 dark:text-emerald-400">{progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
                 </div>
              </div>
@@ -1250,19 +1250,19 @@ export const GalleryManager: React.FC = () => {
 
           {files.length === 0 ? (
             <div 
-                className={`flex-1 flex flex-col items-center justify-center p-12 text-center transition-colors ${isDragging ? 'bg-emerald-50/50' : 'bg-transparent'}`}
+                className={`flex-1 flex flex-col items-center justify-center p-12 text-center transition-colors ${isDragging ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : 'bg-transparent'}`}
             >
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
                     <Upload className="w-8 h-8 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No files uploaded yet</h3>
-                <p className="text-slate-500 text-sm max-w-sm">
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No files uploaded yet</h3>
+                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm">
                     Drag and drop your photos and videos here, or click the upload button to get started.
                 </p>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-[26px_minmax(56px,1fr)_100px_90px_84px] md:grid-cols-[26px_56px_1fr_100px_90px_84px] gap-3.5 px-5 py-2.5 text-[10.5px] tracking-[0.06em] uppercase text-slate-400 border-b border-slate-200 font-semibold sticky top-0 bg-white z-10 hidden md:grid">
+              <div className="grid grid-cols-[26px_minmax(56px,1fr)_100px_90px_84px] md:grid-cols-[26px_56px_1fr_100px_90px_84px] gap-3.5 px-5 py-2.5 text-[10.5px] tracking-[0.06em] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold sticky top-0 bg-white dark:bg-[#111827] z-10 hidden md:grid">
                 <input 
                     type="checkbox" 
                     checked={visibleFiles.length > 0 && checkedFiles.length === visibleFiles.length}
@@ -1279,14 +1279,14 @@ export const GalleryManager: React.FC = () => {
               {visibleFiles.map((file) => {
                  const isSelected = clientSelections.includes(file.id);
                  return (
-                    <div key={file.id} className={`grid grid-cols-[26px_minmax(0,1fr)_50px] md:grid-cols-[26px_56px_minmax(0,1fr)_100px_90px_84px] gap-3.5 px-5 py-3 items-center border-b border-slate-100 hover:bg-slate-50 transition-colors ${checkedFiles.includes(file.id) ? 'bg-indigo-50/30' : isSelected ? 'bg-emerald-50/20' : ''}`}>
+                    <div key={file.id} className={`grid grid-cols-[26px_minmax(0,1fr)_50px] md:grid-cols-[26px_56px_minmax(0,1fr)_100px_90px_84px] gap-3.5 px-5 py-3 items-center border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${checkedFiles.includes(file.id) ? 'bg-indigo-50/30 dark:bg-indigo-950/30' : isSelected ? 'bg-emerald-50/20 dark:bg-emerald-950/20' : ''}`}>
                         <input 
                             type="checkbox" 
                             checked={checkedFiles.includes(file.id)}
                             onChange={() => handleCheckFile(file.id)}
                             className="w-[15px] h-[15px] accent-emerald-600 cursor-pointer shrink-0"
                         />
-                        <div className="hidden md:block w-11 h-11 rounded-[6px] bg-slate-200 shrink-0 overflow-hidden relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
+                        <div className="hidden md:block w-11 h-11 rounded-[6px] bg-slate-200 dark:bg-slate-800 shrink-0 overflow-hidden relative shadow-[inset_0_0_1px_rgba(0,0,0,0.2)]">
                             {file.file_type === 'image' ? (
                                 <img 
                                     src={file.thumbnail_url ? getOptimizedImageUrl(file.thumbnail_url, 100, 100) : getOptimizedImageUrl(file.file_url, 100, 100)}
@@ -1312,17 +1312,17 @@ export const GalleryManager: React.FC = () => {
                         
                         <div className="min-w-0">
                             <div 
-                                className="font-mono text-[12.5px] font-medium text-slate-900 truncate flex items-center gap-1.5 group cursor-pointer" 
+                                className="font-mono text-[12.5px] font-medium text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5 group cursor-pointer" 
                                 title={file.title || (file.file_url.split('/').pop() || 'file')}
                                 onClick={() => handleOpenSingleRename(file)}
                             >
                                 <span className="truncate">{file.title || (file.file_url.split('/').pop() || 'file')}</span>
                                 <Edit2 className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                             </div>
-                            <div className="md:hidden text-[11px] text-slate-500 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
+                            <div className="md:hidden text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
                             <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                 {isSelected && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-emerald-600 text-white">Selected</span>}
-                                {file.is_edited && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-indigo-50 text-indigo-600">Edited</span>}
+                                {file.is_edited && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">Edited</span>}
                             </div>
                         </div>
 
@@ -1335,22 +1335,22 @@ export const GalleryManager: React.FC = () => {
                                     className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer shrink-0"
                                     title="Toggle Edited Status"
                                 />
-                                {file.is_edited && <span className="text-[11px] font-medium text-indigo-600 cursor-pointer select-none" onClick={() => handleToggleEdited(file.id, true)}>Edited</span>}
+                                {file.is_edited && <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 cursor-pointer select-none" onClick={() => handleToggleEdited(file.id, true)}>Edited</span>}
                             </div>
                             {file.expires_at && new Date(file.expires_at) < new Date() && (
-                                <div className="text-[10.5px] text-rose-600 font-semibold mt-0.5">Expired</div>
+                                <div className="text-[10.5px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">Expired</div>
                             )}
                         </div>
 
-                        <div className="hidden md:block text-[11px] text-slate-500">
+                        <div className="hidden md:block text-[11px] text-slate-500 dark:text-slate-400">
                             {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}
                         </div>
 
-                        <div className="flex gap-2.5 justify-end text-[13px] text-slate-500 ml-auto md:ml-0">
+                        <div className="flex gap-2.5 justify-end text-[13px] text-slate-500 dark:text-slate-400 ml-auto md:ml-0">
                             {isPortfolio && (
                                 <button
                                     onClick={() => handleSetCover(file.id)}
-                                    className={`hover:text-slate-900 transition-colors ${file.id === files[0]?.id ? 'text-slate-900' : ''}`}
+                                    className={`hover:text-slate-900 dark:hover:text-white transition-colors ${file.id === files[0]?.id ? 'text-slate-900 dark:text-white' : ''}`}
                                     title={file.id === files[0]?.id ? "Current Cover" : "Set as Cover"}
                                 >
                                     <Star className={`w-4 h-4 ${file.id === files[0]?.id ? 'fill-current' : ''}`} />
@@ -1358,18 +1358,18 @@ export const GalleryManager: React.FC = () => {
                             )}
                             <button
                                 onClick={() => handleOpenSingleRename(file)}
-                                className="hover:text-slate-900 transition-colors hidden sm:block"
+                                className="hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:block"
                                 title="Rename"
                             >
                                 <Edit2 className="w-4 h-4" />
                             </button>
-                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors" title="View Original">
+                            <a href={rewriteUrlToR2(file.file_url)} target="_blank" rel="noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="View Original">
                                 <Eye className="w-4 h-4" />
                             </a>
-                            <a href={rewriteUrlToR2(file.file_url)} download target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors hidden md:block" title="Download">
+                            <a href={rewriteUrlToR2(file.file_url)} download target="_blank" rel="noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors hidden md:block" title="Download">
                                 <Download className="w-4 h-4" />
                             </a>
-                            <button onClick={() => deleteFile(file.id, file.file_path)} className="hover:text-rose-600 transition-colors" title="Delete">
+                            <button onClick={() => deleteFile(file.id, file.file_path)} className="hover:text-rose-600 dark:hover:text-rose-400 transition-colors" title="Delete">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
@@ -1382,53 +1382,53 @@ export const GalleryManager: React.FC = () => {
 
         {/* Right Column */}
         <div className="flex flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="bg-white border border-slate-200 rounded-[4px] p-5 mb-5">
-            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] p-5 mb-5 transition-colors">
+            <h2 className="font-serif font-medium text-[17px] mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
               <span className="text-[14px] opacity-60">●</span> Gallery settings
             </h2>
             {!isPortfolio && (
                 <>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <label className="block text-[11.5px] text-slate-500 mb-1 font-medium">Client selection</label>
-                    <div className="text-[11px] text-slate-400 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
+                    <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1 font-medium">Client selection</label>
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[190px] leading-[1.4]">When enabled, clients can favourite photos but cannot download them.</div>
                   </div>
                   <button 
                     onClick={toggleSelectionMode}
-                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${gallery.selection_enabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                    className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${gallery.selection_enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`}
                   >
                     <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${gallery.selection_enabled ? 'translate-x-4' : 'translate-x-0'}`} style={{ left: '2px' }}></div>
                   </button>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Client unlock PIN</label>
+                  <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Client unlock PIN</label>
                   <input 
                       type="text" 
                       value={gallery.id.split('-')[0].slice(0, 4).toUpperCase()}
                       readOnly
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-100 text-slate-600 cursor-not-allowed"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                   />
-                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Share this PIN with clients if they need to unlock submitted selections.</div>
+                  <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 leading-[1.4]">Share this PIN with clients if they need to unlock submitted selections.</div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Agreed number of photos</label>
+                  <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Agreed number of photos</label>
                   <input 
                       type="number" 
                       value={localLimit}
                       onChange={(e) => setLocalLimit(e.target.value ? Number(e.target.value) : '')}
                       onBlur={() => updateSelectionLimit(Number(localLimit) || 0)}
                       placeholder="Unlimited"
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                   />
-                  <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Set to 0 or leave blank for unlimited. If greater than 0, clients are asked to confirm before selecting extras.</div>
+                  <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 leading-[1.4]">Set to 0 or leave blank for unlimited. If greater than 0, clients are asked to confirm before selecting extras.</div>
                 </div>
                 </>
             )}
             <div className="mb-4">
-              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium flex justify-between items-center">
+              <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium flex justify-between items-center">
                  <span>Password protection</span>
                  <button 
-                     type="button"
+                     type="button" 
                      onClick={() => {
                         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
                         let pass = '';
@@ -1438,7 +1438,7 @@ export const GalleryManager: React.FC = () => {
                         }
                         updatePassword(pass);
                      }}
-                     className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                     className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold cursor-pointer"
                  >
                      Generate
                  </button>
@@ -1461,13 +1461,13 @@ export const GalleryManager: React.FC = () => {
                               updatePassword(e.target.value);
                           }
                       }}
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                   />
                   {galleryPassword ? (
                       <button
                           type="button"
                           onClick={() => updatePassword('')}
-                          className="px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:text-rose-800 border border-slate-200 hover:border-rose-300 rounded-[3px] bg-white whitespace-nowrap transition-colors cursor-pointer"
+                          className="px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-800 border border-slate-200 dark:border-slate-700 hover:border-rose-300 rounded-[3px] bg-white dark:bg-slate-800 whitespace-nowrap transition-colors cursor-pointer"
                           title="Remove password"
                       >
                           Clear
@@ -1480,15 +1480,15 @@ export const GalleryManager: React.FC = () => {
                                   updatePassword(passwordInputRef.current.value);
                               }
                           }}
-                          className="px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 border border-slate-200 rounded-[3px] bg-white whitespace-nowrap transition-colors cursor-pointer"
+                          className="px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 rounded-[3px] bg-white dark:bg-slate-800 whitespace-nowrap transition-colors cursor-pointer"
                       >
                           Save
                       </button>
                   )}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 leading-[1.4]">
                  {galleryPassword ? (
-                     <span className="text-emerald-600 font-medium flex items-center gap-1">
+                     <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                         <Lock className="w-3 h-3 inline" /> Protected with password (required to view)
                      </span>
                  ) : (
@@ -1497,37 +1497,37 @@ export const GalleryManager: React.FC = () => {
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Link Expiration (Hours)</label>
+              <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Link Expiration (Hours)</label>
               <div className="flex gap-2">
                   <input 
-                      type="number"
+                      type="number" 
                       value={expiryHours}
                       onChange={(e) => setExpiryHours(Number(e.target.value))}
-                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                      className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                   />
                   <button 
                     onClick={handleExtendExpiration}
-                    className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                    className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                   >
                     Apply
                   </button>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1.5 leading-[1.4]">Updates all files to expire N hours from now.</div>
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 leading-[1.4]">Updates all files to expire N hours from now.</div>
             </div>
             {isPrintsGallery && (
                 <div className="mb-0">
-                  <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium">Downloads before clearing <span className="font-normal text-slate-400">— e.g. for prints</span></label>
+                  <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Downloads before clearing <span className="font-normal text-slate-400 dark:text-slate-500">— e.g. for prints</span></label>
                   <div className="flex gap-2">
                       <input 
-                          type="number"
+                          type="number" 
                           value={downloadsBeforeClearing}
                           onChange={(e) => setDownloadsBeforeClearing(e.target.value ? Number(e.target.value) : '')}
                           placeholder="0 = Unlimited"
-                          className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 rounded-[3px] bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white"
+                          className="w-full font-sans text-[13px] px-2.5 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 focus:bg-white dark:focus:bg-slate-800"
                       />
                       <button 
                         onClick={updatePayment}
-                        className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 transition-colors"
+                        className="shrink-0 font-sans text-[12.5px] font-medium px-3 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
                         Save
                       </button>
@@ -1603,19 +1603,19 @@ export const GalleryManager: React.FC = () => {
       {/* Extend Modal */}
       {isExtendModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto transition-colors">
             <div className="p-6 md:p-8">
-              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">Reactivate Links</h2>
-              <p className="text-slate-500 text-[13px] mb-6">
+              <h2 className="text-xl font-serif font-bold text-slate-900 dark:text-white mb-2">Reactivate Links</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-[13px] mb-6">
                 Set a new expiration time to reactivate all {files.length} files in this gallery.
               </p>
               
               <div className="mb-6">
-                 <label className="block text-[11.5px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Expiration Time</label>
+                 <label className="block text-[11.5px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium uppercase tracking-wider">Expiration Time</label>
                  <select 
                       value={expiryHours}
                       onChange={(e) => setExpiryHours(Number(e.target.value))}
-                      className="w-full font-sans text-[14px] px-3.5 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 appearance-none"
+                      className="w-full font-sans text-[14px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 appearance-none"
                   >
                       <option value={0.5}>30 minutes</option>
                       <option value={1}>1 hour</option>
@@ -1629,13 +1629,13 @@ export const GalleryManager: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button 
                   onClick={() => setIsExtendModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-lg border border-slate-200 font-medium text-[13px] text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 font-medium text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleExtendExpiration}
-                  className="flex-1 py-2.5 rounded-lg bg-slate-900 font-medium text-[13px] text-white hover:bg-slate-800 transition-colors shadow-sm shadow-slate-200"
+                  className="flex-1 py-2.5 rounded-lg bg-slate-900 dark:bg-white font-medium text-[13px] text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
                 >
                   Reactivate Files
                 </button>
@@ -1648,12 +1648,12 @@ export const GalleryManager: React.FC = () => {
       {/* Rename Modal */}
       {isRenameModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto transition-colors">
             <div className="p-6 md:p-8">
-              <h2 className="text-xl font-serif font-bold text-slate-900 mb-2">
+              <h2 className="text-xl font-serif font-bold text-slate-900 dark:text-white mb-2">
                 {renameTargetFile || checkedFiles.length === 1 ? 'Rename File' : 'Rename Selected Files'}
               </h2>
-              <p className="text-slate-500 text-[13px] mb-6">
+              <p className="text-slate-500 dark:text-slate-400 text-[13px] mb-6">
                 {renameTargetFile || checkedFiles.length === 1
                   ? 'Enter a new name for this file.'
                   : `Enter a base name (e.g., 'Wedding'). ${checkedFiles.length} files will be sequentially named 'Wedding_001', 'Wedding_002', etc.`
@@ -1662,21 +1662,21 @@ export const GalleryManager: React.FC = () => {
               
               <form onSubmit={(e) => { e.preventDefault(); confirmRenameSelected(); }} className="space-y-4">
                 <div>
-                  <label className="block text-[11.5px] font-medium text-slate-700 mb-1">
+                  <label className="block text-[11.5px] font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {renameTargetFile || checkedFiles.length === 1 ? 'File Name' : 'Base Name'}
                   </label>
                   <input
                     type="text"
                     value={renameBaseName}
                     onChange={(e) => setRenameBaseName(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-[3px] bg-slate-50 hover:bg-slate-100 focus:bg-white focus:outline-none focus:border-slate-300 transition-all font-sans text-[13px]"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600 transition-all font-sans text-[13px]"
                     placeholder={renameTargetFile || checkedFiles.length === 1 ? "Enter file name" : "Enter base name"}
                     autoFocus
                   />
                   {renameBaseName.trim() && (
-                    <p className="text-xs text-slate-500 mt-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                       Preview:{' '}
-                      <span className="font-mono text-slate-700">
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
                         {(() => {
                           const target = renameTargetFile || (checkedFiles.length === 1 ? files.find(f => f.id === checkedFiles[0]) : null);
                           const oldName = target ? (target.title || target.file_path.split('/').pop() || target.file_url.split('/').pop() || '') : (files[0]?.title || files[0]?.file_path.split('/').pop() || '.jpg');
@@ -1699,14 +1699,14 @@ export const GalleryManager: React.FC = () => {
                       setRenameTargetFile(null);
                     }}
                     disabled={isRenaming}
-                    className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-transparent rounded-[3px] transition-colors font-medium text-[12.5px] disabled:opacity-50"
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent rounded-[3px] transition-colors font-medium text-[12.5px] disabled:opacity-50 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isRenaming || !renameBaseName.trim()}
-                    className="bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-[3px] font-medium text-[12.5px] transition-colors flex items-center gap-2"
+                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-[3px] font-medium text-[12.5px] transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     {isRenaming && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isRenaming ? 'Renaming...' : 'Rename'}

@@ -7,6 +7,7 @@ import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/forma
 import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { BlogAdmin } from "./BlogAdmin";
 import { PagesAdmin } from "./PagesAdmin";
 import { BlogAnalytics } from "../components/BlogAnalytics";
@@ -553,10 +554,10 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
+  if (loading) return <div className="flex justify-center items-center h-full text-slate-400 dark:text-slate-500 bg-[#F9F9F9] dark:bg-[#0b0f17]"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
 
   return (
-    <div className="h-screen w-full flex bg-[#F9F9F9] text-slate-800 font-sans overflow-hidden">
+    <div className="h-screen w-full flex bg-[#F9F9F9] dark:bg-[#0b0f17] text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300">
       {/* Dynamic old styles for components that still need them */}
       <style>{`
         .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }
@@ -571,10 +572,15 @@ export const Dashboard: React.FC = () => {
         .status.live .status-dot { background: #22c55e; }
         .status.expired .status-dot { background: #eab308; }
         .status.hidden .status-dot { background: #94a3b8; }
+
+        html.dark .ledger { background: #111827; border-color: #1f2937; }
+        html.dark .ledger-head { background: #0f172a; border-bottom-color: #1f2937; color: #94a3b8; }
+        html.dark .ledger-row { border-bottom-color: #1e293b; color: #f1f5f9; }
+        html.dark .ledger-row:hover { background: #1e293b; }
       `}</style>
 
       {/* Sidebar */}
-      <div className="w-[240px] bg-[#111111] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] shrink-0">
+      <div className="w-[240px] bg-[#111111] dark:bg-[#080c14] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] dark:border-slate-800/80 shrink-0">
         <div className="px-6 mb-10">
           <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
           <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
@@ -663,14 +669,17 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-4 px-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
-            J
+        <div className="pt-4 px-6 flex items-center justify-between gap-3 border-t border-[#222] dark:border-slate-800/80 mt-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
+              J
+            </div>
+            <div>
+              <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
+              <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
+            </div>
           </div>
-          <div>
-            <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
-            <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
-          </div>
+          <ThemeToggle className="text-slate-400 hover:text-white" />
         </div>
       </div>
 
@@ -681,8 +690,8 @@ export const Dashboard: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h1 className="text-[34px] text-slate-900 mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
-                <p className="text-slate-500 text-[14px]">A working summary of galleries, client proposals, and storage usage.</p>
+                <h1 className="text-[34px] text-slate-900 dark:text-white mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-[14px]">A working summary of galleries, client proposals, and storage usage.</p>
               </div>
               <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
                 Upload to gallery
@@ -690,18 +699,18 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Cloudflare R2 Storage Meter */}
-            <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
               <div className="flex-1 w-full">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[13px] font-semibold text-slate-800">Cloudflare R2 Storage (10 GB Free Tier)</span>
+                    <span className="text-[13px] font-semibold text-slate-800 dark:text-white">Cloudflare R2 Storage (10 GB Free Tier)</span>
                   </div>
-                  <span className="text-[12.5px] font-mono font-medium text-slate-700">
+                  <span className="text-[12.5px] font-mono font-medium text-slate-700 dark:text-slate-300">
                     {(realStorageUsedMB / 1024).toFixed(2)} GB / 10.00 GB ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100))}%)
                   </span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/60">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-200/60 dark:border-slate-700">
                   <div 
                     className={`h-full transition-all duration-500 ${
                       (realStorageUsedMB / 1024) > 8.5 ? 'bg-rose-500' : (realStorageUsedMB / 1024) > 6.5 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -709,24 +718,24 @@ export const Dashboard: React.FC = () => {
                     style={{ width: `${Math.max(2, Math.min(100, ((realStorageUsedMB / 1024) / 10) * 100))}%` }}
                   />
                 </div>
-                <div className="flex justify-between items-center mt-2 text-[11px] text-slate-500">
+                <div className="flex justify-between items-center mt-2 text-[11px] text-slate-500 dark:text-slate-400">
                   <span>Portfolio lookbooks stay permanently stored. Client deliveries expire after their active delivery window.</span>
-                  <span className="font-mono">{(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-300">{(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handlePurgeExpired}
                   disabled={isPurging}
-                  className="bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 px-3.5 py-2 rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
                   title="Purge expired delivery files from Cloudflare R2 to keep storage under 10 GB"
                 >
-                  {isPurging ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" /> : <Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                  {isPurging ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600 dark:text-slate-400" /> : <Trash2 className="w-3.5 h-3.5 text-rose-500" />}
                   Purge Expired Deliveries
                 </button>
                 <button
                   onClick={fetchStorageUsage}
-                  className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-[6px] transition-colors border border-slate-200 cursor-pointer"
+                  className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-[6px] transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
                   title="Refresh Cloudflare R2 storage usage"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
@@ -736,69 +745,69 @@ export const Dashboard: React.FC = () => {
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
-                <p className="text-[12px] text-slate-500 mb-2 font-medium">Published photos</p>
-                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Published photos</p>
+                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
                   {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
                 </h3>
-                <p className="text-[11px] text-emerald-600">+42 this month</p>
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400">+42 this month</p>
               </div>
-              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
-                <p className="text-[12px] text-slate-500 mb-2 font-medium">Active proposals</p>
-                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>6</h3>
-                <p className="text-[11px] text-slate-500">2 awaiting client review</p>
+              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Active proposals</p>
+                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>6</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">2 awaiting client review</p>
               </div>
-              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
-                <p className="text-[12px] text-slate-500 mb-2 font-medium">Print orders</p>
-                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>3</h3>
-                <p className="text-[11px] text-red-500">1 unfulfilled</p>
+              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Print orders</p>
+                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>3</h3>
+                <p className="text-[11px] text-red-500 dark:text-rose-400">1 unfulfilled</p>
               </div>
-              <div className="bg-white rounded-[10px] border border-slate-200 p-5 shadow-sm">
-                <p className="text-[12px] text-slate-500 mb-2 font-medium">New messages</p>
-                <h3 className="text-[28px] text-slate-900 mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>4</h3>
-                <p className="text-[11px] text-slate-500">since last visit</p>
+              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">New messages</p>
+                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>4</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">since last visit</p>
               </div>
             </div>
             
             {/* Recent Activity List */}
-            <div className="bg-white rounded-[10px] border border-slate-200 shadow-sm overflow-hidden mb-10">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
-                <h2 className="text-[16px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600 }}>Recent activity</h2>
-                <span className="text-[12px] text-slate-500 cursor-pointer hover:text-slate-700">Last 7 days</span>
+            <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-10 transition-colors">
+              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <h2 className="text-[16px] text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600 }}>Recent activity</h2>
+                <span className="text-[12px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Last 7 days</span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {activities.length > 0 ? (
                   activities.map(act => (
-                    <div key={act.id} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <div key={act.id} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                       <div>
-                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">{act.action} {act.gallery?.client_name ? `— ${act.gallery.client_name}` : ''}</p>
-                        <p className="text-[12px] text-slate-500">System event</p>
+                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">{act.action} {act.gallery?.client_name ? `— ${act.gallery.client_name}` : ''}</p>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400">System event</p>
                       </div>
-                      <span className="text-[12px] text-slate-500">{formatDate(act.timestamp)}</span>
+                      <span className="text-[12px] text-slate-500 dark:text-slate-400">{formatDate(act.timestamp)}</span>
                     </div>
                   ))
                 ) : (
                   <>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                       <div>
-                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">Rafiki Hotel gallery published</p>
-                        <p className="text-[12px] text-slate-500">42 photos · Hospitality</p>
+                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">Rafiki Hotel gallery published</p>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400">42 photos · Hospitality</p>
                       </div>
-                      <span className="text-[12px] text-slate-500">2 hours ago</span>
+                      <span className="text-[12px] text-slate-500 dark:text-slate-400">2 hours ago</span>
                     </div>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                       <div>
-                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">Proposal sent to Amara & Kito</p>
-                        <p className="text-[12px] text-slate-500">Wedding · Shela</p>
+                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">Proposal sent to Amara & Kito</p>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Wedding · Shela</p>
                       </div>
-                      <span className="text-[12px] text-slate-500">Yesterday</span>
+                      <span className="text-[12px] text-slate-500 dark:text-slate-400">Yesterday</span>
                     </div>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                       <div>
-                        <p className="text-[13px] text-slate-900 font-medium mb-0.5">New print order — 3 canvas prints</p>
-                        <p className="text-[12px] text-slate-500">Order #1042</p>
+                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">New print order — 3 canvas prints</p>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Order #1042</p>
                       </div>
-                      <span className="text-[12px] text-slate-500">2 days ago</span>
+                      <span className="text-[12px] text-slate-500 dark:text-slate-400">2 days ago</span>
                     </div>
                   </>
                 )}
@@ -810,7 +819,7 @@ export const Dashboard: React.FC = () => {
         {currentView === 'galleries' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Galleries</h1>
+              <h1 className="text-[28px] text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Galleries</h1>
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -819,7 +828,7 @@ export const Dashboard: React.FC = () => {
                     placeholder="Search galleries..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
+                    className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-md text-[13px] focus:outline-none focus:border-slate-400 dark:focus:border-slate-500"
                   />
                 </div>
                 <button onClick={() => { setNewCategory('Hospitality'); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
@@ -889,7 +898,7 @@ export const Dashboard: React.FC = () => {
 {currentView === 'delivery' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-[28px] text-slate-900" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Delivery</h1>
+              <h1 className="text-[28px] text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Delivery</h1>
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -898,10 +907,10 @@ export const Dashboard: React.FC = () => {
                     placeholder="Search galleries..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-md text-[13px] focus:outline-none focus:border-slate-400"
+                    className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-md text-[13px] focus:outline-none focus:border-slate-400 dark:focus:border-slate-500"
                   />
                 </div>
-                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
+                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors">
                   <Plus className="w-4 h-4" /> New Gallery
                 </button>
               </div>
@@ -934,24 +943,24 @@ export const Dashboard: React.FC = () => {
                   return (
                     <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
                       <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}></div>
-                      <div className="flex items-center gap-3 font-medium text-slate-900">{gallery.client_name}</div>
-                      <div className="text-slate-500 text-[12px]">{gallery.category?.replace(/s*\[(swipe|grid)\]/gi, '')}</div>
+                      <div className="flex items-center gap-3 font-medium text-slate-900 dark:text-slate-100">{gallery.client_name}</div>
+                      <div className="text-slate-500 dark:text-slate-400 text-[12px]">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}</div>
                       <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
-                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
-                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
-                      <div className="text-slate-500 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
-                      <div className="text-slate-500 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
+                      <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
+                      <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
+                      <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
+                      <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
                       <div className="flex justify-end pr-2 gap-1">
                           <button 
                               onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors"
                               title="View Gallery"
                           >
                               <Eye className="w-4 h-4" />
                           </button>
                           <button 
                               onClick={(e) => handleDeleteGallery(e, gallery.id, gallery.client_name)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
                               title="Delete Gallery"
                           >
                               <Trash2 className="w-4 h-4" />
@@ -983,13 +992,13 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-semibold text-slate-900">New Gallery</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200/60 dark:border-slate-800 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#0f172a]">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">New Gallery</h2>
               <button 
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 disabled={isCreating}
               >
                 ✕
@@ -997,7 +1006,7 @@ export const Dashboard: React.FC = () => {
             </div>
             <form onSubmit={createGallery} className="p-6">
               <div className="mb-4">
-                <label htmlFor="clientName" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="clientName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Client Name or Event Title
                 </label>
                 <input
@@ -1005,7 +1014,7 @@ export const Dashboard: React.FC = () => {
                   type="text"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-800"
+                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
                   placeholder="e.g. John & Jane Wedding"
                   autoFocus
                   required
@@ -1015,7 +1024,7 @@ export const Dashboard: React.FC = () => {
 
               {userEmail === 'ringa.michael@gmail.com' && (
               <div className="mb-6">
-                <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Portfolio Category
                 </label>
                 <input
@@ -1024,7 +1033,7 @@ export const Dashboard: React.FC = () => {
                   list="category-options"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-800"
+                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
                   placeholder="e.g. Wedding, Sports, Real Estate..."
                   disabled={isCreating}
                 />
@@ -1044,19 +1053,19 @@ export const Dashboard: React.FC = () => {
                     <option key={cat as string} value={cat as string} />
                   ))}
                 </datalist>
-                <p className="text-xs text-slate-500 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
               </div>
               )}
               {userEmail === 'ringa.michael@gmail.com' && newCategory.trim() !== '' && (
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Display Layout
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setNewLayout('swipe')}
-                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'swipe' ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'swipe' ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                     >
                       <GalleryHorizontalEnd className="w-4 h-4" />
                       Swipe (Carousel)
@@ -1064,7 +1073,7 @@ export const Dashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setNewLayout('grid')}
-                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'grid' ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'grid' ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                     >
                       <LayoutGrid className="w-4 h-4" />
                       Grid (4:6)
@@ -1078,7 +1087,7 @@ export const Dashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+                  className="px-4 py-2 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors"
                   disabled={isCreating}
                 >
                   Cancel
@@ -1086,7 +1095,7 @@ export const Dashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!newClientName.trim() || isCreating}
-                  className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-medium rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isCreating ? 'Creating...' : 'Create Gallery'}
                 </button>
@@ -1096,15 +1105,15 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-            {/* Bulk Actions Modal */}
+      {/* Bulk Actions Modal */}
       {isBulkModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-semibold text-slate-900">Bulk Update Link Settings</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200/60 dark:border-slate-800 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#0f172a]">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Bulk Update Link Settings</h2>
               <button 
                 onClick={() => setIsBulkModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 disabled={isUpdatingBulk}
               >
                 ✕
@@ -1112,13 +1121,13 @@ export const Dashboard: React.FC = () => {
             </div>
             <form onSubmit={handleBulkUpdate} className="p-6">
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                    Action
                 </label>
                 <select 
                     value={bulkAction}
                     onChange={(e) => setBulkAction(e.target.value as any)}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-800"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
                     disabled={isUpdatingBulk}
                 >
                     <option value="extend">Extend/Modify Download Expiration</option>
@@ -1129,13 +1138,13 @@ export const Dashboard: React.FC = () => {
 
               {bulkAction === 'extend' && (
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     New Expiration Duration (hours from now)
                     </label>
                     <select
                         value={bulkExpiryHours}
                         onChange={(e) => setBulkExpiryHours(Number(e.target.value))}
-                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-800"
+                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
                         disabled={isUpdatingBulk}
                     >
                         <option value={1}>1 Hour</option>
@@ -1145,12 +1154,12 @@ export const Dashboard: React.FC = () => {
                         <option value={168}>1 Week</option>
                         <option value={720}>1 Month</option>
                     </select>
-                    <p className="text-xs text-slate-500 mt-2">This will update all files in the selected galleries to expire in the selected timeframe, reactivating any files that have already expired.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">This will update all files in the selected galleries to expire in the selected timeframe, reactivating any files that have already expired.</p>
                   </div>
               )}
 
               {bulkAction !== 'extend' && (
-                  <p className="text-sm text-slate-600 mb-6 bg-slate-50 p-4 rounded-lg">
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
                       You are about to {bulkAction === 'enable' ? <strong>enable</strong> : <strong>disable</strong>} the client links for {selectedGalleries.length} galler{selectedGalleries.length === 1 ? 'y' : 'ies'}.
                   </p>
               )}
@@ -1159,7 +1168,7 @@ export const Dashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsBulkModalOpen(false)}
-                  className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+                  className="px-4 py-2 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors"
                   disabled={isUpdatingBulk}
                 >
                   Cancel
@@ -1167,9 +1176,8 @@ export const Dashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isUpdatingBulk}
-                  className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-medium rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isUpdatingBulk ? 'Updating...' : 'Apply Changes'}
                 </button>
               </div>
             </form>

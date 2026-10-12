@@ -5,6 +5,7 @@ import { BlogPost as BlogPostType } from '../types';
 import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -101,7 +102,7 @@ export const BlogPost: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0b0f17] flex items-center justify-center transition-colors duration-300">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
@@ -109,10 +110,10 @@ export const BlogPost: React.FC = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
+      <div className="min-h-screen bg-white dark:bg-[#0b0f17] flex flex-col items-center justify-center p-8 transition-colors duration-300">
         <SEO title="Post Not Found | Mwabonje" description="Post not found" image={`${window.location.origin}/og-image.jpg`} url={window.location.origin} />
-        <h1 className="text-2xl font-bold text-slate-800 mb-4">Post not found</h1>
-        <button onClick={() => navigate('/blog')} className="text-slate-500 hover:text-slate-900 border-b border-slate-300 pb-1">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-4">Post not found</h1>
+        <button onClick={() => navigate('/blog')} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-b border-slate-300 dark:border-slate-700 pb-1">
           Return to Blog
         </button>
       </div>
@@ -124,7 +125,7 @@ export const BlogPost: React.FC = () => {
   const seoDescription = post.seo_description || post.excerpt;
 
   return (
-    <article className="min-h-screen bg-white text-slate-900 pb-20">
+    <article className="min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-20">
       <SEO 
         title={pageTitle}
         description={seoDescription}
@@ -137,41 +138,44 @@ export const BlogPost: React.FC = () => {
       />
 
       {/* Header */}
-      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-20">
+      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-[#0b0f17]/95 backdrop-blur-sm z-20 transition-colors duration-300">
         <div 
-          className="absolute top-0 left-0 h-1 bg-slate-900 transition-all duration-150 ease-out"
+          className="absolute top-0 left-0 h-1 bg-slate-900 dark:bg-amber-400 transition-all duration-150 ease-out"
           style={{ width: `${scrollProgress}%` }}
         />
-        <div className="w-full max-w-4xl mx-auto flex items-center relative h-8">
-          <Link to="/blog" className="absolute left-0 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase z-10">
+        <div className="w-full max-w-4xl mx-auto flex items-center justify-between relative h-8">
+          <Link to="/blog" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase z-10">
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back to Blog</span>
           </Link>
-          <div className="w-full flex justify-center">
-            <span className="text-lg uppercase tracking-widest font-bold text-slate-800" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <div className="absolute inset-x-0 flex justify-center pointer-events-none">
+            <span className="text-lg uppercase tracking-widest font-bold text-slate-800 dark:text-white pointer-events-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
               Mwabonje
             </span>
+          </div>
+          <div className="z-10">
+            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-4 md:pb-6">
-        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4 md:mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 font-bold">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4 md:mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 dark:text-slate-400 font-bold">
           <span>{post.category}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
           <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
           <span>{calculateReadingTime(post.content)} min read</span>
         </div>
-        <h1 className="text-3xl md:text-5xl lg:text-[56px] leading-[1.1] md:leading-[1.1] font-bold text-slate-900 text-center max-w-3xl mx-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <h1 className="text-3xl md:text-5xl lg:text-[56px] leading-[1.1] md:leading-[1.1] font-bold text-slate-900 dark:text-white text-center max-w-3xl mx-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           {post.title}
         </h1>
       </div>
 
       <div className="w-full max-w-5xl mx-auto px-4 mb-8 md:mb-16">
         {post.cover_image && (
-          <div className="aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 overflow-hidden relative">
+          <div className="aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative rounded-sm">
             <img 
               src={post.cover_image} 
               alt={post.title} 
@@ -185,21 +189,21 @@ export const BlogPost: React.FC = () => {
       {/* Content */}
       <div className="w-full max-w-3xl mx-auto px-4 lg:px-8">
         <div 
-          className="prose prose-slate prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm"
+          className="prose prose-slate dark:prose-invert prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-slate-900 dark:prose-a:text-amber-400 hover:prose-a:text-slate-600 dark:hover:prose-a:text-amber-300 prose-img:rounded-sm text-slate-700 dark:text-slate-300"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
         
         {/* Author at the bottom */}
-        <div className="mt-4 text-center text-slate-500 italic">
+        <div className="mt-8 text-center text-slate-500 dark:text-slate-400 italic">
           <p>By {post.author}</p>
         </div>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <div className="mt-16 pt-8 border-t border-slate-100 flex flex-wrap gap-2">
-            <span className="text-sm font-semibold text-slate-400 mr-2 uppercase tracking-widest self-center">Tags:</span>
+          <div className="mt-16 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
+            <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 mr-2 uppercase tracking-widest self-center">Tags:</span>
             {post.tags.map(tag => (
-              <span key={tag} className="px-3 py-1 bg-slate-50 text-slate-600 text-xs font-semibold tracking-wider uppercase rounded-sm border border-slate-100">
+              <span key={tag} className="px-3 py-1 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-semibold tracking-wider uppercase rounded-sm border border-slate-100 dark:border-slate-700/80">
                 {tag}
               </span>
             ))}
@@ -209,14 +213,14 @@ export const BlogPost: React.FC = () => {
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
-        <div className="w-full max-w-4xl mx-auto px-4 mt-16 md:mt-20 pt-12 md:pt-16 border-t border-slate-100">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 md:mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <div className="w-full max-w-4xl mx-auto px-4 mt-16 md:mt-20 pt-12 md:pt-16 border-t border-slate-100 dark:border-slate-800">
+          <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Related Posts
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {relatedPosts.map(relatedPost => (
               <article key={relatedPost.id} className="group flex flex-col h-full">
-                <Link to={`/blog/${relatedPost.slug}`} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 mb-4 md:mb-6" aria-label={`Read ${relatedPost.title}`}>
+                <Link to={`/blog/${relatedPost.slug}`} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 dark:bg-slate-800 mb-4 md:mb-6 rounded-sm" aria-label={`Read ${relatedPost.title}`}>
                   {relatedPost.cover_image && (
                     <img 
                       src={relatedPost.cover_image} 
@@ -226,20 +230,20 @@ export const BlogPost: React.FC = () => {
                     />
                   )}
                 </Link>
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 font-semibold">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 dark:text-slate-400 font-semibold">
                   <span>{new Date(relatedPost.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
                   <span className="hidden sm:inline-block">{calculateReadingTime(relatedPost.content)} min read</span>
                 </div>
                 <Link to={`/blog/${relatedPost.slug}`} className="block group">
-                  <h4 className="text-xl md:text-2xl font-bold text-slate-900 mb-3 group-hover:text-slate-600 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {relatedPost.title}
                   </h4>
                 </Link>
-                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-3">
+                <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-3">
                   {relatedPost.excerpt}
                 </p>
-                <Link to={`/blog/${relatedPost.slug}`} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 hover:text-slate-500 transition-colors mt-auto">
+                <Link to={`/blog/${relatedPost.slug}`} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 dark:text-amber-400 hover:text-slate-500 dark:hover:text-amber-300 transition-colors mt-auto">
                   Read More
                 </Link>
               </article>
@@ -250,3 +254,5 @@ export const BlogPost: React.FC = () => {
     </article>
   );
 };
+
+export default BlogPost;
