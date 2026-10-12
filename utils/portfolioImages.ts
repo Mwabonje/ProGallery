@@ -9,7 +9,7 @@ export interface ThemedGalleryAsset {
 
 const R2_BASE = 'https://pub-722a104adad649c9bb882d954680ee50.r2.dev';
 
-export const REAL_HERO_IMAGE_URL = `${R2_BASE}/portfolio/hospitality/tamu_hotel_01.jpg`;
+export const REAL_HERO_IMAGE_URL = `${R2_BASE}/uploads/1791632620479_z0e8x14yngq/IMG_0090.jpg`;
 export const REAL_ABOUT_IMAGE_URL = `${R2_BASE}/portfolio/about/mwabonje_portrait.jpg`;
 
 export const PORTFOLIO_THEMED_IMAGES: Record<string, ThemedGalleryAsset> = {

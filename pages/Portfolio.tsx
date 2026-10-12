@@ -110,7 +110,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(REAL_HERO_IMAGE_URL);
 
   const [settings, setSettings] = useState({
     brandName: "MWABONJE",
