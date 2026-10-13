@@ -9,8 +9,6 @@ import { ClientGallery } from './pages/ClientGallery';
 import { Session } from '@supabase/supabase-js';
 import { UploadProvider } from './contexts/UploadContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { ThemeToggle } from './components/ThemeToggle';
-
 import { Toaster } from 'sonner';
 
 import { Portfolio } from './pages/Portfolio';
@@ -153,7 +151,6 @@ const App: React.FC = () => {
             {/* Default */}
             <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
           </Routes>
-          <ThemeToggle variant="floating" />
         </Router>
       </UploadProvider>
     </ThemeProvider>
