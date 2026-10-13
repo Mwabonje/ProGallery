@@ -106,9 +106,10 @@ export const About: React.FC = () => {
   }, []);
 
   const defaultBio = [
-    "I am Michael Mwabonje Ringa, an East African visual storyteller and lifestyle photographer based in Malindi, capturing hospitality, portraits, weddings, and authentic coastal narratives.",
-    "My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it. For me, photography is more than just clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.",
-    "Available for travel worldwide. Let's create something timeless together."
+    "Hey there! I am Michael Mwabonje Ringa, an East African photographer based in Malindi specialising in hospitality, Wedding, portraits, and documentary visual storytelling. My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it.",
+    "For me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.",
+    "Whether I'm shooting an elegant property or directing a visual project, my focus remains on authenticity, natural light, and elegant composition.",
+    "Available for travel. Let's create something beautiful together."
   ];
 
   const bioParagraphs = aboutText && aboutText.trim().length > 0 
@@ -242,11 +243,12 @@ export const About: React.FC = () => {
         </div>
 
         {/* Two-Column Editorial Biography */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          {/* Left Column: Photographer Portrait & Specifications (Sticky on desktop) */}
-          <div className="lg:col-span-5 lg:sticky lg:top-28">
-            <div className="overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl">
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-950">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-stretch">
+          {/* Left Column: Photographer Portrait & Specifications (Adapts to text height) */}
+          <div className="lg:col-span-5 flex flex-col h-full">
+            <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xl flex flex-col h-full">
+              {/* Dynamic Image Container: Stretches flexibly to match text height */}
+              <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:flex-1 min-h-[220px] overflow-hidden bg-slate-950">
                 <img 
                   src={getOptimizedImageUrl(displayImage, 900, 1125, 90)}
                   alt="Michael Mwabonje Ringa — Visual Storyteller"
@@ -257,12 +259,12 @@ export const About: React.FC = () => {
                       target.src = rewriteUrlToR2(displayImage) || displayImage;
                     }
                   }}
-                  className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700 ease-out"
+                  className="absolute inset-0 w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700 ease-out"
                 />
               </div>
 
               {/* Editorial Spec Placard */}
-              <div className="p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200/70 dark:border-slate-800 space-y-4">
+              <div className="shrink-0 p-5 sm:p-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-t border-slate-200/70 dark:border-slate-800 space-y-3.5">
                 <div>
                   <h2 className="font-editorial text-xl font-medium text-slate-900 dark:text-white">
                     Michael Mwabonje Ringa
@@ -272,7 +274,7 @@ export const About: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="space-y-2.5 text-xs border-t border-slate-200/70 dark:border-slate-800 pt-3">
+                <div className="space-y-2 text-xs border-t border-slate-200/70 dark:border-slate-800 pt-3">
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Base</span>
                     <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Malindi &amp; Coast, Kenya</span>
@@ -287,7 +289,7 @@ export const About: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <a
                     href={settings.contactLink}
                     target="_blank"
@@ -303,7 +305,7 @@ export const About: React.FC = () => {
           </div>
 
           {/* Right Column: Narrative Biography & Philosophy */}
-          <div className="lg:col-span-7 space-y-10">
+          <div className="lg:col-span-7 flex flex-col justify-start space-y-6 sm:space-y-8">
             {/* Featured Artist Quote / Opening Statement */}
             <div className="border-l-2 border-slate-900 dark:border-white pl-6 py-1">
               <blockquote className="font-editorial italic text-2xl sm:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
@@ -320,15 +322,6 @@ export const About: React.FC = () => {
               ))}
             </div>
 
-            {/* Signature Block */}
-            <div className="pt-4">
-              <div className="font-signature text-3xl sm:text-4xl text-slate-800 dark:text-slate-200">
-                Michael Mwabonje Ringa
-              </div>
-              <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-1">
-                Visual Storyteller · East Africa
-              </p>
-            </div>
           </div>
         </div>
 
