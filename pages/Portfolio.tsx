@@ -5,7 +5,7 @@ import { Gallery } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
-import { ChevronDown, Menu, X, ArrowUpRight, Play, ArrowRight } from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -332,10 +332,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const firstPortfolioCover = galleries.find(g => g.coverUrl)?.coverUrl || null;
   const heroBg = heroImageUrl || firstPortfolioCover || REAL_HERO_IMAGE_URL;
 
-  // About image: prioritize configured about image or top portrait portfolio image
-  const firstPortraitCover = galleries.find(g => g.baseCategory?.includes('PORTRAIT') && g.coverUrl)?.coverUrl || firstPortfolioCover;
-  const aboutImageSrc = aboutGallery?.coverUrl || firstPortraitCover;
-
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
@@ -381,20 +377,14 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               Journal
             </Link>
-            <a 
-              href="#about" 
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-              }} 
-              className="hover:text-slate-950 dark:hover:text-white transition-colors"
-            >
+            <Link to="/about" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               About
-            </a>
+            </Link>
           </nav>
 
           {/* Right Action */}
           <div className="flex items-center gap-3 md:gap-4">
+            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
             <a 
               href={settings.contactLink} 
               target="_blank" 
@@ -446,16 +436,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 Journal
               </Link>
-              <a 
-                href="#about" 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-                }} 
-                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
-              >
+              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 About
-              </a>
+              </Link>
               <div className="py-2 border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Theme</span>
                 <ThemeToggle showLabel />
@@ -610,90 +593,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         )}
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-24 bg-slate-100/70 dark:bg-[#0c1017] border-t border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
-        <div className="max-w-6xl mx-auto px-6 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Image */}
-            <div className="relative aspect-[3/4] max-w-md mx-auto md:max-w-none w-full rounded-2xl overflow-hidden shadow-xl bg-slate-900 flex items-center justify-center">
-              {aboutImageSrc ? (
-                <img 
-                  src={getOptimizedImageUrl(aboutImageSrc, 900, 1200, 85)}
-                  alt="Michael Mwabonje Ringa"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = 'true';
-                      target.src = rewriteUrlToR2(aboutImageSrc) || aboutImageSrc;
-                    }
-                  }}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 p-8 text-center text-white">
-                  <span className="font-serif text-3xl font-light tracking-wide text-slate-200">
-                    MWABONJE
-                  </span>
-                  <span className="text-xs uppercase tracking-widest text-slate-400 mt-2">
-                    Studio & Field
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="space-y-6">
-              <span className="text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">
-                About the Photographer
-              </span>
-              <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-slate-900 dark:text-white leading-tight">
-                Preserving fleeting moments, translating emotions into visuals.
-              </h2>
-              
-              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base font-light">
-                {aboutGallery?.title ? (
-                  aboutGallery.title.split('\n').filter(Boolean).map((paragraph, i) => (
-                    <p key={i}>{paragraph}</p>
-                  ))
-                ) : (
-                  <>
-                    <p>
-                      I am Michael Mwabonje Ringa, an East African visual storyteller and lifestyle photographer based in Malindi, capturing hospitality, portraits, weddings, and authentic coastal narratives.
-                    </p>
-                    <p>
-                      My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it. For me, photography is more than just clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.
-                    </p>
-                    <p>
-                      Available for travel worldwide. Let&apos;s create something timeless together.
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <div className="pt-4 flex flex-wrap gap-4">
-                <a
-                  href={settings.contactLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md"
-                >
-                  <span>Book a Session</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-                <Link
-                  to="/prints"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                >
-                  <span>Browse Fine Art Prints</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Editorial Footer */}
-      <footer className="bg-slate-950 text-white py-20 px-6 md:px-12">
+      <footer className="bg-slate-950 text-white py-20 px-6 md:px-12 border-t border-white/10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10 pb-12 border-b border-white/10">
           <div>
             <span className="font-serif text-3xl font-bold tracking-widest text-white">
@@ -705,6 +606,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
+            <Link to="/about" className="hover:text-white transition-colors">
+              About
+            </Link>
             {settings.instagramLink && (
               <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                 Instagram

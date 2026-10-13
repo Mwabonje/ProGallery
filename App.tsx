@@ -16,6 +16,7 @@ import { Prints } from './pages/Prints';
 import { LiveDisplay } from './pages/LiveDisplay';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
+import { About } from './pages/About';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -129,6 +130,7 @@ const App: React.FC = () => {
             <Route path="/prints" element={<Prints />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/about" element={<About />} />
 
             {/* Protected Photographer Routes */}
             <Route path="/dashboard" element={
