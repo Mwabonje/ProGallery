@@ -5,13 +5,15 @@ import {
   ArrowRight, 
   Menu, 
   X, 
-  Camera, 
   MapPin, 
   Compass, 
-  Award, 
   Mail, 
-  Instagram, 
-  ArrowLeft 
+  ArrowLeft,
+  MessageCircle,
+  Camera,
+  Sun,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -45,7 +47,7 @@ export const About: React.FC = () => {
 
     const fetchAboutData = async () => {
       try {
-        // 1. Fetch site settings from SETTINGS gallery
+        // Fetch site settings from SETTINGS and ABOUT galleries
         const { data: rawGalleries } = await supabase
           .from('galleries')
           .select('*')
@@ -73,14 +75,13 @@ export const About: React.FC = () => {
             }
           }
 
-          // 2. Fetch About content
+          // Fetch About text and cover image
           const aboutGal = rawGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
           if (aboutGal) {
             if (aboutGal.title) {
               setAboutText(aboutGal.title);
             }
 
-            // Fetch cover image for ABOUT gallery
             const { data: aboutFiles } = await supabase
               .from('files')
               .select('file_url')
@@ -127,8 +128,8 @@ export const About: React.FC = () => {
         <meta name="description" content={`Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
       </Helmet>
 
-      {/* Modern Editorial Header */}
-      <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 transition-colors duration-300">
+      {/* Navigation Header */}
+      <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
@@ -158,7 +159,7 @@ export const About: React.FC = () => {
             </Link>
           </nav>
 
-          {/* Right Action */}
+          {/* Right Action Controls */}
           <div className="flex items-center gap-3 md:gap-4">
             <ThemeToggle className="text-slate-600 dark:text-amber-300" />
             <a 
@@ -214,76 +215,108 @@ export const About: React.FC = () => {
         )}
       </header>
 
-      {/* Main About Editorial Showcase */}
-      <main className="max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-20 lg:py-24">
-        {/* Breadcrumb / Top Return Link */}
-        <div className="mb-10">
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Portfolio</span>
-          </Link>
+      {/* Main Content Area */}
+      <main className="max-w-6xl mx-auto px-6 md:px-12 py-10 md:py-16">
+        {/* Top Breadcrumb & Section Header */}
+        <div className="mb-12 md:mb-16 pb-8 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-6">
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors group"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Portfolio</span>
+            </Link>
+            <span className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-medium">
+              Malindi · Lamu · Worldwide
+            </span>
+          </div>
+
+          <div className="max-w-3xl">
+            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
+              About the Photographer
+            </span>
+            <h1 className="font-editorial text-4xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white font-normal leading-[1.1] tracking-tight">
+              Michael Mwabonje Ringa
+            </h1>
+            <p className="mt-4 text-base sm:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed">
+              Visual storyteller and lifestyle photographer capturing the authentic warmth, architectural quiet, and coastal narratives of East Africa.
+            </p>
+          </div>
         </div>
 
-        {/* Two-Column Editorial Layout */}
+        {/* Two-Column Editorial Biography */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          {/* Photographer Portrait Column */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-2xl bg-slate-900 border border-slate-200/50 dark:border-slate-800">
-              <img 
-                src={getOptimizedImageUrl(displayImage, 900, 1200, 88)}
-                alt="Michael Mwabonje Ringa"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.dataset.retried) {
-                    target.dataset.retried = 'true';
-                    target.src = rewriteUrlToR2(displayImage) || displayImage;
-                  }
-                }}
-                className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-5 left-5 right-5 text-white pointer-events-none">
-                <p className="font-serif text-lg font-medium tracking-wide">Michael Mwabonje Ringa</p>
-                <p className="text-[11px] uppercase tracking-widest text-slate-300 font-sans mt-0.5">East Africa • Coastal Kenya</p>
-              </div>
-            </div>
-
-            {/* Quick Meta Cards */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 backdrop-blur-sm">
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>Base</span>
-                </div>
-                <p className="font-serif text-sm font-medium text-slate-900 dark:text-white">Malindi &amp; Coast, Kenya</p>
+          {/* Left Column: Photographer Portrait & Specifications (Sticky on desktop) */}
+          <div className="lg:col-span-5 lg:sticky lg:top-28">
+            <div className="overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl">
+              <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-950">
+                <img 
+                  src={getOptimizedImageUrl(displayImage, 900, 1125, 90)}
+                  alt="Michael Mwabonje Ringa — Visual Storyteller"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = 'true';
+                      target.src = rewriteUrlToR2(displayImage) || displayImage;
+                    }
+                  }}
+                  className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700 ease-out"
+                />
               </div>
 
-              <div className="p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 backdrop-blur-sm">
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">
-                  <Compass className="w-3.5 h-3.5" />
-                  <span>Availability</span>
+              {/* Editorial Spec Placard */}
+              <div className="p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200/70 dark:border-slate-800 space-y-4">
+                <div>
+                  <h2 className="font-editorial text-xl font-medium text-slate-900 dark:text-white">
+                    Michael Mwabonje Ringa
+                  </h2>
+                  <p className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-0.5">
+                    Photographer &amp; Filmmaker
+                  </p>
                 </div>
-                <p className="font-serif text-sm font-medium text-slate-900 dark:text-white">Worldwide Travel</p>
+
+                <div className="space-y-2.5 text-xs border-t border-slate-200/70 dark:border-slate-800 pt-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Base</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Malindi &amp; Coast, Kenya</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Availability</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Kenya &amp; Worldwide Travel</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Focus</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Hospitality, Lifestyle, Prints</span>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <a
+                    href={settings.contactLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold tracking-wider uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Inquire for Commissions</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Biography & Vision Column */}
-          <div className="lg:col-span-7 space-y-8">
-            <div>
-              <span className="text-xs uppercase tracking-[0.25em] font-bold text-slate-400 dark:text-slate-500 block mb-3">
-                About the Photographer
-              </span>
-              <h1 className="font-serif text-3xl md:text-5xl lg:text-6xl font-normal text-slate-900 dark:text-white leading-[1.15]">
-                Preserving fleeting moments, translating emotions into visuals.
-              </h1>
+          {/* Right Column: Narrative Biography & Philosophy */}
+          <div className="lg:col-span-7 space-y-10">
+            {/* Featured Artist Quote / Opening Statement */}
+            <div className="border-l-2 border-slate-900 dark:border-white pl-6 py-1">
+              <blockquote className="font-editorial italic text-2xl sm:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
+                &ldquo;Photography is more than clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.&rdquo;
+              </blockquote>
             </div>
 
-            {/* Narrative Paragraphs */}
-            <div className="space-y-5 text-slate-700 dark:text-slate-300 leading-relaxed text-base md:text-lg font-light">
+            {/* Narrative Story Paragraphs */}
+            <div className="space-y-6 text-slate-700 dark:text-slate-300 text-base sm:text-lg font-light leading-relaxed">
               {bioParagraphs.map((paragraph, index) => (
                 <p key={index} className="leading-relaxed">
                   {paragraph}
@@ -291,56 +324,192 @@ export const About: React.FC = () => {
               ))}
             </div>
 
-            {/* Disciplines / What I Do */}
-            <div className="pt-6 border-t border-slate-200/70 dark:border-slate-800">
-              <h3 className="text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500 mb-4">
-                Creative Disciplines
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
-                  <h4 className="font-serif text-base font-medium text-slate-900 dark:text-white mb-1">Hospitality &amp; Architecture</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">Boutique hotels, private coastal villas, luxury retreats, and spatial aesthetics.</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
-                  <h4 className="font-serif text-base font-medium text-slate-900 dark:text-white mb-1">Lifestyle &amp; Portraits</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">Natural light portraiture, brand campaigns, and genuine human narratives.</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
-                  <h4 className="font-serif text-base font-medium text-slate-900 dark:text-white mb-1">Weddings &amp; Intimate Events</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">Documentary, unscripted moments, emotive coverage of destination unions.</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
-                  <h4 className="font-serif text-base font-medium text-slate-900 dark:text-white mb-1">Fine Art Prints &amp; Film</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">Curated archival cotton prints and cinematic visual reels of the East African coast.</p>
-                </div>
+            {/* Signature Block */}
+            <div className="pt-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="font-signature text-3xl sm:text-4xl text-slate-800 dark:text-slate-200">
+                Michael Mwabonje Ringa
               </div>
+              <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-1">
+                Visual Storyteller · East Africa
+              </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-4 flex flex-wrap gap-4">
+            {/* Direct Quick Action Buttons */}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
               <a
                 href={settings.contactLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md active:scale-95"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md active:scale-95"
               >
                 <span>Book a Session</span>
                 <ArrowRight className="w-4 h-4" />
               </a>
               <Link
                 to="/prints"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
               >
                 <span>Browse Fine Art Prints</span>
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Section: Creative Disciplines / Areas of Practice */}
+        <section className="mt-20 md:mt-28 pt-12 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="max-w-2xl mb-10">
+            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
+              Areas of Practice
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl text-slate-900 dark:text-white font-normal">
+              Creative Disciplines
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 font-light">
+              Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">01</span>
+              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Hospitality &amp; Architectural Spaces
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Capturing boutique hotels, coastal private villas, safari camps, and interior architecture with natural ambient light and spatial elegance.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">02</span>
+              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Lifestyle &amp; Editorial Portraits
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Natural-light portraiture, commercial brand storytelling, and emotive human narratives that celebrate genuine character and East African culture.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">03</span>
+              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Weddings &amp; Intimate Celebrations
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Documentary, unscripted coverage of destination unions along the Kenyan coast, preserving raw emotions, intimacy, and joyful celebrations.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">04</span>
+              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Fine Art Prints &amp; Cinematic Reels
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Museum-grade archival cotton rag prints for interior collectors, alongside cinematic short film reels documenting coastal heritage and natural beauty.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Ethos & Working Philosophy */}
+        <section className="mt-20 md:mt-24 pt-12 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="max-w-2xl mb-10">
+            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
+              Ethos &amp; Approach
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl text-slate-900 dark:text-white font-normal">
+              How I See Through the Lens
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
+                <Sun className="w-5 h-5" />
+              </div>
+              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+                The Coastal Light
+              </h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Guided by the dawn hues of the Indian Ocean, equatorial golden hours, and the organic textures of coastal architecture.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+                Quiet Observation
+              </h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Prioritizing unobtrusive storytelling and genuine connection, allowing moments to unfold naturally without rigid posing.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
+                <Layers className="w-5 h-5" />
+              </div>
+              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+                Archival Craft
+              </h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Curated tone grading and museum-grade cotton rag paper selections that preserve memories for generations to come.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Direct Collaboration & Contact Invitation */}
+        <section className="mt-20 md:mt-28 p-8 md:p-14 rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
+          <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-400 block">
+              Inquiries &amp; Commissions
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl lg:text-5xl font-normal leading-tight">
+              Ready to create something timeless together?
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base font-light leading-relaxed max-w-xl mx-auto">
+              Available for commercial hospitality briefs, editorial assignments, destination weddings, and private portraiture throughout Kenya and worldwide.
+            </p>
+            
+            <div className="pt-4 flex flex-wrap justify-center items-center gap-4">
+              <a
+                href={settings.contactLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Chat on WhatsApp</span>
+              </a>
+
+              {settings.footerEmail && (
+                <a
+                  href={`mailto:${settings.footerEmail}`}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Send an Email</span>
+                </a>
+              )}
+
+              <Link
+                to="/prints"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-transparent hover:bg-white/10 text-slate-200 border border-slate-700/80 rounded-full text-xs font-semibold tracking-widest uppercase transition-all"
+              >
+                <span>Browse Prints</span>
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Editorial Footer */}
-      <footer className="bg-slate-950 text-white py-20 px-6 md:px-12 mt-20 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10 pb-12 border-b border-white/10">
+      <footer className="bg-slate-950 text-white py-16 md:py-20 px-6 md:px-12 mt-20 border-t border-white/10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10 pb-12 border-b border-white/10">
           <div>
             <span className="font-serif text-3xl font-bold tracking-widest text-white">
               {settings.brandName}
@@ -351,6 +520,15 @@ export const About: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
+            <Link to="/" className="hover:text-white transition-colors">
+              Portfolio
+            </Link>
+            <Link to="/prints" className="hover:text-white transition-colors">
+              Prints
+            </Link>
+            <Link to="/blog" className="hover:text-white transition-colors">
+              Journal
+            </Link>
             {settings.instagramLink && (
               <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                 Instagram
@@ -372,7 +550,7 @@ export const About: React.FC = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+        <div className="max-w-6xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
           <p>© {new Date().getFullYear()} {settings.brandName} Photography. All Rights Reserved.</p>
           <p>Mombasa, Lamu &amp; Malindi, Kenya</p>
         </div>
