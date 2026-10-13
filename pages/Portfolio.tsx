@@ -395,7 +395,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
 
           {/* Right Action */}
           <div className="flex items-center gap-3 md:gap-4">
-            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
             <a 
               href={settings.contactLink} 
               target="_blank" 

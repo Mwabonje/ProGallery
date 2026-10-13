@@ -35,7 +35,6 @@ import {
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 
 import { SEO } from "../components/SEO";
-import { ThemeToggle } from "../components/ThemeToggle";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -1686,7 +1685,6 @@ export const ClientGallery: React.FC = () => {
                 )}
               </>
             ) : null}
-            <ThemeToggle className="ml-1" />
           </div>
         </div>
 
