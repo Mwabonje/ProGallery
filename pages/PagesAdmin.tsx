@@ -65,7 +65,7 @@ export const PagesAdmin: React.FC = () => {
       path: '/about',
       status: 'Live',
       lastEdited: 'Recently',
-      action: 'Edit content & image',
+      action: 'Edit Content & Disciplines',
       onClick: () => setIsAboutModalOpen(true),
       disabled: false,
     },

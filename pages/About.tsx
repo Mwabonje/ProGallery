@@ -14,6 +14,13 @@ import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
+import { 
+  DisciplineItem, 
+  DEFAULT_DISCIPLINES, 
+  DEFAULT_DISCIPLINES_EYEBROW, 
+  DEFAULT_DISCIPLINES_TITLE, 
+  DEFAULT_DISCIPLINES_SUBTITLE 
+} from '../components/AboutSettingsModal';
 
 interface Settings {
   brandName: string;
@@ -42,6 +49,54 @@ export const About: React.FC = () => {
     } catch {}
     return REAL_ABOUT_IMAGE_URL;
   });
+
+  // Dynamic Creative Disciplines states (editable from Dashboard)
+  const [disciplinesEyebrow, setDisciplinesEyebrow] = useState<string>(() => {
+    try {
+      const p = localStorage.getItem('mwabonje_about_payload');
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (parsed.disciplinesEyebrow) return parsed.disciplinesEyebrow;
+      }
+    } catch {}
+    return DEFAULT_DISCIPLINES_EYEBROW;
+  });
+
+  const [disciplinesTitle, setDisciplinesTitle] = useState<string>(() => {
+    try {
+      const p = localStorage.getItem('mwabonje_about_payload');
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (parsed.disciplinesTitle) return parsed.disciplinesTitle;
+      }
+    } catch {}
+    return DEFAULT_DISCIPLINES_TITLE;
+  });
+
+  const [disciplinesSubtitle, setDisciplinesSubtitle] = useState<string>(() => {
+    try {
+      const p = localStorage.getItem('mwabonje_about_payload');
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (parsed.disciplinesSubtitle !== undefined) return parsed.disciplinesSubtitle;
+      }
+    } catch {}
+    return DEFAULT_DISCIPLINES_SUBTITLE;
+  });
+
+  const [disciplines, setDisciplines] = useState<DisciplineItem[]>(() => {
+    try {
+      const p = localStorage.getItem('mwabonje_about_payload');
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
+          return parsed.disciplines;
+        }
+      }
+    } catch {}
+    return DEFAULT_DISCIPLINES;
+  });
+
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -82,7 +137,25 @@ export const About: React.FC = () => {
           const aboutGal = rawGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
           if (aboutGal) {
             if (aboutGal.title) {
-              setAboutText(aboutGal.title);
+              try {
+                const parsed = JSON.parse(aboutGal.title);
+                if (parsed && typeof parsed === 'object') {
+                  if (parsed.bioText) setAboutText(parsed.bioText);
+                  if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
+                  if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
+                  if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
+                  if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
+                    setDisciplines(parsed.disciplines);
+                  }
+                  try {
+                    localStorage.setItem('mwabonje_about_payload', aboutGal.title);
+                  } catch {}
+                } else {
+                  setAboutText(aboutGal.title);
+                }
+              } catch {
+                setAboutText(aboutGal.title);
+              }
             }
 
             const { data: aboutFiles } = await supabase
@@ -314,60 +387,39 @@ export const About: React.FC = () => {
           </div>
         </div>
 
-        {/* Section: Creative Disciplines / Areas of Practice (1 col Mobile, 2 cols Tablet, 4 cols Desktop) */}
+        {/* Section: Creative Disciplines / Areas of Practice (Editable via Dashboard) */}
         <section className="mt-16 sm:mt-20 md:mt-28 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
           <div className="max-w-2xl mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
-              Areas of Practice
+              {disciplinesEyebrow}
             </span>
             <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
-              Creative Disciplines
+              {disciplinesTitle}
             </h2>
-            <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light">
-              Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality.
-            </p>
+            {disciplinesSubtitle ? (
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light">
+                {disciplinesSubtitle}
+              </p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">01</span>
-              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Hospitality &amp; Architecture
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Capturing boutique hotels, coastal private villas, safari camps, and interior architecture with natural ambient light.
-              </p>
-            </div>
-
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">02</span>
-              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Lifestyle &amp; Portraits
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Natural-light portraiture, commercial brand storytelling, and emotive human narratives that celebrate genuine coastal culture.
-              </p>
-            </div>
-
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">03</span>
-              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Weddings &amp; Intimacy
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Documentary, unscripted coverage of destination unions along the Kenyan coast, preserving raw emotions and joyful celebrations.
-              </p>
-            </div>
-
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
-              <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">04</span>
-              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Cinematic Film &amp; Visual Reels
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Short-form cinematic film reels, brand mini-documentaries, and motion visual narratives documenting coastal heritage.
-              </p>
-            </div>
+            {disciplines.map((item, idx) => (
+              <div 
+                key={item.id || idx}
+                className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors"
+              >
+                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">
+                  {item.number || String(idx + 1).padStart(2, '0')}
+                </span>
+                <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
