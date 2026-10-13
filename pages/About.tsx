@@ -2,15 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
-  ArrowRight, 
   Menu, 
   X, 
-  MapPin, 
-  Compass, 
   Mail, 
   ArrowLeft,
   MessageCircle,
-  Camera,
   Sun,
   Sparkles,
   Layers
@@ -325,32 +321,13 @@ export const About: React.FC = () => {
             </div>
 
             {/* Signature Block */}
-            <div className="pt-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+            <div className="pt-4">
               <div className="font-signature text-3xl sm:text-4xl text-slate-800 dark:text-slate-200">
                 Michael Mwabonje Ringa
               </div>
               <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-1">
                 Visual Storyteller · East Africa
               </p>
-            </div>
-
-            {/* Direct Quick Action Buttons */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <a
-                href={settings.contactLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md active:scale-95"
-              >
-                <span>Book a Session</span>
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <Link
-                to="/prints"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
-              >
-                <span>Browse Fine Art Prints</span>
-              </Link>
             </div>
           </div>
         </div>
