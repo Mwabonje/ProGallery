@@ -5,7 +5,6 @@ import {
   Menu, 
   X, 
   Mail, 
-  ArrowLeft,
   MessageCircle,
   Sun,
   Sparkles,
@@ -137,54 +136,55 @@ export const About: React.FC = () => {
         <meta name="description" content={`Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
       </Helmet>
 
-      {/* Navigation Header */}
+      {/* Navigation Header (Responsive height & padding) */}
       <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 sm:h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+            <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
               {settings.brandName}
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600 dark:text-slate-300">
-            <Link to="/" className="hover:text-slate-950 dark:hover:text-white transition-colors">
+          {/* Desktop & Tablet Navigation */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600 dark:text-slate-300">
+            <Link to="/" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Portfolio
             </Link>
-            <Link to="/?category=FILMS" className="hover:text-slate-950 dark:hover:text-white transition-colors">
+            <Link to="/?category=FILMS" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Films
             </Link>
-            <Link to="/prints" className="hover:text-slate-950 dark:hover:text-white transition-colors">
+            <Link to="/prints" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Prints
             </Link>
-            <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors">
+            <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Journal
             </Link>
             <Link 
               to="/about" 
-              className="text-slate-950 dark:text-white font-bold border-b border-slate-900 dark:border-white pb-0.5"
+              className="text-slate-950 dark:text-white font-bold border-b-2 border-slate-900 dark:border-white pb-0.5 py-2"
             >
               About
             </Link>
           </nav>
 
           {/* Right Action Controls */}
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
             <ThemeToggle className="text-slate-600 dark:text-amber-300" />
             <a 
               href={settings.contactLink} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm hover:shadow"
+              className="hidden sm:inline-flex items-center justify-center min-h-[40px] px-5 sm:px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm active:scale-95"
             >
               Enquire
             </a>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button (touch-friendly >= 44px) */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className="md:hidden p-2 text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              className="md:hidden min-h-[44px] min-w-[44px] p-2.5 flex items-center justify-center text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
               aria-label="Toggle menu"
+              aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -193,21 +193,21 @@ export const About: React.FC = () => {
 
         {/* Mobile Navigation Drawer */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-slate-200/60 dark:border-slate-800 bg-[#FAF8F5] dark:bg-[#0b0f17] px-6 py-8 animate-in slide-in-from-top-4 duration-200">
-            <div className="flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
+          <div className="md:hidden border-t border-slate-200/60 dark:border-slate-800 bg-[#FAF8F5] dark:bg-[#0b0f17] px-6 py-6 animate-in slide-in-from-top-3 duration-200 shadow-xl">
+            <div className="flex flex-col gap-3 text-xs font-semibold uppercase tracking-widest">
+              <Link to="/" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Portfolio
               </Link>
-              <Link to="/?category=FILMS" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
+              <Link to="/?category=FILMS" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Films
               </Link>
-              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
+              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Prints
               </Link>
-              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
+              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Journal
               </Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800 text-slate-950 dark:text-white font-bold">
+              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 text-slate-950 dark:text-white font-bold">
                 About
               </Link>
               <a 
@@ -215,7 +215,7 @@ export const About: React.FC = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={() => setIsMenuOpen(false)}
-                className="mt-4 text-center py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase"
+                className="mt-3 text-center min-h-[44px] flex items-center justify-center py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase active:scale-95 shadow-sm"
               >
                 Enquire
               </a>
@@ -224,43 +224,27 @@ export const About: React.FC = () => {
         )}
       </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-6xl mx-auto px-6 md:px-12 py-10 md:py-16">
-        {/* Top Breadcrumb & Section Header */}
-        <div className="mb-12 md:mb-16 pb-8 border-b border-slate-200/80 dark:border-slate-800">
-          <div className="flex items-center justify-between mb-6">
-            <Link 
-              to="/" 
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Portfolio</span>
-            </Link>
-            <span className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-medium">
-              Malindi · Lamu · Worldwide
-            </span>
-          </div>
-
+      {/* Main Content Area (Mobile, Tablet & Desktop responsive padding) */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-8 sm:py-12 md:py-16">
+        {/* Section Header */}
+        <div className="mb-8 sm:mb-12 md:mb-16 pb-6 sm:pb-8 border-b border-slate-200/80 dark:border-slate-800">
           <div className="max-w-3xl">
-            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
-              About the Photographer
-            </span>
-            <h1 className="font-editorial text-4xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white font-normal leading-[1.1] tracking-tight">
+            <h1 className="font-editorial text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-slate-900 dark:text-white font-normal leading-[1.1] tracking-tight">
               Michael Mwabonje Ringa
             </h1>
-            <p className="mt-4 text-base sm:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed">
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed">
               Visual storyteller and lifestyle photographer capturing the authentic warmth, architectural quiet, and coastal narratives of East Africa.
             </p>
           </div>
         </div>
 
-        {/* Two-Column Editorial Biography */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-stretch">
-          {/* Left Column: Photographer Portrait & Specifications (Adapts to text height) */}
-          <div className="lg:col-span-5 flex flex-col h-full">
+        {/* Two-Column Biography Grid (Mobile stacked, Tablet & Desktop side-by-side with equal height) */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-8 lg:gap-14 md:items-stretch">
+          {/* Left Column: Portrait Card (Adapts height to text on Tablet & Desktop, natural proportion on Mobile) */}
+          <div className="md:col-span-5 flex flex-col h-full">
             <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xl flex flex-col h-full">
-              {/* Dynamic Image Container: Stretches flexibly to match text height */}
-              <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:flex-1 min-h-[220px] overflow-hidden bg-slate-950">
+              {/* Dynamic Image Container: Stretches flexibly to match text height on md/lg, aspect-[4/5] on mobile */}
+              <div className="relative w-full aspect-[4/5] md:aspect-auto md:flex-1 min-h-[260px] sm:min-h-[320px] md:min-h-[220px] overflow-hidden bg-slate-950">
                 <img 
                   src={getOptimizedImageUrl(displayImage, 900, 1125, 90)}
                   alt="Michael Mwabonje Ringa — Visual Storyteller"
@@ -278,24 +262,24 @@ export const About: React.FC = () => {
               {/* Editorial Spec Placard */}
               <div className="shrink-0 p-5 sm:p-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-t border-slate-200/70 dark:border-slate-800 space-y-3.5">
                 <div>
-                  <h2 className="font-editorial text-xl font-medium text-slate-900 dark:text-white">
+                  <h2 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white">
                     Michael Mwabonje Ringa
                   </h2>
-                  <p className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-0.5">
                     Photographer &amp; Filmmaker
                   </p>
                 </div>
 
                 <div className="space-y-2 text-xs border-t border-slate-200/70 dark:border-slate-800 pt-3">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Base</span>
                     <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Malindi &amp; Coast, Kenya</span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Availability</span>
                     <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Kenya &amp; Worldwide Travel</span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Focus</span>
                     <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Hospitality, Lifestyle, Prints</span>
                   </div>
@@ -306,7 +290,7 @@ export const About: React.FC = () => {
                     href={settings.contactLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold tracking-wider uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
+                    className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold tracking-wider uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-98"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>Inquire for Commissions</span>
@@ -317,152 +301,151 @@ export const About: React.FC = () => {
           </div>
 
           {/* Right Column: Narrative Biography & Philosophy */}
-          <div className="lg:col-span-7 flex flex-col justify-start space-y-6 sm:space-y-8">
+          <div className="md:col-span-7 flex flex-col justify-start space-y-6 sm:space-y-8 mt-4 md:mt-0">
             {/* Featured Artist Quote / Opening Statement */}
-            <div className="border-l-2 border-slate-900 dark:border-white pl-6 py-1">
-              <blockquote className="font-editorial italic text-2xl sm:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
+            <div className="border-l-2 border-slate-900 dark:border-white pl-4 sm:pl-6 py-1">
+              <blockquote className="font-editorial italic text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
                 &ldquo;Photography is more than clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.&rdquo;
               </blockquote>
             </div>
 
             {/* Narrative Story Paragraphs */}
-            <div className="space-y-6 text-slate-700 dark:text-slate-300 text-base sm:text-lg font-light leading-relaxed">
+            <div className="space-y-4 sm:space-y-6 text-slate-700 dark:text-slate-300 text-base sm:text-lg font-light leading-relaxed">
               {bioParagraphs.map((paragraph, index) => (
                 <p key={index} className="leading-relaxed">
                   {paragraph}
                 </p>
               ))}
             </div>
-
           </div>
         </div>
 
-        {/* Section: Creative Disciplines / Areas of Practice */}
-        <section className="mt-20 md:mt-28 pt-12 border-t border-slate-200/80 dark:border-slate-800">
-          <div className="max-w-2xl mb-10">
+        {/* Section: Creative Disciplines / Areas of Practice (1 col Mobile, 2 cols Tablet, 4 cols Desktop) */}
+        <section className="mt-16 sm:mt-20 md:mt-28 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="max-w-2xl mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
               Areas of Practice
             </span>
-            <h2 className="font-editorial text-3xl sm:text-4xl text-slate-900 dark:text-white font-normal">
+            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
               Creative Disciplines
             </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 font-light">
+            <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light">
               Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
               <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">01</span>
-              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Hospitality &amp; Architectural Spaces
+              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Hospitality &amp; Architecture
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Capturing boutique hotels, coastal private villas, safari camps, and interior architecture with natural ambient light and spatial elegance.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Capturing boutique hotels, coastal private villas, safari camps, and interior architecture with natural ambient light.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
               <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">02</span>
-              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Lifestyle &amp; Editorial Portraits
+              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Lifestyle &amp; Portraits
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Natural-light portraiture, commercial brand storytelling, and emotive human narratives that celebrate genuine character and East African culture.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Natural-light portraiture, commercial brand storytelling, and emotive human narratives that celebrate genuine coastal culture.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
               <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">03</span>
-              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Weddings &amp; Intimate Celebrations
+              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Weddings &amp; Intimacy
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Documentary, unscripted coverage of destination unions along the Kenyan coast, preserving raw emotions, intimacy, and joyful celebrations.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Documentary, unscripted coverage of destination unions along the Kenyan coast, preserving raw emotions and joyful celebrations.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
               <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">04</span>
-              <h3 className="font-editorial text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Fine Art Prints &amp; Cinematic Reels
+              <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                Fine Art Prints &amp; Cine
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Museum-grade archival cotton rag prints for interior collectors, alongside cinematic short film reels documenting coastal heritage and natural beauty.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                Museum-grade archival cotton rag prints for interior collectors, alongside cinematic short film reels documenting coastal heritage.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Section: Ethos & Working Philosophy */}
-        <section className="mt-20 md:mt-24 pt-12 border-t border-slate-200/80 dark:border-slate-800">
-          <div className="max-w-2xl mb-10">
+        {/* Section: Ethos & Working Philosophy (Responsive 1/3 grid) */}
+        <section className="mt-16 sm:mt-20 md:mt-24 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="max-w-2xl mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
               Ethos &amp; Approach
             </span>
-            <h2 className="font-editorial text-3xl sm:text-4xl text-slate-900 dark:text-white font-normal">
+            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
               How I See Through the Lens
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 md:gap-8">
+            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
               <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
                 <Sun className="w-5 h-5" />
               </div>
-              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
                 The Coastal Light
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
                 Guided by the dawn hues of the Indian Ocean, equatorial golden hours, and the organic textures of coastal architecture.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
               <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
                 Quiet Observation
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
                 Prioritizing unobtrusive storytelling and genuine connection, allowing moments to unfold naturally without rigid posing.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
               <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
                 <Layers className="w-5 h-5" />
               </div>
-              <h4 className="font-editorial text-lg font-medium text-slate-900 dark:text-white">
+              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
                 Archival Craft
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
                 Curated tone grading and museum-grade cotton rag paper selections that preserve memories for generations to come.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Section: Direct Collaboration & Contact Invitation */}
-        <section className="mt-20 md:mt-28 p-8 md:p-14 rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
-          <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+        {/* Section: Direct Collaboration & Contact Invitation (Mobile touch actions) */}
+        <section className="mt-16 sm:mt-20 md:mt-28 p-6 sm:p-10 md:p-14 rounded-2xl sm:rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
+          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 relative z-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-400 block">
               Inquiries &amp; Commissions
             </span>
-            <h2 className="font-editorial text-3xl sm:text-4xl lg:text-5xl font-normal leading-tight">
+            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-tight">
               Ready to create something timeless together?
             </h2>
-            <p className="text-slate-300 text-sm sm:text-base font-light leading-relaxed max-w-xl mx-auto">
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-xl mx-auto">
               Available for commercial hospitality briefs, editorial assignments, destination weddings, and private portraiture throughout Kenya and worldwide.
             </p>
             
-            <div className="pt-4 flex flex-wrap justify-center items-center gap-4">
+            <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
               <a
                 href={settings.contactLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
+                className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Chat on WhatsApp</span>
@@ -471,7 +454,7 @@ export const About: React.FC = () => {
               {settings.footerEmail && (
                 <a
                   href={`mailto:${settings.footerEmail}`}
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
+                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
                 >
                   <Mail className="w-4 h-4" />
                   <span>Send an Email</span>
@@ -480,7 +463,7 @@ export const About: React.FC = () => {
 
               <Link
                 to="/prints"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-transparent hover:bg-white/10 text-slate-200 border border-slate-700/80 rounded-full text-xs font-semibold tracking-widest uppercase transition-all"
+                className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-transparent hover:bg-white/10 text-slate-200 border border-slate-700/80 rounded-full text-xs font-semibold tracking-widest uppercase transition-all"
               >
                 <span>Browse Prints</span>
               </Link>
@@ -489,11 +472,11 @@ export const About: React.FC = () => {
         </section>
       </main>
 
-      {/* Editorial Footer */}
-      <footer className="bg-slate-950 text-white py-16 md:py-20 px-6 md:px-12 mt-20 border-t border-white/10">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10 pb-12 border-b border-white/10">
+      {/* Editorial Footer (Responsive wrapping) */}
+      <footer className="bg-slate-950 text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 mt-16 sm:mt-20 border-t border-white/10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-10 pb-10 sm:pb-12 border-b border-white/10">
           <div>
-            <span className="font-serif text-3xl font-bold tracking-widest text-white">
+            <span className="font-serif text-2xl sm:text-3xl font-bold tracking-widest text-white">
               {settings.brandName}
             </span>
             <p className="text-slate-400 text-xs tracking-wider uppercase mt-2">
@@ -501,38 +484,38 @@ export const About: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
-            <Link to="/" className="hover:text-white transition-colors">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
+            <Link to="/" className="hover:text-white transition-colors py-1">
               Portfolio
             </Link>
-            <Link to="/prints" className="hover:text-white transition-colors">
+            <Link to="/prints" className="hover:text-white transition-colors py-1">
               Prints
             </Link>
-            <Link to="/blog" className="hover:text-white transition-colors">
+            <Link to="/blog" className="hover:text-white transition-colors py-1">
               Journal
             </Link>
             {settings.instagramLink && (
-              <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+              <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
                 Instagram
               </a>
             )}
             {settings.tiktokLink && (
-              <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+              <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
                 TikTok
               </a>
             )}
-            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
               WhatsApp
             </a>
             {settings.footerEmail && (
-              <a href={`mailto:${settings.footerEmail}`} className="hover:text-white transition-colors">
+              <a href={`mailto:${settings.footerEmail}`} className="hover:text-white transition-colors py-1">
                 Email
               </a>
             )}
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+        <div className="max-w-6xl mx-auto pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-3 sm:gap-4 text-center sm:text-left">
           <p>© {new Date().getFullYear()} {settings.brandName} Photography. All Rights Reserved.</p>
           <p>Mombasa, Lamu &amp; Malindi, Kenya</p>
         </div>
