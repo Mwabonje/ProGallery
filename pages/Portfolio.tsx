@@ -111,7 +111,13 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(REAL_HERO_IMAGE_URL);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(() => {
+    try {
+      const cached = localStorage.getItem('mwabonje_hero_image');
+      if (cached) return cached;
+    } catch (e) {}
+    return "https://pub-722a104adad649c9bb882d954680ee50.r2.dev/uploads/1791789724420_cn0c24fmqhk/Screenshot_2026-10-04_162650.png";
+  });
 
   const [settings, setSettings] = useState({
     brandName: "MWABONJE",
@@ -165,9 +171,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               }
               setSettings(prev => ({ ...prev, ...parsed }));
               if (parsed.heroImageUrl) {
-                if (!parsed.heroImageUrl.includes('/uploads/177') && !parsed.heroImageUrl.includes('/uploads/178') && !parsed.heroImageUrl.toLowerCase().includes('screenshot')) {
-                  setHeroImageUrl(parsed.heroImageUrl);
-                }
+                setHeroImageUrl(parsed.heroImageUrl);
+                try {
+                  localStorage.setItem('mwabonje_hero_image', parsed.heroImageUrl);
+                } catch (e) {}
               }
             } catch (e) {
               // ignore
@@ -179,17 +186,18 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             .select('file_url, file_path')
             .eq('gallery_id', settingsGal.id)
             .neq('file_path', 'GALLERY_PASSWORD')
-            .not('file_path', 'ilike', '%screenshot%')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(1);
               
-          const validHeroFile = settingsFiles?.find(f => 
-            f.file_url && 
-            !f.file_url.includes('/uploads/177') && 
-            !f.file_url.includes('/uploads/178') && 
-            !f.file_url.toLowerCase().includes('screenshot')
-          );
-          if (validHeroFile) {
-            setHeroImageUrl(validHeroFile.file_url);
+          if (settingsFiles && settingsFiles.length > 0 && settingsFiles[0].file_url) {
+            const latestFileUrl = settingsFiles[0].file_url;
+            setHeroImageUrl(prev => {
+              const active = prev || latestFileUrl;
+              try {
+                localStorage.setItem('mwabonje_hero_image', active);
+              } catch (e) {}
+              return active;
+            });
           }
         }
 
@@ -475,7 +483,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100 hover:scale-105"
           onError={(e) => {
             const target = e.currentTarget;
-            if (target.src !== REAL_HERO_IMAGE_URL) {
+            if (heroBg && target.src !== heroBg) {
+              target.src = heroBg;
+            } else if (target.src !== REAL_HERO_IMAGE_URL) {
               target.src = REAL_HERO_IMAGE_URL;
             }
           }}

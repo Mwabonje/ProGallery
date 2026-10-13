@@ -136,6 +136,11 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                     .eq('id', galleryId);
                 if (error) throw error;
             }
+            try {
+                if (updatedSettings.heroImageUrl) {
+                    localStorage.setItem('mwabonje_hero_image', updatedSettings.heroImageUrl);
+                }
+            } catch (e) {}
             toast.success("Settings saved perfectly!");
             onClose();
         } catch (err) {
@@ -175,6 +180,9 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                     setCoverUrl(newUrl);
                     const updated = { ...settings, heroImageUrl: newUrl };
                     setSettings(updated);
+                    try {
+                        localStorage.setItem('mwabonje_hero_image', newUrl);
+                    } catch (e) {}
                     await supabase
                         .from('galleries')
                         .update({ 
@@ -284,6 +292,9 @@ export const HomeSettingsModal = ({ onClose, userId }: { onClose: () => void, us
                                                         })
                                                         .eq('id', galleryId);
                                                 }
+                                                try {
+                                                    localStorage.removeItem('mwabonje_hero_image');
+                                                } catch (e) {}
                                                 toast.success("Hero image removed. Portfolio cover will be used as fallback.");
                                             }}
                                             disabled={uploading}
