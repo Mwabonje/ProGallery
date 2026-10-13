@@ -153,9 +153,6 @@ export const About: React.FC = () => {
             <Link to="/?category=FILMS" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Films
             </Link>
-            <Link to="/prints" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
-              Prints
-            </Link>
             <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
               Journal
             </Link>
@@ -200,9 +197,6 @@ export const About: React.FC = () => {
               </Link>
               <Link to="/?category=FILMS" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Films
-              </Link>
-              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
-                Prints
               </Link>
               <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
                 Journal
@@ -281,7 +275,7 @@ export const About: React.FC = () => {
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Focus</span>
-                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Hospitality, Lifestyle, Prints</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Hospitality, Lifestyle, Portraits</span>
                   </div>
                 </div>
 
@@ -368,10 +362,10 @@ export const About: React.FC = () => {
             <div className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors">
               <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">04</span>
               <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                Fine Art Prints &amp; Cine
+                Cinematic Film &amp; Visual Reels
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Museum-grade archival cotton rag prints for interior collectors, alongside cinematic short film reels documenting coastal heritage.
+                Short-form cinematic film reels, brand mini-documentaries, and motion visual narratives documenting coastal heritage.
               </p>
             </div>
           </div>
@@ -460,13 +454,6 @@ export const About: React.FC = () => {
                   <span>Send an Email</span>
                 </a>
               )}
-
-              <Link
-                to="/prints"
-                className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-transparent hover:bg-white/10 text-slate-200 border border-slate-700/80 rounded-full text-xs font-semibold tracking-widest uppercase transition-all"
-              >
-                <span>Browse Prints</span>
-              </Link>
             </div>
           </div>
         </section>
@@ -487,9 +474,6 @@ export const About: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
             <Link to="/" className="hover:text-white transition-colors py-1">
               Portfolio
-            </Link>
-            <Link to="/prints" className="hover:text-white transition-colors py-1">
-              Prints
             </Link>
             <Link to="/blog" className="hover:text-white transition-colors py-1">
               Journal

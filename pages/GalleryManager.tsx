@@ -985,7 +985,7 @@ export const GalleryManager: React.FC = () => {
                         className="w-full text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none bg-white dark:bg-slate-900"
                     />
                     <datalist id="gallery-category-options">
-                        {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art", "Prints"].map(cat => (
+                        {["Wedding", "Portraits", "Couples", "Commercial", "Events", "Maternity", "Boudoir", "Fine Art"].map(cat => (
                             <option key={cat} value={cat} />
                         ))}
                     </datalist>

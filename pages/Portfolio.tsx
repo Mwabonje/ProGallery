@@ -371,9 +371,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             >
               Films
             </a>
-            <Link to="/prints" className="hover:text-slate-950 dark:hover:text-white transition-colors">
-              Prints
-            </Link>
             <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               Journal
             </Link>
@@ -430,9 +427,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               >
                 Films
               </a>
-              <Link to="/prints" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
-                Prints
-              </Link>
               <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 Journal
               </Link>

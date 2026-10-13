@@ -219,9 +219,6 @@ export const getThemedCoverImage = (clientName?: string, category?: string): str
   if (cat.includes('event')) {
     return PORTFOLIO_THEMED_IMAGES['warehouse party'].coverUrl;
   }
-  if (cat.includes('print')) {
-    return PORTFOLIO_THEMED_IMAGES['prints'].coverUrl;
-  }
   if (cat.includes('about')) {
     return REAL_ABOUT_IMAGE_URL;
   }
@@ -256,12 +253,6 @@ export const getThemedLookbookImages = (clientName?: string, category?: string):
   }
   if (cat.includes('place')) {
     return PORTFOLIO_THEMED_IMAGES['lamu'].images;
-  }
-  if (cat.includes('event')) {
-    return PORTFOLIO_THEMED_IMAGES['warehouse party'].images;
-  }
-  if (cat.includes('print')) {
-    return PORTFOLIO_THEMED_IMAGES['prints'].images;
   }
   if (cat.includes('about')) {
     return [REAL_ABOUT_IMAGE_URL];

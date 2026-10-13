@@ -804,8 +804,8 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                       <div>
-                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">New print order — 3 canvas prints</p>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Order #1042</p>
+                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">New client booking — Coastal shoot</p>
+                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Booking #1042</p>
                       </div>
                       <span className="text-[12px] text-slate-500 dark:text-slate-400">2 days ago</span>
                     </div>

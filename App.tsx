@@ -12,7 +12,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'sonner';
 
 import { Portfolio } from './pages/Portfolio';
-import { Prints } from './pages/Prints';
 import { LiveDisplay } from './pages/LiveDisplay';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
@@ -127,7 +126,7 @@ const App: React.FC = () => {
             <Route path="/g/:galleryId" element={<ClientGallery />} />
             <Route path="/g/:galleryId/display" element={<LiveDisplay />} />
             <Route path="/p/:photographerId" element={<Portfolio />} />
-            <Route path="/prints" element={<Prints />} />
+            <Route path="/prints" element={<Navigate to="/" replace />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />
