@@ -34,7 +34,15 @@ export const About: React.FC = () => {
   });
 
   const [aboutText, setAboutText] = useState<string>('');
-  const [aboutImage, setAboutImage] = useState<string | null>(null);
+  const [aboutImage, setAboutImage] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem('mwabonje_about_image');
+      if (cached && !cached.includes('mwabonje_portrait.jpg')) {
+        return cached;
+      }
+    } catch {}
+    return REAL_ABOUT_IMAGE_URL;
+  });
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -87,7 +95,11 @@ export const About: React.FC = () => {
               .limit(1);
 
             if (isMounted && aboutFiles && aboutFiles.length > 0 && aboutFiles[0].file_url) {
-              setAboutImage(aboutFiles[0].file_url);
+              const fetchedUrl = aboutFiles[0].file_url;
+              setAboutImage(fetchedUrl);
+              try {
+                localStorage.setItem('mwabonje_about_image', fetchedUrl);
+              } catch {}
             }
           }
         }
