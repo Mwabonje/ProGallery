@@ -18,7 +18,8 @@ import {
   Layers,
   Camera,
   Eye,
-  EyeOff
+  EyeOff,
+  Palette
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isRealPortfolioUrl, REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
@@ -35,6 +36,15 @@ export interface EthosPillar {
   icon: 'sun' | 'sparkles' | 'layers' | 'camera' | 'compass';
   title: string;
   description: string;
+}
+
+export interface CustomAboutSection {
+  id: string;
+  eyebrow: string;
+  title: string;
+  content: string;
+  cardBg: boolean;
+  cardBgColor: string;
 }
 
 export const DEFAULT_PAGE_HEADER_TITLE = 'Michael Mwabonje Ringa';
@@ -109,6 +119,224 @@ export const DEFAULT_INQUIRIES_SUBTITLE = 'Available for commercial hospitality 
 export const DEFAULT_INQUIRIES_WHATSAPP_LABEL = 'Chat on WhatsApp';
 export const DEFAULT_INQUIRIES_EMAIL_LABEL = 'Send an Email';
 
+export const CARD_BG_PRESETS = [
+  { name: 'Warm Cream / Linen', hex: '#FAF8F5', textDark: true },
+  { name: 'Pure White', hex: '#FFFFFF', textDark: true },
+  { name: 'Sand Warm', hex: '#F4F0EA', textDark: true },
+  { name: 'Studio Off-White', hex: '#F8F9FA', textDark: true },
+  { name: 'Slate Tint', hex: '#F1F5F9', textDark: true },
+  { name: 'Muted Taupe', hex: '#EAE5DC', textDark: true },
+  { name: 'Deep Navy Slate', hex: '#1E293B', textDark: false },
+  { name: 'Onyx Dark', hex: '#121212', textDark: false },
+];
+
+export const isColorDark = (hexColor: string): boolean => {
+  if (!hexColor || !hexColor.startsWith('#')) return false;
+  const hex = hexColor.replace('#', '');
+  if (hex.length !== 3 && hex.length !== 6) return false;
+  const fullHex = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return false;
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness < 128;
+};
+
+// Reusable component for card background controls with color selection
+function CardBackgroundControls({
+  sectionName,
+  hasBackground,
+  onToggleBackground,
+  bgColor,
+  onBgColorChange,
+  previewTitle,
+  previewDescription,
+}: {
+  sectionName: string;
+  hasBackground: boolean;
+  onToggleBackground: (enabled: boolean) => void;
+  bgColor: string;
+  onBgColorChange: (color: string) => void;
+  previewTitle?: string;
+  previewDescription?: string;
+}) {
+  const isDark = isColorDark(bgColor);
+
+  return (
+    <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+      {/* Top Toggle: With Background vs No Background */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              {sectionName} Cards Background
+            </h4>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Choose whether cards appear with an enclosed background color or a clean transparent style.
+          </p>
+        </div>
+
+        <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              onToggleBackground(false);
+              toast.info(`${sectionName} cards set to transparent (no background).`);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              !hasBackground 
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            No Background (Clean)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onToggleBackground(true);
+              toast.info(`${sectionName} cards set to background card.`);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              hasBackground 
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            With Background Color
+          </button>
+        </div>
+      </div>
+
+      {/* When Background Color is Active: Show Color Picker, Hex Input & Presets */}
+      {hasBackground && (
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                Choose Card Background Color
+              </label>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                Select a preset swatch or enter any custom hex color (e.g. #faf8f5).
+              </span>
+            </div>
+
+            {/* Custom Color Input & Picker */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center">
+                <input
+                  type="color"
+                  value={bgColor && bgColor.startsWith('#') && bgColor.length === 7 ? bgColor : '#FAF8F5'}
+                  onChange={(e) => onBgColorChange(e.target.value.toUpperCase())}
+                  className="w-9 h-9 rounded-lg border border-slate-300 dark:border-slate-700 cursor-pointer p-0.5 bg-white dark:bg-slate-800 shrink-0"
+                  title="Open Color Picker"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5">
+                <span className="text-xs font-mono text-slate-400">HEX</span>
+                <input
+                  type="text"
+                  value={bgColor}
+                  onChange={(e) => onBgColorChange(e.target.value)}
+                  placeholder="#FAF8F5"
+                  maxLength={9}
+                  className="w-20 text-xs font-mono font-bold text-slate-900 dark:text-white bg-transparent outline-none uppercase"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onBgColorChange('#FAF8F5');
+                  toast.info('Reset card color to #FAF8F5');
+                }}
+                className="px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors font-mono"
+                title="Reset to #FAF8F5"
+              >
+                #FAF8F5
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Presets Swatches */}
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              Recommended Palette Presets
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {CARD_BG_PRESETS.map((preset) => {
+                const isSelected = bgColor.toUpperCase() === preset.hex.toUpperCase();
+                return (
+                  <button
+                    key={preset.hex}
+                    type="button"
+                    onClick={() => {
+                      onBgColorChange(preset.hex);
+                      toast.success(`Selected ${preset.name} (${preset.hex})`);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                      isSelected 
+                        ? 'ring-2 ring-slate-900 dark:ring-white border-transparent font-bold shadow-sm scale-105' 
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
+                    }`}
+                    style={{ backgroundColor: preset.hex }}
+                  >
+                    <span 
+                      className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 flex items-center justify-center"
+                      style={{ backgroundColor: preset.hex }}
+                    >
+                      {isSelected && (
+                        <Check className={`w-2.5 h-2.5 ${preset.textDark ? 'text-slate-900' : 'text-white'}`} />
+                      )}
+                    </span>
+                    <span className={preset.textDark ? 'text-slate-900' : 'text-white'}>
+                      {preset.name} <span className="font-mono text-[10px] opacity-80">({preset.hex})</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Live Preview of the Card */}
+          <div className="pt-2">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Live Card Preview
+            </span>
+            <div 
+              style={{ backgroundColor: bgColor }}
+              className={`p-4 rounded-xl border transition-all ${
+                isDark 
+                  ? 'border-white/15 text-white' 
+                  : 'border-slate-200/80 text-slate-900'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                  CARD PREVIEW · {bgColor.toUpperCase()}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-white/10 text-white' : 'bg-black/5 text-slate-800'}`}>
+                  {isDark ? 'Dark Theme Contrast' : 'Light Theme Contrast'}
+                </span>
+              </div>
+              <h5 className={`font-serif text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {previewTitle || 'Sample Card Heading'}
+              </h5>
+              <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                {previewDescription || 'This is how your cards will look on the live website with this background color applied.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const AboutSettingsModal = ({ 
   onClose,
   userId
@@ -117,7 +345,7 @@ export const AboutSettingsModal = ({
   userId: string;
 }) => {
   const { uploadFiles, uploading, cancelUpload } = useUpload();
-  const [activeTab, setActiveTab] = useState<'disciplines' | 'bio' | 'placard' | 'ethos' | 'inquiries'>('ethos');
+  const [activeTab, setActiveTab] = useState<'ethos' | 'disciplines' | 'custom' | 'bio' | 'placard' | 'inquiries'>('ethos');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [galleryId, setGalleryId] = useState<string | null>(null);
@@ -144,9 +372,11 @@ export const AboutSettingsModal = ({
   const [showEthosSection, setShowEthosSection] = useState(true);
   const [showInquiriesSection, setShowInquiriesSection] = useState(true);
 
-  // Card background styling options
+  // Card background styling options with color choice
   const [disciplinesCardBg, setDisciplinesCardBg] = useState(true);
+  const [disciplinesCardBgColor, setDisciplinesCardBgColor] = useState('#FAF8F5');
   const [ethosCardBg, setEthosCardBg] = useState(false);
+  const [ethosCardBgColor, setEthosCardBgColor] = useState('#FAF8F5');
 
   // Disciplines state
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState(DEFAULT_DISCIPLINES_EYEBROW);
@@ -158,6 +388,9 @@ export const AboutSettingsModal = ({
   const [ethosEyebrow, setEthosEyebrow] = useState(DEFAULT_ETHOS_EYEBROW);
   const [ethosTitle, setEthosTitle] = useState(DEFAULT_ETHOS_TITLE);
   const [ethosPillars, setEthosPillars] = useState<EthosPillar[]>(DEFAULT_ETHOS_PILLARS);
+
+  // Custom user sections state (allows deleting and adding brand new sections)
+  const [customSections, setCustomSections] = useState<CustomAboutSection[]>([]);
 
   // Inquiries CTA banner state
   const [inquiriesEyebrow, setInquiriesEyebrow] = useState(DEFAULT_INQUIRIES_EYEBROW);
@@ -210,7 +443,9 @@ export const AboutSettingsModal = ({
                 if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
 
                 if (parsed.disciplinesCardBg !== undefined) setDisciplinesCardBg(parsed.disciplinesCardBg);
+                if (parsed.disciplinesCardBgColor) setDisciplinesCardBgColor(parsed.disciplinesCardBgColor);
                 if (parsed.ethosCardBg !== undefined) setEthosCardBg(parsed.ethosCardBg);
+                if (parsed.ethosCardBgColor) setEthosCardBgColor(parsed.ethosCardBgColor);
 
                 if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                 if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
@@ -223,6 +458,10 @@ export const AboutSettingsModal = ({
                 if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
                 if (Array.isArray(parsed.ethosPillars)) {
                   setEthosPillars(parsed.ethosPillars);
+                }
+
+                if (Array.isArray(parsed.customSections)) {
+                  setCustomSections(parsed.customSections);
                 }
 
                 if (parsed.inquiriesEyebrow) setInquiriesEyebrow(parsed.inquiriesEyebrow);
@@ -248,16 +487,12 @@ export const AboutSettingsModal = ({
 
           if (files && files.length > 0 && files[0].file_url) {
             setCoverUrl(files[0].file_url);
-          }
-
-          if (gal.link_enabled === false) {
-            await supabase
-              .from('galleries')
-              .update({ link_enabled: true })
-              .eq('id', gal.id);
+            try {
+              localStorage.setItem('mwabonje_about_image', files[0].file_url);
+            } catch {}
           }
         } else {
-          // Create gallery if it doesn't exist
+          // Initialize default ABOUT row in Supabase
           const defaultPayload = JSON.stringify({
             pageHeaderTitle: DEFAULT_PAGE_HEADER_TITLE,
             pageHeaderSubtitle: DEFAULT_PAGE_HEADER_SUBTITLE,
@@ -273,7 +508,9 @@ export const AboutSettingsModal = ({
             showEthosSection: true,
             showInquiriesSection: true,
             disciplinesCardBg: true,
+            disciplinesCardBgColor: '#FAF8F5',
             ethosCardBg: false,
+            ethosCardBgColor: '#FAF8F5',
             disciplinesEyebrow: DEFAULT_DISCIPLINES_EYEBROW,
             disciplinesTitle: DEFAULT_DISCIPLINES_TITLE,
             disciplinesSubtitle: DEFAULT_DISCIPLINES_SUBTITLE,
@@ -281,6 +518,7 @@ export const AboutSettingsModal = ({
             ethosEyebrow: DEFAULT_ETHOS_EYEBROW,
             ethosTitle: DEFAULT_ETHOS_TITLE,
             ethosPillars: DEFAULT_ETHOS_PILLARS,
+            customSections: [],
             inquiriesEyebrow: DEFAULT_INQUIRIES_EYEBROW,
             inquiriesTitle: DEFAULT_INQUIRIES_TITLE,
             inquiriesSubtitle: DEFAULT_INQUIRIES_SUBTITLE,
@@ -329,7 +567,9 @@ export const AboutSettingsModal = ({
     showEthosSection,
     showInquiriesSection,
     disciplinesCardBg,
+    disciplinesCardBgColor,
     ethosCardBg,
+    ethosCardBgColor,
     disciplinesEyebrow,
     disciplinesTitle,
     disciplinesSubtitle,
@@ -337,6 +577,7 @@ export const AboutSettingsModal = ({
     ethosEyebrow,
     ethosTitle,
     ethosPillars,
+    customSections,
     inquiriesEyebrow,
     inquiriesTitle,
     inquiriesSubtitle,
@@ -428,7 +669,7 @@ export const AboutSettingsModal = ({
         number: String(i + 1).padStart(2, '0'),
       }));
     });
-    toast.info('Removed discipline section.');
+    toast.info('Deleted discipline section.');
   };
 
   const handleAddPillar = () => {
@@ -446,11 +687,39 @@ export const AboutSettingsModal = ({
 
   const handleRemovePillar = (index: number) => {
     setEthosPillars(prev => prev.filter((_, i) => i !== index));
-    toast.info(`Deleted pillar section.`);
+    toast.info('Deleted pillar section.');
   };
 
-  const handlePillarChange = (index: number, field: keyof EthosPillar, value: string) => {
+  const handlePillarChange = (index: number, field: keyof EthosPillar, value: any) => {
     setEthosPillars(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // Custom sections handlers
+  const handleAddCustomSection = () => {
+    const nextIndex = customSections.length + 1;
+    const newSection: CustomAboutSection = {
+      id: Date.now().toString(),
+      eyebrow: 'SPECIAL FEATURE',
+      title: `Section 0${nextIndex} Title`,
+      content: 'Write your custom section narrative, accolades, or details here...',
+      cardBg: true,
+      cardBgColor: '#FAF8F5',
+    };
+    setCustomSections(prev => [...prev, newSection]);
+    toast.success('Added new custom section.');
+  };
+
+  const handleRemoveCustomSection = (index: number) => {
+    setCustomSections(prev => prev.filter((_, i) => i !== index));
+    toast.info('Deleted section.');
+  };
+
+  const handleCustomSectionChange = (index: number, field: keyof CustomAboutSection, value: any) => {
+    setCustomSections(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
@@ -462,24 +731,15 @@ export const AboutSettingsModal = ({
     const file = e.target.files[0];
 
     try {
-      await uploadFiles(galleryId, [file], 87600); // 10 years expiry
-      setTimeout(async () => {
-        const { data: files } = await supabase
-          .from('files')
-          .select('file_url')
-          .eq('gallery_id', galleryId)
-          .neq('file_path', 'GALLERY_PASSWORD')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (files && files.length > 0 && files[0].file_url) {
-          setCoverUrl(files[0].file_url);
-          try {
-            localStorage.setItem('mwabonje_about_image', files[0].file_url);
-          } catch {}
-          toast.success('Portrait image updated successfully!');
-        }
-      }, 3000);
+      const result = await uploadFiles([file], galleryId);
+      if (result && result.length > 0) {
+        const newUrl = result[0].file_url;
+        setCoverUrl(newUrl);
+        try {
+          localStorage.setItem('mwabonje_about_image', newUrl);
+        } catch {}
+        toast.success('Portrait image uploaded successfully!');
+      }
     } catch (err: any) {
       toast.error('Upload failed: ' + err.message);
     }
@@ -487,10 +747,12 @@ export const AboutSettingsModal = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 flex items-center gap-3 border border-slate-200 dark:border-slate-800">
-          <Loader2 className="animate-spin text-slate-500 w-5 h-5" />
-          <span className="text-slate-700 dark:text-slate-300 text-sm font-medium">Loading About settings...</span>
+      <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 flex flex-col items-center gap-3 shadow-2xl border border-slate-200 dark:border-slate-800">
+          <Loader2 className="w-8 h-8 text-slate-800 dark:text-slate-200 animate-spin" />
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            Loading About page content...
+          </span>
         </div>
       </div>
     );
@@ -506,7 +768,7 @@ export const AboutSettingsModal = ({
               <span>Edit About Page Content</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Add or delete sections, edit philosophy pillars, disciplines, specifications, and biography.
+              Add or delete sections, choose card background colors (e.g. #FAF8F5), and edit all copy.
             </p>
           </div>
           <button 
@@ -545,6 +807,19 @@ export const AboutSettingsModal = ({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Disciplines ({disciplines.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('custom')}
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'custom'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Custom Sections ({customSections.length})</span>
           </button>
 
           <button
@@ -589,20 +864,20 @@ export const AboutSettingsModal = ({
 
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* TAB: ETHOS & APPROACH (Primary focus with Add & Delete Section capability) */}
+          {/* TAB: ETHOS & APPROACH */}
           {activeTab === 'ethos' && (
             <div className="space-y-6">
-              {/* Entire Section Master Control: Toggle Delete/Hide or Add/Show Section */}
+              {/* Entire Section Master Control: Delete Section or Add Section */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full shrink-0 ${showEthosSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                      Ethos &amp; Approach Section Visibility
+                      Ethos &amp; Approach Section
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {showEthosSection 
-                        ? 'This section is currently active and rendered on the About page.' 
+                        ? 'This section is currently visible on the live About page.' 
                         : 'This section is currently deleted / hidden from the About page.'}
                     </p>
                   </div>
@@ -614,9 +889,9 @@ export const AboutSettingsModal = ({
                     onClick={() => {
                       const next = !showEthosSection;
                       setShowEthosSection(next);
-                      toast.info(next ? 'Ethos & Approach section enabled.' : 'Ethos & Approach section hidden/deleted from page.');
+                      toast.info(next ? 'Added Ethos & Approach section to page.' : 'Deleted / hidden Ethos & Approach section from page.');
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                    className={`px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
                       showEthosSection 
                         ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
@@ -624,13 +899,13 @@ export const AboutSettingsModal = ({
                   >
                     {showEthosSection ? (
                       <>
-                        <EyeOff className="w-3.5 h-3.5" />
-                        <span>Hide Section From Page</span>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Section from Page</span>
                       </>
                     ) : (
                       <>
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Restore Section</span>
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Section to Page</span>
                       </>
                     )}
                   </button>
@@ -649,6 +924,8 @@ export const AboutSettingsModal = ({
                       setEthosEyebrow(DEFAULT_ETHOS_EYEBROW);
                       setEthosTitle(DEFAULT_ETHOS_TITLE);
                       setEthosPillars(DEFAULT_ETHOS_PILLARS);
+                      setEthosCardBg(false);
+                      setEthosCardBgColor('#FAF8F5');
                       setShowEthosSection(true);
                       toast.info('Restored default ethos section and pillars.');
                     }}
@@ -687,47 +964,16 @@ export const AboutSettingsModal = ({
                 </div>
               </div>
 
-              {/* Card Background Color Option */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Pillar Cards Background
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Choose whether the philosophy pillars appear with an enclosed background card or transparent.
-                  </p>
-                </div>
-                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEthosCardBg(false);
-                      toast.info('Pillar cards set to transparent (no background).');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      !ethosCardBg 
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    No Background (Clean)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEthosCardBg(true);
-                      toast.info('Pillar cards set to filled background card.');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      ethosCardBg 
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    With Background Card
-                  </button>
-                </div>
-              </div>
+              {/* Card Background Color Option with Hex Picker and Presets */}
+              <CardBackgroundControls
+                sectionName="Ethos Pillar"
+                hasBackground={ethosCardBg}
+                onToggleBackground={(enabled) => setEthosCardBg(enabled)}
+                bgColor={ethosCardBgColor}
+                onBgColorChange={(color) => setEthosCardBgColor(color)}
+                previewTitle="The Coastal Light"
+                previewDescription="Guided by the dawn hues of the Indian Ocean, equatorial golden hours, and the organic textures of coastal architecture."
+              />
 
               {/* Pillars Header with Add Section button */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
@@ -762,7 +1008,7 @@ export const AboutSettingsModal = ({
                   <div>
                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Pillar Sections</h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      You have deleted all pillar cards. Add one using the button below or restore the defaults.
+                      You have deleted all pillar sections. Add one using the button below or restore defaults.
                     </p>
                   </div>
                   <div className="flex justify-center gap-3 pt-2">
@@ -809,7 +1055,7 @@ export const AboutSettingsModal = ({
                         <button
                           type="button"
                           onClick={() => handleRemovePillar(idx)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 rounded-lg transition-colors font-medium border border-rose-200/60 dark:border-rose-900/40"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 rounded-lg transition-colors font-medium border border-rose-200/60 dark:border-rose-900/40"
                           title="Delete this pillar section"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -871,13 +1117,13 @@ export const AboutSettingsModal = ({
           {/* TAB: CREATIVE DISCIPLINES */}
           {activeTab === 'disciplines' && (
             <div className="space-y-6">
-              {/* Disciplines Section Visibility Master Control */}
+              {/* Disciplines Section Visibility Control: Delete or Add Section */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full shrink-0 ${showDisciplinesSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                      Creative Disciplines Section Visibility
+                      Creative Disciplines Section
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {showDisciplinesSection 
@@ -892,9 +1138,9 @@ export const AboutSettingsModal = ({
                   onClick={() => {
                     const next = !showDisciplinesSection;
                     setShowDisciplinesSection(next);
-                    toast.info(next ? 'Disciplines section enabled.' : 'Disciplines section hidden/deleted from page.');
+                    toast.info(next ? 'Added Disciplines section to page.' : 'Deleted / hidden Disciplines section from page.');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
                     showDisciplinesSection 
                       ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
                       : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
@@ -902,13 +1148,13 @@ export const AboutSettingsModal = ({
                 >
                   {showDisciplinesSection ? (
                     <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Hide Section From Page</span>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Section from Page</span>
                     </>
                   ) : (
                     <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Restore Section</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Section to Page</span>
                     </>
                   )}
                 </button>
@@ -927,6 +1173,8 @@ export const AboutSettingsModal = ({
                       setDisciplinesTitle(DEFAULT_DISCIPLINES_TITLE);
                       setDisciplinesSubtitle(DEFAULT_DISCIPLINES_SUBTITLE);
                       setDisciplines(DEFAULT_DISCIPLINES);
+                      setDisciplinesCardBg(true);
+                      setDisciplinesCardBgColor('#FAF8F5');
                       setShowDisciplinesSection(true);
                       toast.info('Restored default creative disciplines.');
                     }}
@@ -979,121 +1227,281 @@ export const AboutSettingsModal = ({
                 </div>
               </div>
 
-              {/* Card Background Color Option */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Discipline Cards Background
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Choose whether the discipline cards have an enclosed background card or transparent clean style.
-                  </p>
-                </div>
-                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDisciplinesCardBg(true);
-                      toast.info('Discipline cards set to filled background card.');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      disciplinesCardBg 
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    With Background Card
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDisciplinesCardBg(false);
-                      toast.info('Discipline cards set to transparent (no background).');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      !disciplinesCardBg 
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    No Background (Clean)
-                  </button>
-                </div>
-              </div>
+              {/* Card Background Color Option with Hex Picker and Presets */}
+              <CardBackgroundControls
+                sectionName="Discipline"
+                hasBackground={disciplinesCardBg}
+                onToggleBackground={(enabled) => setDisciplinesCardBg(enabled)}
+                bgColor={disciplinesCardBgColor}
+                onBgColorChange={(color) => setDisciplinesCardBgColor(color)}
+                previewTitle="Hospitality & Architecture"
+                previewDescription="Capturing boutique hotels, coastal private villas, safari camps, and interior architecture with natural ambient light."
+              />
 
-              {/* Cards List Header */}
+              {/* Cards List Header with Add Section button */}
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Discipline Cards ({disciplines.length})
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Discipline Sections</span>
+                    <span className="text-xs font-mono font-normal px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {disciplines.length} {disciplines.length === 1 ? 'discipline' : 'disciplines'}
+                    </span>
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Edit titles, descriptions, and numbers for each discipline.
+                    Add new disciplines or delete sections. You can edit numbers, titles, and descriptions.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleAddDiscipline}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-95 shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Discipline</span>
+                  <span>Add Discipline Section</span>
                 </button>
               </div>
 
-              {/* Disciplines Cards */}
-              <div className="space-y-3">
-                {disciplines.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-10">
-                        <label className="block text-[10px] uppercase font-mono text-slate-400 mb-0.5">
-                          Num
+              {/* Disciplines Cards List */}
+              {disciplines.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 bg-slate-50/50 dark:bg-slate-900/30">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Discipline Sections</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      You have deleted all discipline sections. Add one using the button below or restore defaults.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleAddDiscipline}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add First Discipline</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDisciplines(DEFAULT_DISCIPLINES);
+                        setShowDisciplinesSection(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restore Default Disciplines</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {disciplines.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-3 group hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Discipline Section {item.number}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                            ({item.title || 'Untitled'})
+                          </span>
+                        </div>
+
+                        {/* Prominent DELETE SECTION button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDiscipline(index)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 rounded-lg transition-colors font-medium border border-rose-200/60 dark:border-rose-900/40 shrink-0"
+                          title="Delete this discipline section"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Section</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] uppercase font-mono text-slate-400 mb-1">
+                            Number
+                          </label>
+                          <input
+                            type="text"
+                            value={item.number}
+                            onChange={(e) => handleDisciplineChange(index, 'number', e.target.value)}
+                            placeholder="01"
+                            maxLength={4}
+                            className="w-full px-2 py-1.5 text-xs font-mono font-bold text-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-10">
+                          <label className="block text-[10px] uppercase font-mono text-slate-400 mb-1">
+                            Discipline Title
+                          </label>
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => handleDisciplineChange(index, 'title', e.target.value)}
+                            placeholder="Discipline Title (e.g. Hospitality & Architecture)"
+                            className="w-full px-3 py-1.5 text-sm font-medium bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono text-slate-400 mb-1">
+                          Description
                         </label>
-                        <input
-                          type="text"
-                          value={item.number}
-                          onChange={(e) => handleDisciplineChange(index, 'number', e.target.value)}
-                          placeholder="01"
-                          maxLength={4}
-                          className="w-full px-2 py-1.5 text-xs font-mono font-bold text-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 outline-none"
+                        <textarea
+                          value={item.description}
+                          onChange={(e) => handleDisciplineChange(index, 'description', e.target.value)}
+                          placeholder="Description of deliverables, scope, and visual storytelling ethos..."
+                          rows={2}
+                          className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white resize-none leading-relaxed"
                         />
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-                    <div className="flex-1 w-full space-y-2">
-                      <input
-                        type="text"
-                        value={item.title}
-                        onChange={(e) => handleDisciplineChange(index, 'title', e.target.value)}
-                        placeholder="Discipline Title (e.g. Hospitality & Architecture)"
-                        className="w-full px-3 py-1.5 text-sm font-medium bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white"
-                      />
-                      <textarea
-                        value={item.description}
-                        onChange={(e) => handleDisciplineChange(index, 'description', e.target.value)}
-                        placeholder="Description of deliverables, scope, and visual storytelling ethos..."
-                        rows={2}
-                        className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white resize-none leading-relaxed"
-                      />
-                    </div>
+          {/* TAB: CUSTOM SECTIONS (Add new sections and delete sections freely) */}
+          {activeTab === 'custom' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Custom Editorial Sections
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Add new sections to the About page (e.g., Exhibitions, Accolades, Publications, or Press). You can delete or add sections whenever you want.
+                  </p>
+                </div>
 
+                <button
+                  type="button"
+                  onClick={handleAddCustomSection}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-95 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Section</span>
+                </button>
+              </div>
+
+              {customSections.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 bg-slate-50/50 dark:bg-slate-900/30">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Custom Sections Yet</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                      Click the button below to add a new custom section. You can choose card background colors like #faf8f5 and edit all contents.
+                    </p>
+                  </div>
+                  <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => handleRemoveDiscipline(index)}
-                      className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors shrink-0"
-                      title="Delete Discipline"
-                      aria-label="Delete Discipline"
+                      onClick={handleAddCustomSection}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg shadow-sm"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add First Custom Section</span>
                     </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {customSections.map((sec, idx) => (
+                    <div 
+                      key={sec.id || idx}
+                      className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-4 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Custom Section 0{idx + 1}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                            ({sec.title || 'Untitled'})
+                          </span>
+                        </div>
+
+                        {/* DELETE SECTION BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomSection(idx)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 rounded-lg transition-colors font-medium border border-rose-200/60 dark:border-rose-900/40 shrink-0"
+                          title="Delete this custom section"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Section</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Eyebrow Tag
+                          </label>
+                          <input
+                            type="text"
+                            value={sec.eyebrow}
+                            onChange={(e) => handleCustomSectionChange(idx, 'eyebrow', e.target.value)}
+                            placeholder="e.g. SELECTED EXHIBITIONS"
+                            className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-slate-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Section Title
+                          </label>
+                          <input
+                            type="text"
+                            value={sec.title}
+                            onChange={(e) => handleCustomSectionChange(idx, 'title', e.target.value)}
+                            placeholder="e.g. Solo & Group Exhibitions"
+                            className="w-full px-3 py-1.5 text-xs font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Section Content / Narrative
+                        </label>
+                        <textarea
+                          value={sec.content}
+                          onChange={(e) => handleCustomSectionChange(idx, 'content', e.target.value)}
+                          rows={3}
+                          placeholder="Enter details, exhibition dates, client list, or biography points..."
+                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none leading-relaxed focus:ring-1 focus:ring-slate-900 resize-y"
+                        />
+                      </div>
+
+                      {/* Card Background Controls for Custom Section */}
+                      <CardBackgroundControls
+                        sectionName={`Custom Section 0${idx + 1}`}
+                        hasBackground={sec.cardBg}
+                        onToggleBackground={(enabled) => handleCustomSectionChange(idx, 'cardBg', enabled)}
+                        bgColor={sec.cardBgColor || '#FAF8F5'}
+                        onBgColorChange={(color) => handleCustomSectionChange(idx, 'cardBgColor', color)}
+                        previewTitle={sec.title || 'Custom Section Card'}
+                        previewDescription={sec.content || 'Sample preview of your custom section card content.'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1177,22 +1585,30 @@ export const AboutSettingsModal = ({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-xs font-semibold tracking-wider uppercase disabled:opacity-50"
+                    className="w-full py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors flex items-center justify-center gap-2"
                   >
-                    {coverUrl ? 'Change Portrait Photo' : 'Upload Portrait Photo'}
+                    <ImageIcon className="w-4 h-4" />
+                    <span>Upload New Portrait</span>
                   </button>
                 </div>
 
-                {/* Text Column */}
+                {/* Narrative Text Column */}
                 <div className="md:col-span-2 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="aboutText" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Biography Narrative Paragraphs
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Narrative Biography Paragraphs
                     </label>
-                    <span className="text-[11px] text-slate-400">Separate paragraphs with enter</span>
+                    <button
+                      type="button"
+                      onClick={() => setAboutText("Hey there! I am Michael Mwabonje Ringa, an East African photographer based in Malindi specialising in hospitality, Wedding, portraits, and documentary visual storytelling. My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it.\n\nFor me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.\n\nWhether I'm shooting an elegant property or directing a visual project, my focus remains on authenticity, natural light, and elegant composition.\n\nAvailable for travel. Let's create something beautiful together.")}
+                      className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
                   </div>
                   <textarea
-                    id="aboutText"
+                    rows={12}
                     value={aboutText}
                     onChange={(e) => setAboutText(e.target.value)}
                     className="w-full flex-1 min-h-[300px] px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none transition-all resize-y text-sm leading-relaxed text-slate-900 dark:text-slate-100"
@@ -1349,17 +1765,17 @@ export const AboutSettingsModal = ({
           {/* TAB: INQUIRIES BANNER */}
           {activeTab === 'inquiries' && (
             <div className="space-y-6">
-              {/* Inquiries Banner Visibility Master Control */}
+              {/* Inquiries Banner Visibility Control: Delete or Add Section */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full shrink-0 ${showInquiriesSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                      Inquiries Banner Visibility
+                      Inquiries Banner Section
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {showInquiriesSection 
-                        ? 'Closing banner with contact buttons is visible.' 
+                        ? 'Closing banner with contact buttons is visible on the About page.' 
                         : 'Closing banner is deleted / hidden from the About page.'}
                     </p>
                   </div>
@@ -1370,9 +1786,9 @@ export const AboutSettingsModal = ({
                   onClick={() => {
                     const next = !showInquiriesSection;
                     setShowInquiriesSection(next);
-                    toast.info(next ? 'Inquiries banner enabled.' : 'Inquiries banner hidden/deleted from page.');
+                    toast.info(next ? 'Added Inquiries banner section to page.' : 'Deleted / hidden Inquiries banner from page.');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
                     showInquiriesSection 
                       ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
                       : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
@@ -1380,13 +1796,13 @@ export const AboutSettingsModal = ({
                 >
                   {showInquiriesSection ? (
                     <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Hide Section From Page</span>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Section from Page</span>
                     </>
                   ) : (
                     <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Restore Section</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Section to Page</span>
                     </>
                   )}
                 </button>

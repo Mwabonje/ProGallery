@@ -19,6 +19,8 @@ import { REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
 import { 
   DisciplineItem, 
   EthosPillar,
+  CustomAboutSection,
+  isColorDark,
   DEFAULT_PAGE_HEADER_TITLE,
   DEFAULT_PAGE_HEADER_SUBTITLE,
   DEFAULT_BIO_QUOTE,
@@ -125,12 +127,18 @@ export const About: React.FC = () => {
     cached?.showInquiriesSection !== undefined ? cached.showInquiriesSection : true
   );
 
-  // Card background styling states
+  // Card background styling states with color choices
   const [disciplinesCardBg, setDisciplinesCardBg] = useState<boolean>(
     cached?.disciplinesCardBg !== undefined ? cached.disciplinesCardBg : true
   );
+  const [disciplinesCardBgColor, setDisciplinesCardBgColor] = useState<string>(
+    cached?.disciplinesCardBgColor || '#FAF8F5'
+  );
   const [ethosCardBg, setEthosCardBg] = useState<boolean>(
     cached?.ethosCardBg !== undefined ? cached.ethosCardBg : false
+  );
+  const [ethosCardBgColor, setEthosCardBgColor] = useState<string>(
+    cached?.ethosCardBgColor || '#FAF8F5'
   );
 
   // Creative Disciplines states
@@ -156,6 +164,11 @@ export const About: React.FC = () => {
   );
   const [ethosPillars, setEthosPillars] = useState<EthosPillar[]>(
     Array.isArray(cached?.ethosPillars) ? cached.ethosPillars : DEFAULT_ETHOS_PILLARS
+  );
+
+  // Custom sections states
+  const [customSections, setCustomSections] = useState<CustomAboutSection[]>(
+    Array.isArray(cached?.customSections) ? cached.customSections : []
   );
 
   // Inquiries CTA banner states
@@ -235,7 +248,9 @@ export const About: React.FC = () => {
                   if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
 
                   if (parsed.disciplinesCardBg !== undefined) setDisciplinesCardBg(parsed.disciplinesCardBg);
+                  if (parsed.disciplinesCardBgColor) setDisciplinesCardBgColor(parsed.disciplinesCardBgColor);
                   if (parsed.ethosCardBg !== undefined) setEthosCardBg(parsed.ethosCardBg);
+                  if (parsed.ethosCardBgColor) setEthosCardBgColor(parsed.ethosCardBgColor);
 
                   if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                   if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
@@ -248,6 +263,10 @@ export const About: React.FC = () => {
                   if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
                   if (Array.isArray(parsed.ethosPillars)) {
                     setEthosPillars(parsed.ethosPillars);
+                  }
+
+                  if (Array.isArray(parsed.customSections)) {
+                    setCustomSections(parsed.customSections);
                   }
 
                   if (parsed.inquiriesEyebrow) setInquiriesEyebrow(parsed.inquiriesEyebrow);
@@ -285,7 +304,7 @@ export const About: React.FC = () => {
           }
         }
       } catch (err) {
-        console.error('Error fetching about data:', err);
+        console.error('Error fetching About data:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -540,25 +559,39 @@ export const About: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {disciplines.map((item, idx) => (
-                <div 
-                  key={item.id || idx}
-                  className={disciplinesCardBg
-                    ? "p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors shadow-sm"
-                    : "p-4 sm:p-2 bg-transparent border-0 transition-colors"
-                  }
-                >
-                  <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">
-                    {item.number || String(idx + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
+              {disciplines.map((item, idx) => {
+                const isDark = isColorDark(disciplinesCardBgColor || '#FAF8F5');
+                return (
+                  <div 
+                    key={item.id || idx}
+                    style={disciplinesCardBg ? { backgroundColor: disciplinesCardBgColor || '#FAF8F5' } : undefined}
+                    className={disciplinesCardBg
+                      ? `p-5 sm:p-6 rounded-2xl border transition-all duration-200 shadow-sm hover:shadow-md ${
+                          isDark 
+                            ? 'border-white/10 text-white hover:border-white/20' 
+                            : 'border-slate-200/80 text-slate-900 hover:border-slate-300'
+                        }`
+                      : "p-4 sm:p-2 bg-transparent border-0 transition-colors"
+                    }
+                  >
+                    <span className={`text-xs font-mono font-medium block mb-2 ${
+                      disciplinesCardBg && isDark ? 'text-slate-400' : 'text-slate-400 dark:text-slate-500'
+                    }`}>
+                      {item.number || String(idx + 1).padStart(2, '0')}
+                    </span>
+                    <h3 className={`font-editorial text-lg sm:text-xl font-medium mb-2 ${
+                      disciplinesCardBg && isDark ? 'text-white' : 'text-slate-900 dark:text-white'
+                    }`}>
+                      {item.title}
+                    </h3>
+                    <p className={`text-xs sm:text-sm font-light leading-relaxed ${
+                      disciplinesCardBg && isDark ? 'text-slate-300' : 'text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
@@ -576,28 +609,83 @@ export const About: React.FC = () => {
             </div>
 
             <div className={getEthosGridClass()}>
-              {ethosPillars.map((pillar, idx) => (
-                <div 
-                  key={pillar.id || idx} 
-                  className={ethosCardBg
-                    ? "space-y-3 p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors shadow-sm"
-                    : "space-y-3 p-4 sm:p-0 bg-transparent transition-colors"
-                  }
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
-                    {renderPillarIcon(pillar.icon)}
+              {ethosPillars.map((pillar, idx) => {
+                const isDark = isColorDark(ethosCardBgColor || '#FAF8F5');
+                return (
+                  <div 
+                    key={pillar.id || idx} 
+                    style={ethosCardBg ? { backgroundColor: ethosCardBgColor || '#FAF8F5' } : undefined}
+                    className={ethosCardBg
+                      ? `space-y-3 p-5 sm:p-6 rounded-2xl border transition-all duration-200 shadow-sm hover:shadow-md ${
+                          isDark
+                            ? 'border-white/10 text-white hover:border-white/20'
+                            : 'border-slate-200/80 text-slate-900 hover:border-slate-300'
+                        }`
+                      : "space-y-3 p-4 sm:p-0 bg-transparent transition-colors"
+                    }
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                      ethosCardBg && isDark
+                        ? 'bg-white/15 text-white'
+                        : 'bg-slate-200/60 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                    }`}>
+                      {renderPillarIcon(pillar.icon)}
+                    </div>
+                    <h4 className={`font-editorial text-base sm:text-lg font-medium ${
+                      ethosCardBg && isDark ? 'text-white' : 'text-slate-900 dark:text-white'
+                    }`}>
+                      {pillar.title}
+                    </h4>
+                    <p className={`text-xs sm:text-sm font-light leading-relaxed ${
+                      ethosCardBg && isDark ? 'text-slate-300' : 'text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {pillar.description}
+                    </p>
                   </div>
-                  <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
-                    {pillar.title}
-                  </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                    {pillar.description}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
+
+        {/* Section: Custom Sections (Dynamically Added/Deleted by User) */}
+        {customSections && customSections.length > 0 && customSections.map((sec, idx) => {
+          const isDark = isColorDark(sec.cardBgColor || '#FAF8F5');
+          return (
+            <section key={sec.id || idx} className="mt-16 sm:mt-20 md:mt-24 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
+              <div className="max-w-2xl mb-8 sm:mb-10">
+                {sec.eyebrow ? (
+                  <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
+                    {sec.eyebrow}
+                  </span>
+                ) : null}
+                {sec.title ? (
+                  <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
+                    {sec.title}
+                  </h2>
+                ) : null}
+              </div>
+
+              <div 
+                style={sec.cardBg ? { backgroundColor: sec.cardBgColor || '#FAF8F5' } : undefined}
+                className={sec.cardBg
+                  ? `p-6 sm:p-8 rounded-2xl border transition-all duration-200 shadow-sm ${
+                      isDark 
+                        ? 'border-white/10 text-white' 
+                        : 'border-slate-200/80 text-slate-900'
+                    }`
+                  : "p-4 sm:p-0 bg-transparent text-slate-700 dark:text-slate-300"
+                }
+              >
+                <div className={`text-sm sm:text-base leading-relaxed whitespace-pre-line font-light ${
+                  sec.cardBg && isDark ? 'text-slate-200' : 'text-slate-700 dark:text-slate-300'
+                }`}>
+                  {sec.content}
+                </div>
+              </div>
+            </section>
+          );
+        })}
 
         {/* Section: Direct Collaboration & Contact Invitation (Conditional if enabled) */}
         {showInquiriesSection && (
@@ -658,30 +746,37 @@ export const About: React.FC = () => {
             <Link to="/blog" className="hover:text-white transition-colors py-1">
               Journal
             </Link>
-            {settings.instagramLink && (
-              <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
-                Instagram
-              </a>
-            )}
-            {settings.tiktokLink && (
-              <a href={settings.tiktokLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
-                TikTok
-              </a>
-            )}
-            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors py-1">
-              WhatsApp
+            <Link to="/about" className="text-white font-bold border-b border-white py-1">
+              About
+            </Link>
+            <a 
+              href={settings.contactLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors py-1"
+            >
+              Contact
             </a>
-            {settings.footerEmail && (
-              <a href={`mailto:${settings.footerEmail}`} className="hover:text-white transition-colors py-1">
-                Email
-              </a>
-            )}
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-3 sm:gap-4 text-center sm:text-left">
-          <p>© {new Date().getFullYear()} {settings.brandName} Photography. All Rights Reserved.</p>
-          <p>Mombasa, Lamu &amp; Malindi, Kenya</p>
+        <div className="max-w-6xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
+          <p>&copy; {new Date().getFullYear()} {settings.brandName}. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard" className="hover:text-white transition-colors">
+              Studio Portal
+            </Link>
+            {settings.instagramLink && (
+              <a 
+                href={settings.instagramLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Instagram
+              </a>
+            )}
+          </div>
         </div>
       </footer>
     </div>
