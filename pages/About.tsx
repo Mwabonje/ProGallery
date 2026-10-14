@@ -125,6 +125,14 @@ export const About: React.FC = () => {
     cached?.showInquiriesSection !== undefined ? cached.showInquiriesSection : true
   );
 
+  // Card background styling states
+  const [disciplinesCardBg, setDisciplinesCardBg] = useState<boolean>(
+    cached?.disciplinesCardBg !== undefined ? cached.disciplinesCardBg : true
+  );
+  const [ethosCardBg, setEthosCardBg] = useState<boolean>(
+    cached?.ethosCardBg !== undefined ? cached.ethosCardBg : false
+  );
+
   // Creative Disciplines states
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState<string>(
     cached?.disciplinesEyebrow || DEFAULT_DISCIPLINES_EYEBROW
@@ -225,6 +233,9 @@ export const About: React.FC = () => {
                   if (parsed.showDisciplinesSection !== undefined) setShowDisciplinesSection(parsed.showDisciplinesSection);
                   if (parsed.showEthosSection !== undefined) setShowEthosSection(parsed.showEthosSection);
                   if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
+
+                  if (parsed.disciplinesCardBg !== undefined) setDisciplinesCardBg(parsed.disciplinesCardBg);
+                  if (parsed.ethosCardBg !== undefined) setEthosCardBg(parsed.ethosCardBg);
 
                   if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                   if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
@@ -532,7 +543,10 @@ export const About: React.FC = () => {
               {disciplines.map((item, idx) => (
                 <div 
                   key={item.id || idx}
-                  className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors"
+                  className={disciplinesCardBg
+                    ? "p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors shadow-sm"
+                    : "p-4 sm:p-2 bg-transparent border-0 transition-colors"
+                  }
                 >
                   <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">
                     {item.number || String(idx + 1).padStart(2, '0')}
@@ -565,7 +579,10 @@ export const About: React.FC = () => {
               {ethosPillars.map((pillar, idx) => (
                 <div 
                   key={pillar.id || idx} 
-                  className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent"
+                  className={ethosCardBg
+                    ? "space-y-3 p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors shadow-sm"
+                    : "space-y-3 p-4 sm:p-0 bg-transparent transition-colors"
+                  }
                 >
                   <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
                     {renderPillarIcon(pillar.icon)}

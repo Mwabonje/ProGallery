@@ -144,6 +144,10 @@ export const AboutSettingsModal = ({
   const [showEthosSection, setShowEthosSection] = useState(true);
   const [showInquiriesSection, setShowInquiriesSection] = useState(true);
 
+  // Card background styling options
+  const [disciplinesCardBg, setDisciplinesCardBg] = useState(true);
+  const [ethosCardBg, setEthosCardBg] = useState(false);
+
   // Disciplines state
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState(DEFAULT_DISCIPLINES_EYEBROW);
   const [disciplinesTitle, setDisciplinesTitle] = useState(DEFAULT_DISCIPLINES_TITLE);
@@ -205,6 +209,9 @@ export const AboutSettingsModal = ({
                 if (parsed.showEthosSection !== undefined) setShowEthosSection(parsed.showEthosSection);
                 if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
 
+                if (parsed.disciplinesCardBg !== undefined) setDisciplinesCardBg(parsed.disciplinesCardBg);
+                if (parsed.ethosCardBg !== undefined) setEthosCardBg(parsed.ethosCardBg);
+
                 if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                 if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
                 if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
@@ -265,6 +272,8 @@ export const AboutSettingsModal = ({
             showDisciplinesSection: true,
             showEthosSection: true,
             showInquiriesSection: true,
+            disciplinesCardBg: true,
+            ethosCardBg: false,
             disciplinesEyebrow: DEFAULT_DISCIPLINES_EYEBROW,
             disciplinesTitle: DEFAULT_DISCIPLINES_TITLE,
             disciplinesSubtitle: DEFAULT_DISCIPLINES_SUBTITLE,
@@ -319,6 +328,8 @@ export const AboutSettingsModal = ({
     showDisciplinesSection,
     showEthosSection,
     showInquiriesSection,
+    disciplinesCardBg,
+    ethosCardBg,
     disciplinesEyebrow,
     disciplinesTitle,
     disciplinesSubtitle,
@@ -676,6 +687,48 @@ export const AboutSettingsModal = ({
                 </div>
               </div>
 
+              {/* Card Background Color Option */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Pillar Cards Background
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Choose whether the philosophy pillars appear with an enclosed background card or transparent.
+                  </p>
+                </div>
+                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEthosCardBg(false);
+                      toast.info('Pillar cards set to transparent (no background).');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      !ethosCardBg 
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    No Background (Clean)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEthosCardBg(true);
+                      toast.info('Pillar cards set to filled background card.');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      ethosCardBg 
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    With Background Card
+                  </button>
+                </div>
+              </div>
+
               {/* Pillars Header with Add Section button */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <div>
@@ -923,6 +976,48 @@ export const AboutSettingsModal = ({
                     placeholder="Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality."
                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                   />
+                </div>
+              </div>
+
+              {/* Card Background Color Option */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Discipline Cards Background
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Choose whether the discipline cards have an enclosed background card or transparent clean style.
+                  </p>
+                </div>
+                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDisciplinesCardBg(true);
+                      toast.info('Discipline cards set to filled background card.');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      disciplinesCardBg 
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    With Background Card
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDisciplinesCardBg(false);
+                      toast.info('Discipline cards set to transparent (no background).');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      !disciplinesCardBg 
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    No Background (Clean)
+                  </button>
                 </div>
               </div>
 
