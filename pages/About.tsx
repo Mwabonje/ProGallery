@@ -8,7 +8,9 @@ import {
   MessageCircle,
   Sun,
   Sparkles,
-  Layers
+  Layers,
+  Camera,
+  Compass
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -16,10 +18,28 @@ import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
 import { 
   DisciplineItem, 
+  EthosPillar,
+  DEFAULT_PAGE_HEADER_TITLE,
+  DEFAULT_PAGE_HEADER_SUBTITLE,
+  DEFAULT_BIO_QUOTE,
+  DEFAULT_PLACARD_NAME,
+  DEFAULT_PLACARD_ROLE,
+  DEFAULT_PLACARD_BASE,
+  DEFAULT_PLACARD_AVAILABILITY,
+  DEFAULT_PLACARD_FOCUS,
+  DEFAULT_PLACARD_BUTTON_TEXT,
   DEFAULT_DISCIPLINES, 
   DEFAULT_DISCIPLINES_EYEBROW, 
   DEFAULT_DISCIPLINES_TITLE, 
-  DEFAULT_DISCIPLINES_SUBTITLE 
+  DEFAULT_DISCIPLINES_SUBTITLE,
+  DEFAULT_ETHOS_EYEBROW,
+  DEFAULT_ETHOS_TITLE,
+  DEFAULT_ETHOS_PILLARS,
+  DEFAULT_INQUIRIES_EYEBROW,
+  DEFAULT_INQUIRIES_TITLE,
+  DEFAULT_INQUIRIES_SUBTITLE,
+  DEFAULT_INQUIRIES_WHATSAPP_LABEL,
+  DEFAULT_INQUIRIES_EMAIL_LABEL
 } from '../components/AboutSettingsModal';
 
 interface Settings {
@@ -39,63 +59,102 @@ export const About: React.FC = () => {
     footerEmail: 'mwabonje@gmail.com',
   });
 
-  const [aboutText, setAboutText] = useState<string>('');
+  const getCachedPayload = () => {
+    try {
+      const p = localStorage.getItem('mwabonje_about_payload');
+      if (p) return JSON.parse(p);
+    } catch {}
+    return null;
+  };
+
+  const cached = getCachedPayload();
+
+  // Top Page Header states
+  const [pageHeaderTitle, setPageHeaderTitle] = useState<string>(
+    cached?.pageHeaderTitle || DEFAULT_PAGE_HEADER_TITLE
+  );
+  const [pageHeaderSubtitle, setPageHeaderSubtitle] = useState<string>(
+    cached?.pageHeaderSubtitle || DEFAULT_PAGE_HEADER_SUBTITLE
+  );
+
+  // Bio Quote & Text states
+  const [bioQuote, setBioQuote] = useState<string>(
+    cached?.bioQuote || DEFAULT_BIO_QUOTE
+  );
+  const [aboutText, setAboutText] = useState<string>(
+    cached?.bioText || ''
+  );
   const [aboutImage, setAboutImage] = useState<string>(() => {
     try {
-      const cached = localStorage.getItem('mwabonje_about_image');
-      if (cached && !cached.includes('mwabonje_portrait.jpg')) {
-        return cached;
+      const cachedImg = localStorage.getItem('mwabonje_about_image');
+      if (cachedImg && !cachedImg.includes('mwabonje_portrait.jpg')) {
+        return cachedImg;
       }
     } catch {}
     return REAL_ABOUT_IMAGE_URL;
   });
 
-  // Dynamic Creative Disciplines states (editable from Dashboard)
-  const [disciplinesEyebrow, setDisciplinesEyebrow] = useState<string>(() => {
-    try {
-      const p = localStorage.getItem('mwabonje_about_payload');
-      if (p) {
-        const parsed = JSON.parse(p);
-        if (parsed.disciplinesEyebrow) return parsed.disciplinesEyebrow;
-      }
-    } catch {}
-    return DEFAULT_DISCIPLINES_EYEBROW;
-  });
+  // Placard states
+  const [placardName, setPlacardName] = useState<string>(
+    cached?.placardName || DEFAULT_PLACARD_NAME
+  );
+  const [placardRole, setPlacardRole] = useState<string>(
+    cached?.placardRole || DEFAULT_PLACARD_ROLE
+  );
+  const [placardBase, setPlacardBase] = useState<string>(
+    cached?.placardBase || DEFAULT_PLACARD_BASE
+  );
+  const [placardAvailability, setPlacardAvailability] = useState<string>(
+    cached?.placardAvailability || DEFAULT_PLACARD_AVAILABILITY
+  );
+  const [placardFocus, setPlacardFocus] = useState<string>(
+    cached?.placardFocus || DEFAULT_PLACARD_FOCUS
+  );
+  const [placardButtonText, setPlacardButtonText] = useState<string>(
+    cached?.placardButtonText || DEFAULT_PLACARD_BUTTON_TEXT
+  );
 
-  const [disciplinesTitle, setDisciplinesTitle] = useState<string>(() => {
-    try {
-      const p = localStorage.getItem('mwabonje_about_payload');
-      if (p) {
-        const parsed = JSON.parse(p);
-        if (parsed.disciplinesTitle) return parsed.disciplinesTitle;
-      }
-    } catch {}
-    return DEFAULT_DISCIPLINES_TITLE;
-  });
+  // Creative Disciplines states
+  const [disciplinesEyebrow, setDisciplinesEyebrow] = useState<string>(
+    cached?.disciplinesEyebrow || DEFAULT_DISCIPLINES_EYEBROW
+  );
+  const [disciplinesTitle, setDisciplinesTitle] = useState<string>(
+    cached?.disciplinesTitle || DEFAULT_DISCIPLINES_TITLE
+  );
+  const [disciplinesSubtitle, setDisciplinesSubtitle] = useState<string>(
+    cached?.disciplinesSubtitle !== undefined ? cached.disciplinesSubtitle : DEFAULT_DISCIPLINES_SUBTITLE
+  );
+  const [disciplines, setDisciplines] = useState<DisciplineItem[]>(
+    Array.isArray(cached?.disciplines) && cached.disciplines.length > 0 ? cached.disciplines : DEFAULT_DISCIPLINES
+  );
 
-  const [disciplinesSubtitle, setDisciplinesSubtitle] = useState<string>(() => {
-    try {
-      const p = localStorage.getItem('mwabonje_about_payload');
-      if (p) {
-        const parsed = JSON.parse(p);
-        if (parsed.disciplinesSubtitle !== undefined) return parsed.disciplinesSubtitle;
-      }
-    } catch {}
-    return DEFAULT_DISCIPLINES_SUBTITLE;
-  });
+  // Ethos & Approach states
+  const [ethosEyebrow, setEthosEyebrow] = useState<string>(
+    cached?.ethosEyebrow || DEFAULT_ETHOS_EYEBROW
+  );
+  const [ethosTitle, setEthosTitle] = useState<string>(
+    cached?.ethosTitle || DEFAULT_ETHOS_TITLE
+  );
+  const [ethosPillars, setEthosPillars] = useState<EthosPillar[]>(
+    Array.isArray(cached?.ethosPillars) && cached.ethosPillars.length > 0 ? cached.ethosPillars : DEFAULT_ETHOS_PILLARS
+  );
 
-  const [disciplines, setDisciplines] = useState<DisciplineItem[]>(() => {
-    try {
-      const p = localStorage.getItem('mwabonje_about_payload');
-      if (p) {
-        const parsed = JSON.parse(p);
-        if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
-          return parsed.disciplines;
-        }
-      }
-    } catch {}
-    return DEFAULT_DISCIPLINES;
-  });
+  // Inquiries CTA banner states
+  const [inquiriesEyebrow, setInquiriesEyebrow] = useState<string>(
+    cached?.inquiriesEyebrow || DEFAULT_INQUIRIES_EYEBROW
+  );
+  const [inquiriesTitle, setInquiriesTitle] = useState<string>(
+    cached?.inquiriesTitle || DEFAULT_INQUIRIES_TITLE
+  );
+  const [inquiriesSubtitle, setInquiriesSubtitle] = useState<string>(
+    cached?.inquiriesSubtitle || DEFAULT_INQUIRIES_SUBTITLE
+  );
+  const [inquiriesWhatsappLabel, setInquiriesWhatsappLabel] = useState<string>(
+    cached?.inquiriesWhatsappLabel || DEFAULT_INQUIRIES_WHATSAPP_LABEL
+  );
+  const [inquiriesEmailLabel, setInquiriesEmailLabel] = useState<string>(
+    cached?.inquiriesEmailLabel || DEFAULT_INQUIRIES_EMAIL_LABEL
+  );
 
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -105,7 +164,6 @@ export const About: React.FC = () => {
 
     const fetchAboutData = async () => {
       try {
-        // Fetch site settings from SETTINGS and ABOUT galleries
         const { data: rawGalleries } = await supabase
           .from('galleries')
           .select('*')
@@ -115,7 +173,7 @@ export const About: React.FC = () => {
         if (!isMounted) return;
 
         if (rawGalleries && rawGalleries.length > 0) {
-          // Parse settings if available
+          // Parse settings
           const settingsGal = rawGalleries.find(g => g.category === 'SETTINGS');
           if (settingsGal?.title) {
             try {
@@ -133,20 +191,45 @@ export const About: React.FC = () => {
             }
           }
 
-          // Fetch About text and cover image
+          // Fetch About payload & image
           const aboutGal = rawGalleries.find(g => g.client_name === '__ABOUT__' || g.category === 'ABOUT');
           if (aboutGal) {
             if (aboutGal.title) {
               try {
                 const parsed = JSON.parse(aboutGal.title);
                 if (parsed && typeof parsed === 'object') {
+                  if (parsed.pageHeaderTitle) setPageHeaderTitle(parsed.pageHeaderTitle);
+                  if (parsed.pageHeaderSubtitle) setPageHeaderSubtitle(parsed.pageHeaderSubtitle);
+
+                  if (parsed.bioQuote) setBioQuote(parsed.bioQuote);
                   if (parsed.bioText) setAboutText(parsed.bioText);
+
+                  if (parsed.placardName) setPlacardName(parsed.placardName);
+                  if (parsed.placardRole) setPlacardRole(parsed.placardRole);
+                  if (parsed.placardBase) setPlacardBase(parsed.placardBase);
+                  if (parsed.placardAvailability) setPlacardAvailability(parsed.placardAvailability);
+                  if (parsed.placardFocus) setPlacardFocus(parsed.placardFocus);
+                  if (parsed.placardButtonText) setPlacardButtonText(parsed.placardButtonText);
+
                   if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                   if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
                   if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
                   if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
                     setDisciplines(parsed.disciplines);
                   }
+
+                  if (parsed.ethosEyebrow) setEthosEyebrow(parsed.ethosEyebrow);
+                  if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
+                  if (Array.isArray(parsed.ethosPillars) && parsed.ethosPillars.length > 0) {
+                    setEthosPillars(parsed.ethosPillars);
+                  }
+
+                  if (parsed.inquiriesEyebrow) setInquiriesEyebrow(parsed.inquiriesEyebrow);
+                  if (parsed.inquiriesTitle) setInquiriesTitle(parsed.inquiriesTitle);
+                  if (parsed.inquiriesSubtitle) setInquiriesSubtitle(parsed.inquiriesSubtitle);
+                  if (parsed.inquiriesWhatsappLabel) setInquiriesWhatsappLabel(parsed.inquiriesWhatsappLabel);
+                  if (parsed.inquiriesEmailLabel) setInquiriesEmailLabel(parsed.inquiriesEmailLabel);
+
                   try {
                     localStorage.setItem('mwabonje_about_payload', aboutGal.title);
                   } catch {}
@@ -202,14 +285,31 @@ export const About: React.FC = () => {
 
   const displayImage = aboutImage || REAL_ABOUT_IMAGE_URL;
 
+  const renderPillarIcon = (icon: string) => {
+    switch (icon) {
+      case 'sun':
+        return <Sun className="w-5 h-5" />;
+      case 'sparkles':
+        return <Sparkles className="w-5 h-5" />;
+      case 'layers':
+        return <Layers className="w-5 h-5" />;
+      case 'camera':
+        return <Camera className="w-5 h-5" />;
+      case 'compass':
+        return <Compass className="w-5 h-5" />;
+      default:
+        return <Sparkles className="w-5 h-5" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>About — {settings.brandName} | Visual Storyteller & Lifestyle Photographer</title>
-        <meta name="description" content={`Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
+        <title>About — {pageHeaderTitle || settings.brandName} | Visual Storyteller & Lifestyle Photographer</title>
+        <meta name="description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
       </Helmet>
 
-      {/* Navigation Header (Responsive height & padding) */}
+      {/* Navigation Header */}
       <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 sm:h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
@@ -249,7 +349,7 @@ export const About: React.FC = () => {
               Enquire
             </a>
 
-            {/* Mobile Menu Button (touch-friendly >= 44px) */}
+            {/* Mobile Menu Button */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)} 
               className="md:hidden min-h-[44px] min-w-[44px] p-2.5 flex items-center justify-center text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
@@ -291,30 +391,30 @@ export const About: React.FC = () => {
         )}
       </header>
 
-      {/* Main Content Area (Mobile, Tablet & Desktop responsive padding) */}
+      {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-8 sm:py-12 md:py-16">
         {/* Section Header */}
         <div className="mb-8 sm:mb-12 md:mb-16 pb-6 sm:pb-8 border-b border-slate-200/80 dark:border-slate-800">
           <div className="max-w-3xl">
             <h1 className="font-editorial text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-slate-900 dark:text-white font-normal leading-[1.1] tracking-tight">
-              Michael Mwabonje Ringa
+              {pageHeaderTitle}
             </h1>
             <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed">
-              Visual storyteller and lifestyle photographer capturing the authentic warmth, architectural quiet, and coastal narratives of East Africa.
+              {pageHeaderSubtitle}
             </p>
           </div>
         </div>
 
-        {/* Two-Column Biography Grid (Mobile stacked, Tablet & Desktop side-by-side with equal height) */}
+        {/* Two-Column Biography Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-8 lg:gap-14 md:items-stretch">
-          {/* Left Column: Portrait Card (Adapts height to text on Tablet & Desktop, natural proportion on Mobile) */}
+          {/* Left Column: Portrait Card */}
           <div className="md:col-span-5 flex flex-col h-full">
             <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xl flex flex-col h-full">
-              {/* Dynamic Image Container: Stretches flexibly to match text height on md/lg, aspect-[4/5] on mobile */}
+              {/* Dynamic Image Container */}
               <div className="relative w-full aspect-[4/5] md:aspect-auto md:flex-1 min-h-[260px] sm:min-h-[320px] md:min-h-[220px] overflow-hidden bg-slate-950">
                 <img 
                   src={getOptimizedImageUrl(displayImage, 900, 1125, 90)}
-                  alt="Michael Mwabonje Ringa — Visual Storyteller"
+                  alt={`${placardName} — Visual Storyteller`}
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (!target.dataset.retried) {
@@ -330,25 +430,25 @@ export const About: React.FC = () => {
               <div className="shrink-0 p-5 sm:p-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-t border-slate-200/70 dark:border-slate-800 space-y-3.5">
                 <div>
                   <h2 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white">
-                    Michael Mwabonje Ringa
+                    {placardName}
                   </h2>
                   <p className="text-[11px] sm:text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-0.5">
-                    Photographer &amp; Filmmaker
+                    {placardRole}
                   </p>
                 </div>
 
                 <div className="space-y-2 text-xs border-t border-slate-200/70 dark:border-slate-800 pt-3">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Base</span>
-                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Malindi &amp; Coast, Kenya</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">{placardBase}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Availability</span>
-                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Kenya &amp; Worldwide Travel</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">{placardAvailability}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">Focus</span>
-                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">Hospitality, Lifestyle, Portraits</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium text-right">{placardFocus}</span>
                   </div>
                 </div>
 
@@ -360,7 +460,7 @@ export const About: React.FC = () => {
                     className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold tracking-wider uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-98"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Inquire for Commissions</span>
+                    <span>{placardButtonText}</span>
                   </a>
                 </div>
               </div>
@@ -370,11 +470,13 @@ export const About: React.FC = () => {
           {/* Right Column: Narrative Biography & Philosophy */}
           <div className="md:col-span-7 flex flex-col justify-start space-y-6 sm:space-y-8 mt-4 md:mt-0">
             {/* Featured Artist Quote / Opening Statement */}
-            <div className="border-l-2 border-slate-900 dark:border-white pl-4 sm:pl-6 py-1">
-              <blockquote className="font-editorial italic text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
-                &ldquo;Photography is more than clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.&rdquo;
-              </blockquote>
-            </div>
+            {bioQuote && (
+              <div className="border-l-2 border-slate-900 dark:border-white pl-4 sm:pl-6 py-1">
+                <blockquote className="font-editorial italic text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-slate-100 font-light leading-snug">
+                  &ldquo;{bioQuote}&rdquo;
+                </blockquote>
+              </div>
+            )}
 
             {/* Narrative Story Paragraphs */}
             <div className="space-y-4 sm:space-y-6 text-slate-700 dark:text-slate-300 text-base sm:text-lg font-light leading-relaxed">
@@ -387,7 +489,7 @@ export const About: React.FC = () => {
           </div>
         </div>
 
-        {/* Section: Creative Disciplines / Areas of Practice (Editable via Dashboard) */}
+        {/* Section: Creative Disciplines / Areas of Practice */}
         <section className="mt-16 sm:mt-20 md:mt-28 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
           <div className="max-w-2xl mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
@@ -423,67 +525,48 @@ export const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Section: Ethos & Working Philosophy (Responsive 1/3 grid) */}
+        {/* Section: Ethos & Working Philosophy */}
         <section className="mt-16 sm:mt-20 md:mt-24 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
           <div className="max-w-2xl mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
-              Ethos &amp; Approach
+              {ethosEyebrow}
             </span>
             <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
-              How I See Through the Lens
+              {ethosTitle}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 md:gap-8">
-            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
-              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
-                <Sun className="w-5 h-5" />
+            {ethosPillars.map((pillar, idx) => (
+              <div 
+                key={pillar.id || idx} 
+                className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent"
+              >
+                <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
+                  {renderPillarIcon(pillar.icon)}
+                </div>
+                <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
+                  {pillar.title}
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                  {pillar.description}
+                </p>
               </div>
-              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
-                The Coastal Light
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Guided by the dawn hues of the Indian Ocean, equatorial golden hours, and the organic textures of coastal architecture.
-              </p>
-            </div>
-
-            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
-              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
-                Quiet Observation
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Prioritizing unobtrusive storytelling and genuine connection, allowing moments to unfold naturally without rigid posing.
-              </p>
-            </div>
-
-            <div className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent">
-              <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
-                <Layers className="w-5 h-5" />
-              </div>
-              <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
-                Archival Craft
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                Curated tone grading and museum-grade cotton rag paper selections that preserve memories for generations to come.
-              </p>
-            </div>
+            ))}
           </div>
         </section>
 
-        {/* Section: Direct Collaboration & Contact Invitation (Mobile touch actions) */}
+        {/* Section: Direct Collaboration & Contact Invitation */}
         <section className="mt-16 sm:mt-20 md:mt-28 p-6 sm:p-10 md:p-14 rounded-2xl sm:rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
           <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 relative z-10">
             <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-400 block">
-              Inquiries &amp; Commissions
+              {inquiriesEyebrow}
             </span>
             <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-tight">
-              Ready to create something timeless together?
+              {inquiriesTitle}
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-xl mx-auto">
-              Available for commercial hospitality briefs, editorial assignments, destination weddings, and private portraiture throughout Kenya and worldwide.
+              {inquiriesSubtitle}
             </p>
             
             <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
@@ -494,7 +577,7 @@ export const About: React.FC = () => {
                 className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Chat on WhatsApp</span>
+                <span>{inquiriesWhatsappLabel}</span>
               </a>
 
               {settings.footerEmail && (
@@ -503,7 +586,7 @@ export const About: React.FC = () => {
                   className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>Send an Email</span>
+                  <span>{inquiriesEmailLabel}</span>
                 </a>
               )}
             </div>
@@ -511,7 +594,7 @@ export const About: React.FC = () => {
         </section>
       </main>
 
-      {/* Editorial Footer (Responsive wrapping) */}
+      {/* Editorial Footer */}
       <footer className="bg-slate-950 text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 mt-16 sm:mt-20 border-t border-white/10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-10 pb-10 sm:pb-12 border-b border-white/10">
           <div>

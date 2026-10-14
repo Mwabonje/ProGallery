@@ -10,7 +10,13 @@ import {
   Sparkles, 
   BookOpen, 
   RotateCcw,
-  Check
+  Check,
+  User,
+  Compass,
+  MessageCircle,
+  Sun,
+  Layers,
+  Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isRealPortfolioUrl, REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
@@ -21,6 +27,29 @@ export interface DisciplineItem {
   title: string;
   description: string;
 }
+
+export interface EthosPillar {
+  id: string;
+  icon: 'sun' | 'sparkles' | 'layers' | 'camera' | 'compass';
+  title: string;
+  description: string;
+}
+
+export const DEFAULT_PAGE_HEADER_TITLE = 'Michael Mwabonje Ringa';
+export const DEFAULT_PAGE_HEADER_SUBTITLE = 'Visual storyteller and lifestyle photographer capturing the authentic warmth, architectural quiet, and coastal narratives of East Africa.';
+
+export const DEFAULT_BIO_QUOTE = 'Photography is more than clicking a button; it is about preserving fleeting moments and crafting narratives that transcend time.';
+
+export const DEFAULT_PLACARD_NAME = 'Michael Mwabonje Ringa';
+export const DEFAULT_PLACARD_ROLE = 'Photographer & Filmmaker';
+export const DEFAULT_PLACARD_BASE = 'Malindi & Coast, Kenya';
+export const DEFAULT_PLACARD_AVAILABILITY = 'Kenya & Worldwide Travel';
+export const DEFAULT_PLACARD_FOCUS = 'Hospitality, Lifestyle, Portraits';
+export const DEFAULT_PLACARD_BUTTON_TEXT = 'Inquire for Commissions';
+
+export const DEFAULT_DISCIPLINES_EYEBROW = 'AREAS OF PRACTICE';
+export const DEFAULT_DISCIPLINES_TITLE = 'Creative Disciplines';
+export const DEFAULT_DISCIPLINES_SUBTITLE = 'Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality.';
 
 export const DEFAULT_DISCIPLINES: DisciplineItem[] = [
   {
@@ -49,9 +78,34 @@ export const DEFAULT_DISCIPLINES: DisciplineItem[] = [
   },
 ];
 
-export const DEFAULT_DISCIPLINES_EYEBROW = 'AREAS OF PRACTICE';
-export const DEFAULT_DISCIPLINES_TITLE = 'Creative Disciplines';
-export const DEFAULT_DISCIPLINES_SUBTITLE = 'Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality.';
+export const DEFAULT_ETHOS_EYEBROW = 'Ethos & Approach';
+export const DEFAULT_ETHOS_TITLE = 'How I See Through the Lens';
+export const DEFAULT_ETHOS_PILLARS: EthosPillar[] = [
+  {
+    id: '1',
+    icon: 'sun',
+    title: 'The Coastal Light',
+    description: 'Guided by the dawn hues of the Indian Ocean, equatorial golden hours, and the organic textures of coastal architecture.',
+  },
+  {
+    id: '2',
+    icon: 'sparkles',
+    title: 'Quiet Observation',
+    description: 'Prioritizing unobtrusive storytelling and genuine connection, allowing moments to unfold naturally without rigid posing.',
+  },
+  {
+    id: '3',
+    icon: 'layers',
+    title: 'Archival Craft',
+    description: 'Curated tone grading and museum-grade cotton rag paper selections that preserve memories for generations to come.',
+  },
+];
+
+export const DEFAULT_INQUIRIES_EYEBROW = 'Inquiries & Commissions';
+export const DEFAULT_INQUIRIES_TITLE = 'Ready to create something timeless together?';
+export const DEFAULT_INQUIRIES_SUBTITLE = 'Available for commercial hospitality briefs, editorial assignments, destination weddings, and private portraiture throughout Kenya and worldwide.';
+export const DEFAULT_INQUIRIES_WHATSAPP_LABEL = 'Chat on WhatsApp';
+export const DEFAULT_INQUIRIES_EMAIL_LABEL = 'Send an Email';
 
 export const AboutSettingsModal = ({ 
   onClose,
@@ -61,31 +115,54 @@ export const AboutSettingsModal = ({
   userId: string;
 }) => {
   const { uploadFiles, uploading, cancelUpload } = useUpload();
-  const [activeTab, setActiveTab] = useState<'disciplines' | 'bio'>('disciplines');
+  const [activeTab, setActiveTab] = useState<'disciplines' | 'bio' | 'placard' | 'ethos' | 'inquiries'>('disciplines');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [galleryId, setGalleryId] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
-  // Bio state
+  // Top page header
+  const [pageHeaderTitle, setPageHeaderTitle] = useState(DEFAULT_PAGE_HEADER_TITLE);
+  const [pageHeaderSubtitle, setPageHeaderSubtitle] = useState(DEFAULT_PAGE_HEADER_SUBTITLE);
+
+  // Bio & Quote
+  const [bioQuote, setBioQuote] = useState(DEFAULT_BIO_QUOTE);
   const [aboutText, setAboutText] = useState('');
 
-  // Disciplines state (highlighted in request)
+  // Placard details
+  const [placardName, setPlacardName] = useState(DEFAULT_PLACARD_NAME);
+  const [placardRole, setPlacardRole] = useState(DEFAULT_PLACARD_ROLE);
+  const [placardBase, setPlacardBase] = useState(DEFAULT_PLACARD_BASE);
+  const [placardAvailability, setPlacardAvailability] = useState(DEFAULT_PLACARD_AVAILABILITY);
+  const [placardFocus, setPlacardFocus] = useState(DEFAULT_PLACARD_FOCUS);
+  const [placardButtonText, setPlacardButtonText] = useState(DEFAULT_PLACARD_BUTTON_TEXT);
+
+  // Disciplines state
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState(DEFAULT_DISCIPLINES_EYEBROW);
   const [disciplinesTitle, setDisciplinesTitle] = useState(DEFAULT_DISCIPLINES_TITLE);
   const [disciplinesSubtitle, setDisciplinesSubtitle] = useState(DEFAULT_DISCIPLINES_SUBTITLE);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>(DEFAULT_DISCIPLINES);
 
+  // Ethos & Approach state
+  const [ethosEyebrow, setEthosEyebrow] = useState(DEFAULT_ETHOS_EYEBROW);
+  const [ethosTitle, setEthosTitle] = useState(DEFAULT_ETHOS_TITLE);
+  const [ethosPillars, setEthosPillars] = useState<EthosPillar[]>(DEFAULT_ETHOS_PILLARS);
+
+  // Inquiries CTA banner state
+  const [inquiriesEyebrow, setInquiriesEyebrow] = useState(DEFAULT_INQUIRIES_EYEBROW);
+  const [inquiriesTitle, setInquiriesTitle] = useState(DEFAULT_INQUIRIES_TITLE);
+  const [inquiriesSubtitle, setInquiriesSubtitle] = useState(DEFAULT_INQUIRIES_SUBTITLE);
+  const [inquiriesWhatsappLabel, setInquiriesWhatsappLabel] = useState(DEFAULT_INQUIRIES_WHATSAPP_LABEL);
+  const [inquiriesEmailLabel, setInquiriesEmailLabel] = useState(DEFAULT_INQUIRIES_EMAIL_LABEL);
+
   // Auto-save setup
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const lastSavedPayloadRef = useRef<string>('');
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
       try {
-        // Find ABOUT gallery
         const { data, error } = await supabase
           .from('galleries')
           .select('*')
@@ -100,28 +177,49 @@ export const AboutSettingsModal = ({
           const gal = data[0];
           setGalleryId(gal.id);
 
-          // Parse title (can be JSON or plain bio string)
           if (gal.title) {
             try {
               const parsed = JSON.parse(gal.title);
               if (parsed && typeof parsed === 'object') {
-                setAboutText(parsed.bioText || '');
-                setDisciplinesEyebrow(parsed.disciplinesEyebrow || DEFAULT_DISCIPLINES_EYEBROW);
-                setDisciplinesTitle(parsed.disciplinesTitle || DEFAULT_DISCIPLINES_TITLE);
-                setDisciplinesSubtitle(parsed.disciplinesSubtitle ?? DEFAULT_DISCIPLINES_SUBTITLE);
+                if (parsed.pageHeaderTitle) setPageHeaderTitle(parsed.pageHeaderTitle);
+                if (parsed.pageHeaderSubtitle) setPageHeaderSubtitle(parsed.pageHeaderSubtitle);
+
+                if (parsed.bioQuote) setBioQuote(parsed.bioQuote);
+                if (parsed.bioText) setAboutText(parsed.bioText);
+
+                if (parsed.placardName) setPlacardName(parsed.placardName);
+                if (parsed.placardRole) setPlacardRole(parsed.placardRole);
+                if (parsed.placardBase) setPlacardBase(parsed.placardBase);
+                if (parsed.placardAvailability) setPlacardAvailability(parsed.placardAvailability);
+                if (parsed.placardFocus) setPlacardFocus(parsed.placardFocus);
+                if (parsed.placardButtonText) setPlacardButtonText(parsed.placardButtonText);
+
+                if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
+                if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
+                if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
                 if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
                   setDisciplines(parsed.disciplines);
                 }
+
+                if (parsed.ethosEyebrow) setEthosEyebrow(parsed.ethosEyebrow);
+                if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
+                if (Array.isArray(parsed.ethosPillars) && parsed.ethosPillars.length > 0) {
+                  setEthosPillars(parsed.ethosPillars);
+                }
+
+                if (parsed.inquiriesEyebrow) setInquiriesEyebrow(parsed.inquiriesEyebrow);
+                if (parsed.inquiriesTitle) setInquiriesTitle(parsed.inquiriesTitle);
+                if (parsed.inquiriesSubtitle) setInquiriesSubtitle(parsed.inquiriesSubtitle);
+                if (parsed.inquiriesWhatsappLabel) setInquiriesWhatsappLabel(parsed.inquiriesWhatsappLabel);
+                if (parsed.inquiriesEmailLabel) setInquiriesEmailLabel(parsed.inquiriesEmailLabel);
               } else {
                 setAboutText(gal.title);
               }
             } catch {
-              // Legacy plain text bio
               setAboutText(gal.title);
             }
           }
 
-          // Fetch cover photo
           const { data: files } = await supabase
             .from('files')
             .select('file_url')
@@ -143,11 +241,28 @@ export const AboutSettingsModal = ({
         } else {
           // Create gallery if it doesn't exist
           const defaultPayload = JSON.stringify({
+            pageHeaderTitle: DEFAULT_PAGE_HEADER_TITLE,
+            pageHeaderSubtitle: DEFAULT_PAGE_HEADER_SUBTITLE,
+            bioQuote: DEFAULT_BIO_QUOTE,
             bioText: "Hey there! I am Michael Mwabonje Ringa, an East African photographer based in Malindi specialising in hospitality, Wedding, portraits, and documentary visual storytelling. My work is heavily inspired by the coastal beauty of Kenya and the intimate stories of the people who inhabit it.\n\nFor me, photography is more than just clicking a button; it is about preserving fleeting moments, translating emotions into visuals, and crafting narratives that transcend time.\n\nWhether I'm shooting an elegant property or directing a visual project, my focus remains on authenticity, natural light, and elegant composition.\n\nAvailable for travel. Let's create something beautiful together.",
+            placardName: DEFAULT_PLACARD_NAME,
+            placardRole: DEFAULT_PLACARD_ROLE,
+            placardBase: DEFAULT_PLACARD_BASE,
+            placardAvailability: DEFAULT_PLACARD_AVAILABILITY,
+            placardFocus: DEFAULT_PLACARD_FOCUS,
+            placardButtonText: DEFAULT_PLACARD_BUTTON_TEXT,
             disciplinesEyebrow: DEFAULT_DISCIPLINES_EYEBROW,
             disciplinesTitle: DEFAULT_DISCIPLINES_TITLE,
             disciplinesSubtitle: DEFAULT_DISCIPLINES_SUBTITLE,
             disciplines: DEFAULT_DISCIPLINES,
+            ethosEyebrow: DEFAULT_ETHOS_EYEBROW,
+            ethosTitle: DEFAULT_ETHOS_TITLE,
+            ethosPillars: DEFAULT_ETHOS_PILLARS,
+            inquiriesEyebrow: DEFAULT_INQUIRIES_EYEBROW,
+            inquiriesTitle: DEFAULT_INQUIRIES_TITLE,
+            inquiriesSubtitle: DEFAULT_INQUIRIES_SUBTITLE,
+            inquiriesWhatsappLabel: DEFAULT_INQUIRIES_WHATSAPP_LABEL,
+            inquiriesEmailLabel: DEFAULT_INQUIRIES_EMAIL_LABEL,
           });
 
           const { data: newGal, error: insertErr } = await supabase
@@ -177,11 +292,28 @@ export const AboutSettingsModal = ({
 
   // Serialized payload for change comparison and auto-save
   const currentPayload = JSON.stringify({
+    pageHeaderTitle,
+    pageHeaderSubtitle,
+    bioQuote,
     bioText: aboutText,
+    placardName,
+    placardRole,
+    placardBase,
+    placardAvailability,
+    placardFocus,
+    placardButtonText,
     disciplinesEyebrow,
     disciplinesTitle,
     disciplinesSubtitle,
     disciplines,
+    ethosEyebrow,
+    ethosTitle,
+    ethosPillars,
+    inquiriesEyebrow,
+    inquiriesTitle,
+    inquiriesSubtitle,
+    inquiriesWhatsappLabel,
+    inquiriesEmailLabel,
   });
 
   useEffect(() => {
@@ -230,7 +362,7 @@ export const AboutSettingsModal = ({
       try {
         localStorage.setItem('mwabonje_about_payload', currentPayload);
       } catch {}
-      toast.success('Changes saved successfully!');
+      toast.success('About page changes saved successfully!');
       onClose();
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);
@@ -265,7 +397,6 @@ export const AboutSettingsModal = ({
     }
     setDisciplines(prev => {
       const filtered = prev.filter((_, i) => i !== index);
-      // Re-number items cleanly
       return filtered.map((item, i) => ({
         ...item,
         number: String(i + 1).padStart(2, '0'),
@@ -273,14 +404,12 @@ export const AboutSettingsModal = ({
     });
   };
 
-  const handleResetDisciplines = () => {
-    if (window.confirm('Reset Creative Disciplines to defaults?')) {
-      setDisciplinesEyebrow(DEFAULT_DISCIPLINES_EYEBROW);
-      setDisciplinesTitle(DEFAULT_DISCIPLINES_TITLE);
-      setDisciplinesSubtitle(DEFAULT_DISCIPLINES_SUBTITLE);
-      setDisciplines(DEFAULT_DISCIPLINES);
-      toast.info('Restored default creative disciplines.');
-    }
+  const handlePillarChange = (index: number, field: keyof EthosPillar, value: string) => {
+    setEthosPillars(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,10 +458,10 @@ export const AboutSettingsModal = ({
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/80 dark:bg-[#0f172a] shrink-0">
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Edit About Page</span>
+              <span>Edit About Page Content</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Customize your Creative Disciplines, biography text, and portrait photo.
+              Customize your Creative Disciplines, biography, specifications, ethos, and inquiry banner.
             </p>
           </div>
           <button 
@@ -346,30 +475,70 @@ export const AboutSettingsModal = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-6 gap-2 shrink-0">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-6 gap-2 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('disciplines')}
-            className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'disciplines'
                 ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Creative Disciplines ({disciplines.length})</span>
+            <span>Disciplines ({disciplines.length})</span>
           </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('bio')}
-            className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'bio'
                 ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Biography &amp; Photo</span>
+            <span>Bio &amp; Quote</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('placard')}
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'placard'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Header &amp; Placard</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ethos')}
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'ethos'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <Sun className="w-3.5 h-3.5" />
+            <span>Ethos &amp; Approach</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('inquiries')}
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'inquiries'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Inquiries Banner</span>
           </button>
         </div>
 
@@ -382,15 +551,21 @@ export const AboutSettingsModal = ({
               <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Section Header Titles
+                    Disciplines Section Heading
                   </h3>
                   <button
                     type="button"
-                    onClick={handleResetDisciplines}
+                    onClick={() => {
+                      setDisciplinesEyebrow(DEFAULT_DISCIPLINES_EYEBROW);
+                      setDisciplinesTitle(DEFAULT_DISCIPLINES_TITLE);
+                      setDisciplinesSubtitle(DEFAULT_DISCIPLINES_SUBTITLE);
+                      setDisciplines(DEFAULT_DISCIPLINES);
+                      toast.info('Restored default creative disciplines.');
+                    }}
                     className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center gap-1.5 transition-colors"
                   >
                     <RotateCcw className="w-3 h-3" />
-                    <span>Reset to Defaults</span>
+                    <span>Reset Defaults</span>
                   </button>
                 </div>
 
@@ -450,161 +625,527 @@ export const AboutSettingsModal = ({
                 <button
                   type="button"
                   onClick={handleAddDiscipline}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-xs font-semibold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Discipline</span>
                 </button>
               </div>
 
-              {/* Editable Cards Grid */}
-              <div className="space-y-4">
+              {/* Disciplines Cards */}
+              <div className="space-y-3">
                 {disciplines.map((item, index) => (
                   <div
-                    key={item.id || index}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-colors space-y-3"
+                    key={item.id}
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold flex items-center justify-center">
-                          {item.number || `0${index + 1}`}
-                        </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="w-10">
+                        <label className="block text-[10px] uppercase font-mono text-slate-400 mb-0.5">
+                          Num
+                        </label>
                         <input
                           type="text"
                           value={item.number}
                           onChange={(e) => handleDisciplineChange(index, 'number', e.target.value)}
-                          placeholder={`0${index + 1}`}
-                          className="w-16 px-2 py-1 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 outline-none"
-                          title="Card Number"
+                          placeholder="01"
+                          maxLength={4}
+                          className="w-full px-2 py-1.5 text-xs font-mono font-bold text-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 outline-none"
                         />
                       </div>
-
-                      {disciplines.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDiscipline(index)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors rounded hover:bg-slate-100 dark:hover:bg-slate-800"
-                          title="Delete discipline"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                        Discipline Title
-                      </label>
+                    <div className="flex-1 w-full space-y-2">
                       <input
                         type="text"
                         value={item.title}
                         onChange={(e) => handleDisciplineChange(index, 'title', e.target.value)}
-                        placeholder="e.g. Hospitality & Architecture"
-                        className="w-full px-3 py-2 text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                        placeholder="Discipline Title (e.g. Hospitality & Architecture)"
+                        className="w-full px-3 py-1.5 text-sm font-medium bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white"
+                      />
+                      <textarea
+                        value={item.description}
+                        onChange={(e) => handleDisciplineChange(index, 'description', e.target.value)}
+                        placeholder="Description of deliverables, scope, and visual storytelling ethos..."
+                        rows={2}
+                        className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white resize-none leading-relaxed"
                       />
                     </div>
 
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDiscipline(index)}
+                      className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors shrink-0"
+                      title="Remove Discipline"
+                      aria-label="Remove Discipline"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: BIOGRAPHY & QUOTE */}
+          {activeTab === 'bio' && (
+            <div className="space-y-6">
+              {/* Featured Quote Section */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="bioQuote" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Featured Artist Quote / Opening Philosophy
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setBioQuote(DEFAULT_BIO_QUOTE)}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+                <textarea
+                  id="bioQuote"
+                  value={bioQuote}
+                  onChange={(e) => setBioQuote(e.target.value)}
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 text-sm font-editorial italic bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white leading-relaxed resize-none"
+                  placeholder="Enter the italic opening quote for the About page..."
+                />
+              </div>
+
+              {/* Biography Text & Portrait Photo */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Photo Column */}
+                <div className="flex flex-col gap-3">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Profile Portrait Photo
+                  </label>
+                  
+                  <div className="aspect-[4/5] relative bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
+                    {(() => {
+                      const displaySrc = (coverUrl && isRealPortfolioUrl(coverUrl)) ? coverUrl : REAL_ABOUT_IMAGE_URL;
+                      return displaySrc ? (
+                        <img src={displaySrc} alt="About Portrait" className="w-full h-full object-cover object-top" />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2">
+                          <ImageIcon className="w-8 h-8" />
+                          <span className="text-xs">No image uploaded</span>
+                        </div>
+                      );
+                    })()}
+                    
+                    {uploading && (
+                      <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">
+                        <Loader2 className="w-6 h-6 text-slate-600 dark:text-slate-300 animate-spin mb-2" />
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Uploading photo...</span>
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            cancelUpload();
+                          }}
+                          className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Cancel Upload
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-xs font-semibold tracking-wider uppercase disabled:opacity-50"
+                  >
+                    {coverUrl ? 'Change Portrait Photo' : 'Upload Portrait Photo'}
+                  </button>
+                </div>
+
+                {/* Text Column */}
+                <div className="md:col-span-2 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="aboutText" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Biography Narrative Paragraphs
+                    </label>
+                    <span className="text-[11px] text-slate-400">Separate paragraphs with enter</span>
+                  </div>
+                  <textarea
+                    id="aboutText"
+                    value={aboutText}
+                    onChange={(e) => setAboutText(e.target.value)}
+                    className="w-full flex-1 min-h-[300px] px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none transition-all resize-y text-sm leading-relaxed text-slate-900 dark:text-slate-100"
+                    placeholder="Enter your biography text here (separate paragraphs with empty lines)..."
+                  />
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    The portrait photo card on the About page will automatically match the height of these narrative paragraphs.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: HEADER & PLACARD */}
+          {activeTab === 'placard' && (
+            <div className="space-y-6">
+              {/* Page Top Header */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Page Main Title &amp; Tagline
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Main Header Name / Title
+                    </label>
+                    <input
+                      type="text"
+                      value={pageHeaderTitle}
+                      onChange={(e) => setPageHeaderTitle(e.target.value)}
+                      placeholder="Michael Mwabonje Ringa"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Header Subtitle / Tagline
+                    </label>
+                    <input
+                      type="text"
+                      value={pageHeaderSubtitle}
+                      onChange={(e) => setPageHeaderSubtitle(e.target.value)}
+                      placeholder="Visual storyteller and lifestyle photographer capturing the authentic warmth, architectural quiet, and coastal narratives of East Africa."
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Portrait Placard Specifications */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Left Card Spec Placard
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlacardName(DEFAULT_PLACARD_NAME);
+                      setPlacardRole(DEFAULT_PLACARD_ROLE);
+                      setPlacardBase(DEFAULT_PLACARD_BASE);
+                      setPlacardAvailability(DEFAULT_PLACARD_AVAILABILITY);
+                      setPlacardFocus(DEFAULT_PLACARD_FOCUS);
+                      setPlacardButtonText(DEFAULT_PLACARD_BUTTON_TEXT);
+                      toast.info('Restored default placard specs.');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Placard Name
+                    </label>
+                    <input
+                      type="text"
+                      value={placardName}
+                      onChange={(e) => setPlacardName(e.target.value)}
+                      placeholder="Michael Mwabonje Ringa"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Role / Sub-title
+                    </label>
+                    <input
+                      type="text"
+                      value={placardRole}
+                      onChange={(e) => setPlacardRole(e.target.value)}
+                      placeholder="Photographer & Filmmaker"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Base Location
+                    </label>
+                    <input
+                      type="text"
+                      value={placardBase}
+                      onChange={(e) => setPlacardBase(e.target.value)}
+                      placeholder="Malindi & Coast, Kenya"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Travel Availability
+                    </label>
+                    <input
+                      type="text"
+                      value={placardAvailability}
+                      onChange={(e) => setPlacardAvailability(e.target.value)}
+                      placeholder="Kenya & Worldwide Travel"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Focus Areas
+                    </label>
+                    <input
+                      type="text"
+                      value={placardFocus}
+                      onChange={(e) => setPlacardFocus(e.target.value)}
+                      placeholder="Hospitality, Lifestyle, Portraits"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Action Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={placardButtonText}
+                      onChange={(e) => setPlacardButtonText(e.target.value)}
+                      placeholder="Inquire for Commissions"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: ETHOS & APPROACH */}
+          {activeTab === 'ethos' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Ethos Section Headers
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEthosEyebrow(DEFAULT_ETHOS_EYEBROW);
+                      setEthosTitle(DEFAULT_ETHOS_TITLE);
+                      setEthosPillars(DEFAULT_ETHOS_PILLARS);
+                      toast.info('Restored default ethos section.');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Eyebrow Tag
+                    </label>
+                    <input
+                      type="text"
+                      value={ethosEyebrow}
+                      onChange={(e) => setEthosEyebrow(e.target.value)}
+                      placeholder="Ethos & Approach"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      value={ethosTitle}
+                      onChange={(e) => setEthosTitle(e.target.value)}
+                      placeholder="How I See Through the Lens"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Pillars */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Ethos Pillars / Philosophy Statements (3 Columns)
+                </h3>
+                {ethosPillars.map((pillar, idx) => (
+                  <div 
+                    key={pillar.id || idx}
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Pillar 0{idx + 1}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                          Icon Symbol
+                        </label>
+                        <select
+                          value={pillar.icon}
+                          onChange={(e) => handlePillarChange(idx, 'icon', e.target.value as any)}
+                          className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                        >
+                          <option value="sun">Sun (Light)</option>
+                          <option value="sparkles">Sparkles (Observation)</option>
+                          <option value="layers">Layers (Craft)</option>
+                          <option value="camera">Camera (Visuals)</option>
+                          <option value="compass">Compass (Location)</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                          Pillar Title
+                        </label>
+                        <input
+                          type="text"
+                          value={pillar.title}
+                          onChange={(e) => handlePillarChange(idx, 'title', e.target.value)}
+                          placeholder="e.g. The Coastal Light"
+                          className="w-full px-3 py-1.5 text-xs font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                        Discipline Description
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                        Pillar Description
                       </label>
                       <textarea
+                        value={pillar.description}
+                        onChange={(e) => handlePillarChange(idx, 'description', e.target.value)}
                         rows={2}
-                        value={item.description}
-                        onChange={(e) => handleDisciplineChange(index, 'description', e.target.value)}
-                        placeholder="Describe the scope, client type, and visual approach..."
-                        className="w-full px-3 py-2 text-xs sm:text-sm leading-relaxed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none resize-y"
+                        placeholder="Explain this artistic philosophy or methodology..."
+                        className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed"
                       />
                     </div>
                   </div>
                 ))}
               </div>
-
-              <button
-                type="button"
-                onClick={handleAddDiscipline}
-                className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Another Discipline Card</span>
-              </button>
             </div>
           )}
 
-          {/* TAB 2: BIOGRAPHY & PHOTO */}
-          {activeTab === 'bio' && (
-            <div className="grid md:grid-cols-2 gap-8 items-start">
-              {/* Image Section */}
-              <div className="flex flex-col gap-3">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Profile Portrait Photo
-                </label>
-                
-                <div className="aspect-[4/5] relative bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
-                  {(() => {
-                    const displaySrc = (coverUrl && isRealPortfolioUrl(coverUrl)) ? coverUrl : REAL_ABOUT_IMAGE_URL;
-                    return displaySrc ? (
-                      <img src={displaySrc} alt="About Portrait" className="w-full h-full object-cover object-top" />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2">
-                        <ImageIcon className="w-8 h-8" />
-                        <span className="text-xs">No image uploaded</span>
-                      </div>
-                    );
-                  })()}
-                  
-                  {uploading && (
-                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto">
-                      <Loader2 className="w-6 h-6 text-slate-600 dark:text-slate-300 animate-spin mb-2" />
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Uploading photo...</span>
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          cancelUpload();
-                        }}
-                        className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        Cancel Upload
-                      </button>
-                    </div>
-                  )}
+          {/* TAB 5: INQUIRIES BANNER */}
+          {activeTab === 'inquiries' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Closing Inquiries Banner
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInquiriesEyebrow(DEFAULT_INQUIRIES_EYEBROW);
+                      setInquiriesTitle(DEFAULT_INQUIRIES_TITLE);
+                      setInquiriesSubtitle(DEFAULT_INQUIRIES_SUBTITLE);
+                      setInquiriesWhatsappLabel(DEFAULT_INQUIRIES_WHATSAPP_LABEL);
+                      setInquiriesEmailLabel(DEFAULT_INQUIRIES_EMAIL_LABEL);
+                      toast.info('Restored default inquiries banner.');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
                 </div>
 
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                
-                <button 
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50"
-                >
-                  {coverUrl ? 'Change Portrait Photo' : 'Upload Portrait Photo'}
-                </button>
-              </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Banner Eyebrow Tag
+                    </label>
+                    <input
+                      type="text"
+                      value={inquiriesEyebrow}
+                      onChange={(e) => setInquiriesEyebrow(e.target.value)}
+                      placeholder="Inquiries & Commissions"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
 
-              {/* Text Section */}
-              <div className="flex flex-col gap-3">
-                <label htmlFor="aboutText" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Biography Paragraphs
-                </label>
-                <textarea
-                  id="aboutText"
-                  value={aboutText}
-                  onChange={(e) => setAboutText(e.target.value)}
-                  className="w-full flex-1 min-h-[320px] px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none transition-all resize-y text-sm leading-relaxed text-slate-900 dark:text-slate-100"
-                  placeholder="Enter your biography text here (separate paragraphs with empty lines)..."
-                />
-                <p className="text-xs text-slate-400 dark:text-slate-500">
-                  Tip: Separate paragraphs by pressing enter twice. The portrait card on the About page will automatically adapt to match this text length.
-                </p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Main Banner Heading
+                    </label>
+                    <input
+                      type="text"
+                      value={inquiriesTitle}
+                      onChange={(e) => setInquiriesTitle(e.target.value)}
+                      placeholder="Ready to create something timeless together?"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Banner Subtitle / Description
+                    </label>
+                    <textarea
+                      value={inquiriesSubtitle}
+                      onChange={(e) => setInquiriesSubtitle(e.target.value)}
+                      rows={2}
+                      placeholder="Available for commercial hospitality briefs, editorial assignments, destination weddings..."
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        WhatsApp Button Label
+                      </label>
+                      <input
+                        type="text"
+                        value={inquiriesWhatsappLabel}
+                        onChange={(e) => setInquiriesWhatsappLabel(e.target.value)}
+                        placeholder="Chat on WhatsApp"
+                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Email Button Label
+                      </label>
+                      <input
+                        type="text"
+                        value={inquiriesEmailLabel}
+                        onChange={(e) => setInquiriesEmailLabel(e.target.value)}
+                        placeholder="Send an Email"
+                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

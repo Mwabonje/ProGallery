@@ -7,6 +7,7 @@ import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/forma
 import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { toast } from 'sonner';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
+import { HomeSettingsModal } from '../components/HomeSettingsModal';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BlogAdmin } from "./BlogAdmin";
 import { PagesAdmin } from "./PagesAdmin";
@@ -39,6 +40,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
   const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
@@ -663,13 +665,13 @@ export const Dashboard: React.FC = () => {
                 <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
                   <User className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[13px] font-medium">About &amp; Disciplines</span>
+                <span className="text-[13px] font-medium">About Page Content</span>
               </div>
-              <div onClick={() => setIsAboutModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
-                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
+              <div onClick={() => setIsHomeModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </div>
-                <span className="text-[13px] font-medium">Settings</span>
+                <span className="text-[13px] font-medium">Website Settings</span>
               </div>
             </div>
           </div>
@@ -694,14 +696,30 @@ export const Dashboard: React.FC = () => {
         {currentView === 'dashboard' && (
           <div className="p-10 max-w-[1200px] mx-auto">
             {/* Header */}
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
                 <h1 className="text-[34px] text-slate-900 dark:text-white mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-[14px]">A working summary of galleries, client proposals, and storage usage.</p>
               </div>
-              <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
-                Upload to gallery
-              </button>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <button 
+                  onClick={() => setIsAboutModalOpen(true)}
+                  className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-[6px] font-medium transition-colors text-[13px] shadow-sm flex items-center gap-1.5"
+                >
+                  <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span>Edit About Page</span>
+                </button>
+                <button 
+                  onClick={() => setIsHomeModalOpen(true)}
+                  className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-[6px] font-medium transition-colors text-[13px] shadow-sm flex items-center gap-1.5"
+                >
+                  <Globe className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span>Website Settings</span>
+                </button>
+                <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
+                  Upload to gallery
+                </button>
+              </div>
             </div>
 
             {/* Cloudflare R2 Storage Meter */}
@@ -1197,6 +1215,16 @@ export const Dashboard: React.FC = () => {
          <AboutSettingsModal 
             userId={userId} 
             onClose={() => setIsAboutModalOpen(false)} 
+         />
+         </div>
+      )}
+
+      {/* Website & Home Settings Modal */}
+      {isHomeModalOpen && userId && (
+         <div className="fixed inset-0 z-[100]">
+         <HomeSettingsModal 
+            userId={userId} 
+            onClose={() => setIsHomeModalOpen(false)} 
          />
          </div>
       )}
