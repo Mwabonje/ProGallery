@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -30,6 +30,71 @@ interface EnrichedActivityLog extends ActivityLog {
     client_name: string;
   };
 }
+
+const formatActivityEvent = (act: { action: string; gallery?: { client_name?: string }; timestamp: string | number }) => {
+  const rawAction = act.action || '';
+  const clientName = act.gallery?.client_name || '';
+
+  if (rawAction.toLowerCase().includes('extended expiration') || rawAction.toLowerCase().includes('expiration')) {
+    const fileCountMatch = rawAction.match(/(\d+)\s+files?/i);
+    const count = fileCountMatch ? fileCountMatch[1] : null;
+    return {
+      title: 'Delivery archive extended (+7 days)',
+      subtitle: clientName ? `${clientName}${count ? ` · ${count} photos` : ''}` : `${count ? `${count} photos` : 'Client delivery'}`,
+      badge: 'Delivery',
+      badgeClass: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200/60 dark:border-blue-900/40',
+      iconType: 'clock' as const,
+    };
+  }
+
+  if (rawAction.toLowerCase().includes('purge') || rawAction.toLowerCase().includes('cleaned') || rawAction.toLowerCase().includes('deleted')) {
+    return {
+      title: 'Storage maintenance completed',
+      subtitle: clientName ? `${clientName} · Storage freed` : 'Expired files purged from Cloudflare R2',
+      badge: 'System',
+      badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+      iconType: 'shield' as const,
+    };
+  }
+
+  if (rawAction.toLowerCase().includes('selection') || rawAction.toLowerCase().includes('submitted')) {
+    return {
+      title: 'Client favorites confirmed',
+      subtitle: clientName ? `${clientName} finalized photo selection` : 'Photo selection confirmed',
+      badge: 'Client',
+      badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/50',
+      iconType: 'check' as const,
+    };
+  }
+
+  if (rawAction.toLowerCase().includes('published') || rawAction.toLowerCase().includes('created') || rawAction.toLowerCase().includes('gallery')) {
+    return {
+      title: rawAction.includes('published') ? 'Lookbook gallery published' : 'Lookbook gallery updated',
+      subtitle: clientName ? `${clientName} · Lookbook active` : 'Photos updated',
+      badge: 'Lookbook',
+      badgeClass: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200/60 dark:border-purple-800/50',
+      iconType: 'image' as const,
+    };
+  }
+
+  if (rawAction.toLowerCase().includes('proposal')) {
+    return {
+      title: 'Client proposal dispatched',
+      subtitle: clientName ? `Client: ${clientName}` : 'Proposal sent',
+      badge: 'Proposal',
+      badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/50',
+      iconType: 'file' as const,
+    };
+  }
+
+  return {
+    title: rawAction.replace(/\s*—\s*.*$/, ''),
+    subtitle: clientName || 'Studio event',
+    badge: 'Activity',
+    badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+    iconType: 'activity' as const,
+  };
+};
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -640,15 +705,6 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                  </div>
-                  <span className="text-[13px] font-medium">Print orders</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                   </div>
                   <span className="text-[13px] font-medium">Messages</span>
@@ -694,144 +750,360 @@ export const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         {currentView === 'dashboard' && (
-          <div className="p-10 max-w-[1200px] mx-auto">
+          <div className="max-w-[1240px] mx-auto p-6 sm:p-8 lg:p-10 space-y-7">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
               <div>
-                <h1 className="text-[34px] text-slate-900 dark:text-white mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>Overview</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-[14px]">A working summary of galleries, client proposals, and storage usage.</p>
+                <h1 className="text-3xl sm:text-[34px] font-normal text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>
+                  Overview
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
+                  A working summary of galleries, client proposals, and storage usage.
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+
+              <div className="flex flex-wrap items-center gap-2.5">
                 <button 
                   onClick={() => setIsAboutModalOpen(true)}
-                  className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-[6px] font-medium transition-colors text-[13px] shadow-sm flex items-center gap-1.5"
+                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2"
                 >
-                  <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   <span>Edit About Page</span>
                 </button>
+
                 <button 
                   onClick={() => setIsHomeModalOpen(true)}
-                  className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 rounded-[6px] font-medium transition-colors text-[13px] shadow-sm flex items-center gap-1.5"
+                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2"
                 >
-                  <Globe className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   <span>Website Settings</span>
                 </button>
-                <button onClick={handleOpenCreateModal} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-5 py-2.5 rounded-[6px] font-medium transition-colors text-[13.5px] shadow-sm">
-                  Upload to gallery
+
+                <button 
+                  onClick={handleOpenCreateModal} 
+                  className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all shadow-sm flex items-center gap-2 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Upload to gallery</span>
                 </button>
               </div>
             </div>
 
             {/* Cloudflare R2 Storage Meter */}
-            <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
-              <div className="flex-1 w-full">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[13px] font-semibold text-slate-800 dark:text-white">Cloudflare R2 Storage (10 GB Free Tier)</span>
+            <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0">
+                    <Database className="w-5 h-5" />
                   </div>
-                  <span className="text-[12.5px] font-mono font-medium text-slate-700 dark:text-slate-300">
-                    {(realStorageUsedMB / 1024).toFixed(2)} GB / 10.00 GB ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100))}%)
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Cloudflare R2 Storage</h3>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Active · 10 GB Free Tier
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      High-speed global edge media delivery for lookbooks and client portals
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    onClick={handlePurgeExpired}
+                    disabled={isPurging}
+                    className="h-8 px-3 rounded-lg text-xs font-medium bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 dark:bg-slate-800/80 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    title="Purge expired delivery files from Cloudflare R2"
+                  >
+                    {isPurging ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    )}
+                    <span>Purge Expired</span>
+                  </button>
+
+                  <button
+                    onClick={fetchStorageUsage}
+                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors"
+                    title="Refresh storage usage"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress and Numbers */}
+              <div className="pt-4 space-y-2.5">
+                <div className="flex justify-between items-baseline text-xs">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                      {(realStorageUsedMB / 1024).toFixed(2)} GB
+                    </span>
+                    <span className="text-slate-500 dark:text-slate-400 ml-1">
+                      used of 10.00 GB ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100))}%)
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    {(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available
                   </span>
                 </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-200/60 dark:border-slate-700">
+
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
                   <div 
-                    className={`h-full transition-all duration-500 ${
+                    className={`h-full transition-all duration-500 rounded-full ${
                       (realStorageUsedMB / 1024) > 8.5 ? 'bg-rose-500' : (realStorageUsedMB / 1024) > 6.5 ? 'bg-amber-500' : 'bg-emerald-500'
                     }`}
                     style={{ width: `${Math.max(2, Math.min(100, ((realStorageUsedMB / 1024) / 10) * 100))}%` }}
                   />
                 </div>
-                <div className="flex justify-between items-center mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span>Portfolio lookbooks stay permanently stored. Client deliveries expire after their active delivery window.</span>
-                  <span className="font-mono text-slate-600 dark:text-slate-300">{(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available</span>
+
+                <div className="flex flex-col sm:flex-row justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-1 pt-0.5">
+                  <span>Portfolio lookbooks stay permanently stored.</span>
+                  <span>Client delivery archives auto-expire after their active window.</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={handlePurgeExpired}
-                  disabled={isPurging}
-                  className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
-                  title="Purge expired delivery files from Cloudflare R2 to keep storage under 10 GB"
-                >
-                  {isPurging ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600 dark:text-slate-400" /> : <Trash2 className="w-3.5 h-3.5 text-rose-500" />}
-                  Purge Expired Deliveries
-                </button>
-                <button
-                  onClick={fetchStorageUsage}
-                  className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-[6px] transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  title="Refresh Cloudflare R2 storage usage"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
-              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Published photos</p>
-                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                  {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
-                </h3>
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400">+42 this month</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Published Photos */}
+              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Published Photos
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>+42 this month</span>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Active proposals</p>
-                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>6</h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">2 awaiting client review</p>
+
+              {/* Card 2: Active Proposals */}
+              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Active Proposals
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    6
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <span>2 awaiting client review</span>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">Print orders</p>
-                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>3</h3>
-                <p className="text-[11px] text-red-500 dark:text-rose-400">1 unfulfilled</p>
+
+              {/* Card 3: Client Deliveries */}
+              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Client Deliveries
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <FolderCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    10
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span>All portals active</span>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2 font-medium">New messages</p>
-                <h3 className="text-[28px] text-slate-900 dark:text-white mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>4</h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">since last visit</p>
+
+              {/* Card 4: Client Messages */}
+              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Client Inquiries
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    4
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span>Awaiting reply</span>
+                  </div>
+                </div>
               </div>
             </div>
             
             {/* Recent Activity List */}
-            <div className="bg-white dark:bg-[#111827] rounded-[10px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-10 transition-colors">
+            <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
               <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                <h2 className="text-[16px] text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600 }}>Recent activity</h2>
-                <span className="text-[12px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Last 7 days</span>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    Recent Activity
+                  </h2>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {activities.length > 0 ? `${activities.length} events` : 'Studio log'}
+                  </span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Last 7 days</span>
+                </div>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {activities.length > 0 ? (
-                  activities.map(act => (
-                    <div key={act.id} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                      <div>
-                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">{act.action} {act.gallery?.client_name ? `— ${act.gallery.client_name}` : ''}</p>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400">System event</p>
+                  activities.map(act => {
+                    const event = formatActivityEvent(act);
+                    return (
+                      <div 
+                        key={act.id} 
+                        className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          {event.iconType === 'clock' && (
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+                              <Clock className="w-4 h-4" />
+                            </div>
+                          )}
+                          {event.iconType === 'image' && (
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
+                              <Camera className="w-4 h-4" />
+                            </div>
+                          )}
+                          {event.iconType === 'check' && (
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
+                              <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                          )}
+                          {event.iconType === 'file' && (
+                            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                          )}
+                          {event.iconType === 'shield' && (
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          )}
+                          {event.iconType === 'activity' && (
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                              <Bell className="w-4 h-4" />
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                {event.title}
+                              </p>
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${event.badgeClass}`}>
+                                {event.badge}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                              {event.subtitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0 text-right">
+                          {formatDate(act.timestamp)}
+                        </span>
                       </div>
-                      <span className="text-[12px] text-slate-500 dark:text-slate-400">{formatDate(act.timestamp)}</span>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                      <div>
-                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">Rafiki Hotel gallery published</p>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400">42 photos · Hospitality</p>
+                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
+                          <Camera className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              Rafiki Hotel gallery published
+                            </p>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200/60 dark:border-purple-800/50">
+                              Lookbook
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                            Rafiki Hotel · 42 photos · Hospitality
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-[12px] text-slate-500 dark:text-slate-400">2 hours ago</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                        2 hours ago
+                      </span>
                     </div>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                      <div>
-                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">Proposal sent to Amara & Kito</p>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Wedding · Shela</p>
+
+                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              Proposal dispatched
+                            </p>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/50">
+                              Proposal
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                            Amara &amp; Kito · Destination Wedding Shela
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-[12px] text-slate-500 dark:text-slate-400">Yesterday</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                        Yesterday
+                      </span>
                     </div>
-                    <div className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                      <div>
-                        <p className="text-[13px] text-slate-900 dark:text-white font-medium mb-0.5">New client booking — Coastal shoot</p>
-                        <p className="text-[12px] text-slate-500 dark:text-slate-400">Booking #1042</p>
+
+                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              Client favorites confirmed
+                            </p>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/50">
+                              Client
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                            Coastal shoot client finalized selections
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-[12px] text-slate-500 dark:text-slate-400">2 days ago</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                        2 days ago
+                      </span>
                     </div>
                   </>
                 )}
