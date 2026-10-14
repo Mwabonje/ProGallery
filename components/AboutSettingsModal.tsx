@@ -16,7 +16,9 @@ import {
   MessageCircle,
   Sun,
   Layers,
-  Camera
+  Camera,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isRealPortfolioUrl, REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
@@ -115,7 +117,7 @@ export const AboutSettingsModal = ({
   userId: string;
 }) => {
   const { uploadFiles, uploading, cancelUpload } = useUpload();
-  const [activeTab, setActiveTab] = useState<'disciplines' | 'bio' | 'placard' | 'ethos' | 'inquiries'>('disciplines');
+  const [activeTab, setActiveTab] = useState<'disciplines' | 'bio' | 'placard' | 'ethos' | 'inquiries'>('ethos');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [galleryId, setGalleryId] = useState<string | null>(null);
@@ -136,6 +138,11 @@ export const AboutSettingsModal = ({
   const [placardAvailability, setPlacardAvailability] = useState(DEFAULT_PLACARD_AVAILABILITY);
   const [placardFocus, setPlacardFocus] = useState(DEFAULT_PLACARD_FOCUS);
   const [placardButtonText, setPlacardButtonText] = useState(DEFAULT_PLACARD_BUTTON_TEXT);
+
+  // Section visibility states
+  const [showDisciplinesSection, setShowDisciplinesSection] = useState(true);
+  const [showEthosSection, setShowEthosSection] = useState(true);
+  const [showInquiriesSection, setShowInquiriesSection] = useState(true);
 
   // Disciplines state
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState(DEFAULT_DISCIPLINES_EYEBROW);
@@ -194,16 +201,20 @@ export const AboutSettingsModal = ({
                 if (parsed.placardFocus) setPlacardFocus(parsed.placardFocus);
                 if (parsed.placardButtonText) setPlacardButtonText(parsed.placardButtonText);
 
+                if (parsed.showDisciplinesSection !== undefined) setShowDisciplinesSection(parsed.showDisciplinesSection);
+                if (parsed.showEthosSection !== undefined) setShowEthosSection(parsed.showEthosSection);
+                if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
+
                 if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                 if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
                 if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
-                if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
+                if (Array.isArray(parsed.disciplines)) {
                   setDisciplines(parsed.disciplines);
                 }
 
                 if (parsed.ethosEyebrow) setEthosEyebrow(parsed.ethosEyebrow);
                 if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
-                if (Array.isArray(parsed.ethosPillars) && parsed.ethosPillars.length > 0) {
+                if (Array.isArray(parsed.ethosPillars)) {
                   setEthosPillars(parsed.ethosPillars);
                 }
 
@@ -251,6 +262,9 @@ export const AboutSettingsModal = ({
             placardAvailability: DEFAULT_PLACARD_AVAILABILITY,
             placardFocus: DEFAULT_PLACARD_FOCUS,
             placardButtonText: DEFAULT_PLACARD_BUTTON_TEXT,
+            showDisciplinesSection: true,
+            showEthosSection: true,
+            showInquiriesSection: true,
             disciplinesEyebrow: DEFAULT_DISCIPLINES_EYEBROW,
             disciplinesTitle: DEFAULT_DISCIPLINES_TITLE,
             disciplinesSubtitle: DEFAULT_DISCIPLINES_SUBTITLE,
@@ -302,6 +316,9 @@ export const AboutSettingsModal = ({
     placardAvailability,
     placardFocus,
     placardButtonText,
+    showDisciplinesSection,
+    showEthosSection,
+    showInquiriesSection,
     disciplinesEyebrow,
     disciplinesTitle,
     disciplinesSubtitle,
@@ -388,13 +405,11 @@ export const AboutSettingsModal = ({
       description: 'Describe the scope, deliverables, and aesthetic focus for this discipline.',
     };
     setDisciplines(prev => [...prev, newItem]);
+    setShowDisciplinesSection(true);
+    toast.success('Added new discipline section.');
   };
 
   const handleRemoveDiscipline = (index: number) => {
-    if (disciplines.length <= 1) {
-      toast.error('You must keep at least one discipline.');
-      return;
-    }
     setDisciplines(prev => {
       const filtered = prev.filter((_, i) => i !== index);
       return filtered.map((item, i) => ({
@@ -402,6 +417,25 @@ export const AboutSettingsModal = ({
         number: String(i + 1).padStart(2, '0'),
       }));
     });
+    toast.info('Removed discipline section.');
+  };
+
+  const handleAddPillar = () => {
+    const nextNum = ethosPillars.length + 1;
+    const newPillar: EthosPillar = {
+      id: Date.now().toString(),
+      icon: nextNum === 1 ? 'sun' : nextNum === 2 ? 'sparkles' : nextNum === 3 ? 'layers' : 'camera',
+      title: `Pillar 0${nextNum} Title`,
+      description: 'Describe this core philosophy, working methodology, or artistic observation.',
+    };
+    setEthosPillars(prev => [...prev, newPillar]);
+    setShowEthosSection(true);
+    toast.success(`Added Pillar 0${nextNum} section.`);
+  };
+
+  const handleRemovePillar = (index: number) => {
+    setEthosPillars(prev => prev.filter((_, i) => i !== index));
+    toast.info(`Deleted pillar section.`);
   };
 
   const handlePillarChange = (index: number, field: keyof EthosPillar, value: string) => {
@@ -461,7 +495,7 @@ export const AboutSettingsModal = ({
               <span>Edit About Page Content</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Customize your Creative Disciplines, biography, specifications, ethos, and inquiry banner.
+              Add or delete sections, edit philosophy pillars, disciplines, specifications, and biography.
             </p>
           </div>
           <button 
@@ -476,6 +510,19 @@ export const AboutSettingsModal = ({
 
         {/* Tab Navigation */}
         <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-6 gap-2 shrink-0 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('ethos')}
+            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'ethos'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <Sun className="w-3.5 h-3.5" />
+            <span>Ethos &amp; Approach ({ethosPillars.length})</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('disciplines')}
@@ -517,19 +564,6 @@ export const AboutSettingsModal = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('ethos')}
-            className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'ethos'
-                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <Sun className="w-3.5 h-3.5" />
-            <span>Ethos &amp; Approach</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('inquiries')}
             className={`py-3 px-3.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'inquiries'
@@ -544,9 +578,289 @@ export const AboutSettingsModal = ({
 
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* TAB 1: CREATIVE DISCIPLINES */}
+          {/* TAB: ETHOS & APPROACH (Primary focus with Add & Delete Section capability) */}
+          {activeTab === 'ethos' && (
+            <div className="space-y-6">
+              {/* Entire Section Master Control: Toggle Delete/Hide or Add/Show Section */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${showEthosSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Ethos &amp; Approach Section Visibility
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {showEthosSection 
+                        ? 'This section is currently active and rendered on the About page.' 
+                        : 'This section is currently deleted / hidden from the About page.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showEthosSection;
+                      setShowEthosSection(next);
+                      toast.info(next ? 'Ethos & Approach section enabled.' : 'Ethos & Approach section hidden/deleted from page.');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                      showEthosSection 
+                        ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                    }`}
+                  >
+                    {showEthosSection ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Hide Section From Page</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Restore Section</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Section Header Controls */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Section Header Titles
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEthosEyebrow(DEFAULT_ETHOS_EYEBROW);
+                      setEthosTitle(DEFAULT_ETHOS_TITLE);
+                      setEthosPillars(DEFAULT_ETHOS_PILLARS);
+                      setShowEthosSection(true);
+                      toast.info('Restored default ethos section and pillars.');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset Defaults</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Eyebrow Tag
+                    </label>
+                    <input
+                      type="text"
+                      value={ethosEyebrow}
+                      onChange={(e) => setEthosEyebrow(e.target.value)}
+                      placeholder="Ethos & Approach"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      value={ethosTitle}
+                      onChange={(e) => setEthosTitle(e.target.value)}
+                      placeholder="How I See Through the Lens"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillars Header with Add Section button */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Philosophy &amp; Ethos Pillars</span>
+                    <span className="text-xs font-mono font-normal px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {ethosPillars.length} {ethosPillars.length === 1 ? 'pillar' : 'pillars'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Add new philosophy sections or delete existing ones. Each column dynamically scales on the About page.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddPillar}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-95 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Pillar Section</span>
+                </button>
+              </div>
+
+              {/* Pillars Cards List */}
+              {ethosPillars.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 bg-slate-50/50 dark:bg-slate-900/30">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+                    <Sun className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Pillar Sections</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      You have deleted all pillar cards. Add one using the button below or restore the defaults.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleAddPillar}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add First Pillar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEthosPillars(DEFAULT_ETHOS_PILLARS);
+                        setShowEthosSection(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restore Default 3 Pillars</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {ethosPillars.map((pillar, idx) => (
+                    <div 
+                      key={pillar.id || idx}
+                      className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-3 relative group hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-sm"
+                    >
+                      {/* Pillar Header with Delete Action */}
+                      <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Pillar 0{idx + 1}
+                          </span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                            ({pillar.title || 'Untitled'})
+                          </span>
+                        </div>
+
+                        {/* DELETE BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePillar(idx)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 rounded-lg transition-colors font-medium border border-rose-200/60 dark:border-rose-900/40"
+                          title="Delete this pillar section"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Section</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Icon Symbol
+                          </label>
+                          <select
+                            value={pillar.icon}
+                            onChange={(e) => handlePillarChange(idx, 'icon', e.target.value as any)}
+                            className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+                          >
+                            <option value="sun">Sun (Light &amp; Coast)</option>
+                            <option value="sparkles">Sparkles (Quiet Observation)</option>
+                            <option value="layers">Layers (Archival Craft)</option>
+                            <option value="camera">Camera (Visuals &amp; Film)</option>
+                            <option value="compass">Compass (East Africa &amp; Travel)</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Pillar Title / Heading
+                          </label>
+                          <input
+                            type="text"
+                            value={pillar.title}
+                            onChange={(e) => handlePillarChange(idx, 'title', e.target.value)}
+                            placeholder="e.g. The Coastal Light"
+                            className="w-full px-3 py-2 text-xs font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Pillar Description
+                        </label>
+                        <textarea
+                          value={pillar.description}
+                          onChange={(e) => handlePillarChange(idx, 'description', e.target.value)}
+                          rows={2}
+                          placeholder="Explain this artistic philosophy or methodology..."
+                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: CREATIVE DISCIPLINES */}
           {activeTab === 'disciplines' && (
             <div className="space-y-6">
+              {/* Disciplines Section Visibility Master Control */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${showDisciplinesSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Creative Disciplines Section Visibility
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {showDisciplinesSection 
+                        ? 'Disciplines grid is visible on the About page.' 
+                        : 'Disciplines grid is deleted / hidden from the About page.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showDisciplinesSection;
+                    setShowDisciplinesSection(next);
+                    toast.info(next ? 'Disciplines section enabled.' : 'Disciplines section hidden/deleted from page.');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                    showDisciplinesSection 
+                      ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                  }`}
+                >
+                  {showDisciplinesSection ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>Hide Section From Page</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Restore Section</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               {/* Section Header Controls */}
               <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
@@ -560,9 +874,10 @@ export const AboutSettingsModal = ({
                       setDisciplinesTitle(DEFAULT_DISCIPLINES_TITLE);
                       setDisciplinesSubtitle(DEFAULT_DISCIPLINES_SUBTITLE);
                       setDisciplines(DEFAULT_DISCIPLINES);
+                      setShowDisciplinesSection(true);
                       toast.info('Restored default creative disciplines.');
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center gap-1.5 transition-colors"
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1.5"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Reset Defaults</span>
@@ -579,7 +894,7 @@ export const AboutSettingsModal = ({
                       value={disciplinesEyebrow}
                       onChange={(e) => setDisciplinesEyebrow(e.target.value)}
                       placeholder="AREAS OF PRACTICE"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                     />
                   </div>
 
@@ -592,7 +907,7 @@ export const AboutSettingsModal = ({
                       value={disciplinesTitle}
                       onChange={(e) => setDisciplinesTitle(e.target.value)}
                       placeholder="Creative Disciplines"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                     />
                   </div>
                 </div>
@@ -606,7 +921,7 @@ export const AboutSettingsModal = ({
                     value={disciplinesSubtitle}
                     onChange={(e) => setDisciplinesSubtitle(e.target.value)}
                     placeholder="Intentional visual storytelling tailored to editorial publications, private commissions, and luxury hospitality."
-                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 dark:focus:ring-white outline-none"
+                    className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                   />
                 </div>
               </div>
@@ -618,7 +933,7 @@ export const AboutSettingsModal = ({
                     Discipline Cards ({disciplines.length})
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Edit titles, descriptions, and numbers for each discipline displayed on the About page.
+                    Edit titles, descriptions, and numbers for each discipline.
                   </p>
                 </div>
 
@@ -676,8 +991,8 @@ export const AboutSettingsModal = ({
                       type="button"
                       onClick={() => handleRemoveDiscipline(index)}
                       className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors shrink-0"
-                      title="Remove Discipline"
-                      aria-label="Remove Discipline"
+                      title="Delete Discipline"
+                      aria-label="Delete Discipline"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -687,7 +1002,7 @@ export const AboutSettingsModal = ({
             </div>
           )}
 
-          {/* TAB 2: BIOGRAPHY & QUOTE */}
+          {/* TAB: BIOGRAPHY & QUOTE */}
           {activeTab === 'bio' && (
             <div className="space-y-6">
               {/* Featured Quote Section */}
@@ -796,7 +1111,7 @@ export const AboutSettingsModal = ({
             </div>
           )}
 
-          {/* TAB 3: HEADER & PLACARD */}
+          {/* TAB: HEADER & PLACARD */}
           {activeTab === 'placard' && (
             <div className="space-y-6">
               {/* Page Top Header */}
@@ -936,126 +1251,52 @@ export const AboutSettingsModal = ({
             </div>
           )}
 
-          {/* TAB 4: ETHOS & APPROACH */}
-          {activeTab === 'ethos' && (
-            <div className="space-y-6">
-              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Ethos Section Headers
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEthosEyebrow(DEFAULT_ETHOS_EYEBROW);
-                      setEthosTitle(DEFAULT_ETHOS_TITLE);
-                      setEthosPillars(DEFAULT_ETHOS_PILLARS);
-                      toast.info('Restored default ethos section.');
-                    }}
-                    className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Eyebrow Tag
-                    </label>
-                    <input
-                      type="text"
-                      value={ethosEyebrow}
-                      onChange={(e) => setEthosEyebrow(e.target.value)}
-                      placeholder="Ethos & Approach"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Section Title
-                    </label>
-                    <input
-                      type="text"
-                      value={ethosTitle}
-                      onChange={(e) => setEthosTitle(e.target.value)}
-                      placeholder="How I See Through the Lens"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 Pillars */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Ethos Pillars / Philosophy Statements (3 Columns)
-                </h3>
-                {ethosPillars.map((pillar, idx) => (
-                  <div 
-                    key={pillar.id || idx}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Pillar 0{idx + 1}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                          Icon Symbol
-                        </label>
-                        <select
-                          value={pillar.icon}
-                          onChange={(e) => handlePillarChange(idx, 'icon', e.target.value as any)}
-                          className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
-                        >
-                          <option value="sun">Sun (Light)</option>
-                          <option value="sparkles">Sparkles (Observation)</option>
-                          <option value="layers">Layers (Craft)</option>
-                          <option value="camera">Camera (Visuals)</option>
-                          <option value="compass">Compass (Location)</option>
-                        </select>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                          Pillar Title
-                        </label>
-                        <input
-                          type="text"
-                          value={pillar.title}
-                          onChange={(e) => handlePillarChange(idx, 'title', e.target.value)}
-                          placeholder="e.g. The Coastal Light"
-                          className="w-full px-3 py-1.5 text-xs font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                        Pillar Description
-                      </label>
-                      <textarea
-                        value={pillar.description}
-                        onChange={(e) => handlePillarChange(idx, 'description', e.target.value)}
-                        rows={2}
-                        placeholder="Explain this artistic philosophy or methodology..."
-                        className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: INQUIRIES BANNER */}
+          {/* TAB: INQUIRIES BANNER */}
           {activeTab === 'inquiries' && (
             <div className="space-y-6">
+              {/* Inquiries Banner Visibility Master Control */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${showInquiriesSection ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Inquiries Banner Visibility
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {showInquiriesSection 
+                        ? 'Closing banner with contact buttons is visible.' 
+                        : 'Closing banner is deleted / hidden from the About page.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showInquiriesSection;
+                    setShowInquiriesSection(next);
+                    toast.info(next ? 'Inquiries banner enabled.' : 'Inquiries banner hidden/deleted from page.');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                    showInquiriesSection 
+                      ? 'bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                  }`}
+                >
+                  {showInquiriesSection ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>Hide Section From Page</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Restore Section</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -1069,6 +1310,7 @@ export const AboutSettingsModal = ({
                       setInquiriesSubtitle(DEFAULT_INQUIRIES_SUBTITLE);
                       setInquiriesWhatsappLabel(DEFAULT_INQUIRIES_WHATSAPP_LABEL);
                       setInquiriesEmailLabel(DEFAULT_INQUIRIES_EMAIL_LABEL);
+                      setShowInquiriesSection(true);
                       toast.info('Restored default inquiries banner.');
                     }}
                     className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-colors inline-flex items-center gap-1"
@@ -1088,7 +1330,7 @@ export const AboutSettingsModal = ({
                       value={inquiriesEyebrow}
                       onChange={(e) => setInquiriesEyebrow(e.target.value)}
                       placeholder="Inquiries & Commissions"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                     />
                   </div>
 
@@ -1101,7 +1343,7 @@ export const AboutSettingsModal = ({
                       value={inquiriesTitle}
                       onChange={(e) => setInquiriesTitle(e.target.value)}
                       placeholder="Ready to create something timeless together?"
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                     />
                   </div>
 
@@ -1114,7 +1356,7 @@ export const AboutSettingsModal = ({
                       onChange={(e) => setInquiriesSubtitle(e.target.value)}
                       rows={2}
                       placeholder="Available for commercial hospitality briefs, editorial assignments, destination weddings..."
-                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none resize-none leading-relaxed"
+                      className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none resize-none leading-relaxed focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                     />
                   </div>
 
@@ -1128,7 +1370,7 @@ export const AboutSettingsModal = ({
                         value={inquiriesWhatsappLabel}
                         onChange={(e) => setInquiriesWhatsappLabel(e.target.value)}
                         placeholder="Chat on WhatsApp"
-                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                       />
                     </div>
 
@@ -1141,7 +1383,7 @@ export const AboutSettingsModal = ({
                         value={inquiriesEmailLabel}
                         onChange={(e) => setInquiriesEmailLabel(e.target.value)}
                         placeholder="Send an Email"
-                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none"
+                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
                       />
                     </div>
                   </div>

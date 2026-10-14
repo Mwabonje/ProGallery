@@ -114,6 +114,17 @@ export const About: React.FC = () => {
     cached?.placardButtonText || DEFAULT_PLACARD_BUTTON_TEXT
   );
 
+  // Section visibility states
+  const [showDisciplinesSection, setShowDisciplinesSection] = useState<boolean>(
+    cached?.showDisciplinesSection !== undefined ? cached.showDisciplinesSection : true
+  );
+  const [showEthosSection, setShowEthosSection] = useState<boolean>(
+    cached?.showEthosSection !== undefined ? cached.showEthosSection : true
+  );
+  const [showInquiriesSection, setShowInquiriesSection] = useState<boolean>(
+    cached?.showInquiriesSection !== undefined ? cached.showInquiriesSection : true
+  );
+
   // Creative Disciplines states
   const [disciplinesEyebrow, setDisciplinesEyebrow] = useState<string>(
     cached?.disciplinesEyebrow || DEFAULT_DISCIPLINES_EYEBROW
@@ -125,7 +136,7 @@ export const About: React.FC = () => {
     cached?.disciplinesSubtitle !== undefined ? cached.disciplinesSubtitle : DEFAULT_DISCIPLINES_SUBTITLE
   );
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>(
-    Array.isArray(cached?.disciplines) && cached.disciplines.length > 0 ? cached.disciplines : DEFAULT_DISCIPLINES
+    Array.isArray(cached?.disciplines) ? cached.disciplines : DEFAULT_DISCIPLINES
   );
 
   // Ethos & Approach states
@@ -136,7 +147,7 @@ export const About: React.FC = () => {
     cached?.ethosTitle || DEFAULT_ETHOS_TITLE
   );
   const [ethosPillars, setEthosPillars] = useState<EthosPillar[]>(
-    Array.isArray(cached?.ethosPillars) && cached.ethosPillars.length > 0 ? cached.ethosPillars : DEFAULT_ETHOS_PILLARS
+    Array.isArray(cached?.ethosPillars) ? cached.ethosPillars : DEFAULT_ETHOS_PILLARS
   );
 
   // Inquiries CTA banner states
@@ -211,16 +222,20 @@ export const About: React.FC = () => {
                   if (parsed.placardFocus) setPlacardFocus(parsed.placardFocus);
                   if (parsed.placardButtonText) setPlacardButtonText(parsed.placardButtonText);
 
+                  if (parsed.showDisciplinesSection !== undefined) setShowDisciplinesSection(parsed.showDisciplinesSection);
+                  if (parsed.showEthosSection !== undefined) setShowEthosSection(parsed.showEthosSection);
+                  if (parsed.showInquiriesSection !== undefined) setShowInquiriesSection(parsed.showInquiriesSection);
+
                   if (parsed.disciplinesEyebrow) setDisciplinesEyebrow(parsed.disciplinesEyebrow);
                   if (parsed.disciplinesTitle) setDisciplinesTitle(parsed.disciplinesTitle);
                   if (parsed.disciplinesSubtitle !== undefined) setDisciplinesSubtitle(parsed.disciplinesSubtitle);
-                  if (Array.isArray(parsed.disciplines) && parsed.disciplines.length > 0) {
+                  if (Array.isArray(parsed.disciplines)) {
                     setDisciplines(parsed.disciplines);
                   }
 
                   if (parsed.ethosEyebrow) setEthosEyebrow(parsed.ethosEyebrow);
                   if (parsed.ethosTitle) setEthosTitle(parsed.ethosTitle);
-                  if (Array.isArray(parsed.ethosPillars) && parsed.ethosPillars.length > 0) {
+                  if (Array.isArray(parsed.ethosPillars)) {
                     setEthosPillars(parsed.ethosPillars);
                   }
 
@@ -300,6 +315,13 @@ export const About: React.FC = () => {
       default:
         return <Sparkles className="w-5 h-5" />;
     }
+  };
+
+  const getEthosGridClass = () => {
+    if (ethosPillars.length === 1) return "grid grid-cols-1 max-w-md mx-auto gap-6";
+    if (ethosPillars.length === 2) return "grid grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto gap-6 sm:gap-8";
+    if (ethosPillars.length === 3) return "grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 md:gap-8";
+    return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-6 md:gap-8";
   };
 
   return (
@@ -489,109 +511,115 @@ export const About: React.FC = () => {
           </div>
         </div>
 
-        {/* Section: Creative Disciplines / Areas of Practice */}
-        <section className="mt-16 sm:mt-20 md:mt-28 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
-          <div className="max-w-2xl mb-8 sm:mb-10">
-            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
-              {disciplinesEyebrow}
-            </span>
-            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
-              {disciplinesTitle}
-            </h2>
-            {disciplinesSubtitle ? (
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light">
-                {disciplinesSubtitle}
-              </p>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {disciplines.map((item, idx) => (
-              <div 
-                key={item.id || idx}
-                className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors"
-              >
-                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">
-                  {item.number || String(idx + 1).padStart(2, '0')}
-                </span>
-                <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                  {item.description}
+        {/* Section: Creative Disciplines / Areas of Practice (Conditional if enabled and has items) */}
+        {showDisciplinesSection && disciplines.length > 0 && (
+          <section className="mt-16 sm:mt-20 md:mt-28 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
+            <div className="max-w-2xl mb-8 sm:mb-10">
+              <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
+                {disciplinesEyebrow}
+              </span>
+              <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
+                {disciplinesTitle}
+              </h2>
+              {disciplinesSubtitle ? (
+                <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light">
+                  {disciplinesSubtitle}
                 </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Section: Ethos & Working Philosophy */}
-        <section className="mt-16 sm:mt-20 md:mt-24 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
-          <div className="max-w-2xl mb-8 sm:mb-10">
-            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
-              {ethosEyebrow}
-            </span>
-            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
-              {ethosTitle}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 md:gap-8">
-            {ethosPillars.map((pillar, idx) => (
-              <div 
-                key={pillar.id || idx} 
-                className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent"
-              >
-                <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
-                  {renderPillarIcon(pillar.icon)}
-                </div>
-                <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
-                  {pillar.title}
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
-                  {pillar.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Section: Direct Collaboration & Contact Invitation */}
-        <section className="mt-16 sm:mt-20 md:mt-28 p-6 sm:p-10 md:p-14 rounded-2xl sm:rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
-          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 relative z-10">
-            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-400 block">
-              {inquiriesEyebrow}
-            </span>
-            <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-tight">
-              {inquiriesTitle}
-            </h2>
-            <p className="text-slate-300 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-xl mx-auto">
-              {inquiriesSubtitle}
-            </p>
-            
-            <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
-              <a
-                href={settings.contactLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>{inquiriesWhatsappLabel}</span>
-              </a>
-
-              {settings.footerEmail && (
-                <a
-                  href={`mailto:${settings.footerEmail}`}
-                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>{inquiriesEmailLabel}</span>
-                </a>
-              )}
+              ) : null}
             </div>
-          </div>
-        </section>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {disciplines.map((item, idx) => (
+                <div 
+                  key={item.id || idx}
+                  className="p-5 sm:p-6 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-700 transition-colors"
+                >
+                  <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-2">
+                    {item.number || String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="font-editorial text-lg sm:text-xl font-medium text-slate-900 dark:text-white mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Section: Ethos & Working Philosophy (Conditional if enabled and has pillars) */}
+        {showEthosSection && ethosPillars.length > 0 && (
+          <section className="mt-16 sm:mt-20 md:mt-24 pt-8 sm:pt-12 border-t border-slate-200/80 dark:border-slate-800">
+            <div className="max-w-2xl mb-8 sm:mb-10">
+              <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-2">
+                {ethosEyebrow}
+              </span>
+              <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-normal">
+                {ethosTitle}
+              </h2>
+            </div>
+
+            <div className={getEthosGridClass()}>
+              {ethosPillars.map((pillar, idx) => (
+                <div 
+                  key={pillar.id || idx} 
+                  className="space-y-3 p-4 sm:p-0 rounded-xl bg-white/40 dark:bg-slate-900/30 sm:bg-transparent"
+                >
+                  <div className="w-10 h-10 rounded-full bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
+                    {renderPillarIcon(pillar.icon)}
+                  </div>
+                  <h4 className="font-editorial text-base sm:text-lg font-medium text-slate-900 dark:text-white">
+                    {pillar.title}
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-light leading-relaxed">
+                    {pillar.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Section: Direct Collaboration & Contact Invitation (Conditional if enabled) */}
+        {showInquiriesSection && (
+          <section className="mt-16 sm:mt-20 md:mt-28 p-6 sm:p-10 md:p-14 rounded-2xl sm:rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
+            <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 relative z-10">
+              <span className="text-xs uppercase tracking-[0.25em] font-semibold text-slate-400 block">
+                {inquiriesEyebrow}
+              </span>
+              <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-tight">
+                {inquiriesTitle}
+              </h2>
+              <p className="text-slate-300 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-xl mx-auto">
+                {inquiriesSubtitle}
+              </p>
+              
+              <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
+                <a
+                  href={settings.contactLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{inquiriesWhatsappLabel}</span>
+                </a>
+
+                {settings.footerEmail && (
+                  <a
+                    href={`mailto:${settings.footerEmail}`}
+                    className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 rounded-full text-xs font-semibold tracking-widest uppercase transition-all active:scale-95"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>{inquiriesEmailLabel}</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Editorial Footer */}
