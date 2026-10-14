@@ -339,10 +339,12 @@ function CardBackgroundControls({
 
 export const AboutSettingsModal = ({ 
   onClose,
-  userId
+  userId,
+  embedded = false,
 }: { 
   onClose: () => void;
   userId: string;
+  embedded?: boolean;
 }) => {
   const { uploadFiles, uploading, cancelUpload } = useUpload();
   const [activeTab, setActiveTab] = useState<'ethos' | 'disciplines' | 'custom' | 'bio' | 'placard' | 'inquiries'>('ethos');
@@ -746,6 +748,16 @@ export const AboutSettingsModal = ({
   };
 
   if (loading) {
+    if (embedded) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 flex-1">
+          <Loader2 className="w-8 h-8 text-slate-800 dark:text-slate-200 animate-spin" />
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            Loading About page content...
+          </span>
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 flex flex-col items-center gap-3 shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -758,10 +770,9 @@ export const AboutSettingsModal = ({
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 z-[100] animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80 dark:border-slate-800 transition-colors">
-        {/* Modal Header */}
+  const innerContent = (
+    <div className={`flex flex-col ${embedded ? 'flex-1 overflow-hidden min-h-0' : 'bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[92vh] border border-slate-200/80 dark:border-slate-800 transition-colors'}`}>
+      {!embedded && (
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/80 dark:bg-[#0f172a] shrink-0">
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
@@ -780,8 +791,9 @@ export const AboutSettingsModal = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+      )}
 
-        {/* Tab Navigation */}
+      {/* Tab Navigation */}
         <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-6 gap-2 shrink-0 overflow-x-auto">
           <button
             type="button"
@@ -1943,6 +1955,15 @@ export const AboutSettingsModal = ({
           </div>
         </div>
       </div>
+    );
+
+  if (embedded) {
+    return innerContent;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 z-[100] animate-in fade-in duration-200">
+      {innerContent}
     </div>
   );
 };

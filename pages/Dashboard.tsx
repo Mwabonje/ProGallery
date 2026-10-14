@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { toast } from 'sonner';
+import { WebsiteSettingsModal } from '../components/WebsiteSettingsModal';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { HomeSettingsModal } from '../components/HomeSettingsModal';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -104,6 +105,8 @@ export const Dashboard: React.FC = () => {
   const [activities, setActivities] = useState<EnrichedActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isWebsiteSettingsOpen, setIsWebsiteSettingsOpen] = useState(false);
+  const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'home' | 'about'>('home');
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -717,15 +720,15 @@ export const Dashboard: React.FC = () => {
           <div>
             <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content &amp; System</h2>
             <div className="px-3 space-y-1">
-              <div onClick={() => setIsAboutModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
+              <div 
+                onClick={() => {
+                  setWebsiteSettingsTab('home');
+                  setIsWebsiteSettingsOpen(true);
+                }} 
+                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+              >
                 <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
-                  <User className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[13px] font-medium">About Page Content</span>
-              </div>
-              <div onClick={() => setIsHomeModalOpen(true)} className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]">
-                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                  <Globe className="w-3.5 h-3.5" />
                 </div>
                 <span className="text-[13px] font-medium">Website Settings</span>
               </div>
@@ -764,15 +767,10 @@ export const Dashboard: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-2.5">
                 <button 
-                  onClick={() => setIsAboutModalOpen(true)}
-                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2"
-                >
-                  <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>Edit About Page</span>
-                </button>
-
-                <button 
-                  onClick={() => setIsHomeModalOpen(true)}
+                  onClick={() => {
+                    setWebsiteSettingsTab('home');
+                    setIsWebsiteSettingsOpen(true);
+                  }}
                   className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2"
                 >
                   <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -1481,24 +1479,17 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* About Settings Modal */}
-      {isAboutModalOpen && userId && (
-         <div className="fixed inset-0 z-[100]">
-         <AboutSettingsModal 
-            userId={userId} 
-            onClose={() => setIsAboutModalOpen(false)} 
-         />
-         </div>
-      )}
-
-      {/* Website & Home Settings Modal */}
-      {isHomeModalOpen && userId && (
-         <div className="fixed inset-0 z-[100]">
-         <HomeSettingsModal 
-            userId={userId} 
-            onClose={() => setIsHomeModalOpen(false)} 
-         />
-         </div>
+      {/* Unified Website Settings Modal (Home & Branding + About Page Content) */}
+      {(isWebsiteSettingsOpen || isHomeModalOpen || isAboutModalOpen) && userId && (
+        <WebsiteSettingsModal 
+          userId={userId} 
+          initialTab={isAboutModalOpen ? 'about' : websiteSettingsTab}
+          onClose={() => {
+            setIsWebsiteSettingsOpen(false);
+            setIsHomeModalOpen(false);
+            setIsAboutModalOpen(false);
+          }} 
+        />
       )}
     </div>
   );
