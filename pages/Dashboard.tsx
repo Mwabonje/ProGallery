@@ -133,17 +133,98 @@ export const Dashboard: React.FC = () => {
     setIsPurging(true);
     try {
       const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-      const res = await fetch(isNetlify ? '/.netlify/functions/purge-expired' : '/api/purge-expired', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        alert(`Cleanup complete!\nPurged ${data.purgedCount || 0} expired files (${data.purgedR2Objects || 0} objects removed from Cloudflare R2).`);
-        fetchStorageUsage();
-        fetchData();
-      } else {
-        alert(data.error || "Failed to purge expired files");
+      let success = false;
+      let purgedCount = 0;
+      let purgedR2Objects = 0;
+
+      // 1. Attempt the serverless purge endpoint first
+      try {
+        const endpoint = isNetlify ? '/.netlify/functions/purge-expired' : '/api/purge-expired';
+        const res = await fetch(endpoint, { method: 'POST' });
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (data.success) {
+            success = true;
+            purgedCount = data.purgedCount || 0;
+            purgedR2Objects = data.purgedR2Objects || 0;
+          }
+        }
+      } catch (endpointErr) {
+        console.warn("Server purge endpoint error, falling back to direct purge:", endpointErr);
       }
+
+      // 2. Direct fallback if serverless endpoint is not reachable or errored
+      if (!success) {
+        const now = new Date().toISOString();
+        const { data: expiredFiles, error: fetchErr } = await supabase
+          .from('files')
+          .select('id, file_path, gallery_id')
+          .lt('expires_at', now);
+
+        if (fetchErr) throw fetchErr;
+
+        if (!expiredFiles || expiredFiles.length === 0) {
+          toast.info("No expired delivery files found. All client files are currently active!");
+          fetchStorageUsage();
+          fetchData();
+          return;
+        }
+
+        const pathsToDelete: string[] = [];
+        const idsToDelete: string[] = [];
+        for (const f of expiredFiles) {
+          if (f.id) idsToDelete.push(f.id);
+          if (f.file_path) {
+            pathsToDelete.push(f.file_path);
+            const dir = f.file_path.substring(0, f.file_path.lastIndexOf("/"));
+            const name = f.file_path.split("/").pop();
+            if (dir && name) {
+              pathsToDelete.push(`${dir}/watermark_${name}`);
+              pathsToDelete.push(`${dir}/watermark_${name}.jpg`);
+              const baseName = name.replace(/\.[^/.]+$/, "");
+              pathsToDelete.push(`${dir}/watermark_${baseName}.jpg`);
+            }
+          }
+        }
+
+        // Delete from R2 via delete-file endpoint if paths exist
+        if (pathsToDelete.length > 0) {
+          try {
+            const delEndpoint = isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file';
+            await fetch(delEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filePaths: pathsToDelete })
+            });
+            purgedR2Objects = pathsToDelete.length;
+          } catch (r2Err) {
+            console.warn("R2 delete batch error:", r2Err);
+          }
+        }
+
+        // Delete records from Supabase
+        if (idsToDelete.length > 0) {
+          for (let i = 0; i < idsToDelete.length; i += 100) {
+            const chunk = idsToDelete.slice(i, i + 100);
+            await supabase.from('files').delete().in('id', chunk);
+          }
+        }
+
+        purgedCount = idsToDelete.length;
+        success = true;
+      }
+
+      if (purgedCount === 0) {
+        toast.info("No expired files to clean up. Storage is already optimized!");
+      } else {
+        toast.success(`Cleanup complete! Purged ${purgedCount} expired files (${purgedR2Objects} objects removed from Cloudflare R2).`);
+      }
+      fetchStorageUsage();
+      fetchData();
     } catch (e: any) {
-      alert("Error purging expired files: " + e.message);
+      console.error("Purge error:", e);
+      toast.error("Cleanup error: " + (e.message || "Failed to purge expired files"));
     } finally {
       setIsPurging(false);
     }
