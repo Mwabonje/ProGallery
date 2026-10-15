@@ -118,6 +118,25 @@ export const DEFAULT_INQUIRIES_TITLE = 'Ready to create something timeless toget
 export const DEFAULT_INQUIRIES_SUBTITLE = 'Available for commercial hospitality briefs, editorial assignments, destination weddings, and private portraiture throughout Kenya and worldwide.';
 export const DEFAULT_INQUIRIES_WHATSAPP_LABEL = 'Chat on WhatsApp';
 export const DEFAULT_INQUIRIES_EMAIL_LABEL = 'Send an Email';
+export const DEFAULT_WHATSAPP_LINK = 'https://wa.me/254705268604';
+
+export const formatWhatsappUrl = (input?: string, fallback: string = DEFAULT_WHATSAPP_LINK): string => {
+  if (!input || !input.trim()) return fallback;
+  const trimmed = input.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (trimmed.includes('wa.me') || trimmed.includes('whatsapp.com')) {
+      return trimmed;
+    }
+    // If it's a general URL (like booking link), do not send WhatsApp button to another site
+    return fallback;
+  }
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (!digitsOnly) return fallback;
+  if (digitsOnly.startsWith('0') && digitsOnly.length === 10) {
+    return `https://wa.me/254${digitsOnly.slice(1)}`;
+  }
+  return `https://wa.me/${digitsOnly}`;
+};
 
 export const CARD_BG_PRESETS = [
   { name: 'Warm Cream / Linen', hex: '#FAF8F5', textDark: true },
@@ -399,6 +418,7 @@ export const AboutSettingsModal = ({
   const [inquiriesTitle, setInquiriesTitle] = useState(DEFAULT_INQUIRIES_TITLE);
   const [inquiriesSubtitle, setInquiriesSubtitle] = useState(DEFAULT_INQUIRIES_SUBTITLE);
   const [inquiriesWhatsappLabel, setInquiriesWhatsappLabel] = useState(DEFAULT_INQUIRIES_WHATSAPP_LABEL);
+  const [inquiriesWhatsappLink, setInquiriesWhatsappLink] = useState(DEFAULT_WHATSAPP_LINK);
   const [inquiriesEmailLabel, setInquiriesEmailLabel] = useState(DEFAULT_INQUIRIES_EMAIL_LABEL);
 
   // Auto-save setup
@@ -470,6 +490,7 @@ export const AboutSettingsModal = ({
                 if (parsed.inquiriesTitle) setInquiriesTitle(parsed.inquiriesTitle);
                 if (parsed.inquiriesSubtitle) setInquiriesSubtitle(parsed.inquiriesSubtitle);
                 if (parsed.inquiriesWhatsappLabel) setInquiriesWhatsappLabel(parsed.inquiriesWhatsappLabel);
+                if (parsed.inquiriesWhatsappLink) setInquiriesWhatsappLink(parsed.inquiriesWhatsappLink);
                 if (parsed.inquiriesEmailLabel) setInquiriesEmailLabel(parsed.inquiriesEmailLabel);
               } else {
                 setAboutText(gal.title);
@@ -525,6 +546,7 @@ export const AboutSettingsModal = ({
             inquiriesTitle: DEFAULT_INQUIRIES_TITLE,
             inquiriesSubtitle: DEFAULT_INQUIRIES_SUBTITLE,
             inquiriesWhatsappLabel: DEFAULT_INQUIRIES_WHATSAPP_LABEL,
+            inquiriesWhatsappLink: DEFAULT_WHATSAPP_LINK,
             inquiriesEmailLabel: DEFAULT_INQUIRIES_EMAIL_LABEL,
           });
 
@@ -584,6 +606,7 @@ export const AboutSettingsModal = ({
     inquiriesTitle,
     inquiriesSubtitle,
     inquiriesWhatsappLabel,
+    inquiriesWhatsappLink,
     inquiriesEmailLabel,
   });
 
@@ -1832,6 +1855,7 @@ export const AboutSettingsModal = ({
                       setInquiriesTitle(DEFAULT_INQUIRIES_TITLE);
                       setInquiriesSubtitle(DEFAULT_INQUIRIES_SUBTITLE);
                       setInquiriesWhatsappLabel(DEFAULT_INQUIRIES_WHATSAPP_LABEL);
+                      setInquiriesWhatsappLink(DEFAULT_WHATSAPP_LINK);
                       setInquiriesEmailLabel(DEFAULT_INQUIRIES_EMAIL_LABEL);
                       setShowInquiriesSection(true);
                       toast.info('Restored default inquiries banner.');
@@ -1897,6 +1921,21 @@ export const AboutSettingsModal = ({
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        WhatsApp Phone Number or Link
+                      </label>
+                      <input
+                        type="text"
+                        value={inquiriesWhatsappLink}
+                        onChange={(e) => setInquiriesWhatsappLink(e.target.value)}
+                        placeholder="https://wa.me/254705268604 or +254 705 268 604"
+                        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                         Email Button Label

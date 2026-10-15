@@ -30,6 +30,7 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
     heroTitle: 'Visual Storyteller\n& *Lifestyle* Photographer',
     heroSubtitle: 'Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.',
     contactLink: 'https://mwabonjebooking.netlify.app/',
+    whatsappLink: 'https://wa.me/254705268604',
     footerEmail: 'hello@mwabonje.studio',
     instagramLink: 'https://www.instagram.com/mwabonje_/',
     tiktokLink: 'https://www.tiktok.com/@mwabonje_',
@@ -424,12 +425,24 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                        Enquire Button Link
+                        Enquire / Booking Button Link
                       </label>
                       <input
                         type="url"
                         value={settings.contactLink}
                         onChange={(e) => setSettings({ ...settings, contactLink: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                        WhatsApp Link or Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.whatsappLink || ''}
+                        placeholder="https://wa.me/254705268604 or +254 705 268 604"
+                        onChange={(e) => setSettings({ ...settings, whatsappLink: e.target.value })}
                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
                       />
                     </div>

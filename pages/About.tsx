@@ -41,12 +41,15 @@ import {
   DEFAULT_INQUIRIES_TITLE,
   DEFAULT_INQUIRIES_SUBTITLE,
   DEFAULT_INQUIRIES_WHATSAPP_LABEL,
-  DEFAULT_INQUIRIES_EMAIL_LABEL
+  DEFAULT_INQUIRIES_EMAIL_LABEL,
+  DEFAULT_WHATSAPP_LINK,
+  formatWhatsappUrl
 } from '../components/AboutSettingsModal';
 
 interface Settings {
   brandName: string;
   contactLink: string;
+  whatsappLink?: string;
   instagramLink: string;
   tiktokLink: string;
   footerEmail: string;
@@ -55,7 +58,8 @@ interface Settings {
 export const About: React.FC = () => {
   const [settings, setSettings] = useState<Settings>({
     brandName: 'MWABONJE',
-    contactLink: 'https://wa.me/254705268604',
+    contactLink: 'https://mwabonjebooking.netlify.app/',
+    whatsappLink: DEFAULT_WHATSAPP_LINK,
     instagramLink: 'https://www.instagram.com/mwabonje',
     tiktokLink: '',
     footerEmail: 'mwabonje@gmail.com',
@@ -184,6 +188,9 @@ export const About: React.FC = () => {
   const [inquiriesWhatsappLabel, setInquiriesWhatsappLabel] = useState<string>(
     cached?.inquiriesWhatsappLabel || DEFAULT_INQUIRIES_WHATSAPP_LABEL
   );
+  const [inquiriesWhatsappLink, setInquiriesWhatsappLink] = useState<string>(
+    cached?.inquiriesWhatsappLink || DEFAULT_WHATSAPP_LINK
+  );
   const [inquiriesEmailLabel, setInquiriesEmailLabel] = useState<string>(
     cached?.inquiriesEmailLabel || DEFAULT_INQUIRIES_EMAIL_LABEL
   );
@@ -214,6 +221,7 @@ export const About: React.FC = () => {
                 ...prev,
                 brandName: parsed.brandName || prev.brandName,
                 contactLink: parsed.contactLink || prev.contactLink,
+                whatsappLink: parsed.whatsappLink || prev.whatsappLink,
                 instagramLink: parsed.instagramLink || prev.instagramLink,
                 tiktokLink: parsed.tiktokLink || prev.tiktokLink,
                 footerEmail: parsed.footerEmail || prev.footerEmail,
@@ -273,6 +281,7 @@ export const About: React.FC = () => {
                   if (parsed.inquiriesTitle) setInquiriesTitle(parsed.inquiriesTitle);
                   if (parsed.inquiriesSubtitle) setInquiriesSubtitle(parsed.inquiriesSubtitle);
                   if (parsed.inquiriesWhatsappLabel) setInquiriesWhatsappLabel(parsed.inquiriesWhatsappLabel);
+                  if (parsed.inquiriesWhatsappLink) setInquiriesWhatsappLink(parsed.inquiriesWhatsappLink);
                   if (parsed.inquiriesEmailLabel) setInquiriesEmailLabel(parsed.inquiriesEmailLabel);
 
                   try {
@@ -506,7 +515,11 @@ export const About: React.FC = () => {
 
                 <div className="pt-1">
                   <a
-                    href={settings.contactLink}
+                    href={
+                      placardButtonText.toLowerCase().includes('whatsapp') || placardButtonText.toLowerCase().includes('chat')
+                        ? formatWhatsappUrl(inquiriesWhatsappLink || settings.whatsappLink, DEFAULT_WHATSAPP_LINK)
+                        : (settings.contactLink || formatWhatsappUrl(inquiriesWhatsappLink || settings.whatsappLink, DEFAULT_WHATSAPP_LINK))
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold tracking-wider uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm active:scale-98"
@@ -703,7 +716,7 @@ export const About: React.FC = () => {
               
               <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
                 <a
-                  href={settings.contactLink}
+                  href={formatWhatsappUrl(inquiriesWhatsappLink || settings.whatsappLink, DEFAULT_WHATSAPP_LINK)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center min-h-[44px] gap-2 px-6 sm:px-8 py-3 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
@@ -776,6 +789,14 @@ export const About: React.FC = () => {
                 Instagram
               </a>
             )}
+            <a 
+              href={formatWhatsappUrl(inquiriesWhatsappLink || settings.whatsappLink, DEFAULT_WHATSAPP_LINK)} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:text-white transition-colors"
+            >
+              WhatsApp
+            </a>
           </div>
         </div>
       </footer>

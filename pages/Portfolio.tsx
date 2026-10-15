@@ -8,6 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { formatWhatsappUrl } from '../components/AboutSettingsModal';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -125,6 +126,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     heroTitle: "Visual Storyteller\n& *Lifestyle* Photographer",
     heroSubtitle: "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.",
     contactLink: "https://mwabonjebooking.netlify.app/",
+    whatsappLink: "https://wa.me/254705268604",
     footerEmail: "hello@mwabonje.studio",
     instagramLink: "https://www.instagram.com/mwabonje_/",
     tiktokLink: "https://www.tiktok.com/@mwabonje_"
@@ -613,7 +615,12 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                 TikTok
               </a>
             )}
-            <a href="https://wa.me/254705268604" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+            <a 
+              href={formatWhatsappUrl(settings.whatsappLink, 'https://wa.me/254705268604')} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:text-white transition-colors"
+            >
               WhatsApp
             </a>
             {settings.footerEmail && (
