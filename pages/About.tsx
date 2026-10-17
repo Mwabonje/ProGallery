@@ -776,9 +776,6 @@ export const About: React.FC = () => {
         <div className="max-w-6xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
           <p>&copy; {new Date().getFullYear()} {settings.brandName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="hover:text-white transition-colors">
-              Studio Portal
-            </Link>
             {settings.instagramLink && (
               <a 
                 href={settings.instagramLink} 

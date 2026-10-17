@@ -311,13 +311,13 @@ export const Login: React.FC = () => {
           </form>
         )}
 
-        {view !== 'forgot' && (
+        {view === 'signup' && (
           <div className="mt-6 text-center">
             <button
-              onClick={() => switchView(view === 'signin' ? 'signup' : 'signin')}
+              onClick={() => switchView('signin')}
               className="text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium cursor-pointer transition-colors"
             >
-              {view === 'signin' ? 'Need an account? Sign Up' : 'Already have an account? Sign In'}
+              Already have an account? Sign In
             </button>
           </div>
         )}
