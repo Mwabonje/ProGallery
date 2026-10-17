@@ -3,10 +3,36 @@
   publish = "dist"
 
 [[redirects]]
+  from = "/api/gallery/:id/verify-password"
+  to = "/.netlify/functions/verify-gallery-password?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/api/gallery/:id/auth-status"
+  to = "/.netlify/functions/verify-gallery-password?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/api/sys/interaction"
+  to = "/.netlify/functions/sys-interaction"
+  status = 200
+
+[[redirects]]
+  from = "/api/sys/state"
+  to = "/.netlify/functions/sys-state"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# Edge functions for dynamic crawler/SEO routing
 [[edge_functions]]
   path = "/blog/*"
   function = "og-tags"
@@ -18,3 +44,58 @@
 [[edge_functions]]
   path = "/gallery/*"
   function = "og-tags"
+
+[[edge_functions]]
+  path = "/dashboard*"
+  function = "og-tags"
+
+[[edge_functions]]
+  path = "/admin*"
+  function = "og-tags"
+
+[[edge_functions]]
+  path = "/login*"
+  function = "og-tags"
+
+# HTTP response headers for private and administrative routes
+[[headers]]
+  for = "/g/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/gallery/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/dashboard*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/admin*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/login*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    Cache-Control = "private, no-cache, no-store, must-revalidate"

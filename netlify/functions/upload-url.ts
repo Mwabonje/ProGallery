@@ -2,6 +2,12 @@ import { Handler } from "@netlify/functions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
@@ -9,12 +15,28 @@ const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const VITE_R2_PUBLIC_URL = process.env.VITE_R2_PUBLIC_URL;
 
 export const handler: Handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: "",
+    };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { 
+      statusCode: 405, 
+      headers: corsHeaders,
+      body: JSON.stringify({ error: "Method Not Allowed" }) 
+    };
   }
 
   if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-     return { statusCode: 500, body: JSON.stringify({ error: "Missing Cloudflare keys in Netlify Environment Variables" }) };
+     return { 
+       statusCode: 500, 
+       headers: corsHeaders,
+       body: JSON.stringify({ error: "Missing Cloudflare keys in Netlify Environment Variables" }) 
+     };
   }
 
   try {
@@ -31,15 +53,20 @@ export const handler: Handler = async (event) => {
     });
 
     const body = JSON.parse(event.body || "{}");
-    const { fileName, fileType } = body;
+    const { fileName, fileType, folderPath } = body;
     
     if (!fileName || !fileType) {
-      return { statusCode: 400, body: JSON.stringify({ error: "fileName and fileType required" }) };
+      return { 
+        statusCode: 400, 
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "fileName and fileType required" }) 
+      };
     }
 
     const uniqueId = Math.random().toString(36).substring(2);
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filePath = `uploads/${Date.now()}_${uniqueId}/${sanitizedFileName}`;
+    const baseFolder = folderPath ? folderPath.replace(/^\/+|\/+$/g, '') : `uploads/${Date.now()}_${uniqueId}`;
+    const filePath = `${baseFolder}/${sanitizedFileName}`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME!,
@@ -48,15 +75,23 @@ export const handler: Handler = async (event) => {
     });
 
     const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
-    const cleanPublicUrlBase = VITE_R2_PUBLIC_URL!.replace(/\/$/, "");
-    const publicUrl = `${cleanPublicUrlBase}/${filePath}`;
+    const publicBase = (VITE_R2_PUBLIC_URL || (R2_BUCKET_NAME ? `https://${accountId}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}` : '')).replace(/\/$/, "");
+    const publicUrl = publicBase ? `${publicBase}/${filePath}` : filePath;
 
     return {
       statusCode: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ presignedUrl, publicUrl, filePath }),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Presign error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed to generate URL" }) };
+    return { 
+      statusCode: 500, 
+      headers: corsHeaders,
+      body: JSON.stringify({ error: error?.message || "Failed to generate URL" }) 
+    };
   }
 };

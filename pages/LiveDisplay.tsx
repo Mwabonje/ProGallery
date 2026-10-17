@@ -6,6 +6,7 @@ import { getOptimizedImageUrl } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import QRCode from 'react-qr-code';
 import { Loader2, Camera } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export const LiveDisplay: React.FC = () => {
     const { galleryId } = useParams<{ galleryId: string }>();
@@ -24,15 +25,20 @@ export const LiveDisplay: React.FC = () => {
                     .single();
                 
                 if (gError) throw gError;
+                if (!gData.link_enabled) {
+                    setGallery(null);
+                    setLoading(false);
+                    return;
+                }
                 setGallery(gData);
 
-                // Fetch latest photo
+                // Fetch latest photo (exclude password pseudo-file and expired files)
                 const { data: fData } = await supabase
                     .from('files')
                     .select('*')
                     .eq('gallery_id', galleryId)
                     .neq('file_path', 'GALLERY_PASSWORD')
-                    .neq('file_path', 'GALLERY_PASSWORD')
+                    .gt('expires_at', new Date().toISOString())
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .single();
@@ -54,6 +60,8 @@ export const LiveDisplay: React.FC = () => {
                 .from('files')
                 .select('*')
                 .eq('gallery_id', galleryId)
+                .neq('file_path', 'GALLERY_PASSWORD')
+                .gt('expires_at', new Date().toISOString())
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
@@ -66,19 +74,38 @@ export const LiveDisplay: React.FC = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-stone-900 flex items-center justify-center">
+                <Helmet>
+                    <title>Live Display | Mwabonje</title>
+                    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+                    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+                </Helmet>
                 <Loader2 className="w-8 h-8 text-[#ea3c24] animate-spin" />
             </div>
         );
     }
 
-    if (!gallery) {
-        return <div className="min-h-screen bg-stone-900 text-white flex items-center justify-center">Gallery not found.</div>;
+    if (!gallery || !gallery.link_enabled) {
+        return (
+            <div className="min-h-screen bg-stone-900 text-white flex items-center justify-center p-4 text-center">
+                <Helmet>
+                    <title>Live Display | Mwabonje</title>
+                    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+                    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+                </Helmet>
+                Gallery not found or unavailable.
+            </div>
+        );
     }
 
     const publicUrl = `${window.location.origin}/${generateSlug(gallery.client_name)}`;
 
     return (
         <div className="fixed inset-0 bg-stone-900 overflow-y-auto overflow-x-hidden p-0 md:p-6 lg:p-8 font-sans z-50">
+            <Helmet>
+                <title>Live Display | Mwabonje</title>
+                <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+                <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+            </Helmet>
             {/* The Outer Frame */}
             <div className="relative w-full min-h-[100dvh] md:min-h-0 md:h-full max-w-7xl mx-auto md:border-2 md:border-white/90 md:rounded-[3.5rem] overflow-hidden flex flex-col shadow-2xl bg-black">
                 

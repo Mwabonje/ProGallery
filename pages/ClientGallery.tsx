@@ -33,8 +33,9 @@ import {
   rewriteUrlToR2,
 } from "../utils/formatters";
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
+import { getApiUrl } from "../utils/api";
 
-import { SEO } from "../components/SEO";
+import { Helmet } from "react-helmet-async";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -177,23 +178,7 @@ export const ClientGallery: React.FC = () => {
     }
   }, [galleryId]);
 
-  useEffect(() => {
-    if (gallery?.seo_title) {
-      document.title = gallery.seo_title;
-    } else if (gallery?.client_name) {
-      document.title = `${gallery.client_name} - Gallery`;
-    }
 
-    if (gallery?.seo_description) {
-      let metaDesc = document.querySelector('meta[name="description"]');
-      if (!metaDesc) {
-        metaDesc = document.createElement("meta");
-        metaDesc.setAttribute("name", "description");
-        document.head.appendChild(metaDesc);
-      }
-      metaDesc.setAttribute("content", gallery.seo_description);
-    }
-  }, [gallery]);
 
   useEffect(() => {
     const el = horizontalRef.current;
@@ -341,6 +326,176 @@ export const ClientGallery: React.FC = () => {
     };
   }, [gallery?.id, gallery?.selection_enabled]);
 
+  const verifyPasswordOnServer = async (activeGalleryId: string, enteredPass: string): Promise<{ authorized: boolean; requiresPassword: boolean }> => {
+    try {
+      // 1. Try Netlify serverless function first (works on mwabonje.co.ke, netlify.app, etc.)
+      let res = await fetch(`/.netlify/functions/verify-gallery-password?id=${activeGalleryId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: activeGalleryId, password: enteredPass })
+      }).catch(() => null);
+
+      // 2. Fallback to Express backend if 404 or failed
+      if (!res || res.status === 404) {
+        res = await fetch(`/api/gallery/${activeGalleryId}/verify-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: activeGalleryId, password: enteredPass })
+        }).catch(() => null);
+      }
+
+      if (res) {
+        if (res.ok) {
+          const data = await res.json();
+          return { authorized: true, requiresPassword: Boolean(data.requiresPassword) };
+        } else if (res.status === 401) {
+          return { authorized: false, requiresPassword: true };
+        }
+      }
+    } catch (e) {
+      console.warn("Server verification error, checking database RPC:", e);
+    }
+
+    // 3. Database RPC verification fallback (enforced on PostgreSQL side, never exposes plaintext)
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_gallery_password', {
+        p_gallery_id: activeGalleryId,
+        p_password: enteredPass
+      });
+
+      if (!rpcError && rpcData) {
+        if (rpcData.valid === true) {
+          return { authorized: true, requiresPassword: Boolean(rpcData.requires_password) };
+        }
+        return { authorized: false, requiresPassword: true };
+      }
+    } catch (e) {
+      console.warn("Database RPC verification error:", e);
+    }
+
+    // Default to unauthorized on failure (NEVER assume open access on error)
+    return { authorized: false, requiresPassword: true };
+  };
+
+  const loadGalleryFiles = async (activeGalleryId: string, galData: Gallery) => {
+    let allFiles: GalleryFile[] = [];
+    let hasMore = true;
+    let offset = 0;
+    const limit = 1000;
+
+    while (hasMore) {
+      const { data: fileData, error: fileError } = await supabase
+        .from("files")
+        .select("*")
+        .eq("gallery_id", activeGalleryId)
+        .neq("file_path", "GALLERY_PASSWORD") // NEVER load password record as photo
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (fileError) throw fileError;
+
+      if (fileData) {
+        allFiles = [...allFiles, ...fileData];
+        if (fileData.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const isPortfolioGal = Boolean(
+      galData.category && 
+      galData.category.trim() !== "" && 
+      galData.category.toLowerCase().trim() !== "delivery"
+    );
+
+    if (isPortfolioGal) {
+      if (allFiles.length > 0) {
+        setFiles(allFiles);
+      } else {
+        const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
+        const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
+          id: `portfolio-${activeGalleryId}-${idx}`,
+          gallery_id: activeGalleryId,
+          file_url: url,
+          file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
+          file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
+          title: `${galData.client_name} ${idx + 1}`,
+          caption: galData.client_name,
+          download_count: 0,
+          is_edited: false,
+          created_at: galData.created_at,
+          expires_at: '2126-10-10T00:00:00.000Z',
+        }));
+        setFiles(syntheticFiles);
+      }
+    } else {
+      if (allFiles.length === 0) {
+        setError(
+          "This gallery link has expired. Please contact the photographer to request access.",
+        );
+      } else {
+        setFiles(allFiles);
+      }
+    }
+
+    // Load Selections if enabled
+    if (galData.selection_enabled) {
+      const { data: selectionData } = await supabase
+        .from("selections")
+        .select("file_id, client_note")
+        .eq("gallery_id", activeGalleryId)
+        .order("created_at", { ascending: true });
+
+      if (selectionData) {
+        setSelectedFileIds(new Set(selectionData.map((s) => s.file_id)));
+        const notes: Record<string, string> = {};
+        selectionData.forEach((s) => {
+          if (s.client_note) notes[s.file_id] = s.client_note;
+        });
+        setSelectionNotes(notes);
+        if (
+          selectionData.length === 0 &&
+          galData.selection_limit > 0 &&
+          galData.selection_status !== "submitted" &&
+          galData.selection_status !== "completed"
+        ) {
+          setShowWelcomeModal(true);
+        }
+      }
+    }
+  };
+
+  const trackGalleryView = async (activeGalleryId: string, galData: Gallery) => {
+    try {
+      const viewedKey = `viewed_${activeGalleryId}`;
+      if (!localStorage.getItem(viewedKey)) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || session.user.id !== galData.photographer_id) {
+          await fetch(
+            getApiUrl('/api/sys/interaction'),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                galleryId: activeGalleryId,
+                event: "view",
+              }),
+              keepalive: true,
+            }
+          ).catch(() => {});
+        }
+        localStorage.setItem(viewedKey, "true");
+      }
+    } catch (e) {
+      console.warn("Failed to track view:", e);
+    }
+  };
+
   const loadGallery = async () => {
     try {
       if (!galleryId) return;
@@ -395,205 +550,89 @@ export const ClientGallery: React.FC = () => {
 
       setGallery(galData);
 
-      // Track Analytics View via R2 backend
-      const trackView = async () => {
-        const viewedKey = `viewed_${activeGalleryId}`;
-        if (!localStorage.getItem(viewedKey)) {
-          // Check session to exclude photographer
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (!session || session.user.id !== galData!.photographer_id) {
-            try {
-              const isNetlify =
-                typeof window !== "undefined" &&
-                window.location.hostname.includes("netlify.app");
-              await fetch(
-                isNetlify
-                  ? "/.netlify/functions/sys-interaction"
-                  : "/api/sys/interaction",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    galleryId: activeGalleryId,
-                    event: "view",
-                  }),
-                  keepalive: true,
-                },
-              );
-            } catch (e) {
-              console.warn("Failed to track view:", e);
-            }
-          }
-          // Mark as viewed regardless of whether they are photographer or client
-          localStorage.setItem(viewedKey, "true");
+      // Helper to initialize authenticated gallery state
+      const initAuthenticatedGallery = async (activeGalId: string, activeGal: Gallery) => {
+        setIsAuthenticated(true);
+        // Track analytics view only for authenticated viewers
+        trackGalleryView(activeGalId, activeGal).catch(() => {});
+
+        const agreedAmount = activeGal.agreed_balance || 0;
+        const amountPaid = activeGal.amount_paid || 0;
+        const balanceDue = Math.max(0, agreedAmount - amountPaid);
+
+        if (
+          balanceDue > 0 &&
+          !(activeGal.category && activeGal.category.trim() !== "")
+        ) {
+          setShowBalanceWarningModal(true);
         }
+
+        if (
+          activeGal.selection_status === "submitted" ||
+          activeGal.selection_status === "completed"
+        ) {
+          setSelectionSubmitted(true);
+        }
+
+        await loadGalleryFiles(activeGalId, activeGal);
       };
-      trackView().catch((e) => console.warn("Failed to track view:", e));
 
-      const agreedAmount = galData.agreed_balance || 0;
-      const amountPaid = galData.amount_paid || 0;
-      const balanceDue = Math.max(0, agreedAmount - amountPaid);
-
-      if (
-        balanceDue > 0 &&
-        !(galData.category && galData.category.trim() !== "")
-      ) {
-        setShowBalanceWarningModal(true);
-      }
-
-      if (
-        galData.selection_status === "submitted" ||
-        galData.selection_status === "completed"
-      ) {
-        setSelectionSubmitted(true);
-      }
-
-      // Load Files
-      let allFiles: GalleryFile[] = [];
-      let hasMore = true;
-      let offset = 0;
-      const limit = 1000;
-
-      while (hasMore) {
-        const { data: fileData, error: fileError } = await supabase
-          .from("files")
-          .select("*")
-          .eq("gallery_id", activeGalleryId)
-          .gt("expires_at", new Date().toISOString())
-          .order("expires_at", { ascending: true })
-          .range(offset, offset + limit - 1);
-
-        if (fileError) throw fileError;
-
-        if (fileData) {
-          allFiles = [...allFiles, ...fileData];
-          if (fileData.length < limit) {
-            hasMore = false;
-          } else {
-            offset += limit;
-          }
-        } else {
-          hasMore = false;
+      // Security: Check if gallery requires password BEFORE fetching any files
+      let requiresPassword = false;
+      try {
+        // Try Netlify function first (handles both custom domain and netlify.app)
+        let statusRes = await fetch(`/.netlify/functions/verify-gallery-password?id=${activeGalleryId}`).catch(() => null);
+        if (!statusRes || !statusRes.ok) {
+          statusRes = await fetch(`/api/gallery/${activeGalleryId}/auth-status`).catch(() => null);
         }
-      }
 
-      const actualFiles = allFiles.filter(f => f.file_path !== 'GALLERY_PASSWORD');
-      
-      const galleryPass = galData.password && galData.password.trim() !== '' ? galData.password : null;
-      const pwFile = allFiles.find(f => f.file_path === 'GALLERY_PASSWORD');
-      let activePass = galleryPass || (pwFile ? pwFile.caption : null);
-
-      if (!activePass) {
-          try {
-              const res = await fetch(`/api/gallery/${activeGalleryId}/password`);
-              if (res.ok) {
-                  const sData = await res.json();
-                  if (sData.password && sData.password.trim() !== '') {
-                      activePass = sData.password.trim();
-                  }
-              }
-          } catch (e) {
-              // ignore
-          }
-      }
-
-      if (!activePass) {
-          try {
-              const { data: directPw } = await supabase
-                  .from('files')
-                  .select('caption')
-                  .eq('gallery_id', activeGalleryId)
-                  .eq('file_path', 'GALLERY_PASSWORD')
-                  .maybeSingle();
-              if (directPw && directPw.caption && directPw.caption.trim() !== '') {
-                  activePass = directPw.caption.trim();
-              }
-          } catch (e) {
-              // ignore
-          }
-      }
-
-      if (activePass) {
-          setGalleryPassword(activePass);
-          const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`) || (galleryId ? sessionStorage.getItem(`auth_${galleryId}`) : null);
-          if (savedAuth && savedAuth.trim() === activePass.trim()) {
-              setIsAuthenticated(true);
-          } else {
-              setIsAuthenticated(false);
-          }
-      } else {
-          setIsAuthenticated(true);
-      }
-
-      const isPortfolioGal = Boolean(
-        galData.category && 
-        galData.category.trim() !== "" && 
-        galData.category.toLowerCase().trim() !== "delivery"
-      );
-
-      if (isPortfolioGal) {
-        if (actualFiles.length > 0) {
-          setFiles(actualFiles);
+        if (statusRes && statusRes.ok) {
+          const sJson = await statusRes.json();
+          requiresPassword = Boolean(sJson.requiresPassword);
         } else {
-          const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
-          const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
-            id: `portfolio-${activeGalleryId}-${idx}`,
-            gallery_id: activeGalleryId,
-            file_url: url,
-            file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
-            file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
-            title: `${galData.client_name} ${idx + 1}`,
-            caption: galData.client_name,
-            download_count: 0,
-            is_edited: false,
-            created_at: galData.created_at,
-            expires_at: '2126-10-10T00:00:00.000Z',
-          }));
-          setFiles(syntheticFiles);
-        }
-      } else {
-        if (actualFiles.length === 0) {
-          setError(
-            "This gallery link has expired. Please contact the photographer to request access.",
-          );
-        } else {
-          setFiles(actualFiles);
-        }
-      }
-
-      // Load Selections if enabled
-      if (galData.selection_enabled) {
-        const { data: selectionData } = await supabase
-          .from("selections")
-          .select("file_id, client_note")
-          .eq("gallery_id", activeGalleryId)
-          .order("created_at", { ascending: true }); // Important for counting extras
-
-        if (selectionData) {
-          setSelectedFileIds(new Set(selectionData.map((s) => s.file_id)));
-          const notes: Record<string, string> = {};
-          selectionData.forEach((s) => {
-            if (s.client_note) notes[s.file_id] = s.client_note;
+          // Check via database RPC if available
+          const { data: rpcCheck } = await supabase.rpc('verify_gallery_password', {
+            p_gallery_id: activeGalleryId,
+            p_password: ''
           });
-          setSelectionNotes(notes);
-          if (
-            selectionData.length === 0 &&
-            galData.selection_limit > 0 &&
-            galData.selection_status !== "submitted" &&
-            galData.selection_status !== "completed"
-          ) {
-            setShowWelcomeModal(true);
-          }
-          if (
-            galData.selection_limit > 0 &&
-            selectionData.length >= galData.selection_limit
-          ) {
-            setAcceptedExtras(true); // Don't prompt randomly if they already accepted
+          if (rpcCheck) {
+            requiresPassword = rpcCheck.requires_password !== false;
+          } else {
+            // Defensive check
+            const { data: pwCheck } = await supabase
+              .from("files")
+              .select("id")
+              .eq("gallery_id", activeGalleryId)
+              .eq("file_path", "GALLERY_PASSWORD")
+              .maybeSingle();
+            requiresPassword = Boolean(pwCheck?.id);
           }
         }
+      } catch (e) {
+        console.warn("Password status check error:", e);
       }
+
+      setGalleryPassword(requiresPassword ? 'PROTECTED' : null);
+
+      if (requiresPassword) {
+        const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`) || (galleryId ? sessionStorage.getItem(`auth_${galleryId}`) : null);
+        if (savedAuth) {
+          const verifyResult = await verifyPasswordOnServer(activeGalleryId, savedAuth);
+          if (verifyResult.authorized) {
+            await initAuthenticatedGallery(activeGalleryId, galData);
+            setLoading(false);
+            return;
+          }
+        }
+        // Password required and not yet verified: STOP here. DO NOT load files or private data.
+        setIsAuthenticated(false);
+        setFiles([]);
+        setLoading(false);
+        return;
+      }
+
+      // No password required: initialize authenticated session immediately
+      await initAuthenticatedGallery(activeGalleryId, galData);
     } catch (err) {
       console.error(err);
       setError("Error loading gallery.");
@@ -1469,7 +1508,12 @@ export const ClientGallery: React.FC = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0b0f17]">
+        <Helmet>
+          <title>Client Gallery | Mwabonje</title>
+          <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+          <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+        </Helmet>
         <div className="w-8 h-8 relative flex items-center justify-center">
           <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
           <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
@@ -1479,16 +1523,21 @@ export const ClientGallery: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-        <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0b0f17] p-4 text-center">
+        <Helmet>
+          <title>Client Gallery | Mwabonje</title>
+          <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+          <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+        </Helmet>
+        <div className="bg-white dark:bg-[#151c28] p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 max-w-md w-full">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
             <Clock className="w-8 h-8 text-slate-400" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-3">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
             Gallery Unavailable
           </h1>
-          <p className="text-slate-600 mb-8 leading-relaxed">{error}</p>
-          <div className="pt-6 border-t border-slate-100">
+          <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">{error}</p>
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
             <p className="text-sm text-slate-400">Mwabonje</p>
           </div>
         </div>
@@ -1498,28 +1547,48 @@ export const ClientGallery: React.FC = () => {
 
   if (!isAuthenticated && galleryPassword) {
       return (
-          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0b0f17] p-4 text-center">
+              <Helmet>
+                  <title>Private Client Gallery | Mwabonje</title>
+                  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+                  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+              </Helmet>
+              <div className="bg-white dark:bg-[#151c28] p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 max-w-md w-full">
+                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Lock className="w-8 h-8 text-slate-400" />
                   </div>
-                  <h1 className="text-xl font-bold text-slate-900 mb-3">
+                  <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
                       Protected Gallery
                   </h1>
-                  <p className="text-slate-600 mb-8 leading-relaxed">Please enter the password to view this gallery.</p>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">Please enter the password to view this gallery.</p>
                   
-                  <form onSubmit={(e) => {
+                  <form onSubmit={async (e) => {
                       e.preventDefault();
                       const entered = passwordInput.trim();
-                      const target = (galleryPassword || '').trim();
-                      if (entered && entered === target) {
+                      if (!entered || !gallery?.id) return;
+                      const verifyResult = await verifyPasswordOnServer(gallery.id, entered);
+                      if (verifyResult.authorized) {
                           setIsAuthenticated(true);
-                          if (gallery?.id) {
-                              sessionStorage.setItem(`auth_${gallery.id}`, entered);
-                          }
+                          sessionStorage.setItem(`auth_${gallery.id}`, entered);
                           if (galleryId) {
                               sessionStorage.setItem(`auth_${galleryId}`, entered);
                           }
+                          setPasswordError(false);
+                          setLoading(true);
+
+                          // Run authenticated setup
+                          trackGalleryView(gallery.id, gallery).catch(() => {});
+                          const agreedAmount = gallery.agreed_balance || 0;
+                          const amountPaid = gallery.amount_paid || 0;
+                          if (agreedAmount - amountPaid > 0 && !(gallery.category && gallery.category.trim() !== "")) {
+                            setShowBalanceWarningModal(true);
+                          }
+                          if (gallery.selection_status === "submitted" || gallery.selection_status === "completed") {
+                            setSelectionSubmitted(true);
+                          }
+
+                          await loadGalleryFiles(gallery.id, gallery);
+                          setLoading(false);
                       } else {
                           setPasswordError(true);
                       }
@@ -1533,7 +1602,7 @@ export const ClientGallery: React.FC = () => {
                                   setPasswordInput(e.target.value);
                                   setPasswordError(false);
                               }}
-                              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 ${passwordError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'}`}
+                              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 bg-white dark:bg-slate-900 text-slate-900 dark:text-white ${passwordError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                           />
                           {passwordError && (
                               <p className="text-red-500 text-sm mt-2 text-left">Incorrect password. Please try again.</p>
@@ -1541,7 +1610,7 @@ export const ClientGallery: React.FC = () => {
                       </div>
                       <button 
                           type="submit"
-                          className="w-full bg-slate-900 text-white p-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                          className="w-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 p-3 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
                       >
                           Unlock Gallery
                       </button>
@@ -1559,24 +1628,11 @@ export const ClientGallery: React.FC = () => {
       <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
         <div className="h-full bg-emerald-500 transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }} />
       </div>
-      <SEO 
-        title={gallery ? `${gallery.client_name} | Mwabonje` : "Gallery | Mwabonje"}
-        description={gallery ? `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.` : "Explore professional photography galleries by Mwabonje."}
-        image={(files.length > 0 && files[0].file_url) ? files[0].file_url : `${window.location.origin}/og-image.jpg`}
-        url={window.location.origin + window.location.pathname}
-        type="website"
-        keywords={`photography, gallery, Mwabonje, ${gallery?.client_name || ""}, ${gallery?.category || "portraits"}, professional photographer, visual storytelling`}
-        structuredData={{
-          "@context": "https://schema.org",
-          "@type": "ImageGallery",
-          name: gallery?.client_name || "Gallery",
-          url: window.location.href,
-          author: {
-            "@type": "Person",
-            name: "Mwabonje",
-          },
-        }}
-      />
+      <Helmet>
+        <title>{isAuthenticated ? (gallery?.title || (gallery?.client_name ? `${gallery.client_name} | Client Gallery` : "Client Gallery | Mwabonje")) : "Private Client Gallery | Mwabonje"}</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+      </Helmet>
       {/* Header */}
       <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">

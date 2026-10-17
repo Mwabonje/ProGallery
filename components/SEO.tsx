@@ -4,13 +4,14 @@ import { Helmet } from 'react-helmet-async';
 interface SEOProps {
   title: string;
   description: string;
-  image: string;
+  image?: string;
   url: string;
   type?: 'website' | 'article';
   keywords?: string;
   author?: string;
   publishDate?: string;
   structuredData?: any;
+  noindex?: boolean;
 }
 
 export const SEO: React.FC<SEOProps> = ({
@@ -23,6 +24,7 @@ export const SEO: React.FC<SEOProps> = ({
   author = 'Mwabonje',
   publishDate,
   structuredData: customStructuredData,
+  noindex = false,
 }) => {
   const defaultStructuredData = type === 'article' 
     ? {
@@ -65,29 +67,38 @@ export const SEO: React.FC<SEOProps> = ({
       <title>{title}</title>
       <meta name="description" content={description} />
       {keywords && <meta name="keywords" content={keywords} />}
-      <link rel="canonical" href={url} />
 
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
-      <meta property="og:url" content={url} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      {image && <meta property="og:image" content={image} />}
-      {image && <meta property="og:image:alt" content={title} />}
-      
-      {type === 'article' && publishDate && <meta property="article:published_time" content={publishDate} />}
-      {type === 'article' && author && <meta property="article:author" content={author} />}
+      {noindex ? (
+        <>
+          <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+          <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+        </>
+      ) : (
+        <>
+          <link rel="canonical" href={url} />
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content={type} />
+          <meta property="og:url" content={url} />
+          <meta property="og:title" content={title} />
+          <meta property="og:description" content={description} />
+          {image && <meta property="og:image" content={image} />}
+          {image && <meta property="og:image:alt" content={title} />}
+          
+          {type === 'article' && publishDate && <meta property="article:published_time" content={publishDate} />}
+          {type === 'article' && author && <meta property="article:author" content={author} />}
 
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={url} />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      {image && <meta name="twitter:image" content={image} />}
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={url} />
+          <meta name="twitter:title" content={title} />
+          <meta name="twitter:description" content={description} />
+          {image && <meta name="twitter:image" content={image} />}
 
-      <script type="application/ld+json">
-        {JSON.stringify(finalStructuredData)}
-      </script>
+          <script type="application/ld+json">
+            {JSON.stringify(finalStructuredData)}
+          </script>
+        </>
+      )}
     </Helmet>
   );
 };

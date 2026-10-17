@@ -1,1 +1,7 @@
-/* /index.html 200
+# API proxy to Netlify Functions
+/api/gallery/:id/verify-password  /.netlify/functions/verify-gallery-password?id=:id  200
+/api/gallery/:id/auth-status      /.netlify/functions/verify-gallery-password?id=:id  200
+/api/*                            /.netlify/functions/:splat                          200
+
+# SPA fallback
+/*                               /index.html                                         200

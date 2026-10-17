@@ -17,13 +17,7 @@ async function generateSitemap() {
        blogs = await blogsRes.json();
     }
 
-    const galleriesRes = await fetch(`${SUPABASE_URL}/rest/v1/galleries?select=id,created_at&link_enabled=eq.true`, { headers });
-    let galleries = [];
-    if (galleriesRes.ok) {
-        galleries = await galleriesRes.json();
-    }
-
-    const domain = 'https://mwabonje.netlify.app';
+    const domain = process.env.SITE_URL || 'https://mwabonje.netlify.app';
 
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -33,12 +27,12 @@ async function generateSitemap() {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${domain}/blog</loc>
-    <changefreq>weekly</changefreq>
+    <loc>${domain}/about</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${domain}/prints</loc>
+    <loc>${domain}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -50,16 +44,6 @@ async function generateSitemap() {
     <lastmod>${new Date(blog.date || Date.now()).toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>`;
-    }
-
-    for (const gallery of galleries) {
-      sitemap += `
-  <url>
-    <loc>${domain}/g/${gallery.id}</loc>
-    <lastmod>${new Date(gallery.created_at || Date.now()).toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
   </url>`;
     }
 

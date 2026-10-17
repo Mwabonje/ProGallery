@@ -14,10 +14,10 @@ export default async (request: Request, context: Context) => {
 
   let html = await response.text();
 
-  // Fix canonical URL and og:url for all routes handled by this edge function
-  // This prevents Google Search Console from seeing all pages as duplicates of the homepage
-  const cleanUrl = url.origin + url.pathname;
-  html = html.replace('</head>', `  <link rel="canonical" href="${cleanUrl}" />\n    <meta property="og:url" content="${cleanUrl}" />\n</head>`);
+  const isUUID = /^\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path);
+  const isProtectedAdminRoute = path.startsWith('/dashboard') || path.startsWith('/admin') || path.startsWith('/login');
+  const isPrivateGalleryRoute = path.startsWith('/g/') || path.startsWith('/gallery/') || isUUID;
+  const isBlogRoute = path.startsWith('/blog/');
 
   // @ts-ignore
   const supabaseUrl = Netlify.env.get("VITE_SUPABASE_URL") || "https://bdaqtpyzqutelkdgcoex.supabase.co";
@@ -29,8 +29,14 @@ export default async (request: Request, context: Context) => {
     "Authorization": `Bearer ${supabaseKey}`
   };
 
+  const responseHeaders = new Headers(response.headers);
+
   try {
-    if (path.startsWith('/blog/')) {
+    if (isBlogRoute) {
+      // For public blog routes, inject canonical URL and og:url
+      const cleanUrl = url.origin + url.pathname;
+      html = html.replace('</head>', `  <link rel="canonical" href="${cleanUrl}" />\n    <meta property="og:url" content="${cleanUrl}" />\n</head>`);
+
       const slug = path.split('/').pop();
       const res = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, { headers });
       
@@ -52,45 +58,45 @@ export default async (request: Request, context: Context) => {
           html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
         }
       }
-    } else if (path.startsWith('/g/') || path.startsWith('/gallery/')) {
-      const id = path.split('/').pop();
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id || "");
+    } else if (isPrivateGalleryRoute || isProtectedAdminRoute) {
+      // SECURITY & SEO PROTECTION:
+      // 1. Strictly set X-Robots-Tag response header
+      responseHeaders.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+      responseHeaders.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+
+      // 2. Inject meta robots noindex tags into HTML
+      const robotsTags = `  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />\n  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />\n</head>`;
+      html = html.replace('</head>', robotsTags);
+
+      // 3. Remove any existing canonical URL tags on protected routes
+      html = html.replace(/<link rel="canonical"[^>]*>/g, '');
+
+      // 4. Scrub crawler metadata: do NOT fetch or expose private client names, titles, or private photos
+      const genericTitle = isProtectedAdminRoute 
+        ? (path.startsWith('/login') ? "Photographer Portal | Mwabonje" : "Dashboard | Mwabonje") 
+        : "Private Client Gallery | Mwabonje";
+      const genericDescription = isProtectedAdminRoute 
+        ? "Mwabonje Photographer Portal" 
+        : "Private client delivery gallery.";
       
-      if (isUUID) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/galleries?id=eq.${id}&select=client_name,title&limit=1`, { headers });
-        if (res.ok) {
-          const galleries = await res.json();
-          if (galleries && galleries.length > 0) {
-            const gallery = galleries[0];
-            const title = gallery.title || `${gallery.client_name} Gallery | Mwabonje`;
-            const description = `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`;
-            let image = "https://mwabonje.netlify.app/og-image.jpg";
-
-            // Fetch cover image
-            const filesRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&select=file_url&limit=1&order=expires_at.asc`, { headers });
-            if (filesRes.ok) {
-              const files = await filesRes.json();
-              if (files && files.length > 0 && files[0].file_url) {
-                image = files[0].file_url;
-              }
-            }
-
-            html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
-            html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
-            html = html.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="website" />`);
-            html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
-            html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
-          }
-        }
-      }
+      html = html.replace(/<title>.*?<\/title>/, `<title>${genericTitle}</title>`);
+      html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${genericTitle}" />`);
+      html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${genericDescription}" />`);
+      html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${genericTitle}" />`);
+      html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${genericDescription}" />`);
+      
+      // Remove any OG/Twitter image that might reference private client files
+      html = html.replace(/<meta property="og:image" content=".*?" \/>/, '');
+      html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, '');
     }
   } catch (e) {
     console.error("OG injection error:", e);
   }
 
-  // Return the modified response
-  return new Response(html, response);
+  // Return the modified response with updated headers
+  return new Response(html, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: responseHeaders,
+  });
 };

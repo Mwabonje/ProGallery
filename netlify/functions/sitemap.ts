@@ -15,33 +15,42 @@ export const handler: Handler = async (event) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { data: galleries, error } = await supabase
-      .from("galleries")
-      .select("id, created_at")
-      .eq("link_enabled", true);
+    const { data: blogs, error } = await supabase
+      .from("blogs")
+      .select("slug, date")
+      .order("date", { ascending: false });
 
     if (error) {
-      console.error("Error fetching galleries:", error);
-      return { statusCode: 500, body: "Internal Server Error" };
+      console.error("Error fetching blogs:", error);
     }
 
-    const baseUrl = "https://mwabonje.netlify.app";
+    const baseUrl = process.env.SITE_URL || "https://mwabonje.netlify.app";
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>
-    <changefreq>daily</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-  </url>`;
-
-    galleries?.forEach((gallery) => {
-      xml += `
+  </url>
   <url>
-    <loc>${baseUrl}/g/${gallery.id}</loc>
-    <lastmod>${new Date(gallery.created_at || Date.now()).toISOString()}</lastmod>
+    <loc>${baseUrl}/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>`;
+
+    blogs?.forEach((blog) => {
+      xml += `
+  <url>
+    <loc>${baseUrl}/blog/${blog.slug}</loc>
+    <lastmod>${new Date(blog.date || Date.now()).toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>`;
     });
 

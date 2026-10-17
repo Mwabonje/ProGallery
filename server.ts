@@ -571,10 +571,66 @@ async function startServer() {
     }
   };
 
-  app.get("/api/gallery/:id/password", (req, res) => {
+  // Check if gallery requires password - NEVER returns the plaintext password!
+  app.get("/api/gallery/:id/auth-status", async (req, res) => {
     const { id } = req.params;
     const passwords = readGalleryPasswords();
-    res.json({ password: passwords[id] || null });
+    let hasPassword = Boolean(passwords[id] && passwords[id].trim() !== "");
+    
+    // Fallback check in Supabase files table if not in local json
+    if (!hasPassword && supabaseUrl && supabaseKey) {
+      try {
+        const checkRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&file_path=eq.GALLERY_PASSWORD&select=id&limit=1`, {
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`
+          }
+        });
+        if (checkRes.ok) {
+          const files = await checkRes.json();
+          if (files && files.length > 0) hasPassword = true;
+        }
+      } catch (e) {}
+    }
+    
+    res.json({ requiresPassword: hasPassword });
+  });
+
+  // Verify password securely on the server
+  app.post("/api/gallery/:id/verify-password", async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+    const passwords = readGalleryPasswords();
+    let target = passwords[id] || null;
+
+    if (!target && supabaseUrl && supabaseKey) {
+      try {
+        const checkRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&file_path=eq.GALLERY_PASSWORD&select=caption&limit=1`, {
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`
+          }
+        });
+        if (checkRes.ok) {
+          const files = await checkRes.json();
+          if (files && files.length > 0 && files[0].caption) {
+            target = files[0].caption.trim();
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!target) {
+      // Gallery has no password, access is open
+      return res.json({ success: true, requiresPassword: false });
+    }
+
+    const cleanInput = (password || "").trim();
+    if (cleanInput && cleanInput === target) {
+      return res.json({ success: true, requiresPassword: true });
+    }
+
+    return res.status(401).json({ success: false, error: "Incorrect password" });
   });
 
   app.post("/api/gallery/:id/password", (req, res) => {
@@ -658,16 +714,12 @@ async function startServer() {
         "Authorization": `Bearer ${supabaseKey}`
       };
 
-      const domain = 'https://mwabonje.netlify.app';
+      const domain = process.env.SITE_URL || 'https://mwabonje.netlify.app';
       let blogs = [];
-      let galleries = [];
 
       if (supabaseUrl && supabaseKey) {
         const blogsRes = await fetch(`${supabaseUrl}/rest/v1/blogs?select=slug,date&published=eq.true`, { headers });
         if (blogsRes.ok) blogs = await blogsRes.json();
-
-        const galleriesRes = await fetch(`${supabaseUrl}/rest/v1/galleries?select=id,created_at&link_enabled=eq.true`, { headers });
-        if (galleriesRes.ok) galleries = await galleriesRes.json();
       }
 
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -678,12 +730,12 @@ async function startServer() {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${domain}/blog</loc>
-    <changefreq>weekly</changefreq>
+    <loc>${domain}/about</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${domain}/prints</loc>
+    <loc>${domain}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -698,16 +750,6 @@ async function startServer() {
   </url>`;
       }
 
-      for (const gallery of galleries) {
-        sitemap += `
-  <url>
-    <loc>${domain}/g/${gallery.id}</loc>
-    <lastmod>${new Date(gallery.created_at || Date.now()).toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>`;
-      }
-
       sitemap += `\n</urlset>`;
 
       res.header('Content-Type', 'application/xml');
@@ -718,54 +760,43 @@ async function startServer() {
     }
   });
 
-  app.get(["/g/:id", "/gallery/:id", "/:id"], async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id as string);
-      
-      if (!isUUID) {
+  // SECURITY & SEO PROTECTION: Middleware for gallery and admin routes
+  app.use(async (req, res, next) => {
+    const path = req.path;
+    const isGallery = path.startsWith('/g/') || path.startsWith('/gallery/');
+    const isUUID = /^\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i.test(path);
+    const isAdmin = path.startsWith('/dashboard') || path.startsWith('/admin') || path.startsWith('/login');
+
+    if (isGallery || isUUID || isAdmin) {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+      res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    }
+
+    if (isGallery || isUUID) {
+      // Do not intercept public routes
+      if (path === '/' || path.startsWith('/about') || path.startsWith('/blog') || path.startsWith('/assets') || path.startsWith('/api')) {
         return next();
       }
 
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
-      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
-      
-      let html = await getBaseHtml(req);
-
-      if (supabaseUrl && supabaseKey) {
-        const headers = {
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`
-        };
-
-        const response = await fetch(`${supabaseUrl}/rest/v1/galleries?id=eq.${id}&select=client_name,title&limit=1`, { headers });
+      try {
+        let html = await getBaseHtml(req);
+        const isDisplay = path.includes('/display');
+        const genericTitle = isDisplay ? "Live Display | Mwabonje" : "Private Client Gallery | Mwabonje";
+        const genericDesc = isDisplay ? "Live gallery display." : "Private client delivery gallery.";
         
-        if (response.ok) {
-          const galleries = await response.json();
-          if (galleries && galleries.length > 0) {
-            const gallery = galleries[0];
-            const title = gallery.title || `${gallery.client_name} Gallery | Mwabonje`;
-            const description = `View the ${gallery.client_name} photography gallery by Mwabonje. Discover stunning visual storytelling and beautiful moments.`;
-            let image = "https://mwabonje.netlify.app/og-image.jpg";
+        html = html.replace(/<title>.*?<\/title>/, `<title>${genericTitle}</title>`);
+        html = html.replace(/<link rel="canonical"[^>]*>/g, '');
+        html = html.replace('</head>', `  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />\n  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />\n</head>`);
+        html = injectOGTags(html, genericTitle, genericDesc, "", "website");
 
-            // Fetch cover image from files
-            const filesResponse = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&select=file_url&limit=1&order=expires_at.asc`, { headers });
-            if (filesResponse.ok) {
-              const files = await filesResponse.json();
-              if (files && files.length > 0 && files[0].file_url) {
-                image = files[0].file_url;
-              }
-            }
-
-            html = injectOGTags(html, title, description, image, "website");
-          }
-        }
+        return res.send(html);
+      } catch (err) {
+        console.error("Gallery protection handler error:", err);
+        return next();
       }
-      res.send(html);
-    } catch (err) {
-      console.error("Gallery OG injection error:", err);
-      next();
     }
+
+    next();
   });
 
   app.get("/blog/:slug", async (req, res, next) => {

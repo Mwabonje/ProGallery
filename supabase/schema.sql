@@ -134,11 +134,13 @@ USING (
 -- Public can VIEW/SELECT files only if:
 -- 1. Gallery is enabled
 -- 2. File is NOT expired
+-- 3. File is NOT a password record
 DROP POLICY IF EXISTS "Public can view non-expired files in active galleries" ON public.files;
 CREATE POLICY "Public can view non-expired files in active galleries"
 ON public.files
 FOR SELECT
 USING (
+  file_path != 'GALLERY_PASSWORD' AND
   expires_at > now() AND
   gallery_id IN (
     SELECT id FROM public.galleries WHERE link_enabled = true

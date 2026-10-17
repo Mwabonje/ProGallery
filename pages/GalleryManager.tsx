@@ -9,9 +9,11 @@ import { Gallery, GalleryFile } from '../types';
 import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { generateSlug } from '../utils/slug';
+import { getApiUrl } from '../utils/api';
 import { useUpload } from '../contexts/UploadContext';
 import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
+import { Helmet } from 'react-helmet-async';
 
 export const GalleryManager: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -817,11 +819,9 @@ export const GalleryManager: React.FC = () => {
       const filesToDelete = files.filter(f => checkedFiles.includes(f.id));
       
       // Delete from storage
-      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-      
       const filePaths = filesToDelete.map(f => f.file_path);
       
-      await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
+      await fetch(getApiUrl('/api/delete-file'), {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ filePaths })
@@ -879,8 +879,7 @@ export const GalleryManager: React.FC = () => {
 
     try {
       // Delete from storage
-      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-      await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
+      await fetch(getApiUrl('/api/delete-file'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filePath })
@@ -896,6 +895,11 @@ export const GalleryManager: React.FC = () => {
 
   if (!gallery) return (
       <div className="p-8 flex justify-center items-center h-[50vh]">
+          <Helmet>
+            <title>Gallery Manager | Mwabonje</title>
+            <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+            <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+          </Helmet>
           <div className="w-8 h-8 relative flex items-center justify-center">
               <div className="absolute inset-0 border border-slate-100 rounded-full"></div>
               <div className="absolute inset-0 border border-slate-900 border-r-transparent rounded-full animate-spin"></div>
@@ -921,6 +925,11 @@ export const GalleryManager: React.FC = () => {
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans pb-20 transition-colors duration-300">
+      <Helmet>
+        <title>Gallery Manager | Mwabonje</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+      </Helmet>
       {schemaMissing && (
         <div className="bg-rose-50 dark:bg-rose-950/40 border-l-4 border-rose-500 p-4 rounded text-rose-700 dark:text-rose-300 mb-6 mx-4 md:mx-8 mt-4">
           <h3 className="font-bold text-lg">Database Schema Update Required</h3>

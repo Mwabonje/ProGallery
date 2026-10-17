@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { supabase, supabaseUrl, supabaseKey } from '../services/supabase';
+import { getApiUrl } from '../utils/api';
 import * as tus from 'tus-js-client';
 import exifr from 'exifr';
 
@@ -244,8 +245,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             try {
                 const mimeType = getMimeType(file);
 
-                const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-                const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
+                const apiUrl = getApiUrl('/api/upload-url');
                 
                 // 1. Get Presigned URL from Backend (organized by gallery)
                 const presignRes = await fetch(apiUrl, {
@@ -320,8 +320,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         }
 
                         if (thumbBlob) {
-                            const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-                            const apiUrl = isNetlify ? '/.netlify/functions/upload-url' : '/api/upload-url';
+                            const apiUrl = getApiUrl('/api/upload-url');
                             
                             const cleanBaseName = file.name.replace(/\.[^/.]+$/, "");
                             const thumbPresignRes = await fetch(apiUrl, {

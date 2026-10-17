@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, AlertTriangle, Eye, EyeOff, KeyRound, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Helmet } from 'react-helmet-async';
 
 type AuthView = 'signin' | 'signup' | 'forgot';
 
@@ -146,6 +147,11 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-[#0b0f17] flex flex-col items-center justify-center p-4 transition-colors duration-300 relative">
+      <Helmet>
+        <title>Photographer Portal | Mwabonje</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+      </Helmet>
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
         <ThemeToggle className="text-slate-600 dark:text-amber-300" />
       </div>

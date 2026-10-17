@@ -5,6 +5,7 @@ import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
 import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
+import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
 import { WebsiteSettingsModal } from '../components/WebsiteSettingsModal';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
@@ -14,6 +15,7 @@ import { BlogAdmin } from "./BlogAdmin";
 import { PagesAdmin } from "./PagesAdmin";
 import { BlogAnalytics } from "../components/BlogAnalytics";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Helmet } from 'react-helmet-async';
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -132,14 +134,13 @@ export const Dashboard: React.FC = () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
     setIsPurging(true);
     try {
-      const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
       let success = false;
       let purgedCount = 0;
       let purgedR2Objects = 0;
 
       // 1. Attempt the serverless purge endpoint first
       try {
-        const endpoint = isNetlify ? '/.netlify/functions/purge-expired' : '/api/purge-expired';
+        const endpoint = getApiUrl('/api/purge-expired');
         const res = await fetch(endpoint, { method: 'POST' });
         const contentType = res.headers.get('content-type') || '';
         if (res.ok && contentType.includes('application/json')) {
@@ -191,7 +192,7 @@ export const Dashboard: React.FC = () => {
         // Delete from R2 via delete-file endpoint if paths exist
         if (pathsToDelete.length > 0) {
           try {
-            const delEndpoint = isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file';
+            const delEndpoint = getApiUrl('/api/delete-file');
             await fetch(delEndpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -275,8 +276,7 @@ export const Dashboard: React.FC = () => {
 
   const fetchStorageUsage = async () => {
       try {
-          const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-          const apiUrl = isNetlify ? '/.netlify/functions/storage-usage' : '/api/storage-usage';
+          const apiUrl = getApiUrl('/api/storage-usage');
           const res = await fetch(apiUrl);
           if (res.ok) {
               const data = await res.json();
@@ -313,8 +313,7 @@ export const Dashboard: React.FC = () => {
       // 1.5 Fetch analytics from API
       let analyticsData: any = { galleries: {} };
       try {
-          const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-          const resp = await fetch(isNetlify ? '/.netlify/functions/sys-state' : '/api/sys/state');
+          const resp = await fetch(getApiUrl('/api/sys/state'));
           if (resp.ok) {
               analyticsData = await resp.json();
           }
@@ -539,8 +538,6 @@ export const Dashboard: React.FC = () => {
     }
 
     try {
-        const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-
         // 1. Query all files belonging to this gallery from DB first
         const { data: filesData } = await supabase
             .from('files')
@@ -550,7 +547,7 @@ export const Dashboard: React.FC = () => {
         if (filesData && filesData.length > 0) {
             const paths = filesData.map(f => f.file_path).filter(Boolean);
             if (paths.length > 0) {
-                await fetch(isNetlify ? '/.netlify/functions/delete-file' : '/api/delete-file', {
+                await fetch(getApiUrl('/api/delete-file'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filePaths: paths })
@@ -559,12 +556,12 @@ export const Dashboard: React.FC = () => {
         }
 
         // 2. Delete all files in the gallery folder from Cloudflare R2
-        await fetch(isNetlify ? '/.netlify/functions/delete-folder' : '/api/delete-folder', {
+        await fetch(getApiUrl('/api/delete-folder'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ folderPath: `galleries/${galleryId}` })
         });
-        await fetch(isNetlify ? '/.netlify/functions/delete-folder' : '/api/delete-folder', {
+        await fetch(getApiUrl('/api/delete-folder'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ folderPath: galleryId })
@@ -705,10 +702,24 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-full text-slate-400 dark:text-slate-500 bg-[#F9F9F9] dark:bg-[#0b0f17]"><Loader2 className="animate-spin mr-2" /> Loading dashboard...</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-full text-slate-400 dark:text-slate-500 bg-[#F9F9F9] dark:bg-[#0b0f17]">
+      <Helmet>
+        <title>Dashboard | Mwabonje</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+      </Helmet>
+      <Loader2 className="animate-spin mr-2" /> Loading dashboard...
+    </div>
+  );
 
   return (
     <div className="h-screen w-full flex bg-[#F9F9F9] dark:bg-[#0b0f17] text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300">
+      <Helmet>
+        <title>Dashboard | Mwabonje</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+      </Helmet>
       {/* Dynamic old styles for components that still need them */}
       <style>{`
         .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }

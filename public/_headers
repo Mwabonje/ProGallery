@@ -1,0 +1,42 @@
+# HTTP Security & Robots Headers for Mwabonje Photography
+
+# Private Client Galleries
+/g/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+# Gallery Management & Photographer Portal
+/gallery/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+# Dashboard
+/dashboard
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+/dashboard/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+# Admin & Login
+/admin
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+/admin/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+/login
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+# API & Netlify Functions
+/api/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
+
+/.netlify/functions/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Cache-Control: private, no-cache, no-store, must-revalidate
