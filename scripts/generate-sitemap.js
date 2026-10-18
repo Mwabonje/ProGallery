@@ -32,6 +32,11 @@ async function generateSitemap() {
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>${domain}/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>${domain}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

@@ -77,3 +77,11 @@ export interface BlogPost {
   views?: number;
   clicks?: number;
 }
+
+export interface FAQItem {
+  id: string;
+  category: 'general' | 'weddings' | 'hospitality' | 'delivery' | string;
+  categoryLabel: string;
+  question: string;
+  answer: string;
+}

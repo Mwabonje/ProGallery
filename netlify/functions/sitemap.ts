@@ -39,6 +39,11 @@ export const handler: Handler = async (event) => {
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>${baseUrl}/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>${baseUrl}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

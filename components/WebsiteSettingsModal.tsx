@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
-import { X, Loader2, Image as ImageIcon, Globe, User, Sparkles, Check, ExternalLink } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon, Globe, User, Sparkles, Check, ExternalLink, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUpload } from '../contexts/UploadContext';
 import { AboutSettingsModal } from './AboutSettingsModal';
+import { FAQManagerModal } from './FAQManagerModal';
 
 export interface WebsiteSettingsModalProps {
   onClose: () => void;
   userId: string;
-  initialTab?: 'home' | 'about';
+  initialTab?: 'home' | 'about' | 'faq';
 }
 
 export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
@@ -16,7 +17,7 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
   userId,
   initialTab = 'home',
 }) => {
-  const [mainTab, setMainTab] = useState<'home' | 'about'>(initialTab);
+  const [mainTab, setMainTab] = useState<'home' | 'about' | 'faq'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [galleryId, setGalleryId] = useState<string | null>(null);
@@ -279,6 +280,19 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
             <User className="w-3.5 h-3.5" />
             <span>About Page Content</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setMainTab('faq')}
+            className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
+              mainTab === 'faq'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>FAQ Page Content</span>
+          </button>
         </div>
 
         {/* Tab 1: Home & Branding */}
@@ -513,6 +527,17 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
         {mainTab === 'about' && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             <AboutSettingsModal
+              onClose={onClose}
+              userId={userId}
+              embedded={true}
+            />
+          </div>
+        )}
+
+        {/* Tab 3: FAQ Page Content */}
+        {mainTab === 'faq' && (
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <FAQManagerModal
               onClose={onClose}
               userId={userId}
               embedded={true}

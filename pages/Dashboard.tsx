@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { WebsiteSettingsModal } from '../components/WebsiteSettingsModal';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { HomeSettingsModal } from '../components/HomeSettingsModal';
+import { FAQManagerModal } from '../components/FAQManagerModal';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BlogAdmin } from "./BlogAdmin";
 import { PagesAdmin } from "./PagesAdmin";
@@ -111,6 +112,7 @@ export const Dashboard: React.FC = () => {
   const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'home' | 'about'>('home');
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
+  const [isFaqModalOpen, setIsFaqModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
   const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
@@ -824,6 +826,18 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-[13px] font-medium">Website Settings</span>
               </div>
+
+              <div 
+                onClick={() => {
+                  setIsFaqModalOpen(true);
+                }} 
+                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+              >
+                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-[13px] font-medium">FAQ Manager</span>
+              </div>
             </div>
           </div>
         </div>
@@ -863,10 +877,18 @@ export const Dashboard: React.FC = () => {
                     setWebsiteSettingsTab('home');
                     setIsWebsiteSettingsOpen(true);
                   }}
-                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2"
+                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
                 >
                   <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   <span>Website Settings</span>
+                </button>
+
+                <button 
+                  onClick={() => setIsFaqModalOpen(true)}
+                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                  <span>FAQ Manager</span>
                 </button>
 
                 <button 
@@ -1581,6 +1603,15 @@ export const Dashboard: React.FC = () => {
             setIsHomeModalOpen(false);
             setIsAboutModalOpen(false);
           }} 
+        />
+      )}
+
+      {/* FAQ Manager Modal */}
+      {isFaqModalOpen && userId && (
+        <FAQManagerModal
+          isOpen={isFaqModalOpen}
+          userId={userId}
+          onClose={() => setIsFaqModalOpen(false)}
         />
       )}
     </div>

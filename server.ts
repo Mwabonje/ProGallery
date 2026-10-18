@@ -735,6 +735,11 @@ async function startServer() {
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>${domain}/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>${domain}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -774,7 +779,7 @@ async function startServer() {
 
     if (isGallery || isUUID) {
       // Do not intercept public routes
-      if (path === '/' || path.startsWith('/about') || path.startsWith('/blog') || path.startsWith('/assets') || path.startsWith('/api')) {
+      if (path === '/' || path.startsWith('/about') || path.startsWith('/faq') || path.startsWith('/blog') || path.startsWith('/assets') || path.startsWith('/api')) {
         return next();
       }
 

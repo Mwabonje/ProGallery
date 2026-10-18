@@ -379,6 +379,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             <Link to="/about" className="hover:text-slate-950 dark:hover:text-white transition-colors">
               About
             </Link>
+            <Link to="/faq" className="hover:text-slate-950 dark:hover:text-white transition-colors">
+              FAQ
+            </Link>
           </nav>
 
           {/* Right Action */}
@@ -434,6 +437,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               </Link>
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
                 About
+              </Link>
+              <Link to="/faq" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
+                FAQ
               </Link>
               <div className="py-2 border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Theme</span>
@@ -604,6 +610,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
             <Link to="/about" className="hover:text-white transition-colors">
               About
+            </Link>
+            <Link to="/faq" className="hover:text-white transition-colors">
+              FAQ
             </Link>
             {settings.instagramLink && (
               <a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">

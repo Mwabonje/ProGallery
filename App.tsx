@@ -16,6 +16,7 @@ import { LiveDisplay } from './pages/LiveDisplay';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { About } from './pages/About';
+import { FAQ } from './pages/FAQ';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -130,6 +131,7 @@ const App: React.FC = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
 
             {/* Protected Photographer Routes */}
             <Route path="/dashboard" element={

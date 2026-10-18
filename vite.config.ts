@@ -81,7 +81,11 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
+        },
+        dedupe: ['react', 'react-dom']
+      },
+      optimizeDeps: {
+        include: ['react', 'react-dom', 'react-router-dom', 'react-helmet-async']
       }
     };
 });

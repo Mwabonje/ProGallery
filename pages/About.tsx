@@ -396,6 +396,9 @@ export const About: React.FC = () => {
             >
               About
             </Link>
+            <Link to="/faq" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
+              FAQ
+            </Link>
           </nav>
 
           {/* Right Action Controls */}
@@ -437,6 +440,9 @@ export const About: React.FC = () => {
               </Link>
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 text-slate-950 dark:text-white font-bold">
                 About
+              </Link>
+              <Link to="/faq" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
+                FAQ
               </Link>
               <a 
                 href={settings.contactLink} 
@@ -761,6 +767,9 @@ export const About: React.FC = () => {
             </Link>
             <Link to="/about" className="text-white font-bold border-b border-white py-1">
               About
+            </Link>
+            <Link to="/faq" className="hover:text-white transition-colors py-1">
+              FAQ
             </Link>
             <a 
               href={settings.contactLink} 
