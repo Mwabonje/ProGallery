@@ -304,13 +304,23 @@ export const Dashboard: React.FC = () => {
       setUserEmail(user.email ?? null);
 
       // 1. Fetch Galleries
-      const { data: galleriesData, error } = await supabase
+      const { data: rawGalleriesData, error } = await supabase
         .from('galleries')
         .select('*')
         .eq('photographer_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Filter out system configuration records from client galleries list
+      const galleriesData = (rawGalleriesData || []).filter(g => 
+        g.category !== 'SETTINGS' && 
+        g.category !== 'ABOUT' && 
+        g.category !== 'FAQ' &&
+        g.client_name !== '__FAQ__' &&
+        g.client_name !== '__ABOUT__' &&
+        g.client_name !== 'SITE_SETTINGS'
+      );
 
       // 1.5 Fetch analytics from API
       let analyticsData: any = { galleries: {} };

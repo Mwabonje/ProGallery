@@ -237,19 +237,32 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         // 3. Filter portfolio items for display
         let allGalleries = [...rawGalleries];
         if (!photographerId && allGalleries.length > 0) {
-          const mostRecentPortfolio = allGalleries.find(g => g.category && g.category.trim() !== '' && g.category !== 'SETTINGS' && g.category !== 'ABOUT');
+          const mostRecentPortfolio = allGalleries.find(g => 
+            g.category && 
+            g.category.trim() !== '' && 
+            g.category !== 'SETTINGS' && 
+            g.category !== 'ABOUT' &&
+            g.category !== 'FAQ' &&
+            g.client_name !== '__FAQ__' &&
+            g.client_name !== '__ABOUT__' &&
+            g.client_name !== 'SITE_SETTINGS'
+          );
           if (mostRecentPortfolio) {
             allGalleries = allGalleries.filter(g => g.photographer_id === mostRecentPortfolio.photographer_id);
           }
         }
 
-        // 3. Portfolio items - strictly exclude delivery galleries
+        // 3. Portfolio items - strictly exclude delivery galleries and system configuration records
         const rawPortfolioItems = allGalleries.filter(
           g => g.category && 
                g.category.trim() !== '' && 
                g.category.toLowerCase() !== 'delivery' &&
                g.category !== 'SETTINGS' && 
-               g.category !== 'ABOUT'
+               g.category !== 'ABOUT' &&
+               g.category !== 'FAQ' &&
+               g.client_name !== '__FAQ__' &&
+               g.client_name !== '__ABOUT__' &&
+               g.client_name !== 'SITE_SETTINGS'
         );
 
         const sortedItems = [...rawPortfolioItems].sort((a, b) => {
