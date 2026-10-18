@@ -13,10 +13,26 @@ import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { SEO } from '../components/SEO';
 import { FAQItem } from '../types';
-import { DEFAULT_FAQ_DATA, FAQ_CATEGORY_OPTIONS } from '../utils/defaultFaqs';
+import { 
+  DEFAULT_FAQ_DATA, 
+  FAQ_CATEGORY_OPTIONS,
+  DEFAULT_FAQ_HEADER_EYEBROW,
+  DEFAULT_FAQ_HEADER_TITLE,
+  DEFAULT_FAQ_HEADER_SUBTITLE,
+  DEFAULT_FAQ_CTA_EYEBROW,
+  DEFAULT_FAQ_CTA_TITLE,
+  DEFAULT_FAQ_CTA_SUBTITLE
+} from '../utils/defaultFaqs';
 
 export const FAQ: React.FC = () => {
   const [faqs, setFaqs] = useState<FAQItem[]>(DEFAULT_FAQ_DATA);
+  const [headerEyebrow, setHeaderEyebrow] = useState(DEFAULT_FAQ_HEADER_EYEBROW);
+  const [headerTitle, setHeaderTitle] = useState(DEFAULT_FAQ_HEADER_TITLE);
+  const [headerSubtitle, setHeaderSubtitle] = useState(DEFAULT_FAQ_HEADER_SUBTITLE);
+  const [ctaEyebrow, setCtaEyebrow] = useState(DEFAULT_FAQ_CTA_EYEBROW);
+  const [ctaTitle, setCtaTitle] = useState(DEFAULT_FAQ_CTA_TITLE);
+  const [ctaSubtitle, setCtaSubtitle] = useState(DEFAULT_FAQ_CTA_SUBTITLE);
+
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedId, setExpandedId] = useState<string | null>(DEFAULT_FAQ_DATA[0]?.id || null);
@@ -55,7 +71,7 @@ export const FAQ: React.FC = () => {
         }
       });
 
-    // 2. Fetch custom edited FAQs from dashboard
+    // 2. Fetch custom edited FAQs and Header from dashboard
     supabase
       .from('galleries')
       .select('title')
@@ -73,6 +89,19 @@ export const FAQ: React.FC = () => {
               if (parsed[0]?.id) {
                 setExpandedId(parsed[0].id);
               }
+            } else if (parsed && typeof parsed === 'object') {
+              if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+                setFaqs(parsed.items);
+                if (parsed.items[0]?.id) {
+                  setExpandedId(parsed.items[0].id);
+                }
+              }
+              if (parsed.headerEyebrow) setHeaderEyebrow(parsed.headerEyebrow);
+              if (parsed.headerTitle) setHeaderTitle(parsed.headerTitle);
+              if (parsed.headerSubtitle) setHeaderSubtitle(parsed.headerSubtitle);
+              if (parsed.ctaEyebrow) setCtaEyebrow(parsed.ctaEyebrow);
+              if (parsed.ctaTitle) setCtaTitle(parsed.ctaTitle);
+              if (parsed.ctaSubtitle) setCtaSubtitle(parsed.ctaSubtitle);
             }
           } catch (e) {}
         }
@@ -137,8 +166,8 @@ export const FAQ: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <SEO 
-        title={`Frequently Asked Questions | ${settings.brandName} Photography & Film`}
-        description="Everything you need to know about booking, destination weddings, hospitality briefs, client gallery delivery, and travel with Mwabonje Photography in Kenya."
+        title={`${headerTitle} | ${settings.brandName} Photography & Film`}
+        description={headerSubtitle}
         url="https://mwabonje.co.ke/faq"
         type="website"
         structuredData={faqSchema}
@@ -232,17 +261,21 @@ export const FAQ: React.FC = () => {
         )}
       </header>
 
-      {/* Hero Header */}
+      {/* Hero Header (Fully Editable via Dashboard) */}
       <section className="relative pt-12 sm:pt-16 md:pt-20 pb-10 sm:pb-12 px-4 sm:px-6 md:px-12 text-center max-w-4xl mx-auto">
-        <span className="text-[11px] sm:text-xs uppercase tracking-[0.28em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
-          Frequently Asked Questions
-        </span>
+        {headerEyebrow && (
+          <span className="text-[11px] sm:text-xs uppercase tracking-[0.28em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
+            {headerEyebrow}
+          </span>
+        )}
         <h1 className="font-editorial text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal leading-tight text-slate-900 dark:text-white">
-          Everything You Need to Know
+          {headerTitle}
         </h1>
-        <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed max-w-2xl mx-auto">
-          From destination wedding timelines and lodge commissions to client delivery galleries and travel across East Africa, here are answers to our most common questions.
-        </p>
+        {headerSubtitle && (
+          <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 font-light leading-relaxed max-w-2xl mx-auto">
+            {headerSubtitle}
+          </p>
+        )}
 
         {/* Live Search Input */}
         <div className="mt-8 sm:mt-10 max-w-xl mx-auto relative">
@@ -357,18 +390,22 @@ export const FAQ: React.FC = () => {
           </div>
         )}
 
-        {/* Still Have Questions CTA */}
+        {/* Still Have Questions CTA (Editable via Dashboard) */}
         <div className="mt-14 sm:mt-18 p-8 sm:p-10 md:p-12 rounded-3xl bg-slate-900 dark:bg-slate-900/90 text-white border border-slate-800 shadow-2xl text-center relative overflow-hidden">
           <div className="max-w-xl mx-auto space-y-3 sm:space-y-4 relative z-10">
-            <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-slate-400 block">
-              Have a Custom Brief or Date?
-            </span>
+            {ctaEyebrow && (
+              <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-slate-400 block">
+                {ctaEyebrow}
+              </span>
+            )}
             <h2 className="font-editorial text-2xl sm:text-3xl md:text-4xl font-normal leading-tight">
-              Let's Discuss Your Story
+              {ctaTitle}
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm font-light leading-relaxed">
-              Every celebration, lodge commission, and visual narrative is unique. Connect with us directly for bespoke project rates, customized itineraries, and date holds.
-            </p>
+            {ctaSubtitle && (
+              <p className="text-slate-300 text-xs sm:text-sm font-light leading-relaxed">
+                {ctaSubtitle}
+              </p>
+            )}
 
             <div className="pt-4 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
               <a

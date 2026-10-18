@@ -122,3 +122,22 @@ export const FAQ_CATEGORY_OPTIONS = [
   { id: 'delivery', label: 'Deliverables & Galleries' },
   { id: 'other', label: 'Other & Miscellaneous' }
 ];
+
+export const DEFAULT_FAQ_HEADER_EYEBROW = 'FREQUENTLY ASKED QUESTIONS';
+export const DEFAULT_FAQ_HEADER_TITLE = 'Everything You Need to Know';
+export const DEFAULT_FAQ_HEADER_SUBTITLE = 'From destination wedding timelines and lodge commissions to client delivery galleries and travel across East Africa, here are answers to our most common questions.';
+
+export const DEFAULT_FAQ_CTA_EYEBROW = 'Have a Custom Brief or Date?';
+export const DEFAULT_FAQ_CTA_TITLE = "Let's Discuss Your Story";
+export const DEFAULT_FAQ_CTA_SUBTITLE = 'Every celebration, lodge commission, and visual narrative is unique. Connect with us directly for bespoke project rates, customized itineraries, and date holds.';
+
+export interface FAQPayload {
+  headerEyebrow?: string;
+  headerTitle?: string;
+  headerSubtitle?: string;
+  ctaEyebrow?: string;
+  ctaTitle?: string;
+  ctaSubtitle?: string;
+  items: FAQItem[];
+}
+
