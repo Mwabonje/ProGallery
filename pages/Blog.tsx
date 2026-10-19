@@ -12,7 +12,7 @@ export const Blog: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const pageTitle = "Blog | Mwabonje - Photography Insights & Stories";
   const pageDescription = "Explore the latest insights, stories, and tips on hospitality photography, portraits, and documentary visual storytelling by Mwabonje.";
-  const pageUrl = `${window.location.origin}/blog`;
+  const pageUrl = "https://mwabonje.co.ke/blog";
 
   useEffect(() => {
     fetchPosts();
@@ -67,13 +67,14 @@ export const Blog: React.FC = () => {
         <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={pageUrl} />
-        {posts.length > 0 && <meta property="og:image" content={posts[0].cover_image} />}
+        <meta property="og:image" content={posts.length > 0 && posts[0].cover_image ? posts[0].cover_image : "https://mwabonje.co.ke/og-image.jpg"} />
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={pageUrl} />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />
-        {posts.length > 0 && <meta name="twitter:image" content={posts[0].cover_image} />}
+        <meta name="twitter:image" content={posts.length > 0 && posts[0].cover_image ? posts[0].cover_image : "https://mwabonje.co.ke/og-image.jpg"} />
 
         {/* Structured Data (JSON-LD) for Blog */}
         <script type="application/ld+json">
@@ -88,7 +89,7 @@ export const Blog: React.FC = () => {
               "name": "Mwabonje",
               "logo": {
                 "@type": "ImageObject",
-                "url": `${window.location.origin}/og-image.jpg`
+                "url": "https://mwabonje.co.ke/og-image.jpg"
               }
             },
             "blogPost": posts.map(post => ({
@@ -101,7 +102,7 @@ export const Blog: React.FC = () => {
                 "@type": "Person",
                 "name": post.author
               },
-              "url": `${window.location.origin}/blog/${post.slug}`
+              "url": `https://mwabonje.co.ke/blog/${post.slug}`
             }))
           })}
         </script>

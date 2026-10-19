@@ -670,6 +670,19 @@ async function startServer() {
 
   app.use(galleryLimiter);
 
+  // 301 Permanent Redirect from legacy Netlify hostname to canonical domain
+  app.use((req, res, next) => {
+    const host = (req.headers.host || '').toLowerCase();
+    if (host.includes('mwabonje.netlify.app')) {
+      // Preserve API endpoints and Netlify functions without disrupting client calls
+      if (req.path.startsWith('/api') || req.path.startsWith('/.netlify')) {
+        return next();
+      }
+      return res.redirect(301, `https://mwabonje.co.ke${req.originalUrl}`);
+    }
+    next();
+  });
+
   // --- VITE FRONTEND MIDDLEWARE & OG TAG INJECTION ---
   let vite: any = null;
   if (process.env.NODE_ENV !== "production") {
@@ -679,7 +692,7 @@ async function startServer() {
     });
   }
 
-  const injectOGTags = (html: string, title: string, description: string, image: string, type: string = "website") => {
+  const injectOGTags = (html: string, title: string, description: string, image: string, type: string = "website", canonicalUrl?: string) => {
     let newHtml = html;
     newHtml = newHtml.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
     newHtml = newHtml.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
@@ -690,6 +703,23 @@ async function startServer() {
     newHtml = newHtml.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
     newHtml = newHtml.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
     newHtml = newHtml.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
+
+    if (canonicalUrl) {
+      if (newHtml.includes('<link rel="canonical"')) {
+        newHtml = newHtml.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${canonicalUrl}" />`);
+      } else {
+        newHtml = newHtml.replace('</head>', `  <link rel="canonical" href="${canonicalUrl}" />\n</head>`);
+      }
+      if (newHtml.includes('<meta property="og:url"')) {
+        newHtml = newHtml.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${canonicalUrl}" />`);
+      } else {
+        newHtml = newHtml.replace('</head>', `  <meta property="og:url" content="${canonicalUrl}" />\n</head>`);
+      }
+      if (newHtml.includes('<meta name="twitter:url"')) {
+        newHtml = newHtml.replace(/<meta name="twitter:url"[^>]*>/, `<meta name="twitter:url" content="${canonicalUrl}" />`);
+      }
+    }
+
     return newHtml;
   };
 
@@ -714,7 +744,9 @@ async function startServer() {
         "Authorization": `Bearer ${supabaseKey}`
       };
 
-      const domain = process.env.SITE_URL || 'https://mwabonje.netlify.app';
+      const domain = (process.env.SITE_URL && !process.env.SITE_URL.includes('netlify.app')) 
+        ? process.env.SITE_URL 
+        : 'https://mwabonje.co.ke';
       let blogs = [];
 
       if (supabaseUrl && supabaseKey) {
@@ -826,9 +858,10 @@ async function startServer() {
             const post = posts[0];
             const title = `${post.title} | Mwabonje`;
             const description = post.excerpt || "";
-            const image = post.cover_image || "https://mwabonje.netlify.app/og-image.jpg";
+            const image = post.cover_image || "https://mwabonje.co.ke/og-image.jpg";
+            const canonicalUrl = `https://mwabonje.co.ke/blog/${slug}`;
             
-            html = injectOGTags(html, title, description, image, "article");
+            html = injectOGTags(html, title, description, image, "article", canonicalUrl);
           }
         }
       }

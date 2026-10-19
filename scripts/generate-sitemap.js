@@ -17,7 +17,9 @@ async function generateSitemap() {
        blogs = await blogsRes.json();
     }
 
-    const domain = process.env.SITE_URL || 'https://mwabonje.netlify.app';
+    const domain = (process.env.SITE_URL && !process.env.SITE_URL.includes('netlify.app')) 
+      ? process.env.SITE_URL 
+      : 'https://mwabonje.co.ke';
 
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -27,6 +27,19 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Canonical domain migration: 301 redirects from legacy Netlify hostname to custom domain
+[[redirects]]
+  from = "http://mwabonje.netlify.app/*"
+  to = "https://mwabonje.co.ke/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://mwabonje.netlify.app/*"
+  to = "https://mwabonje.co.ke/:splat"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

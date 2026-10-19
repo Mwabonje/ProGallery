@@ -352,6 +352,17 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       <Helmet>
         <title>{settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast</title>
         <meta name="description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <link rel="canonical" href="https://mwabonje.co.ke/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://mwabonje.co.ke/" />
+        <meta property="og:title" content={`${settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast`} />
+        <meta property="og:description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <meta property="og:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://mwabonje.co.ke/" />
+        <meta name="twitter:title" content={`${settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast`} />
+        <meta name="twitter:description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <meta name="twitter:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
       </Helmet>
 
       {/* Modern Editorial Header */}

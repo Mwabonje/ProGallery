@@ -4,6 +4,11 @@ export default async (request: Request, context: Context) => {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  // Canonical Domain Consolidation: 301 redirect legacy netlify hostname to mwabonje.co.ke
+  if (url.hostname.includes("mwabonje.netlify.app")) {
+    return Response.redirect(`https://mwabonje.co.ke${path}${url.search}`, 301);
+  }
+
   // Fetch the original HTML response
   const response = await context.next();
   // Ensure we only process HTML responses
@@ -33,9 +38,19 @@ export default async (request: Request, context: Context) => {
 
   try {
     if (isBlogRoute) {
-      // For public blog routes, inject canonical URL and og:url
-      const cleanUrl = url.origin + url.pathname;
-      html = html.replace('</head>', `  <link rel="canonical" href="${cleanUrl}" />\n    <meta property="og:url" content="${cleanUrl}" />\n</head>`);
+      // For public blog routes, inject canonical URL and og:url on preferred origin
+      const canonicalOrigin = "https://mwabonje.co.ke";
+      const canonicalUrl = `${canonicalOrigin}${path}`;
+      if (html.includes('<link rel="canonical"')) {
+        html = html.replace(/<link rel="canonical"[^>]*>/, `  <link rel="canonical" href="${canonicalUrl}" />`);
+      } else {
+        html = html.replace('</head>', `  <link rel="canonical" href="${canonicalUrl}" />\n</head>`);
+      }
+      if (html.includes('<meta property="og:url"')) {
+        html = html.replace(/<meta property="og:url"[^>]*>/, `  <meta property="og:url" content="${canonicalUrl}" />`);
+      } else {
+        html = html.replace('</head>', `  <meta property="og:url" content="${canonicalUrl}" />\n</head>`);
+      }
 
       const slug = path.split('/').pop();
       const res = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, { headers });
@@ -46,7 +61,7 @@ export default async (request: Request, context: Context) => {
           const post = posts[0];
           const title = `${post.title} | Mwabonje`;
           const description = post.excerpt || "";
-          const image = post.cover_image || "https://mwabonje.netlify.app/og-image.jpg";
+          const image = post.cover_image || "https://mwabonje.co.ke/og-image.jpg";
           
           html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
           html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);

@@ -26,30 +26,49 @@ export const SEO: React.FC<SEOProps> = ({
   structuredData: customStructuredData,
   noindex = false,
 }) => {
+  // Enforce canonical domain migration: always resolve to absolute HTTPS on mwabonje.co.ke
+  const canonicalUrl = (() => {
+    if (!url) return 'https://mwabonje.co.ke/';
+    try {
+      if (url.startsWith('/')) {
+        return `https://mwabonje.co.ke${url === '/' ? '/' : url.replace(/\/$/, '')}`;
+      }
+      const parsed = new URL(url);
+      const pathname = parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/$/, '');
+      return `https://mwabonje.co.ke${pathname}${parsed.search}`;
+    } catch {
+      return 'https://mwabonje.co.ke/';
+    }
+  })();
+
+  const resolvedImage = image 
+    ? (image.startsWith('/') ? `https://mwabonje.co.ke${image}` : image)
+    : "https://mwabonje.co.ke/og-image.jpg";
+
   const defaultStructuredData = type === 'article' 
     ? {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         "headline": title,
-        "image": image ? [image] : [],
+        "image": resolvedImage ? [resolvedImage] : [],
         "datePublished": publishDate,
         "author": {
             "@type": "Person",
             "name": author,
-            "url": "https://mwabonje.netlify.app"
+            "url": "https://mwabonje.co.ke"
         },
         "publisher": {
           "@type": "Organization",
           "name": "Mwabonje",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://mwabonje.netlify.app/og-image.jpg"
+            "url": "https://mwabonje.co.ke/og-image.jpg"
           }
         },
         "description": description,
         "mainEntityOfPage": {
           "@type": "WebPage",
-          "@id": url
+          "@id": canonicalUrl
         }
       }
     : {
@@ -57,7 +76,8 @@ export const SEO: React.FC<SEOProps> = ({
         "@type": "WebPage",
         "name": title,
         "description": description,
-        "image": image
+        "url": canonicalUrl,
+        "image": resolvedImage
       };
 
   const finalStructuredData = customStructuredData || defaultStructuredData;
@@ -75,24 +95,24 @@ export const SEO: React.FC<SEOProps> = ({
         </>
       ) : (
         <>
-          <link rel="canonical" href={url} />
+          <link rel="canonical" href={canonicalUrl} />
           {/* Open Graph / Facebook */}
           <meta property="og:type" content={type} />
-          <meta property="og:url" content={url} />
+          <meta property="og:url" content={canonicalUrl} />
           <meta property="og:title" content={title} />
           <meta property="og:description" content={description} />
-          {image && <meta property="og:image" content={image} />}
-          {image && <meta property="og:image:alt" content={title} />}
+          {resolvedImage && <meta property="og:image" content={resolvedImage} />}
+          {resolvedImage && <meta property="og:image:alt" content={title} />}
           
           {type === 'article' && publishDate && <meta property="article:published_time" content={publishDate} />}
           {type === 'article' && author && <meta property="article:author" content={author} />}
 
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:url" content={url} />
+          <meta name="twitter:url" content={canonicalUrl} />
           <meta name="twitter:title" content={title} />
           <meta name="twitter:description" content={description} />
-          {image && <meta name="twitter:image" content={image} />}
+          {resolvedImage && <meta name="twitter:image" content={resolvedImage} />}
 
           <script type="application/ld+json">
             {JSON.stringify(finalStructuredData)}

@@ -711,8 +711,11 @@ export const GalleryManager: React.FC = () => {
   const handleCopyLink = async () => {
     if (!gallery) return;
     const slug = generateSlug(gallery.client_name);
-    // If it's the netlify app domain, just use the origin + slug.
-    const url = `${window.location.origin}/${slug}`;
+    // Consolidate on canonical domain if accessed via legacy netlify subdomain
+    const origin = window.location.hostname.includes('netlify.app')
+      ? 'https://mwabonje.co.ke'
+      : window.location.origin;
+    const url = `${origin}/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);

@@ -3,5 +3,9 @@
 /api/gallery/:id/auth-status      /.netlify/functions/verify-gallery-password?id=:id  200
 /api/*                            /.netlify/functions/:splat                          200
 
+# Canonical domain migration: 301 redirects from legacy Netlify hostname to custom domain
+http://mwabonje.netlify.app/*     https://mwabonje.co.ke/:splat                       301!
+https://mwabonje.netlify.app/*    https://mwabonje.co.ke/:splat                       301!
+
 # SPA fallback
 /*                               /index.html                                         200

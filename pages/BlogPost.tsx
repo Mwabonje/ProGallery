@@ -111,7 +111,7 @@ export const BlogPost: React.FC = () => {
   if (!post) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0b0f17] flex flex-col items-center justify-center p-8 transition-colors duration-300">
-        <SEO title="Post Not Found | Mwabonje" description="Post not found" image={`${window.location.origin}/og-image.jpg`} url={window.location.origin} />
+        <SEO title="Post Not Found | Mwabonje" description="Post not found" noindex={true} url="https://mwabonje.co.ke/blog" />
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-4">Post not found</h1>
         <button onClick={() => navigate('/blog')} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-b border-slate-300 dark:border-slate-700 pb-1">
           Return to Blog
@@ -120,7 +120,7 @@ export const BlogPost: React.FC = () => {
     );
   }
 
-  const pageUrl = `${window.location.origin}/blog/${post.slug}`;
+  const pageUrl = `https://mwabonje.co.ke/blog/${post.slug}`;
   const pageTitle = post.seo_title ? `${post.seo_title} | Mwabonje Blog` : `${post.title} | Mwabonje Blog`;
   const seoDescription = post.seo_description || post.excerpt;
 
@@ -129,7 +129,7 @@ export const BlogPost: React.FC = () => {
       <SEO 
         title={pageTitle}
         description={seoDescription}
-        image={post.cover_image || `${window.location.origin}/og-image.jpg`}
+        image={post.cover_image || "https://mwabonje.co.ke/og-image.jpg"}
         url={pageUrl}
         type="article"
         keywords={post.tags?.join(', ')}

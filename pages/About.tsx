@@ -368,6 +368,17 @@ export const About: React.FC = () => {
       <Helmet>
         <title>About — {pageHeaderTitle || settings.brandName} | Visual Storyteller & Lifestyle Photographer</title>
         <meta name="description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
+        <link rel="canonical" href="https://mwabonje.co.ke/about" />
+        <meta property="og:type" content="profile" />
+        <meta property="og:url" content="https://mwabonje.co.ke/about" />
+        <meta property="og:title" content={`About — ${pageHeaderTitle || settings.brandName} | Visual Storyteller`} />
+        <meta property="og:description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
+        <meta property="og:image" content={aboutImageUrl || "https://mwabonje.co.ke/og-image.jpg"} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://mwabonje.co.ke/about" />
+        <meta name="twitter:title" content={`About — ${pageHeaderTitle || settings.brandName} | Visual Storyteller`} />
+        <meta name="twitter:description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
+        <meta name="twitter:image" content={aboutImageUrl || "https://mwabonje.co.ke/og-image.jpg"} />
       </Helmet>
 
       {/* Navigation Header */}
