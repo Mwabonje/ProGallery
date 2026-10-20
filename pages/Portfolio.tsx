@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { Gallery } from '../types';
+import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../types';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
@@ -137,7 +137,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     whatsappLink: "https://wa.me/254705268604",
     footerEmail: "hello@mwabonje.studio",
     instagramLink: "https://www.instagram.com/mwabonje_/",
-    tiktokLink: "https://www.tiktok.com/@mwabonje_"
+    tiktokLink: "https://www.tiktok.com/@mwabonje_",
+    servicesSection: DEFAULT_SERVICES_SECTION as ServicesSectionConfig | undefined
   });
 
   const selectedCategory = searchParams.get('category') || 'ALL';
@@ -634,97 +635,114 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       </section>
 
       {/* Services & Coastal Storytelling Overview Section */}
-      <section className="py-20 md:py-28 px-6 md:px-12 bg-white/70 dark:bg-slate-900/60 border-t border-slate-200/60 dark:border-slate-800 transition-colors">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-16">
-            <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
-              Studio Offerings · Malindi, Kilifi County &amp; Kenyan Coast
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
-              Photography Services &amp; Visual Storytelling Across the Coast
-            </h2>
-            <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg font-light leading-relaxed">
-              Based in Malindi, Mwabonje Photography documents intimate weddings, architectural hospitality retreats, and authentic lifestyle portraits across Malindi, Watamu, Kilifi, and Lamu Island.
-            </p>
-          </div>
+      {(() => {
+        const servicesConfig: ServicesSectionConfig = {
+          ...DEFAULT_SERVICES_SECTION,
+          ...(settings.servicesSection || {}),
+          services: (settings.servicesSection?.services && Array.isArray(settings.servicesSection.services) && settings.servicesSection.services.length > 0)
+            ? settings.servicesSection.services
+            : DEFAULT_SERVICES_SECTION.services
+        };
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
-            {/* Service 1: Weddings */}
-            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
-              <div>
-                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">01</span>
-                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
-                  Wedding Photographer in Malindi &amp; Watamu
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
-                  Documenting barefoot beach ceremonies, sunset vows, and intimate coastal celebrations with natural documentary light, quiet elegance, and authentic emotion.
-                </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
-                <Link to="/blog" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
-                  Wedding Guides <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
+        if (servicesConfig.showSection === false) {
+          return null;
+        }
 
-            {/* Service 2: Hospitality */}
-            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
-              <div>
-                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">02</span>
-                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
-                  Hospitality &amp; Architectural Photography
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
-                  Editorial visual narratives for boutique hotels, private oceanfront villas, and design retreats along the Kenyan coast, highlighting light, texture, and living spaces.
-                </p>
+        return (
+          <section className="py-20 md:py-28 px-6 md:px-12 bg-white/70 dark:bg-slate-900/60 border-t border-slate-200/60 dark:border-slate-800 transition-colors">
+            <div className="max-w-7xl mx-auto">
+              <div className="max-w-3xl mb-16">
+                {servicesConfig.eyebrow && (
+                  <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
+                    {servicesConfig.eyebrow}
+                  </span>
+                )}
+                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
+                  {servicesConfig.title}
+                </h2>
+                {servicesConfig.subtitle && (
+                  <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg font-light leading-relaxed">
+                    {servicesConfig.subtitle}
+                  </p>
+                )}
               </div>
-              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
-                <Link to="/about" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
-                  About the Studio <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
 
-            {/* Service 3: Lifestyle & Portraits */}
-            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
-              <div>
-                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">03</span>
-                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
-                  Portrait &amp; Lifestyle Photography in Malindi
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
-                  Personal branding, creative editorial portraits, and documentary sessions set against the coral shores of Watamu, golden dunes, and historic Lamu Island.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+                {servicesConfig.services.map((service, index) => {
+                  const isInternal = service.linkUrl?.startsWith('/') && !service.linkUrl?.startsWith('//');
+                  return (
+                    <div 
+                      key={service.id || index}
+                      className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md"
+                    >
+                      <div>
+                        <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">
+                          {service.number || String(index + 1).padStart(2, '0')}
+                        </span>
+                        <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
+                          {service.title}
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
+                          {service.description}
+                        </p>
+                      </div>
+                      {service.linkText && service.linkUrl && (
+                        <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                          {isInternal ? (
+                            <Link 
+                              to={service.linkUrl} 
+                              className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5"
+                            >
+                              {service.linkText} <ArrowUpRight className="w-3.5 h-3.5" />
+                            </Link>
+                          ) : (
+                            <a 
+                              href={service.linkUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5"
+                            >
+                              {service.linkText} <ArrowUpRight className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
-                <Link to="/faq" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
-                  Session FAQ <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
 
-          {/* Connected Internal Exploration & Call to Action */}
-          <div className="mt-16 p-8 md:p-10 rounded-2xl bg-slate-900 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-            <div className="text-center md:text-left">
-              <h3 className="font-serif text-2xl md:text-3xl font-normal mb-2 text-white">
-                Planning a shoot or celebrating on the coast?
-              </h3>
-              <p className="text-slate-300 text-sm font-light max-w-xl">
-                Read our client <Link to="/faq" className="underline underline-offset-4 hover:text-white">FAQ</Link>, learn about <Link to="/about" className="underline underline-offset-4 hover:text-white">our creative vision</Link>, or explore coastal guides in our <Link to="/blog" className="underline underline-offset-4 hover:text-white">Journal</Link>.
-              </p>
+              {/* Connected Internal Exploration & Call to Action */}
+              {servicesConfig.showCta !== false && (
+                <div className="mt-16 p-8 md:p-10 rounded-2xl bg-slate-900 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                  <div className="text-center md:text-left">
+                    <h3 className="font-serif text-2xl md:text-3xl font-normal mb-2 text-white">
+                      {servicesConfig.ctaTitle}
+                    </h3>
+                    <p className="text-slate-300 text-sm font-light max-w-xl">
+                      {servicesConfig.ctaSubtitle === "Read our client FAQ, learn about our creative vision, or explore coastal guides in our Journal." ? (
+                        <>
+                          Read our client <Link to="/faq" className="underline underline-offset-4 hover:text-white">FAQ</Link>, learn about <Link to="/about" className="underline underline-offset-4 hover:text-white">our creative vision</Link>, or explore coastal guides in our <Link to="/blog" className="underline underline-offset-4 hover:text-white">Journal</Link>.
+                        </>
+                      ) : (
+                        servicesConfig.ctaSubtitle
+                      )}
+                    </p>
+                  </div>
+                  <a 
+                    href={servicesConfig.ctaButtonLink || settings.contactLink} 
+                    target={servicesConfig.ctaButtonLink?.startsWith('/') ? '_self' : '_blank'} 
+                    rel="noopener noreferrer"
+                    className="shrink-0 inline-flex items-center justify-center px-8 py-3.5 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
+                  >
+                    {servicesConfig.ctaButtonText || "Enquire About a Session"}
+                  </a>
+                </div>
+              )}
             </div>
-            <a 
-              href={settings.contactLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="shrink-0 inline-flex items-center justify-center px-8 py-3.5 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
-            >
-              Enquire About a Session
-            </a>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* Editorial Footer */}
       <footer className="bg-slate-950 text-white py-20 px-6 md:px-12 border-t border-white/10">

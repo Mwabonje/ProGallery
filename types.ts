@@ -85,3 +85,64 @@ export interface FAQItem {
   question: string;
   answer: string;
 }
+
+export interface ServiceOfferingItem {
+  id: string;
+  number: string;
+  title: string;
+  description: string;
+  linkText: string;
+  linkUrl: string;
+}
+
+export interface ServicesSectionConfig {
+  showSection: boolean;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  services: ServiceOfferingItem[];
+  showCta: boolean;
+  ctaTitle: string;
+  ctaSubtitle: string;
+  ctaButtonText: string;
+  ctaButtonLink: string;
+}
+
+export const DEFAULT_SERVICES_SECTION: ServicesSectionConfig = {
+  showSection: true,
+  eyebrow: "Studio Offerings · Malindi, Kilifi County & Kenyan Coast",
+  title: "Photography Services & Visual Storytelling Across the Coast",
+  subtitle: "Based in Malindi, Mwabonje Photography documents intimate weddings, architectural hospitality retreats, and authentic lifestyle portraits across Malindi, Watamu, Kilifi, and Lamu Island.",
+  services: [
+    {
+      id: "srv-1",
+      number: "01",
+      title: "Wedding Photographer in Malindi & Watamu",
+      description: "Documenting barefoot beach ceremonies, sunset vows, and intimate coastal celebrations with natural documentary light, quiet elegance, and authentic emotion.",
+      linkText: "Wedding Guides",
+      linkUrl: "/blog"
+    },
+    {
+      id: "srv-2",
+      number: "02",
+      title: "Hospitality & Architectural Photography",
+      description: "Editorial visual narratives for boutique hotels, private oceanfront villas, and design retreats along the Kenyan coast, highlighting light, texture, and living spaces.",
+      linkText: "About the Studio",
+      linkUrl: "/about"
+    },
+    {
+      id: "srv-3",
+      number: "03",
+      title: "Portrait & Lifestyle Photography in Malindi",
+      description: "Personal branding, creative editorial portraits, and documentary sessions set against the coral shores of Watamu, golden dunes, and historic Lamu Island.",
+      linkText: "Session FAQ",
+      linkUrl: "/faq"
+    }
+  ],
+  showCta: true,
+  ctaTitle: "Planning a shoot or celebrating on the coast?",
+  ctaSubtitle: "Read our client FAQ, learn about our creative vision, or explore coastal guides in our Journal.",
+  ctaButtonText: "Enquire About a Session",
+  ctaButtonLink: ""
+};
+

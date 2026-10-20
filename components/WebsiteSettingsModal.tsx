@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 import { useUpload } from '../contexts/UploadContext';
 import { AboutSettingsModal } from './AboutSettingsModal';
 import { FAQManagerModal } from './FAQManagerModal';
+import { ServicesSettingsManager } from './ServicesSettingsManager';
+import { Layers } from 'lucide-react';
 
 export interface WebsiteSettingsModalProps {
   onClose: () => void;
   userId: string;
-  initialTab?: 'home' | 'about' | 'faq';
+  initialTab?: 'home' | 'services' | 'about' | 'faq';
 }
 
 export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
@@ -17,7 +19,7 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
   userId,
   initialTab = 'home',
 }) => {
-  const [mainTab, setMainTab] = useState<'home' | 'about' | 'faq'>(initialTab);
+  const [mainTab, setMainTab] = useState<'home' | 'services' | 'about' | 'faq'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [galleryId, setGalleryId] = useState<string | null>(null);
@@ -266,6 +268,19 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
           >
             <Globe className="w-3.5 h-3.5" />
             <span>Home &amp; Hero Settings</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainTab('services')}
+            className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${
+              mainTab === 'services'
+                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Studio Offerings</span>
           </button>
 
           <button
@@ -523,7 +538,18 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
           </div>
         )}
 
-        {/* Tab 2: About Page Content */}
+        {/* Tab 2: Studio Offerings / Services Section */}
+        {mainTab === 'services' && (
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <ServicesSettingsManager
+              onClose={onClose}
+              userId={userId}
+              embedded={true}
+            />
+          </div>
+        )}
+
+        {/* Tab 3: About Page Content */}
         {mainTab === 'about' && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             <AboutSettingsModal
@@ -534,7 +560,7 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
           </div>
         )}
 
-        {/* Tab 3: FAQ Page Content */}
+        {/* Tab 4: FAQ Page Content */}
         {mainTab === 'faq' && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             <FAQManagerModal

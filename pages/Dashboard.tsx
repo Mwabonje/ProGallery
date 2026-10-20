@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -109,7 +109,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isWebsiteSettingsOpen, setIsWebsiteSettingsOpen] = useState(false);
-  const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'home' | 'about'>('home');
+  const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'home' | 'services' | 'about' | 'faq'>('home');
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false);
@@ -839,6 +839,19 @@ export const Dashboard: React.FC = () => {
 
               <div 
                 onClick={() => {
+                  setWebsiteSettingsTab('services');
+                  setIsWebsiteSettingsOpen(true);
+                }} 
+                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+              >
+                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
+                  <Layers className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-[13px] font-medium">Studio Offerings</span>
+              </div>
+
+              <div 
+                onClick={() => {
                   setIsFaqModalOpen(true);
                 }} 
                 className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
@@ -891,6 +904,18 @@ export const Dashboard: React.FC = () => {
                 >
                   <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   <span>Website Settings</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setWebsiteSettingsTab('services');
+                    setIsWebsiteSettingsOpen(true);
+                  }}
+                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+                  title="Edit or delete the studio offerings section"
+                >
+                  <Layers className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                  <span>Studio Offerings</span>
                 </button>
 
                 <button 
