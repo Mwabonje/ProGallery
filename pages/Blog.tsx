@@ -10,8 +10,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const pageTitle = "Blog | Mwabonje - Photography Insights & Stories";
-  const pageDescription = "Explore the latest insights, stories, and tips on hospitality photography, portraits, and documentary visual storytelling by Mwabonje.";
+  const pageTitle = "Journal & Stories | Mwabonje Photography — Malindi & Kenyan Coast";
+  const pageDescription = "Explore photography guides, coastal location stories, wedding tips, and documentary visual storytelling from Malindi, Watamu, and Lamu by Mwabonje Photography.";
   const pageUrl = "https://mwabonje.co.ke/blog";
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export const Blog: React.FC = () => {
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <meta name="keywords" content="Mwabonje blog, photography blog, hospitality photography, documentary portraits, visual storytelling" />
+        <meta name="keywords" content="Mwabonje blog, photography in Malindi, wedding photography Watamu, Lamu visual storytelling, Kenyan coast photography" />
         <link rel="canonical" href={pageUrl} />
 
         {/* Open Graph Tags */}
@@ -68,6 +68,8 @@ export const Blog: React.FC = () => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:image" content={posts.length > 0 && posts[0].cover_image ? posts[0].cover_image : "https://mwabonje.co.ke/og-image.jpg"} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -76,34 +78,55 @@ export const Blog: React.FC = () => {
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={posts.length > 0 && posts[0].cover_image ? posts[0].cover_image : "https://mwabonje.co.ke/og-image.jpg"} />
 
-        {/* Structured Data (JSON-LD) for Blog */}
+        {/* Structured Data (JSON-LD) for Blog & BreadcrumbList */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "Blog",
-            "name": "Mwabonje Photography Blog",
-            "description": pageDescription,
-            "url": pageUrl,
-            "publisher": {
-              "@type": "Organization",
-              "name": "Mwabonje",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "https://mwabonje.co.ke/og-image.jpg"
-              }
-            },
-            "blogPost": posts.map(post => ({
-              "@type": "BlogPosting",
-              "headline": post.seo_title || post.title,
-              "description": post.seo_description || post.excerpt,
-              "image": post.cover_image,
-              "datePublished": post.date,
-              "author": {
-                "@type": "Person",
-                "name": post.author
+            "@graph": [
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://mwabonje.co.ke/"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Journal",
+                    "item": "https://mwabonje.co.ke/blog"
+                  }
+                ]
               },
-              "url": `https://mwabonje.co.ke/blog/${post.slug}`
-            }))
+              {
+                "@type": "Blog",
+                "name": "Mwabonje Photography Journal",
+                "description": pageDescription,
+                "url": pageUrl,
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Mwabonje",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://mwabonje.co.ke/og-image.jpg"
+                  }
+                },
+                "blogPost": posts.map(post => ({
+                  "@type": "BlogPosting",
+                  "headline": post.seo_title || post.title,
+                  "description": post.seo_description || post.excerpt,
+                  "image": post.cover_image,
+                  "datePublished": post.date,
+                  "author": {
+                    "@type": "Person",
+                    "name": post.author
+                  },
+                  "url": `https://mwabonje.co.ke/blog/${post.slug}`
+                }))
+              }
+            ]
           })}
         </script>
       </Helmet>

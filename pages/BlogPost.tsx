@@ -121,8 +121,63 @@ export const BlogPost: React.FC = () => {
   }
 
   const pageUrl = `https://mwabonje.co.ke/blog/${post.slug}`;
-  const pageTitle = post.seo_title ? `${post.seo_title} | Mwabonje Blog` : `${post.title} | Mwabonje Blog`;
+  const pageTitle = post.seo_title 
+    ? `${post.seo_title} | Mwabonje` 
+    : `${post.title} | Mwabonje Photography`;
   const seoDescription = post.seo_description || post.excerpt;
+
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mwabonje.co.ke/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Journal",
+            "item": "https://mwabonje.co.ke/blog"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": post.title,
+            "item": pageUrl
+          }
+        ]
+      },
+      {
+        "@type": "BlogPosting",
+        "headline": post.seo_title || post.title,
+        "description": seoDescription,
+        "image": post.cover_image ? [post.cover_image] : ["https://mwabonje.co.ke/og-image.jpg"],
+        "datePublished": post.date,
+        "author": {
+          "@type": "Person",
+          "name": post.author || "Mwabonje",
+          "url": "https://mwabonje.co.ke"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Mwabonje",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://mwabonje.co.ke/og-image.jpg"
+          }
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": pageUrl
+        }
+      }
+    ]
+  };
 
   return (
     <article className="min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-20">
@@ -135,6 +190,7 @@ export const BlogPost: React.FC = () => {
         keywords={post.tags?.join(', ')}
         author={post.author}
         publishDate={post.date}
+        structuredData={articleSchema}
       />
 
       {/* Header */}
@@ -178,9 +234,14 @@ export const BlogPost: React.FC = () => {
           <div className="aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative rounded-sm">
             <img 
               src={post.cover_image} 
-              alt={post.title} 
+              alt={`${post.title} — Photography by Mwabonje in Kenya`} 
               className="w-full h-full object-cover"
               loading="eager"
+              // @ts-ignore
+              fetchPriority="high"
+              decoding="async"
+              width={1200}
+              height={630}
             />
           </div>
         )}
@@ -214,9 +275,9 @@ export const BlogPost: React.FC = () => {
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
         <div className="w-full max-w-4xl mx-auto px-4 mt-16 md:mt-20 pt-12 md:pt-16 border-t border-slate-100 dark:border-slate-800">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-6 md:mb-8 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Related Posts
-          </h3>
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {relatedPosts.map(relatedPost => (
               <article key={relatedPost.id} className="group flex flex-col h-full">
@@ -224,8 +285,9 @@ export const BlogPost: React.FC = () => {
                   {relatedPost.cover_image && (
                     <img 
                       src={relatedPost.cover_image} 
-                      alt={relatedPost.title} 
+                      alt={`${relatedPost.title} — Photography by Mwabonje in Kenya`} 
                       loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transform transition-transform duration-[1.5s] group-hover:scale-[1.03]"
                     />
                   )}
@@ -236,9 +298,9 @@ export const BlogPost: React.FC = () => {
                   <span className="hidden sm:inline-block">{calculateReadingTime(relatedPost.content)} min read</span>
                 </div>
                 <Link to={`/blog/${relatedPost.slug}`} className="block group">
-                  <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                     {relatedPost.title}
-                  </h4>
+                  </h3>
                 </Link>
                 <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-3">
                   {relatedPost.excerpt}

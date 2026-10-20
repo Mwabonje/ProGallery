@@ -366,19 +366,41 @@ export const About: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>About — {pageHeaderTitle || settings.brandName} | Visual Storyteller & Lifestyle Photographer</title>
-        <meta name="description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
+        <title>About Mwabonje — Portrait &amp; Lifestyle Photographer in Malindi, Kenya</title>
+        <meta name="description" content="Meet Mwabonje, an East African visual storyteller and lifestyle photographer based in Malindi, Kilifi County — capturing documentary portraits, coastal weddings, and architectural narratives across Watamu, Malindi, and Lamu." />
         <link rel="canonical" href="https://mwabonje.co.ke/about" />
         <meta property="og:type" content="profile" />
         <meta property="og:url" content="https://mwabonje.co.ke/about" />
-        <meta property="og:title" content={`About — ${pageHeaderTitle || settings.brandName} | Visual Storyteller`} />
-        <meta property="og:description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
-        <meta property="og:image" content={aboutImageUrl || "https://mwabonje.co.ke/og-image.jpg"} />
+        <meta property="og:title" content="About Mwabonje — Portrait &amp; Lifestyle Photographer in Malindi, Kenya" />
+        <meta property="og:description" content="Meet Mwabonje, an East African visual storyteller and lifestyle photographer based in Malindi, Kilifi County — capturing documentary portraits, coastal weddings, and architectural narratives across Watamu, Malindi, and Lamu." />
+        <meta property="og:image" content={displayImage || "https://mwabonje.co.ke/og-image.jpg"} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://mwabonje.co.ke/about" />
-        <meta name="twitter:title" content={`About — ${pageHeaderTitle || settings.brandName} | Visual Storyteller`} />
-        <meta name="twitter:description" content={pageHeaderSubtitle || `Discover the journey and vision of ${settings.brandName}, an East African visual storyteller and lifestyle photographer based on the Kenyan coast.`} />
-        <meta name="twitter:image" content={aboutImageUrl || "https://mwabonje.co.ke/og-image.jpg"} />
+        <meta name="twitter:title" content="About Mwabonje — Portrait &amp; Lifestyle Photographer in Malindi, Kenya" />
+        <meta name="twitter:description" content="Meet Mwabonje, an East African visual storyteller and lifestyle photographer based in Malindi, Kilifi County — capturing documentary portraits, coastal weddings, and architectural narratives across Watamu, Malindi, and Lamu." />
+        <meta name="twitter:image" content={displayImage || "https://mwabonje.co.ke/og-image.jpg"} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://mwabonje.co.ke/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "About",
+                "item": "https://mwabonje.co.ke/about"
+              }
+            ]
+          })}
+        </script>
       </Helmet>
 
       {/* Navigation Header */}
@@ -492,7 +514,13 @@ export const About: React.FC = () => {
               <div className="relative w-full aspect-[4/5] md:aspect-auto md:flex-1 min-h-[260px] sm:min-h-[320px] md:min-h-[220px] overflow-hidden bg-slate-950">
                 <img 
                   src={getOptimizedImageUrl(displayImage, 900, 1125, 90)}
-                  alt={`${placardName} — Visual Storyteller`}
+                  alt={`${placardName} — Portrait &amp; Lifestyle Photographer in Malindi, Kenya`}
+                  loading="eager"
+                  // @ts-ignore
+                  fetchPriority="high"
+                  decoding="async"
+                  width={900}
+                  height={1125}
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (!target.dataset.retried) {

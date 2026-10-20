@@ -149,25 +149,54 @@ export const FAQ: React.FC = () => {
     });
   }, [faqs, activeCategory, searchQuery]);
 
-  // Schema.org FAQPage Structured Data
+  // Schema.org FAQPage & BreadcrumbList Structured Data
   const faqSchema = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map(item => ({
-      "@type": "Question",
-      "name": item.question,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": item.answer
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://mwabonje.co.ke/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "FAQ",
+            "item": "https://mwabonje.co.ke/faq"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(item => ({
+          "@type": "Question",
+          "name": item.question,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": item.answer
+          }
+        }))
       }
-    }))
+    ]
   };
+
+  const seoTitle = headerTitle && !headerTitle.toLowerCase().includes('inquiries')
+    ? `${headerTitle} | Mwabonje Photography — Malindi & Kenyan Coast`
+    : "Frequently Asked Questions | Mwabonje Photography — Malindi & Watamu";
+
+  const seoDescription = headerSubtitle && headerSubtitle.length > 50
+    ? headerSubtitle
+    : "Find answers to frequently asked questions about booking wedding photography, portraits, hospitality shoots, payment schedules, and photo delivery with Mwabonje in Malindi, Watamu, and Lamu.";
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <SEO 
-        title={`${headerTitle} | ${settings.brandName} Photography & Film`}
-        description={headerSubtitle}
+        title={seoTitle}
+        description={seoDescription}
         url="https://mwabonje.co.ke/faq"
         type="website"
         structuredData={faqSchema}

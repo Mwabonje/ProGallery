@@ -60,12 +60,20 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
     );
   }
 
+  const altText = gallery.client_name
+    ? `${gallery.client_name} — ${gallery.baseCategory || 'Photography'} by Mwabonje Photography in Kenya`
+    : 'Coastal photography showcase by Mwabonje Photography';
+
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-900 flex items-center justify-center">
       {currentSrc && !hasError ? (
         <img 
           src={currentSrc}
-          alt={gallery.client_name}
+          alt={altText}
+          loading="lazy"
+          decoding="async"
+          width={1000}
+          height={1200}
           onError={handleError}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
@@ -350,18 +358,18 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>{settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast</title>
-        <meta name="description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <title>Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi</title>
+        <meta name="description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
         <link rel="canonical" href="https://mwabonje.co.ke/" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mwabonje.co.ke/" />
-        <meta property="og:title" content={`${settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast`} />
-        <meta property="og:description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <meta property="og:title" content="Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi" />
+        <meta property="og:description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
         <meta property="og:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://mwabonje.co.ke/" />
-        <meta name="twitter:title" content={`${settings.brandName} — Visual Storyteller & Lifestyle Photographer, Kenyan Coast`} />
-        <meta name="twitter:description" content="East African visual storyteller and lifestyle photographer based on the Kenyan coast, capturing hospitality, portraits, weddings, and authentic coastal visual narratives." />
+        <meta name="twitter:title" content="Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi" />
+        <meta name="twitter:description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
         <meta name="twitter:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
       </Helmet>
 
@@ -487,7 +495,13 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         {/* Hero Background Image */}
         <img 
           src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)} 
-          alt="Hero"
+          alt="Mwabonje Photography — Editorial, wedding, and hospitality photography on the Kenyan coast"
+          loading="eager"
+          // @ts-ignore
+          fetchPriority="high"
+          decoding="async"
+          width={1920}
+          height={1080}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100 hover:scale-105"
           onError={(e) => {
             const target = e.currentTarget;
@@ -617,6 +631,99 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             })}
           </div>
         )}
+      </section>
+
+      {/* Services & Coastal Storytelling Overview Section */}
+      <section className="py-20 md:py-28 px-6 md:px-12 bg-white/70 dark:bg-slate-900/60 border-t border-slate-200/60 dark:border-slate-800 transition-colors">
+        <div className="max-w-7xl mx-auto">
+          <div className="max-w-3xl mb-16">
+            <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] font-semibold text-slate-500 dark:text-slate-400 block mb-3">
+              Studio Offerings · Malindi, Kilifi County &amp; Kenyan Coast
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
+              Photography Services &amp; Visual Storytelling Across the Coast
+            </h2>
+            <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg font-light leading-relaxed">
+              Based in Malindi, Mwabonje Photography documents intimate weddings, architectural hospitality retreats, and authentic lifestyle portraits across Malindi, Watamu, Kilifi, and Lamu Island.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+            {/* Service 1: Weddings */}
+            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
+              <div>
+                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">01</span>
+                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
+                  Wedding Photographer in Malindi &amp; Watamu
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
+                  Documenting barefoot beach ceremonies, sunset vows, and intimate coastal celebrations with natural documentary light, quiet elegance, and authentic emotion.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                <Link to="/blog" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
+                  Wedding Guides <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Service 2: Hospitality */}
+            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
+              <div>
+                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">02</span>
+                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
+                  Hospitality &amp; Architectural Photography
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
+                  Editorial visual narratives for boutique hotels, private oceanfront villas, and design retreats along the Kenyan coast, highlighting light, texture, and living spaces.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                <Link to="/about" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
+                  About the Studio <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Service 3: Lifestyle & Portraits */}
+            <div className="p-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#151c28] border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between transition-all hover:shadow-md">
+              <div>
+                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 block mb-3">03</span>
+                <h3 className="font-serif text-2xl font-normal text-slate-900 dark:text-white mb-3">
+                  Portrait &amp; Lifestyle Photography in Malindi
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 text-sm font-light leading-relaxed mb-6">
+                  Personal branding, creative editorial portraits, and documentary sessions set against the coral shores of Watamu, golden dunes, and historic Lamu Island.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                <Link to="/faq" className="text-xs uppercase tracking-wider font-semibold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1.5">
+                  Session FAQ <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Connected Internal Exploration & Call to Action */}
+          <div className="mt-16 p-8 md:p-10 rounded-2xl bg-slate-900 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+            <div className="text-center md:text-left">
+              <h3 className="font-serif text-2xl md:text-3xl font-normal mb-2 text-white">
+                Planning a shoot or celebrating on the coast?
+              </h3>
+              <p className="text-slate-300 text-sm font-light max-w-xl">
+                Read our client <Link to="/faq" className="underline underline-offset-4 hover:text-white">FAQ</Link>, learn about <Link to="/about" className="underline underline-offset-4 hover:text-white">our creative vision</Link>, or explore coastal guides in our <Link to="/blog" className="underline underline-offset-4 hover:text-white">Journal</Link>.
+              </p>
+            </div>
+            <a 
+              href={settings.contactLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center justify-center px-8 py-3.5 bg-white text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-100 transition-all shadow-md active:scale-95"
+            >
+              Enquire About a Session
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* Editorial Footer */}
