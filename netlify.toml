@@ -112,3 +112,16 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
     Cache-Control = "private, no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=UTF-8"
+    Cache-Control = "public, max-age=3600, s-maxage=86400"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=UTF-8"
+    Cache-Control = "public, max-age=3600, s-maxage=86400"
+

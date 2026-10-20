@@ -736,59 +736,35 @@ async function startServer() {
 
   app.get("/sitemap.xml", async (req, res, next) => {
     try {
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://bdaqtpyzqutelkdgcoex.supabase.co";
-      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
-      
-      const headers = {
-        "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`
-      };
+      const distSitemap = path.join(process.cwd(), "dist", "sitemap.xml");
+      const publicSitemap = path.join(process.cwd(), "public", "sitemap.xml");
+      const targetFile = fs.existsSync(distSitemap) ? distSitemap : (fs.existsSync(publicSitemap) ? publicSitemap : null);
+
+      if (targetFile) {
+        res.header('Content-Type', 'application/xml');
+        return res.sendFile(targetFile);
+      }
 
       const domain = (process.env.SITE_URL && !process.env.SITE_URL.includes('netlify.app')) 
-        ? process.env.SITE_URL 
+        ? process.env.SITE_URL.replace(/\/$/, '') 
         : 'https://mwabonje.co.ke';
-      let blogs = [];
-
-      if (supabaseUrl && supabaseKey) {
-        const blogsRes = await fetch(`${supabaseUrl}/rest/v1/blogs?select=slug,date&published=eq.true`, { headers });
-        if (blogsRes.ok) blogs = await blogsRes.json();
-      }
 
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${domain}/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
   </url>
   <url>
     <loc>${domain}/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>${domain}/faq</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>${domain}/blog</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-
-      for (const blog of blogs) {
-        sitemap += `
-  <url>
-    <loc>${domain}/blog/${blog.slug}</loc>
-    <lastmod>${new Date(blog.date || Date.now()).toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-      }
-
-      sitemap += `\n</urlset>`;
-
+  </url>
+</urlset>
+`;
       res.header('Content-Type', 'application/xml');
       res.send(sitemap);
     } catch (err) {
