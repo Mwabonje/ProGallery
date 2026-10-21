@@ -9,6 +9,22 @@ export default async (request: Request, context: Context) => {
     return Response.redirect(`https://mwabonje.co.ke${path}${url.search}`, 301);
   }
 
+  // Fast bypass for API endpoints, Netlify internal functions, and static files
+  if (
+    path === "/api" ||
+    path.startsWith("/api/") ||
+    path.startsWith("/.netlify/") ||
+    path.startsWith("/assets/") ||
+    path === "/robots.txt" ||
+    path === "/sitemap.xml" ||
+    path.endsWith(".xml") ||
+    path.endsWith(".txt") ||
+    path.endsWith(".json") ||
+    path.endsWith(".webmanifest")
+  ) {
+    return context.next();
+  }
+
   // Fetch the original HTML response
   const response = await context.next();
   // Ensure we only process HTML responses
@@ -22,7 +38,13 @@ export default async (request: Request, context: Context) => {
   const isUUID = /^\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path);
   const isProtectedAdminRoute = path.startsWith('/dashboard') || path.startsWith('/admin') || path.startsWith('/login');
   const isPrivateGalleryRoute = path.startsWith('/g/') || path.startsWith('/gallery/') || isUUID;
-  const isBlogRoute = path.startsWith('/blog/');
+  
+  const cleanPath = path === '/' ? '/' : path.replace(/\/+$/, '');
+  const isBlogPostRoute = cleanPath.startsWith('/blog/') && cleanPath !== '/blog';
+  const isBlogIndex = cleanPath === '/blog';
+  const isAboutRoute = cleanPath === '/about';
+  const isFaqRoute = cleanPath === '/faq';
+  const isHomeRoute = cleanPath === '/' || cleanPath === '';
 
   // @ts-ignore
   const supabaseUrl = Netlify.env.get("VITE_SUPABASE_URL") || "https://bdaqtpyzqutelkdgcoex.supabase.co";
@@ -36,44 +58,38 @@ export default async (request: Request, context: Context) => {
 
   const responseHeaders = new Headers(response.headers);
 
-  try {
-    if (isBlogRoute) {
-      // For public blog routes, inject canonical URL and og:url on preferred origin
-      const canonicalOrigin = "https://mwabonje.co.ke";
-      const canonicalUrl = `${canonicalOrigin}${path}`;
-      if (html.includes('<link rel="canonical"')) {
-        html = html.replace(/<link rel="canonical"[^>]*>/, `  <link rel="canonical" href="${canonicalUrl}" />`);
-      } else {
-        html = html.replace('</head>', `  <link rel="canonical" href="${canonicalUrl}" />\n</head>`);
-      }
-      if (html.includes('<meta property="og:url"')) {
-        html = html.replace(/<meta property="og:url"[^>]*>/, `  <meta property="og:url" content="${canonicalUrl}" />`);
-      } else {
-        html = html.replace('</head>', `  <meta property="og:url" content="${canonicalUrl}" />\n</head>`);
-      }
+  // Ensures exactly one canonical tag, og:url, and twitter:url exist
+  const setCanonicalAndUrl = (targetHtml: string, canonicalUrl: string): string => {
+    let out = targetHtml;
+    // Strip existing tags
+    out = out.replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi, '');
+    out = out.replace(/<link\s+[^>]*href=["'][^"']*["']\s+rel=["']canonical["'][^>]*>/gi, '');
+    out = out.replace(/<meta\s+[^>]*property=["']og:url["'][^>]*>/gi, '');
+    out = out.replace(/<meta\s+[^>]*name=["']twitter:url["'][^>]*>/gi, '');
 
-      const slug = path.split('/').pop();
-      const res = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, { headers });
-      
-      if (res.ok) {
-        const posts = await res.json();
-        if (posts && posts.length > 0) {
-          const post = posts[0];
-          const title = `${post.title} | Mwabonje`;
-          const description = post.excerpt || "";
-          const image = post.cover_image || "https://mwabonje.co.ke/og-image.jpg";
-          
-          html = html.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
-          html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
-          html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
-          html = html.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
-          html = html.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="article" />`);
-          html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
-          html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
-          html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, `<meta name="twitter:image" content="${image}" />`);
-        }
-      }
-    } else if (isPrivateGalleryRoute || isProtectedAdminRoute) {
+    // Inject exactly one pristine set right before </head>
+    const injection = `  <link rel="canonical" href="${canonicalUrl}" />\n  <meta property="og:url" content="${canonicalUrl}" />\n  <meta name="twitter:url" content="${canonicalUrl}" />\n</head>`;
+    return out.replace('</head>', injection);
+  };
+
+  const setMetaTags = (targetHtml: string, title: string, description: string, image?: string, type = "website") => {
+    let out = targetHtml;
+    out = out.replace(/<title>.*?<\/title>/i, `<title>${title.replace(/</g, '&lt;')}</title>`);
+    out = out.replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />`);
+    out = out.replace(/<meta property="og:title" content=".*?" \/>/i, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
+    out = out.replace(/<meta property="og:description" content=".*?" \/>/i, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
+    out = out.replace(/<meta property="og:type" content=".*?" \/>/i, `<meta property="og:type" content="${type}" />`);
+    out = out.replace(/<meta name="twitter:title" content=".*?" \/>/i, `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`);
+    out = out.replace(/<meta name="twitter:description" content=".*?" \/>/i, `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`);
+    if (image) {
+      out = out.replace(/<meta property="og:image" content=".*?" \/>/i, `<meta property="og:image" content="${image}" />`);
+      out = out.replace(/<meta name="twitter:image" content=".*?" \/>/i, `<meta name="twitter:image" content="${image}" />`);
+    }
+    return out;
+  };
+
+  try {
+    if (isPrivateGalleryRoute || isProtectedAdminRoute) {
       // SECURITY & SEO PROTECTION:
       // 1. Strictly set X-Robots-Tag response header
       responseHeaders.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
@@ -83,10 +99,11 @@ export default async (request: Request, context: Context) => {
       const robotsTags = `  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />\n  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />\n</head>`;
       html = html.replace('</head>', robotsTags);
 
-      // 3. Remove any existing canonical URL tags on protected routes
-      html = html.replace(/<link rel="canonical"[^>]*>/g, '');
+      // 3. Remove any canonical URL tag on protected routes
+      html = html.replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi, '');
+      html = html.replace(/<link\s+[^>]*href=["'][^"']*["']\s+rel=["']canonical["'][^>]*>/gi, '');
 
-      // 4. Scrub crawler metadata: do NOT fetch or expose private client names, titles, or private photos
+      // 4. Scrub crawler metadata: do NOT expose private client names, titles, or private photos
       const genericTitle = isProtectedAdminRoute 
         ? (path.startsWith('/login') ? "Photographer Portal | Mwabonje" : "Dashboard | Mwabonje") 
         : "Private Client Gallery | Mwabonje";
@@ -94,15 +111,52 @@ export default async (request: Request, context: Context) => {
         ? "Mwabonje Photographer Portal" 
         : "Private client delivery gallery.";
       
-      html = html.replace(/<title>.*?<\/title>/, `<title>${genericTitle}</title>`);
-      html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${genericTitle}" />`);
-      html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${genericDescription}" />`);
-      html = html.replace(/<meta name="twitter:title" content=".*?" \/>/, `<meta name="twitter:title" content="${genericTitle}" />`);
-      html = html.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${genericDescription}" />`);
+      html = setMetaTags(html, genericTitle, genericDescription, "", "website");
+      html = html.replace(/<meta property="og:image" content=".*?" \/>/i, '');
+      html = html.replace(/<meta name="twitter:image" content=".*?" \/>/i, '');
+    } else if (isBlogPostRoute) {
+      const canonicalOrigin = "https://mwabonje.co.ke";
+      const canonicalUrl = `${canonicalOrigin}${cleanPath}`;
+      html = setCanonicalAndUrl(html, canonicalUrl);
+
+      const slug = cleanPath.split('/').pop();
+      const res = await fetch(`${supabaseUrl}/rest/v1/blogs?slug=eq.${slug}&select=title,excerpt,cover_image&limit=1`, { headers });
       
-      // Remove any OG/Twitter image that might reference private client files
-      html = html.replace(/<meta property="og:image" content=".*?" \/>/, '');
-      html = html.replace(/<meta name="twitter:image" content=".*?" \/>/, '');
+      if (res.ok) {
+        const posts = await res.json();
+        if (posts && posts.length > 0) {
+          const post = posts[0];
+          const title = `${post.title} | Mwabonje`;
+          const description = post.excerpt || "";
+          const image = post.cover_image || "https://mwabonje.co.ke/og-image.jpg";
+          html = setMetaTags(html, title, description, image, "article");
+        }
+      }
+    } else if (isAboutRoute) {
+      const canonicalUrl = "https://mwabonje.co.ke/about";
+      html = setCanonicalAndUrl(html, canonicalUrl);
+      const title = "About Mwabonje — Portrait & Lifestyle Photographer in Malindi, Kenya";
+      const description = "Meet Mwabonje, an East African visual storyteller and lifestyle photographer based in Malindi, Kilifi County — capturing documentary portraits, coastal weddings, and architectural narratives across Watamu, Malindi, and Lamu.";
+      html = setMetaTags(html, title, description, "https://mwabonje.co.ke/og-image.jpg", "profile");
+    } else if (isFaqRoute) {
+      const canonicalUrl = "https://mwabonje.co.ke/faq";
+      html = setCanonicalAndUrl(html, canonicalUrl);
+      const title = "Photography FAQs & Investment Guide | Mwabonje Malindi, Kenya";
+      const description = "Find answers to frequently asked questions about booking wedding photography, portraits, hospitality shoots, payment schedules, and photo delivery with Mwabonje in Malindi, Watamu, and Lamu.";
+      html = setMetaTags(html, title, description, "https://mwabonje.co.ke/og-image.jpg", "website");
+    } else if (isBlogIndex) {
+      const canonicalUrl = "https://mwabonje.co.ke/blog";
+      html = setCanonicalAndUrl(html, canonicalUrl);
+      const title = "Journal & Stories | Mwabonje Photography — Malindi, Kenya";
+      const description = "Stories, wedding photography highlights, behind-the-scenes journals, and coastal visual narratives from Mwabonje Photography across Malindi, Watamu, and Lamu.";
+      html = setMetaTags(html, title, description, "https://mwabonje.co.ke/og-image.jpg", "website");
+    } else if (isHomeRoute) {
+      const canonicalUrl = "https://mwabonje.co.ke/";
+      html = setCanonicalAndUrl(html, canonicalUrl);
+    } else {
+      // Any other public route: normalize to canonical absolute URL on https://mwabonje.co.ke
+      const canonicalUrl = `https://mwabonje.co.ke${cleanPath}`;
+      html = setCanonicalAndUrl(html, canonicalUrl);
     }
   } catch (e) {
     console.error("OG injection error:", e);

@@ -3,16 +3,56 @@ import { createClient } from "@supabase/supabase-js";
 
 const getEnv = (key: string, fallback: string) => process.env[key] || fallback;
 
+function extractGalleryId(event: any): string | null {
+  // 1. Check body if parsed or JSON string
+  if (event.body) {
+    try {
+      const parsed = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      if (parsed.galleryId && parsed.galleryId !== ':id') return String(parsed.galleryId).trim();
+      if (parsed.id && parsed.id !== ':id') return String(parsed.id).trim();
+    } catch (e) {}
+  }
+
+  // 2. Check query string parameters
+  const queryId = event.queryStringParameters?.id || event.queryStringParameters?.galleryId;
+  if (queryId && queryId !== ':id') {
+    return String(queryId).trim();
+  }
+
+  // 3. Fallback: Parse gallery ID from URI / rawUrl / path segments (/api/gallery/:id/...)
+  const targets = [
+    event.path,
+    event.rawUrl,
+    event.headers?.['x-forwarded-uri'],
+    event.headers?.['x-nf-original-pathname'],
+    event.headers?.['x-original-url']
+  ].filter(Boolean);
+
+  for (const target of targets) {
+    const match = String(target).match(/\/api\/gallery\/([^\/?#]+)/i);
+    if (match && match[1] && match[1] !== ':id') {
+      return decodeURIComponent(match[1]).trim();
+    }
+  }
+
+  return null;
+}
+
 export const handler: Handler = async (event) => {
   const supabaseUrl = getEnv('REACT_APP_SUPABASE_URL', process.env.VITE_SUPABASE_URL || 'https://bdaqtpyzqutelkdgcoex.supabase.co');
   const supabaseKey = getEnv('SUPABASE_SERVICE_ROLE_KEY', process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib');
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  const galleryId = extractGalleryId(event);
+
   if (event.httpMethod === "GET") {
-    const galleryId = event.queryStringParameters?.id || event.queryStringParameters?.galleryId;
     if (!galleryId) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Missing gallery id" }) };
+      return { 
+        statusCode: 400, 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Missing gallery id" }) 
+      };
     }
 
     try {
@@ -37,18 +77,31 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ requiresPassword: Boolean(data?.id) })
       };
     } catch (err: any) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Internal error checking password status" }) };
+      return { 
+        statusCode: 500, 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Internal error checking password status" }) 
+      };
     }
   }
 
   if (event.httpMethod === "POST") {
     try {
-      const body = JSON.parse(event.body || "{}");
-      const galleryId = body.galleryId || body.id || event.queryStringParameters?.id;
+      let body: any = {};
+      try {
+        body = JSON.parse(event.body || "{}");
+      } catch (e) {
+        body = {};
+      }
+
       const submittedPassword = (body.password || "").trim();
 
       if (!galleryId) {
-        return { statusCode: 400, body: JSON.stringify({ error: "Missing gallery id" }) };
+        return { 
+          statusCode: 400, 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ error: "Missing gallery id" }) 
+        };
       }
 
       const { data, error } = await supabase
@@ -60,7 +113,11 @@ export const handler: Handler = async (event) => {
 
       if (error) {
         console.error("Error verifying password:", error);
-        return { statusCode: 500, body: JSON.stringify({ error: "Failed to verify password" }) };
+        return { 
+          statusCode: 500, 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ error: "Failed to verify password" }) 
+        };
       }
 
       // If no password set, gallery is public
@@ -87,7 +144,11 @@ export const handler: Handler = async (event) => {
         };
       }
     } catch (err: any) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Invalid request payload" }) };
+      return { 
+        statusCode: 500, 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Invalid request payload" }) 
+      };
     }
   }
 

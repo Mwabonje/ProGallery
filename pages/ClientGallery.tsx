@@ -583,7 +583,7 @@ export const ClientGallery: React.FC = () => {
         // Try Netlify function first (handles both custom domain and netlify.app)
         let statusRes = await fetch(`/.netlify/functions/verify-gallery-password?id=${activeGalleryId}`).catch(() => null);
         if (!statusRes || !statusRes.ok) {
-          statusRes = await fetch(`/api/gallery/${activeGalleryId}/auth-status`).catch(() => null);
+          statusRes = await fetch(`/api/gallery/${activeGalleryId}/auth-status?id=${encodeURIComponent(activeGalleryId)}`).catch(() => null);
         }
 
         if (statusRes && statusRes.ok) {

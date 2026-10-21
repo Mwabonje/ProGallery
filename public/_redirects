@@ -3,6 +3,8 @@
 /api/gallery/:id/auth-status      /.netlify/functions/verify-gallery-password?id=:id  200
 /api/sys/interaction              /.netlify/functions/sys-interaction                 200
 /api/sys/state                    /.netlify/functions/sys-state                       200
+/api/storage-stats                /.netlify/functions/storage-usage                   200
+/api/download                     /.netlify/functions/download                        200
 /api/*                            /.netlify/functions/:splat                          200
 
 # Canonical domain migration: 301 redirects from legacy Netlify hostname to custom domain

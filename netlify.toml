@@ -23,6 +23,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/storage-stats"
+  to = "/.netlify/functions/storage-usage"
+  status = 200
+
+[[redirects]]
+  from = "/api/download"
+  to = "/.netlify/functions/download"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
@@ -45,29 +55,9 @@
   to = "/index.html"
   status = 200
 
-# Edge functions for dynamic crawler/SEO routing
+# Edge functions for dynamic crawler/SEO routing across all HTML routes
 [[edge_functions]]
-  path = "/blog/*"
-  function = "og-tags"
-
-[[edge_functions]]
-  path = "/g/*"
-  function = "og-tags"
-
-[[edge_functions]]
-  path = "/gallery/*"
-  function = "og-tags"
-
-[[edge_functions]]
-  path = "/dashboard*"
-  function = "og-tags"
-
-[[edge_functions]]
-  path = "/admin*"
-  function = "og-tags"
-
-[[edge_functions]]
-  path = "/login*"
+  path = "/*"
   function = "og-tags"
 
 # HTTP response headers for private and administrative routes

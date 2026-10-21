@@ -48,6 +48,11 @@ async function startServer() {
   }
 
   // --- API ROUTES ---
+  app.use("/api", (req, res, next) => {
+    res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+    res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    next();
+  });
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", r2Configured: isR2Configured });
@@ -388,6 +393,8 @@ async function startServer() {
         `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`
       );
       res.setHeader("Content-Type", contentType);
+      res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+      res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
       if (contentLength) {
         res.setHeader("Content-Length", contentLength);
       }
@@ -697,6 +704,7 @@ async function startServer() {
     newHtml = newHtml.replace(/<title>.*?<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
     newHtml = newHtml.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`);
     newHtml = newHtml.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`);
+    newHtml = newHtml.replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />`);
     newHtml = newHtml.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
     newHtml = newHtml.replace(/<meta property="og:type" content=".*?" \/>/, `<meta property="og:type" content="${type}" />`);
     
@@ -785,7 +793,7 @@ async function startServer() {
       res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
     }
 
-    if (isGallery || isUUID) {
+    if (isGallery || isUUID || isAdmin) {
       // Do not intercept public routes
       if (path === '/' || path.startsWith('/about') || path.startsWith('/faq') || path.startsWith('/blog') || path.startsWith('/assets') || path.startsWith('/api')) {
         return next();
@@ -794,22 +802,53 @@ async function startServer() {
       try {
         let html = await getBaseHtml(req);
         const isDisplay = path.includes('/display');
-        const genericTitle = isDisplay ? "Live Display | Mwabonje" : "Private Client Gallery | Mwabonje";
-        const genericDesc = isDisplay ? "Live gallery display." : "Private client delivery gallery.";
+        const genericTitle = isAdmin
+          ? (path.startsWith('/login') ? "Photographer Portal | Mwabonje" : "Dashboard | Mwabonje")
+          : (isDisplay ? "Live Display | Mwabonje" : "Private Client Gallery | Mwabonje");
+        const genericDesc = isAdmin
+          ? "Mwabonje Photographer Portal"
+          : (isDisplay ? "Live gallery display." : "Private client delivery gallery.");
         
         html = html.replace(/<title>.*?<\/title>/, `<title>${genericTitle}</title>`);
-        html = html.replace(/<link rel="canonical"[^>]*>/g, '');
+        html = html.replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi, '');
+        html = html.replace(/<link\s+[^>]*href=["'][^"']*["']\s+rel=["']canonical["'][^>]*>/gi, '');
         html = html.replace('</head>', `  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />\n  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />\n</head>`);
         html = injectOGTags(html, genericTitle, genericDesc, "", "website");
 
         return res.send(html);
       } catch (err) {
-        console.error("Gallery protection handler error:", err);
+        console.error("Gallery/Admin protection handler error:", err);
         return next();
       }
     }
 
     next();
+  });
+
+  app.get(["/about", "/faq", "/blog"], async (req, res, next) => {
+    try {
+      let html = await getBaseHtml(req);
+      const cleanPath = req.path.replace(/\/+$/, '');
+      const canonicalUrl = `https://mwabonje.co.ke${cleanPath}`;
+
+      if (cleanPath === '/about') {
+        const title = "About Mwabonje — Portrait & Lifestyle Photographer in Malindi, Kenya";
+        const desc = "Meet Mwabonje, an East African visual storyteller and lifestyle photographer based in Malindi, Kilifi County — capturing documentary portraits, coastal weddings, and architectural narratives across Watamu, Malindi, and Lamu.";
+        html = injectOGTags(html, title, desc, "https://mwabonje.co.ke/og-image.jpg", "profile", canonicalUrl);
+      } else if (cleanPath === '/faq') {
+        const title = "Photography FAQs & Investment Guide | Mwabonje Malindi, Kenya";
+        const desc = "Find answers to frequently asked questions about booking wedding photography, portraits, hospitality shoots, payment schedules, and photo delivery with Mwabonje in Malindi, Watamu, and Lamu.";
+        html = injectOGTags(html, title, desc, "https://mwabonje.co.ke/og-image.jpg", "website", canonicalUrl);
+      } else if (cleanPath === '/blog') {
+        const title = "Journal & Stories | Mwabonje Photography — Malindi, Kenya";
+        const desc = "Stories, wedding photography highlights, behind-the-scenes journals, and coastal visual narratives from Mwabonje Photography across Malindi, Watamu, and Lamu.";
+        html = injectOGTags(html, title, desc, "https://mwabonje.co.ke/og-image.jpg", "website", canonicalUrl);
+      }
+      res.send(html);
+    } catch (err) {
+      console.error("Public route SEO handler error in server.ts:", err);
+      next();
+    }
   });
 
   app.get("/blog/:slug", async (req, res, next) => {
