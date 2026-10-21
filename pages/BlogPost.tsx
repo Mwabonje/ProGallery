@@ -6,6 +6,7 @@ import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { PublicHeader } from '../components/PublicHeader';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -193,30 +194,20 @@ export const BlogPost: React.FC = () => {
         structuredData={articleSchema}
       />
 
-      {/* Header */}
-      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-[#0b0f17]/95 backdrop-blur-sm z-20 transition-colors duration-300">
-        <div 
-          className="absolute top-0 left-0 h-1 bg-slate-900 dark:bg-amber-400 transition-all duration-150 ease-out"
-          style={{ width: `${scrollProgress}%` }}
-        />
-        <div className="w-full max-w-4xl mx-auto flex items-center justify-between relative h-8">
-          <Link to="/blog" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-sm font-semibold tracking-widest uppercase z-10">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">Back to Blog</span>
-          </Link>
-          <div className="absolute inset-x-0 flex justify-center pointer-events-none">
-            <span className="text-lg uppercase tracking-widest font-bold text-slate-800 dark:text-white pointer-events-auto" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              Mwabonje
-            </span>
-          </div>
-          <div className="z-10">
-            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <PublicHeader scrollProgress={scrollProgress} />
 
       {/* Hero Section */}
-      <div className="w-full max-w-4xl mx-auto px-4 pt-12 md:pt-20 pb-4 md:pb-6">
+      <div className="w-full max-w-4xl mx-auto px-4 pt-8 sm:pt-12 md:pt-16 pb-4 md:pb-6">
+        <div className="mb-6">
+          <Link 
+            to="/blog" 
+            className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-widest uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Journal</span>
+          </Link>
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4 md:mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 dark:text-slate-400 font-bold">
           <span>{post.category}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>

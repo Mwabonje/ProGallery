@@ -6,6 +6,7 @@ import { BlogPost } from '../types';
 import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { PublicHeader } from '../components/PublicHeader';
 
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -131,20 +132,19 @@ export const Blog: React.FC = () => {
         </script>
       </Helmet>
 
-      {/* Header */}
-      <header className="w-full pt-4 pb-2 md:pt-6 md:pb-2 px-4 md:px-8 flex flex-col items-center border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
-        <div className="w-full max-w-5xl mx-auto flex justify-between items-center relative">
-          <Link to="/" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Back to Portfolio">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          <h1 className="text-2xl md:text-3xl lg:text-[40px] uppercase tracking-wider font-bold text-slate-800 dark:text-white text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            Journal
-          </h1>
-          <div className="flex items-center">
-            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <PublicHeader />
+
+      {/* Editorial Page Intro */}
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-4 flex flex-col items-center">
+        <span className="text-[10px] tracking-[0.25em] uppercase font-bold text-slate-400 dark:text-slate-500 mb-2">Stories &amp; Chronicles</span>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wider font-bold text-slate-900 dark:text-white text-center font-editorial">
+          Journal
+        </h1>
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 text-center max-w-lg">
+          Stories, wedding reflections, and visual narratives from the Kenyan coast.
+        </p>
+      </div>
 
       {/* Main Content */}
       <main className="w-full max-w-5xl mx-auto px-4 py-12 md:py-20">

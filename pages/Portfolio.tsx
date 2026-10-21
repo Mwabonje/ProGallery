@@ -9,6 +9,7 @@ import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { formatWhatsappUrl } from '../components/AboutSettingsModal';
+import { PublicHeader } from '../components/PublicHeader';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -118,7 +119,6 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
   const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(() => {
     try {
@@ -375,121 +375,11 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
       </Helmet>
 
       {/* Modern Editorial Header */}
-      <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <span className="font-serif text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-              {settings.brandName}
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600 dark:text-slate-300">
-            <a 
-              href="#work" 
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-              }} 
-              className="hover:text-slate-950 dark:hover:text-white transition-colors"
-            >
-              Portfolio
-            </a>
-            <a 
-              href="#films" 
-              onClick={(e) => {
-                e.preventDefault();
-                handleCategorySelect('FILMS');
-                document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-              }} 
-              className="hover:text-slate-950 dark:hover:text-white transition-colors"
-            >
-              Films
-            </a>
-            <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors">
-              Journal
-            </Link>
-            <Link to="/about" className="hover:text-slate-950 dark:hover:text-white transition-colors">
-              About
-            </Link>
-            <Link to="/faq" className="hover:text-slate-950 dark:hover:text-white transition-colors">
-              FAQ
-            </Link>
-          </nav>
-
-          {/* Right Action */}
-          <div className="flex items-center gap-3 md:gap-4">
-            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
-            <a 
-              href={settings.contactLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm hover:shadow"
-            >
-              Enquire
-            </a>
-
-            {/* Mobile Menu Button */}
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className="md:hidden p-2 text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-[#FAF8F5] dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
-            <div className="flex flex-col space-y-4 text-xs font-semibold tracking-widest uppercase text-slate-800 dark:text-slate-200">
-              <a 
-                href="#work" 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-                }} 
-                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
-              >
-                Portfolio
-              </a>
-              <a 
-                href="#films" 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handleCategorySelect('FILMS');
-                  document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
-                }} 
-                className="py-2 border-b border-slate-200/60 dark:border-slate-800"
-              >
-                Films
-              </a>
-              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
-                Journal
-              </Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
-                About
-              </Link>
-              <Link to="/faq" onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-slate-200/60 dark:border-slate-800">
-                FAQ
-              </Link>
-              <div className="py-2 border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Theme</span>
-                <ThemeToggle showLabel />
-              </div>
-              <a 
-                href={settings.contactLink} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-block text-center mt-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full font-bold"
-              >
-                Book a Session
-              </a>
-            </div>
-          </div>
-        )}
-      </header>
+      <PublicHeader 
+        brandName={settings.brandName} 
+        contactLink={settings.contactLink} 
+        onSelectCategory={handleCategorySelect} 
+      />
 
       {/* Hero Section */}
       <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">

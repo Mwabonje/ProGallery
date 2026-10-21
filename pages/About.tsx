@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { PublicHeader } from '../components/PublicHeader';
 import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
 import { REAL_ABOUT_IMAGE_URL } from '../utils/portfolioImages';
 import { 
@@ -196,7 +197,6 @@ export const About: React.FC = () => {
   );
 
   const [loading, setLoading] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -404,92 +404,7 @@ export const About: React.FC = () => {
       </Helmet>
 
       {/* Navigation Header */}
-      <header className="sticky top-0 z-50 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 sm:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-              {settings.brandName}
-            </span>
-          </Link>
-
-          {/* Desktop & Tablet Navigation */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] tracking-widest uppercase font-semibold text-slate-600 dark:text-slate-300">
-            <Link to="/" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
-              Portfolio
-            </Link>
-            <Link to="/?category=FILMS" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
-              Films
-            </Link>
-            <Link to="/blog" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
-              Journal
-            </Link>
-            <Link 
-              to="/about" 
-              className="text-slate-950 dark:text-white font-bold border-b-2 border-slate-900 dark:border-white pb-0.5 py-2"
-            >
-              About
-            </Link>
-            <Link to="/faq" className="hover:text-slate-950 dark:hover:text-white transition-colors py-2">
-              FAQ
-            </Link>
-          </nav>
-
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-            <ThemeToggle className="text-slate-600 dark:text-amber-300" />
-            <a 
-              href={settings.contactLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center justify-center min-h-[40px] px-5 sm:px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm active:scale-95"
-            >
-              Enquire
-            </a>
-
-            {/* Mobile Menu Button */}
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className="md:hidden min-h-[44px] min-w-[44px] p-2.5 flex items-center justify-center text-slate-900 dark:text-white hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              aria-label="Toggle menu"
-              aria-expanded={isMenuOpen}
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-slate-200/60 dark:border-slate-800 bg-[#FAF8F5] dark:bg-[#0b0f17] px-6 py-6 animate-in slide-in-from-top-3 duration-200 shadow-xl">
-            <div className="flex flex-col gap-3 text-xs font-semibold uppercase tracking-widest">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
-                Portfolio
-              </Link>
-              <Link to="/?category=FILMS" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
-                Films
-              </Link>
-              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
-                Journal
-              </Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 text-slate-950 dark:text-white font-bold">
-                About
-              </Link>
-              <Link to="/faq" onClick={() => setIsMenuOpen(false)} className="py-3 border-b border-slate-200/60 dark:border-slate-800/80 active:text-slate-500">
-                FAQ
-              </Link>
-              <a 
-                href={settings.contactLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={() => setIsMenuOpen(false)}
-                className="mt-3 text-center min-h-[44px] flex items-center justify-center py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-full text-xs font-semibold tracking-widest uppercase active:scale-95 shadow-sm"
-              >
-                Enquire
-              </a>
-            </div>
-          </div>
-        )}
-      </header>
+      <PublicHeader brandName={settings.brandName} contactLink={settings.contactLink} />
 
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-8 sm:py-12 md:py-16">
