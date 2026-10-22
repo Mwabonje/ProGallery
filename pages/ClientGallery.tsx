@@ -36,6 +36,7 @@ import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioI
 import { getApiUrl } from "../utils/api";
 
 import { Helmet } from "react-helmet-async";
+import { PublicHeader } from "../components/PublicHeader";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -1622,264 +1623,276 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : ""}`}
+      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-white dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : ""}`}
     >
-      {/* Scroll Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
-        <div className="h-full bg-emerald-500 transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }} />
-      </div>
+      {/* Scroll Progress Bar for Client Galleries */}
+      {!isPortfolio && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
+          <div className="h-full bg-emerald-500 transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }} />
+        </div>
+      )}
       <Helmet>
-        <title>{isAuthenticated ? (gallery?.title || (gallery?.client_name ? `${gallery.client_name} | Client Gallery` : "Client Gallery | Mwabonje")) : "Private Client Gallery | Mwabonje"}</title>
-        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+        {isPortfolio ? (
+          <>
+            <title>{`${gallery?.title || gallery?.client_name || "Portfolio"} | Mwabonje Photography`}</title>
+            <meta
+              name="description"
+              content={`Explore the ${gallery?.title || gallery?.client_name || "portfolio"} photography collection by Mwabonje — capturing authentic lifestyle and documentary moments on the Kenyan coast.`}
+            />
+          </>
+        ) : (
+          <>
+            <title>{isAuthenticated ? (gallery?.title || (gallery?.client_name ? `${gallery.client_name} | Client Gallery` : "Client Gallery | Mwabonje")) : "Private Client Gallery | Mwabonje"}</title>
+            <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+            <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+          </>
+        )}
       </Helmet>
-      {/* Header */}
-      <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800">
-        <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
-          <div>
-            <h1
-              className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPortfolio ? "text-slate-900 dark:text-white tracking-widest uppercase font-sans" : "text-slate-900 dark:text-white"}`}
-            >
-              {viewFilter !== "all" ? (
-                <button
-                  onClick={() => setViewFilter("all")}
-                  className="md:hidden mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
-              ) : isPortfolio ? (
-                <button
-                  onClick={() => navigate(`/`)}
-                  className="mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
-              ) : null}
-              {viewFilter === "selected"
-                ? "My Selection"
-                : viewFilter === "main"
-                  ? "Main Photos"
-                  : viewFilter === "extras"
-                    ? "Extra Photos"
-                    : gallery?.client_name}
-            </h1>
-            {!isPortfolio && (
+
+      {/* Navigation Header */}
+      {isPortfolio ? (
+        <PublicHeader
+          activeNav={gallery?.category?.toLowerCase().includes("film") ? "films" : "portfolio"}
+          scrollProgress={scrollProgress * 100}
+        />
+      ) : (
+        /* Standard Client Delivery Header */
+        <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800">
+          <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
+            <div>
+              <h1 className="text-lg md:text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                {viewFilter !== "all" ? (
+                  <button
+                    onClick={() => setViewFilter("all")}
+                    className="md:hidden mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  >
+                    <ArrowLeft className="w-6 h-6" />
+                  </button>
+                ) : null}
+                {viewFilter === "selected"
+                  ? "My Selection"
+                  : viewFilter === "main"
+                    ? "Main Photos"
+                    : viewFilter === "extras"
+                      ? "Extra Photos"
+                      : gallery?.client_name}
+              </h1>
               <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 {displayedFiles.length} items
               </p>
-            )}
-          </div>
+            </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
-            {!isPortfolio && gallery?.photographer_id && (
-              <button
-                onClick={() => navigate(`/`)}
-                className="flex items-center gap-1.5 px-4 h-10 bg-[#161616] text-white/90 rounded-md font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black hover:text-white transition-all shadow-sm group active:scale-[0.98]"
-              >
-                PORTFOLIO{" "}
-                <ArrowUpRight className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
-              </button>
-            )}
-            {isSelectionMode ? (
-              // Selection Mode Header Content
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
-                  <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
-                  <span>Selection Mode Active</span>
-                </div>
-              </div>
-            ) : !isPortfolio ? (
-              // Standard Mode Header Content
-              <>
-                {/* Download All Button */}
+            <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
+              {gallery?.photographer_id && (
                 <button
-                  onClick={handleDownloadAll}
-                  disabled={downloadingAll || files.length === 0}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium transition-all text-sm shadow-sm ${
-                    !canDownloadAll
-                      ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed"
-                      : downloadingAll
-                        ? "bg-[#0f1423] border border-white/5 text-slate-400 cursor-wait opacity-80"
-                        : "bg-[#0f1423] border border-white/5 text-white hover:bg-[#161d30] hover:shadow-md active:scale-[0.98]"
-                  }`}
+                  onClick={() => navigate(`/`)}
+                  className="flex items-center gap-1.5 px-4 h-10 bg-[#161616] text-white/90 rounded-md font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black hover:text-white transition-all shadow-sm group active:scale-[0.98]"
                 >
-                  {downloadingAll ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Preparing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FolderDown className="w-4 h-4 text-slate-200" />
-                      <span>Download All</span>
-                    </>
-                  )}
+                  PORTFOLIO{" "}
+                  <ArrowUpRight className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
                 </button>
-
-                {isBalancePending ? (
-                  <div className="flex items-center gap-2 bg-slate-50 px-4 h-10 rounded-lg border border-slate-200 shadow-sm">
-                    <div className="flex flex-col text-right justify-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">
-                        {downloadLimit > 0 ? `${Math.max(0, downloadLimit - downloadedImageIds.length)} Free Downloads` : "Balance Due"}
-                      </span>
-                      <span className="font-bold text-slate-800 text-sm leading-none">
-                        {formatCurrency(balanceDue)}
-                      </span>
-                    </div>
-                    <Lock className="w-4 h-4 text-slate-500" />
+              )}
+              {isSelectionMode ? (
+                // Selection Mode Header Content
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
+                    <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
+                    <span>Selection Mode Active</span>
                   </div>
-                ) : agreedAmount === 0 ? (
-                  <div className="flex items-center gap-2.5 px-4 h-10 bg-[#f4f6ff] text-indigo-700 rounded-full font-medium border border-indigo-100 shadow-sm text-sm">
-                    <Heart className="w-4 h-4 text-indigo-600" />
-                    <span>Collaboration</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2.5 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-100 shadow-sm text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Paid in Full</span>
-                  </div>
-                )}
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Visual Countdown Banner */}
-        {timeLeft && !isPortfolio && (
-          <div
-            className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-2 md:gap-3 ${
-              timeLeft.expired
-                ? "bg-slate-100 text-slate-500 border-b border-slate-200"
-                : timeLeft.days === 0 && timeLeft.hours < 24
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-50 text-slate-500 border-b border-slate-200"
-            }`}
-          >
-            {timeLeft.expired ? (
-              <>
-                <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4" /> GALLERY
-                EXPIRED
-              </>
-            ) : (
-              <>
-                <Clock
-                  className={`w-3.5 h-3.5 md:w-4 md:h-4 ${timeLeft.days === 0 && timeLeft.hours < 24 ? "text-slate-400" : "text-slate-400"}`}
-                />
-                <span
-                  className={
-                    timeLeft.days === 0 && timeLeft.hours < 24
-                      ? "text-slate-300"
-                      : "text-slate-500"
-                  }
-                >
-                  Expires In:
-                </span>
-                <div className="flex items-center gap-1 md:gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "bg-white/10 px-1.5 py-0.5 rounded"
-                        : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                    }
-                  >
-                    {timeLeft.days.toString().padStart(2, "0")}
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-400 text-[9px] mr-1"
-                        : "text-slate-400 text-[9px] mr-1"
-                    }
-                  >
-                    D
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-600"
-                        : "text-slate-300"
-                    }
-                  >
-                    :
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "bg-white/10 px-1.5 py-0.5 rounded"
-                        : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                    }
-                  >
-                    {timeLeft.hours.toString().padStart(2, "0")}
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-400 text-[9px] mr-1"
-                        : "text-slate-400 text-[9px] mr-1"
-                    }
-                  >
-                    H
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-600"
-                        : "text-slate-300"
-                    }
-                  >
-                    :
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "bg-white/10 px-1.5 py-0.5 rounded"
-                        : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                    }
-                  >
-                    {timeLeft.minutes.toString().padStart(2, "0")}
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-400 text-[9px] mr-1"
-                        : "text-slate-400 text-[9px] mr-1"
-                    }
-                  >
-                    M
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-600"
-                        : "text-slate-300"
-                    }
-                  >
-                    :
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "bg-white/10 px-1.5 py-0.5 rounded"
-                        : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                    }
-                  >
-                    {timeLeft.seconds.toString().padStart(2, "0")}
-                  </span>
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-400 text-[9px]"
-                        : "text-slate-400 text-[9px]"
-                    }
-                  >
-                    S
-                  </span>
                 </div>
-              </>
-            )}
+              ) : (
+                // Standard Mode Header Content
+                <>
+                  {/* Download All Button */}
+                  <button
+                    onClick={handleDownloadAll}
+                    disabled={downloadingAll || files.length === 0}
+                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium transition-all text-sm shadow-sm ${
+                      !canDownloadAll
+                        ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed"
+                        : downloadingAll
+                          ? "bg-[#0f1423] border border-white/5 text-slate-400 cursor-wait opacity-80"
+                          : "bg-[#0f1423] border border-white/5 text-white hover:bg-[#161d30] hover:shadow-md active:scale-[0.98]"
+                    }`}
+                  >
+                    {downloadingAll ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Preparing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FolderDown className="w-4 h-4 text-slate-200" />
+                        <span>Download All</span>
+                      </>
+                    )}
+                  </button>
+
+                  {isBalancePending ? (
+                    <div className="flex items-center gap-2 bg-slate-50 px-4 h-10 rounded-lg border border-slate-200 shadow-sm">
+                      <div className="flex flex-col text-right justify-center">
+                        <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">
+                          {downloadLimit > 0 ? `${Math.max(0, downloadLimit - downloadedImageIds.length)} Free Downloads` : "Balance Due"}
+                        </span>
+                        <span className="font-bold text-slate-800 text-sm leading-none">
+                          {formatCurrency(balanceDue)}
+                        </span>
+                      </div>
+                      <Lock className="w-4 h-4 text-slate-500" />
+                    </div>
+                  ) : agreedAmount === 0 ? (
+                    <div className="flex items-center gap-2.5 px-4 h-10 bg-[#f4f6ff] text-indigo-700 rounded-full font-medium border border-indigo-100 shadow-sm text-sm">
+                      <Heart className="w-4 h-4 text-indigo-600" />
+                      <span>Collaboration</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2.5 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-100 shadow-sm text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Paid in Full</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </header>
+
+          {/* Visual Countdown Banner */}
+          {timeLeft && (
+            <div
+              className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-2 md:gap-3 ${
+                timeLeft.expired
+                  ? "bg-slate-100 text-slate-500 border-b border-slate-200"
+                  : timeLeft.days === 0 && timeLeft.hours < 24
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-50 text-slate-500 border-b border-slate-200"
+              }`}
+            >
+              {timeLeft.expired ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4" /> GALLERY
+                  EXPIRED
+                </>
+              ) : (
+                <>
+                  <Clock
+                    className={`w-3.5 h-3.5 md:w-4 md:h-4 ${timeLeft.days === 0 && timeLeft.hours < 24 ? "text-slate-400" : "text-slate-400"}`}
+                  />
+                  <span
+                    className={
+                      timeLeft.days === 0 && timeLeft.hours < 24
+                        ? "text-slate-300"
+                        : "text-slate-500"
+                    }
+                  >
+                    Expires In:
+                  </span>
+                  <div className="flex items-center gap-1 md:gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "bg-white/10 px-1.5 py-0.5 rounded"
+                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
+                      }
+                    >
+                      {timeLeft.days.toString().padStart(2, "0")}
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-400 text-[9px] mr-1"
+                          : "text-slate-400 text-[9px] mr-1"
+                      }
+                    >
+                      D
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-600"
+                          : "text-slate-300"
+                      }
+                    >
+                      :
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "bg-white/10 px-1.5 py-0.5 rounded"
+                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
+                      }
+                    >
+                      {timeLeft.hours.toString().padStart(2, "0")}
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-400 text-[9px] mr-1"
+                          : "text-slate-400 text-[9px] mr-1"
+                      }
+                    >
+                      H
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-600"
+                          : "text-slate-300"
+                      }
+                    >
+                      :
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "bg-white/10 px-1.5 py-0.5 rounded"
+                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
+                      }
+                    >
+                      {timeLeft.minutes.toString().padStart(2, "0")}
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-400 text-[9px] mr-1"
+                          : "text-slate-400 text-[9px] mr-1"
+                      }
+                    >
+                      M
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-600"
+                          : "text-slate-300"
+                      }
+                    >
+                      :
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "bg-white/10 px-1.5 py-0.5 rounded"
+                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
+                      }
+                    >
+                      {timeLeft.seconds.toString().padStart(2, "0")}
+                    </span>
+                    <span
+                      className={
+                        timeLeft.days === 0 && timeLeft.hours < 24
+                          ? "text-slate-400 text-[9px]"
+                          : "text-slate-400 text-[9px]"
+                      }
+                    >
+                      S
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </header>
+      )}
 
       {/* Grid */}
       <main
@@ -1960,6 +1973,8 @@ export const ClientGallery: React.FC = () => {
                           return;
                         }
                         setLightboxFileWithTracking(file);
+                      } else {
+                        setLightboxFileWithTracking(file);
                       }
                     }}
                     onContextMenu={(e) => {
@@ -1974,7 +1989,7 @@ export const ClientGallery: React.FC = () => {
                     onMouseDown={handleLongPressStart}
                     onMouseUp={handleLongPressEnd}
                     onMouseLeave={handleLongPressEnd}
-                    className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : (isPortfolio ? "aspect-auto w-full inline-block bg-slate-50 relative mb-1 md:mb-2 min-h-[160px]" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]")} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : "cursor-pointer"}`}
+                    className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : (isPortfolio ? "aspect-auto w-full inline-block bg-slate-50 relative mb-1 md:mb-2 min-h-[160px] cursor-pointer" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]")} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full cursor-pointer ${isPortfolio ? "active:scale-[0.98] duration-300 md:active:scale-100" : ""}`}
                     style={{
                       WebkitTouchCallout: "none",
                       userSelect: "none",
@@ -3126,6 +3141,70 @@ export const ClientGallery: React.FC = () => {
           </div>
         </div>
       )}
-</div>
+
+      {/* Portfolio Gallery Site Footer */}
+      {isPortfolio && (
+        <footer className="bg-slate-950 text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 mt-16 sm:mt-24 border-t border-white/10">
+          <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-10 pb-10 sm:pb-12 border-b border-white/10">
+            <div>
+              <span className="font-serif text-2xl sm:text-3xl font-bold tracking-widest text-white">
+                MWABONJE
+              </span>
+              <p className="text-slate-400 text-xs tracking-wider uppercase mt-2">
+                East African Photography &amp; Film Studio
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs uppercase tracking-widest font-semibold text-slate-300">
+              <Link to="/#work" className="hover:text-white transition-colors py-1">
+                Portfolio
+              </Link>
+              <Link to="/?category=FILMS#work" className="hover:text-white transition-colors py-1">
+                Films
+              </Link>
+              <Link to="/blog" className="hover:text-white transition-colors py-1">
+                Journal
+              </Link>
+              <Link to="/about" className="hover:text-white transition-colors py-1">
+                About
+              </Link>
+              <Link to="/faq" className="hover:text-white transition-colors py-1">
+                FAQ
+              </Link>
+              <a
+                href="https://mwabonjebooking.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors py-1"
+              >
+                Contact
+              </a>
+            </div>
+          </div>
+
+          <div className="max-w-[1600px] mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
+            <p>&copy; {new Date().getFullYear()} MWABONJE. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://instagram.com/mwabonje"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Instagram
+              </a>
+              <a
+                href="https://wa.me/254700000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
   );
 };

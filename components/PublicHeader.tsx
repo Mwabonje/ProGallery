@@ -13,6 +13,8 @@ interface PublicHeaderProps {
   scrollProgress?: number;
   /** Optional callback when Films category is selected on homepage */
   onSelectCategory?: (category: string) => void;
+  /** Optional override for active nav item (e.g. 'portfolio' when inside a portfolio exhibition) */
+  activeNav?: 'portfolio' | 'films' | 'journal' | 'about' | 'faq';
 }
 
 const DEFAULT_BRAND_NAME = 'MWABONJE';
@@ -23,6 +25,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
   contactLink: propContactLink,
   scrollProgress,
   onSelectCategory,
+  activeNav,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -109,11 +112,11 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
   // Determine active route state
   const isHome = location.pathname === '/' || location.pathname === '';
   const searchParams = new URLSearchParams(location.search);
-  const isFilmsActive = (isHome && searchParams.get('category') === 'FILMS') || location.hash === '#films';
-  const isPortfolioActive = isHome && !isFilmsActive;
-  const isJournalActive = location.pathname.startsWith('/blog');
-  const isAboutActive = location.pathname === '/about';
-  const isFaqActive = location.pathname === '/faq';
+  const isFilmsActive = activeNav ? activeNav === 'films' : ((isHome && searchParams.get('category') === 'FILMS') || location.hash === '#films');
+  const isPortfolioActive = activeNav ? activeNav === 'portfolio' : (isHome && !isFilmsActive);
+  const isJournalActive = activeNav ? activeNav === 'journal' : location.pathname.startsWith('/blog');
+  const isAboutActive = activeNav ? activeNav === 'about' : location.pathname === '/about';
+  const isFaqActive = activeNav ? activeNav === 'faq' : location.pathname === '/faq';
 
   // Navigation handlers
   const handlePortfolioClick = (e: React.MouseEvent) => {
