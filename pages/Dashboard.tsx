@@ -114,6 +114,7 @@ export const Dashboard: React.FC = () => {
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
   const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
   const [isCreating, setIsCreating] = useState(false);
@@ -481,6 +482,7 @@ export const Dashboard: React.FC = () => {
 
   const handleOpenCreateModal = () => {
     setNewClientName('');
+    setNewDescription('');
     if (userEmail !== 'ringa.michael@gmail.com') {
       setNewCategory(''); // Force empty so they can only create client deliveries
     }
@@ -516,12 +518,23 @@ export const Dashboard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const cleanDesc = newDescription.trim();
+      let payloadTitle = `${newClientName}'s Gallery`;
+      if (isPortfolio) {
+        payloadTitle = JSON.stringify({
+          projectTitle: newClientName,
+          projectDescription: cleanDesc,
+        });
+      } else if (cleanDesc) {
+        payloadTitle = cleanDesc;
+      }
+
       const { data, error } = await supabase
         .from('galleries')
         .insert([{
           photographer_id: user.id,
           client_name: newClientName,
-          title: `${newClientName}'s Gallery`,
+          title: payloadTitle,
           category: isPortfolio ? `${baseCategory} [${newLayout}]` : newCategory,
           agreed_balance: 0,
           amount_paid: 0,
@@ -1463,6 +1476,27 @@ export const Dashboard: React.FC = () => {
                   required
                   disabled={isCreating}
                 />
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="galleryDescription" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Project Description
+                  </label>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">Optional</span>
+                </div>
+                <textarea
+                  id="galleryDescription"
+                  rows={3}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm leading-relaxed resize-none"
+                  placeholder="e.g. Social Campaign for Salvatore Ferragamo highlighting their F80 Skeleton watch."
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                  Displayed beneath the cover image on portfolio galleries. You can also edit this anytime later.
+                </p>
               </div>
 
               {userEmail === 'ringa.michael@gmail.com' && (

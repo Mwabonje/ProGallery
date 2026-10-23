@@ -141,8 +141,22 @@ export const GalleryManager: React.FC = () => {
     setAgreedAmount(galData.agreed_balance === 0 ? '' : galData.agreed_balance);
     setPaid(galData.amount_paid === 0 ? '' : galData.amount_paid);
     setDownloadsBeforeClearing(galData.downloads_before_clearing === 0 || !galData.downloads_before_clearing ? '' : galData.downloads_before_clearing);
-    setEditClientName(galData.client_name);
-    setEditTitle(galData.title);
+
+    let clientNameVal = galData.client_name || '';
+    let titleVal = galData.title || '';
+    if (galData.title) {
+      try {
+        const parsed = JSON.parse(galData.title);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.projectTitle) clientNameVal = parsed.projectTitle;
+          if (parsed.projectDescription !== undefined) titleVal = parsed.projectDescription;
+        }
+      } catch {
+        // Not JSON formatted title
+      }
+    }
+    setEditClientName(clientNameVal);
+    setEditTitle(titleVal);
     setEditCategory(galData.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
     setEditLayout(galData.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
 
@@ -402,9 +416,23 @@ export const GalleryManager: React.FC = () => {
           finalCategory = `${finalCategory} [${editLayout}]`;
       }
       
+      const isPortfolioGal = Boolean(
+        finalCategory && 
+        finalCategory.trim() !== "" && 
+        finalCategory.toLowerCase().trim() !== "delivery"
+      );
+
+      let payloadTitle = editTitle;
+      if (isPortfolioGal) {
+        payloadTitle = JSON.stringify({
+          projectTitle: editClientName,
+          projectDescription: editTitle,
+        });
+      }
+
       const { error } = await supabase
         .from('galleries')
-        .update({ client_name: editClientName, title: editTitle, category: finalCategory })
+        .update({ client_name: editClientName, title: payloadTitle, category: finalCategory })
         .eq('id', gallery.id);
       
       if (error) throw error;
@@ -974,20 +1002,30 @@ export const GalleryManager: React.FC = () => {
         <div>
             {isEditingMeta ? (
                 <div className="space-y-3 w-full max-w-xl mb-4">
-                    <input
-                        type="text"
-                        value={editClientName}
-                        onChange={(e) => setEditClientName(e.target.value)}
-                        placeholder="Gallery Name / Client Name"
-                        className="w-full text-3xl font-serif font-medium tracking-tight text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 focus:border-slate-900 dark:focus:border-white focus:outline-none bg-transparent pb-1"
-                    />
-                    <textarea
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        placeholder="Description or Subtitle (e.g., Print Details)"
-                        rows={2}
-                        className="w-full text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none resize-none bg-white dark:bg-slate-900"
-                    />
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                        Gallery Name / Project Title
+                      </label>
+                      <input
+                          type="text"
+                          value={editClientName}
+                          onChange={(e) => setEditClientName(e.target.value)}
+                          placeholder="Gallery Name / Client Name"
+                          className="w-full text-2xl font-serif font-medium tracking-tight text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 focus:border-slate-900 dark:focus:border-white focus:outline-none bg-transparent pb-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                        Project Description (Optional)
+                      </label>
+                      <textarea
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          placeholder="Project description displayed beneath the cover image on portfolio galleries..."
+                          rows={3}
+                          className="w-full text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none resize-none bg-white dark:bg-slate-900"
+                      />
+                    </div>
                     <input
                         type="text"
                         list="gallery-category-options"
@@ -1043,11 +1081,16 @@ export const GalleryManager: React.FC = () => {
                                 </span>
                             )}
                         </h1>
-                        <div className="font-mono text-[11.5px] text-slate-500 dark:text-slate-400">ID · {gallery.id.slice(0, 8)}</div>
+                        {editTitle ? (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-xl line-clamp-2">
+                            {editTitle}
+                          </p>
+                        ) : null}
+                        <div className="font-mono text-[11.5px] text-slate-500 dark:text-slate-400 mt-1">ID · {gallery.id.slice(0, 8)}</div>
                     </div>
                     <button
                         onClick={() => setIsEditingMeta(true)}
-                        className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded-[3px] opacity-0 group-hover:opacity-100 transition-all mt-1"
+                        className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded-[3px] transition-all mt-1"
                         title="Edit Details"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -1057,6 +1100,12 @@ export const GalleryManager: React.FC = () => {
         </div>
         
         <div className="flex gap-2 flex-wrap">
+          <button 
+            onClick={() => setIsEditingMeta(true)} 
+            className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" /> Edit Details
+          </button>
           <button onClick={handleCopyLink} className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5">
             {linkCopied ? <><Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"/> <span className="text-emerald-600 dark:text-emerald-400">Copied</span></> : <><Copy className="w-3.5 h-3.5"/> Copy link</>}
           </button>
