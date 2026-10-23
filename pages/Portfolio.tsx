@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../types';
@@ -116,10 +116,24 @@ const renderHeroTitle = (title: string) => {
 };
 
 export function Portfolio({ photographerId }: { photographerId?: string }) {
-  const [galleries, setGalleries] = useState<PortfolioGallery[]>([]);
+  const [galleries, setGalleries] = useState<PortfolioGallery[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('mwabonje_portfolio_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [aboutGallery, setAboutGallery] = useState<PortfolioGallery | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem('mwabonje_portfolio_cache');
+    } catch {
+      return true;
+    }
+  });
   const [searchParams, setSearchParams] = useSearchParams();
+  const hasRestoredScroll = useRef(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(() => {
     try {
       const cached = localStorage.getItem('mwabonje_hero_image');
@@ -142,6 +156,15 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   });
 
   const selectedCategory = searchParams.get('category') || 'ALL';
+
+  const handleGalleryClick = (slug: string, id: string) => {
+    try {
+      sessionStorage.setItem('portfolio_last_clicked_slug', slug);
+      sessionStorage.setItem('portfolio_last_clicked_id', id);
+      sessionStorage.setItem('portfolio_scroll_y', window.scrollY.toString());
+      sessionStorage.setItem('portfolio_category_filter', selectedCategory);
+    } catch {}
+  };
 
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -302,6 +325,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         );
 
         setGalleries(enrichedGalleries);
+        try {
+          sessionStorage.setItem('mwabonje_portfolio_cache', JSON.stringify(enrichedGalleries));
+        } catch {}
       } catch (error) {
         console.error("Error loading portfolio:", error);
       } finally {
@@ -313,12 +339,62 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   }, [photographerId]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsMenuOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    // Disable automatic browser scroll restoration so it doesn't fight targeted element restoration
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
   }, []);
+
+  useEffect(() => {
+    if (galleries.length === 0 || hasRestoredScroll.current) return;
+
+    const targetSlug = sessionStorage.getItem('portfolio_last_clicked_slug');
+    const targetId = sessionStorage.getItem('portfolio_last_clicked_id');
+    const savedScrollY = sessionStorage.getItem('portfolio_scroll_y');
+
+    if (!targetSlug && !targetId && !savedScrollY) return;
+
+    const performRestoration = () => {
+      let targetEl: HTMLElement | null = null;
+      if (targetSlug) {
+        targetEl = document.getElementById(`gallery-item-${targetSlug}`);
+      }
+      if (!targetEl && targetId) {
+        targetEl = (document.querySelector(`[data-gallery-id="${targetId}"]`) as HTMLElement) ||
+                   document.getElementById(`gallery-item-id-${targetId}`);
+      }
+
+      if (targetEl) {
+        hasRestoredScroll.current = true;
+        const headerOffset = 84;
+        const elementPosition = targetEl.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = Math.max(0, elementPosition - headerOffset);
+        window.scrollTo({ top: offsetPosition, behavior: 'instant' });
+      } else if (savedScrollY) {
+        const y = parseInt(savedScrollY, 10);
+        if (!isNaN(y) && y > 0) {
+          hasRestoredScroll.current = true;
+          window.scrollTo({ top: y, behavior: 'instant' });
+        }
+      }
+    };
+
+    // Immediate restoration on mount
+    performRestoration();
+
+    // Secondary passes to handle DOM rendering and image bounding boxes
+    const rafId = requestAnimationFrame(() => {
+      performRestoration();
+    });
+    const timerId = setTimeout(() => {
+      performRestoration();
+    }, 100);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+    };
+  }, [galleries, loading, selectedCategory]);
 
   const handleCategorySelect = (cat: string) => {
     if (cat === 'ALL') {
@@ -486,8 +562,11 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               return (
                 <Link
                   key={gallery.id}
+                  id={`gallery-item-${slug}`}
+                  data-gallery-id={gallery.id}
                   to={`/${slug}`}
-                  className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800"
+                  onClick={() => handleGalleryClick(slug, gallery.id)}
+                  className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 scroll-mt-24"
                 >
                   {/* Card Media Image or Video */}
                   <CardMedia gallery={gallery} />

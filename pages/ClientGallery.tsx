@@ -555,6 +555,13 @@ export const ClientGallery: React.FC = () => {
 
       setGallery(galData);
 
+      // Save gallery slug and ID in sessionStorage so returning to the main portfolio restores exact position
+      try {
+        const slug = generateSlug(galData.client_name);
+        sessionStorage.setItem('portfolio_last_clicked_slug', slug);
+        sessionStorage.setItem('portfolio_last_clicked_id', galData.id);
+      } catch {}
+
       // Parse project title & description for portfolio view
       let pTitle = galData.client_name || "";
       let pDesc = "";

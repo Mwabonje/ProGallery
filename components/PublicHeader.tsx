@@ -130,8 +130,8 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      // Navigate to homepage #work
-      navigate('/#work');
+      // Navigate to homepage without forced #work hash to allow precise scroll restoration
+      navigate('/');
     }
   };
 
@@ -179,7 +179,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
           className="hidden md:flex items-center gap-6 lg:gap-8"
         >
           <a
-            href={isHome ? "#work" : "/#work"}
+            href={isHome ? "#work" : "/"}
             onClick={handlePortfolioClick}
             className={`${linkBaseClasses} ${isPortfolioActive ? activeClass : inactiveClass}`}
           >
@@ -249,7 +249,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
         >
           <div className="flex flex-col space-y-3 text-xs font-semibold tracking-widest uppercase">
             <a
-              href={isHome ? "#work" : "/#work"}
+              href={isHome ? "#work" : "/"}
               onClick={handlePortfolioClick}
               className={`py-3 border-b border-slate-200/60 dark:border-slate-800/80 ${isPortfolioActive ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-700 dark:text-slate-300'}`}
             >
