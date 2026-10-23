@@ -31,6 +31,8 @@ import {
   getTimeRemaining,
   getOptimizedImageUrl,
   rewriteUrlToR2,
+  getCleanGalleryTitle,
+  getCleanGalleryDescription,
 } from "../utils/formatters";
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 import { getApiUrl } from "../utils/api";
@@ -563,26 +565,10 @@ export const ClientGallery: React.FC = () => {
       } catch {}
 
       // Parse project title & description for portfolio view
-      let pTitle = galData.client_name || "";
-      let pDesc = "";
-      if (galData.title) {
-        try {
-          const parsed = JSON.parse(galData.title);
-          if (parsed && typeof parsed === "object") {
-            if (parsed.projectTitle) pTitle = parsed.projectTitle;
-            else if (parsed.title) pTitle = parsed.title;
-            if (parsed.projectDescription) pDesc = parsed.projectDescription;
-            else if (parsed.description) pDesc = parsed.description;
-          }
-        } catch {
-          const autoGen = new RegExp(`^${galData.client_name}('s|'s|’s)?\\s*gallery$`, 'i');
-          if (!autoGen.test(galData.title.trim())) {
-            pDesc = galData.title;
-          }
-        }
-      }
-      setProjectTitle(pTitle);
-      setProjectDescription(pDesc);
+      const cleanTitle = getCleanGalleryTitle(galData);
+      const cleanDesc = getCleanGalleryDescription(galData);
+      setProjectTitle(cleanTitle);
+      setProjectDescription(cleanDesc);
 
       // Helper to initialize authenticated gallery state
       const initAuthenticatedGallery = async (activeGalId: string, activeGal: Gallery) => {
@@ -1654,6 +1640,9 @@ export const ClientGallery: React.FC = () => {
       );
   }
 
+  const displayGalleryTitle = projectTitle || getCleanGalleryTitle(gallery);
+  const displayGalleryDescription = projectDescription || getCleanGalleryDescription(gallery);
+
   return (
     <div
       className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-white dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : ""}`}
@@ -1667,15 +1656,19 @@ export const ClientGallery: React.FC = () => {
       <Helmet>
         {isPortfolio ? (
           <>
-            <title>{`${gallery?.title || gallery?.client_name || "Portfolio"} | Mwabonje Photography`}</title>
+            <title>{`${displayGalleryTitle} | Mwabonje Photography`}</title>
             <meta
               name="description"
-              content={`Explore the ${gallery?.title || gallery?.client_name || "portfolio"} photography collection by Mwabonje — capturing authentic lifestyle and documentary moments on the Kenyan coast.`}
+              content={displayGalleryDescription || `Explore the ${displayGalleryTitle} photography collection by Mwabonje — capturing authentic lifestyle and documentary moments on the Kenyan coast.`}
             />
+            <meta property="og:title" content={`${displayGalleryTitle} | Mwabonje Photography`} />
+            <meta property="og:description" content={displayGalleryDescription || `Explore the ${displayGalleryTitle} photography collection by Mwabonje — capturing authentic lifestyle and documentary moments on the Kenyan coast.`} />
+            <meta name="twitter:title" content={`${displayGalleryTitle} | Mwabonje Photography`} />
+            <meta name="twitter:description" content={displayGalleryDescription || `Explore the ${displayGalleryTitle} photography collection by Mwabonje — capturing authentic lifestyle and documentary moments on the Kenyan coast.`} />
           </>
         ) : (
           <>
-            <title>{isAuthenticated ? (gallery?.title || (gallery?.client_name ? `${gallery.client_name} | Client Gallery` : "Client Gallery | Mwabonje")) : "Private Client Gallery | Mwabonje"}</title>
+            <title>{isAuthenticated ? `${displayGalleryTitle} | Client Gallery` : "Private Client Gallery | Mwabonje"}</title>
             <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
             <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
           </>
@@ -1960,7 +1953,7 @@ export const ClientGallery: React.FC = () => {
                         if (skeleton) skeleton.style.display = 'none';
                       }}
                       src={getOptimizedImageUrl(getDisplayUrl(displayedFiles[0]), 1920, 1080, 85)}
-                      alt={projectTitle || gallery?.client_name || "Cover Image"}
+                      alt={displayGalleryTitle || "Cover Image"}
                       className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.01]"
                       loading="eager"
                       // @ts-ignore
@@ -1975,7 +1968,7 @@ export const ClientGallery: React.FC = () => {
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">
                 <div className="inline-block w-full">
                   <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 uppercase">
-                    {projectTitle || gallery?.client_name || "UNTITLED PROJECT"}
+                    {displayGalleryTitle || "UNTITLED PROJECT"}
                   </h1>
                   {projectDescription ? (
                     <p className="mt-3 md:mt-4 text-sm sm:text-base text-slate-600 font-light leading-relaxed max-w-2xl mx-auto">
@@ -2017,7 +2010,7 @@ export const ClientGallery: React.FC = () => {
                               if (skeleton) skeleton.style.display = 'none';
                             }}
                             src={getOptimizedImageUrl(getDisplayUrl(file), 800, 1067, 80)}
-                            alt={`${projectTitle || gallery?.client_name || "Gallery"} photo ${idx + 2}`}
+                            alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
                             className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.02]"
                             loading={idx < 6 ? "eager" : "lazy"}
                             decoding="async"

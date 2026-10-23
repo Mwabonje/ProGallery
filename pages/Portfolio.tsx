@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../types';
-import { getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
@@ -61,8 +61,9 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
     );
   }
 
-  const altText = gallery.client_name
-    ? `${gallery.client_name} — ${gallery.baseCategory || 'Photography'} by Mwabonje Photography in Kenya`
+  const cleanTitle = getCleanGalleryTitle(gallery);
+  const altText = cleanTitle
+    ? `${cleanTitle} — ${gallery.baseCategory || 'Photography'} by Mwabonje Photography in Kenya`
     : 'Coastal photography showcase by Mwabonje Photography';
 
   return (
@@ -84,7 +85,7 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
             {gallery.baseCategory || 'PORTFOLIO'}
           </span>
           <span className="font-serif text-xl md:text-2xl font-light text-slate-200">
-            {gallery.client_name}
+            {cleanTitle}
           </span>
         </div>
       )}
@@ -585,7 +586,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                   <div className="absolute bottom-0 inset-x-0 p-6 z-10 flex items-end justify-between">
                     <div>
                       <h3 className="font-serif text-2xl md:text-3xl font-medium text-white tracking-wide group-hover:translate-x-1 transition-transform duration-300">
-                        {gallery.client_name}
+                        {getCleanGalleryTitle(gallery)}
                       </h3>
                       <p className="text-slate-300 text-xs tracking-wider uppercase mt-1 font-sans">
                         View Gallery

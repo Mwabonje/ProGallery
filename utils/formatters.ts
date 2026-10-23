@@ -73,3 +73,65 @@ export const getOptimizedImageUrl = (url: string, width: number = 800, height?: 
     return url;
   }
 };
+
+/**
+ * Extracts a clean, human-readable display title for any gallery,
+ * properly stripping raw JSON structures (e.g. {"projectTitle":"Lamu","projectDescription":""})
+ * and falling back gracefully to client_name or "Portfolio".
+ */
+export const getCleanGalleryTitle = (gal?: { title?: string | null; client_name?: string | null } | null): string => {
+  if (!gal) return "Portfolio";
+
+  if (gal.title) {
+    const raw = gal.title.trim();
+    if (raw.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.projectTitle && typeof parsed.projectTitle === 'string' && parsed.projectTitle.trim()) {
+            return parsed.projectTitle.trim();
+          }
+          if (parsed.title && typeof parsed.title === 'string' && parsed.title.trim()) {
+            return parsed.title.trim();
+          }
+        }
+      } catch {}
+      // If parsing fails or yields nothing, return client_name
+      return gal.client_name?.trim() || "Portfolio";
+    }
+
+    // Check if it's the auto-generated "Client's gallery" placeholder
+    const autoGen = new RegExp(`^${gal.client_name || ""}('s|'s|’s)?\\s*gallery$`, 'i');
+    if (raw && !autoGen.test(raw)) {
+      return raw;
+    }
+  }
+
+  return gal.client_name?.trim() || "Portfolio";
+};
+
+/**
+ * Extracts clean, human-readable description for any gallery,
+ * safely handling JSON payloads and returning empty string if unset.
+ */
+export const getCleanGalleryDescription = (gal?: { title?: string | null } | null): string => {
+  if (!gal || !gal.title) return "";
+  const raw = gal.title.trim();
+
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.projectDescription && typeof parsed.projectDescription === 'string') {
+          return parsed.projectDescription.trim();
+        }
+        if (parsed.description && typeof parsed.description === 'string') {
+          return parsed.description.trim();
+        }
+      }
+    } catch {}
+    return "";
+  }
+
+  return raw;
+};

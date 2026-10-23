@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2 } from '../utils/formatters';
+import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getCleanGalleryDescription } from '../utils/formatters';
 import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { generateSlug } from '../utils/slug';
 import { getApiUrl } from '../utils/api';
@@ -763,7 +763,7 @@ export const GalleryManager: React.FC = () => {
       const nameWithoutExt = currentName.includes('.') ? currentName.substring(0, currentName.lastIndexOf('.')) : currentName;
       setRenameBaseName(nameWithoutExt);
     } else {
-      setRenameBaseName(gallery?.title || gallery?.client_name || 'Gallery');
+      setRenameBaseName(getCleanGalleryTitle(gallery));
     }
     setIsRenameModalOpen(true);
   };
@@ -1059,8 +1059,8 @@ export const GalleryManager: React.FC = () => {
                         <button
                             onClick={() => {
                                 setIsEditingMeta(false);
-                                setEditClientName(gallery.client_name);
-                                setEditTitle(gallery.title);
+                                setEditClientName(getCleanGalleryTitle(gallery));
+                                setEditTitle(getCleanGalleryDescription(gallery));
                                 setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
                                 setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
                             }}
@@ -1074,7 +1074,7 @@ export const GalleryManager: React.FC = () => {
                 <div className="group flex items-start gap-3">
                     <div>
                         <h1 className="font-serif text-3xl font-medium tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-3">
-                            {gallery.client_name}
+                            {getCleanGalleryTitle(gallery)}
                             {gallery.category && (
                                 <span className="text-[10px] font-sans font-bold tracking-widest uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-sm">
                                     {gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '')}
