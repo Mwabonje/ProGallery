@@ -1922,7 +1922,7 @@ export const ClientGallery: React.FC = () => {
 
       {/* Portfolio vs Delivery Gallery Layout */}
       {isPortfolio ? (
-        <main className="w-full bg-[#fbfbfb] min-h-screen text-slate-900 pb-24">
+        <main className="w-full bg-[#FAF8F5] dark:bg-[#0b0f17] min-h-screen text-slate-900 dark:text-slate-100 pb-24 transition-colors">
           {displayedFiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-slate-400">
               <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
@@ -1930,13 +1930,13 @@ export const ClientGallery: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* 1. Cover Image (Full Width Hero) */}
-              <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-8">
+              {/* 1. Cover Image (Full Bleed Edge-to-Edge Hero) */}
+              <div className="w-full">
                 <div
                   onClick={() => setLightboxFileWithTracking(displayedFiles[0])}
-                  className="group relative w-full aspect-[16/7] md:aspect-[2.35/1] max-h-[72vh] bg-slate-100 overflow-hidden cursor-pointer shadow-sm rounded-sm"
+                  className="group relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden cursor-pointer"
                 >
-                  <div id={`skeleton-cover-${displayedFiles[0].id}`} className="absolute inset-0 bg-slate-200/70 animate-pulse" />
+                  <div id={`skeleton-cover-${displayedFiles[0].id}`} className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800 animate-pulse" />
                   {displayedFiles[0].file_type === "video" || displayedFiles[0].file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                     <video
                       src={`${rewriteUrlToR2(displayedFiles[0].file_url)}#t=0.001`}
@@ -1952,7 +1952,7 @@ export const ClientGallery: React.FC = () => {
                         const skeleton = document.getElementById(`skeleton-cover-${displayedFiles[0].id}`);
                         if (skeleton) skeleton.style.display = 'none';
                       }}
-                      src={getOptimizedImageUrl(getDisplayUrl(displayedFiles[0]), 1920, 1080, 85)}
+                      src={getOptimizedImageUrl(getDisplayUrl(displayedFiles[0]), 2560, 1440, 85)}
                       alt={displayGalleryTitle || "Cover Image"}
                       className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.01]"
                       loading="eager"
@@ -1967,11 +1967,11 @@ export const ClientGallery: React.FC = () => {
               {/* 2. Project Title and Description */}
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">
                 <div className="inline-block w-full">
-                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 uppercase">
+                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 dark:text-white uppercase">
                     {displayGalleryTitle || "UNTITLED PROJECT"}
                   </h1>
                   {projectDescription ? (
-                    <p className="mt-3 md:mt-4 text-sm sm:text-base text-slate-600 font-light leading-relaxed max-w-2xl mx-auto">
+                    <p className="mt-3 md:mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
                       {projectDescription}
                     </p>
                   ) : null}
