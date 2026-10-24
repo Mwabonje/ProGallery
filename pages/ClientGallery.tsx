@@ -1990,10 +1990,10 @@ export const ClientGallery: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. Followed with Images in 3-Column Grid */}
+              {/* 3. Followed with Images in 2-Column Mobile / 3-Column Desktop Grid */}
               {displayedFiles.length > 1 && (
-                <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 animate-in fade-in duration-500">
+                <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 animate-in fade-in duration-500">
                     {displayedFiles.slice(1).map((file, idx) => (
                       <div
                         key={file.id}
