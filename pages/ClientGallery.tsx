@@ -1986,7 +1986,7 @@ export const ClientGallery: React.FC = () => {
                       <div
                         key={file.id}
                         onClick={() => setLightboxFileWithTracking(file)}
-                        className="group relative aspect-[3/4] bg-slate-100 overflow-hidden cursor-pointer shadow-sm rounded-sm"
+                        className="group relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden cursor-pointer shadow-sm rounded-none"
                       >
                         <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
                         {file.file_type === "video" || file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
@@ -2121,7 +2121,7 @@ export const ClientGallery: React.FC = () => {
                       onMouseDown={handleLongPressStart}
                       onMouseUp={handleLongPressEnd}
                       onMouseLeave={handleLongPressEnd}
-                      className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-sm" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]"} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full cursor-pointer`}
+                      className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-none" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]"} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full cursor-pointer`}
                       style={{
                         WebkitTouchCallout: "none",
                         userSelect: "none",
@@ -3160,7 +3160,7 @@ export const ClientGallery: React.FC = () => {
                   onMouseDown={handleLongPressStart}
                   onMouseUp={handleLongPressEnd}
                   onMouseLeave={handleLongPressEnd}
-                  className={`relative shrink-0 snap-center rounded-lg overflow-hidden transition-all duration-300 ${
+                  className={`relative shrink-0 snap-center rounded-none overflow-hidden transition-all duration-300 ${
                     lightboxFile.id === file.id
                       ? "w-16 h-16 border-2 border-white opacity-100 shadow-lg"
                       : "w-12 h-12 border border-white/20 opacity-50 hover:opacity-100"
