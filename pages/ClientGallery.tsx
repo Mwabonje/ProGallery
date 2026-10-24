@@ -1933,14 +1933,13 @@ export const ClientGallery: React.FC = () => {
               {/* 1. Cover Image (Full Bleed Edge-to-Edge Hero) */}
               <div className="w-full">
                 <div
-                  onClick={() => setLightboxFileWithTracking(displayedFiles[0])}
-                  className="group relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden cursor-pointer"
+                  className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden"
                 >
                   <div id={`skeleton-cover-${displayedFiles[0].id}`} className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800 animate-pulse" />
                   {displayedFiles[0].file_type === "video" || displayedFiles[0].file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                     <video
                       src={`${rewriteUrlToR2(displayedFiles[0].file_url)}#t=0.001`}
-                      className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.01]"
+                      className="w-full h-full object-cover"
                       autoPlay
                       muted
                       loop
@@ -1954,13 +1953,12 @@ export const ClientGallery: React.FC = () => {
                       }}
                       src={getOptimizedImageUrl(getDisplayUrl(displayedFiles[0]), 2560, 1440, 85)}
                       alt={displayGalleryTitle || "Cover Image"}
-                      className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.01]"
+                      className="w-full h-full object-cover"
                       loading="eager"
                       // @ts-ignore
                       fetchPriority="high"
                     />
                   )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                 </div>
               </div>
 
@@ -1999,15 +1997,14 @@ export const ClientGallery: React.FC = () => {
                     {displayedFiles.slice(1).map((file, idx) => (
                       <div
                         key={file.id}
-                        onClick={() => setLightboxFileWithTracking(file)}
-                        className="group relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden cursor-pointer shadow-sm rounded-none"
+                        className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden shadow-sm rounded-none"
                       >
                         <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
                         {file.file_type === "video" || file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                           <div className="relative w-full h-full">
                             <video
                               src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                              className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.02]"
+                              className="w-full h-full object-cover"
                               muted
                               loop
                               playsInline
@@ -2025,14 +2022,13 @@ export const ClientGallery: React.FC = () => {
                             }}
                             src={getOptimizedImageUrl(getDisplayUrl(file), 800, 1067, 80)}
                             alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
-                            className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-[1.02]"
+                            className="w-full h-full object-cover"
                             loading={idx < 6 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
                             fetchPriority={idx < 3 ? "high" : "auto"}
                           />
                         )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                       </div>
                     ))}
                   </div>
@@ -2119,8 +2115,6 @@ export const ClientGallery: React.FC = () => {
                             return;
                           }
                           setLightboxFileWithTracking(file);
-                        } else {
-                          setLightboxFileWithTracking(file);
                         }
                       }}
                       onContextMenu={(e) => {
@@ -2135,7 +2129,7 @@ export const ClientGallery: React.FC = () => {
                       onMouseDown={handleLongPressStart}
                       onMouseUp={handleLongPressEnd}
                       onMouseLeave={handleLongPressEnd}
-                      className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-none" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]"} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full cursor-pointer`}
+                      className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-none" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]"} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full ${isPortfolio ? "cursor-default" : "cursor-pointer"}`}
                       style={{
                         WebkitTouchCallout: "none",
                         userSelect: "none",
@@ -2830,7 +2824,7 @@ export const ClientGallery: React.FC = () => {
       )}
 
       {/* Lightbox Modal */}
-      {lightboxFile && (
+      {lightboxFile && !isPortfolio && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
           onClick={() => setLightboxFile(null)}
