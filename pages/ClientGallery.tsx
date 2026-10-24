@@ -1971,9 +1971,23 @@ export const ClientGallery: React.FC = () => {
                     {displayGalleryTitle || "UNTITLED PROJECT"}
                   </h1>
                   {projectDescription ? (
-                    <p className="mt-3 md:mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
-                      {projectDescription}
-                    </p>
+                    <div className="mt-4 md:mt-6 space-y-4 max-w-2xl mx-auto">
+                      {projectDescription
+                        .replace(/\\n/g, '\n')
+                        .split(/\n\s*\n/)
+                        .map((para, idx) => {
+                          const trimmed = para.trim();
+                          if (!trimmed) return null;
+                          return (
+                            <p
+                              key={idx}
+                              className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-light leading-relaxed whitespace-pre-line"
+                            >
+                              {trimmed}
+                            </p>
+                          );
+                        })}
+                    </div>
                   ) : null}
                 </div>
               </div>

@@ -1487,11 +1487,11 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <textarea
                   id="galleryDescription"
-                  rows={3}
+                  rows={4}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm leading-relaxed resize-none"
-                  placeholder="e.g. Social Campaign for Salvatore Ferragamo highlighting their F80 Skeleton watch."
+                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm leading-relaxed resize-y min-h-[90px]"
+                  placeholder="e.g. Social Campaign for Salvatore Ferragamo highlighting their F80 Skeleton watch. Press Enter twice for paragraph breaks."
                   disabled={isCreating}
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">

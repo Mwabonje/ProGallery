@@ -1021,9 +1021,9 @@ export const GalleryManager: React.FC = () => {
                       <textarea
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
-                          placeholder="Project description displayed beneath the cover image on portfolio galleries..."
-                          rows={3}
-                          className="w-full text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none resize-none bg-white dark:bg-slate-900"
+                          placeholder="Project description displayed beneath the cover image on portfolio galleries (press Enter twice for paragraph breaks)..."
+                          rows={4}
+                          className="w-full text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none resize-y min-h-[90px] bg-white dark:bg-slate-900"
                       />
                     </div>
                     <input
