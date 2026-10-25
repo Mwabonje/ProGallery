@@ -2203,7 +2203,7 @@ export const ClientGallery: React.FC = () => {
                         <div
                           key={sub.id}
                           onClick={() => handleSelectSubGallery(sub)}
-                          className="group cursor-pointer flex flex-col text-left"
+                          className="group cursor-pointer flex flex-col text-center"
                         >
                           <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
                             {subCover ? (
@@ -2217,15 +2217,15 @@ export const ClientGallery: React.FC = () => {
                                 <ImageIcon className="w-10 h-10" />
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                          </div>
-                          <div className="mt-3">
-                            <h3 className="font-serif text-base sm:text-lg font-medium uppercase tracking-[0.12em] text-slate-900 dark:text-white group-hover:underline">
-                              {subTitle}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-sans">
-                              {sub.itemCount ? `${sub.itemCount} Photos` : 'View Story →'}
-                            </p>
+                            {/* Subtle dark gradient overlay so title is crisp and legible on any photo */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
+
+                            {/* Name centered at bottom of cover image */}
+                            <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 z-10 text-center flex flex-col items-center justify-center">
+                              <h3 className="font-serif text-base sm:text-lg md:text-xl font-medium uppercase tracking-[0.18em] text-white transition-all duration-300 drop-shadow-sm text-center w-full">
+                                {subTitle}
+                              </h3>
+                            </div>
                           </div>
                         </div>
                       );
