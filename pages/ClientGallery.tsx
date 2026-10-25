@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   Download,
   Clock,
@@ -22,6 +22,7 @@ import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
+  Layers,
 } from "lucide-react";
 import { supabase } from "../services/supabase";
 import { Gallery, GalleryFile } from "../types";
@@ -33,6 +34,8 @@ import {
   rewriteUrlToR2,
   getCleanGalleryTitle,
   getCleanGalleryDescription,
+  getParentGalleryId,
+  parseGalleryMetadata,
 } from "../utils/formatters";
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 import { getApiUrl } from "../utils/api";
@@ -65,9 +68,16 @@ const WatermarkOverlay = () => {
 };
 
 export const ClientGallery: React.FC = () => {
-  const { galleryId } = useParams<{ galleryId: string }>();
+  const { galleryId, subGallerySlug } = useParams<{ galleryId: string; subGallerySlug?: string }>();
+  const [searchParams] = useSearchParams();
+  const subQuery = searchParams.get('sub');
   const navigate = useNavigate();
   const [gallery, setGallery] = useState<Gallery | null>(null);
+  const [parentGallery, setParentGallery] = useState<Gallery | null>(null);
+  const [subGalleries, setSubGalleries] = useState<(Gallery & { coverUrl?: string | null; itemCount?: number })[]>([]);
+  const [activeSubGallery, setActiveSubGallery] = useState<Gallery | null>(null);
+  const [activeSubFiles, setActiveSubFiles] = useState<GalleryFile[]>([]);
+  const [loadingSubFiles, setLoadingSubFiles] = useState<boolean>(false);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [downloadedImageIds, setDownloadedImageIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -477,6 +487,62 @@ export const ClientGallery: React.FC = () => {
     }
   };
 
+  const loadSubGalleryFiles = async (subGal: Gallery) => {
+    setLoadingSubFiles(true);
+    try {
+      const { data: fileData, error: fileError } = await supabase
+        .from("files")
+        .select("*")
+        .eq("gallery_id", subGal.id)
+        .neq("file_path", "GALLERY_PASSWORD")
+        .order("created_at", { ascending: false });
+
+      if (fileError) throw fileError;
+
+      if (fileData && fileData.length > 0) {
+        setActiveSubFiles(fileData);
+      } else {
+        const authenticUrls = getThemedLookbookImages(subGal.client_name, subGal.category);
+        const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
+          id: `portfolio-${subGal.id}-${idx}`,
+          gallery_id: subGal.id,
+          file_url: url,
+          file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
+          file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
+          title: `${subGal.client_name} ${idx + 1}`,
+          caption: subGal.client_name,
+          download_count: 0,
+          is_edited: false,
+          created_at: subGal.created_at,
+          expires_at: '2126-10-10T00:00:00.000Z',
+        }));
+        setActiveSubFiles(syntheticFiles);
+      }
+    } catch (e) {
+      console.warn("Failed to load sub-gallery files:", e);
+    } finally {
+      setLoadingSubFiles(false);
+    }
+  };
+
+  const handleSelectSubGallery = (sub: (Gallery & { coverUrl?: string | null }) | null) => {
+    setActiveSubGallery(sub);
+    if (sub) {
+      loadSubGalleryFiles(sub);
+      const subSlug = generateSlug(sub.client_name);
+      const parentSlug = generateSlug(gallery?.client_name || '');
+      if (parentSlug) {
+        window.history.pushState({}, '', `/${parentSlug}/${subSlug}`);
+      }
+    } else {
+      setActiveSubFiles([]);
+      const parentSlug = generateSlug(gallery?.client_name || '');
+      if (parentSlug) {
+        window.history.pushState({}, '', `/${parentSlug}`);
+      }
+    }
+  };
+
   const trackGalleryView = async (activeGalleryId: string, galData: Gallery) => {
     try {
       const viewedKey = `viewed_${activeGalleryId}`;
@@ -569,6 +635,76 @@ export const ClientGallery: React.FC = () => {
       const cleanDesc = getCleanGalleryDescription(galData);
       setProjectTitle(cleanTitle);
       setProjectDescription(cleanDesc);
+
+      // Check if this gallery is itself a child of another gallery
+      const parentId = getParentGalleryId(galData);
+      if (parentId) {
+        supabase
+          .from("galleries")
+          .select("*")
+          .eq("id", parentId)
+          .maybeSingle()
+          .then(({ data: pData }) => {
+            if (pData) setParentGallery(pData);
+          });
+      } else {
+        setParentGallery(null);
+      }
+
+      // Check if this gallery has sub-galleries
+      if (galData.photographer_id) {
+        supabase
+          .from("galleries")
+          .select("*")
+          .eq("photographer_id", galData.photographer_id)
+          .order("created_at", { ascending: true })
+          .then(async ({ data: allPhotogGals }) => {
+            if (allPhotogGals) {
+              const children = allPhotogGals.filter(g => getParentGalleryId(g) === galData.id);
+              if (children.length > 0) {
+                const enrichedChildren = await Promise.all(
+                  children.map(async (child) => {
+                    const { data: cFiles } = await supabase
+                      .from("files")
+                      .select("file_url, file_type")
+                      .eq("gallery_id", child.id)
+                      .neq("file_path", "GALLERY_PASSWORD")
+                      .order("created_at", { ascending: false });
+
+                    let cover = cFiles && cFiles.length > 0 ? cFiles[0].file_url : null;
+                    let count = cFiles ? cFiles.length : 0;
+                    if (!cover) {
+                      const lookbook = getThemedLookbookImages(child.client_name, child.category);
+                      cover = lookbook[0] || null;
+                      count = lookbook.length;
+                    }
+                    return {
+                      ...child,
+                      coverUrl: cover,
+                      itemCount: count,
+                    };
+                  })
+                );
+                setSubGalleries(enrichedChildren);
+
+                // Auto-activate sub-gallery if subGallerySlug or ?sub= was supplied
+                const targetSubSlug = subGallerySlug || subQuery;
+                if (targetSubSlug) {
+                  const matchedChild = enrichedChildren.find(
+                    c => generateSlug(c.client_name) === targetSubSlug || c.id === targetSubSlug
+                  );
+                  if (matchedChild) {
+                    setActiveSubGallery(matchedChild);
+                    loadSubGalleryFiles(matchedChild);
+                  }
+                }
+              } else {
+                setSubGalleries([]);
+              }
+            }
+          })
+          .catch(err => console.warn("Error fetching sub-galleries:", err));
+      }
 
       // Helper to initialize authenticated gallery state
       const initAuthenticatedGallery = async (activeGalId: string, activeGal: Gallery) => {
@@ -1327,7 +1463,8 @@ export const ClientGallery: React.FC = () => {
     limit > 0 ? selectedArray.slice(0, limit) : selectedArray;
   const extraSelections = limit > 0 ? selectedArray.slice(limit) : [];
 
-  let displayedFiles = files.filter((f) => !failedFileIds.has(f.id));
+  const activeFilesSource = activeSubGallery ? activeSubFiles : files;
+  let displayedFiles = activeFilesSource.filter((f) => !failedFileIds.has(f.id));
   if (viewFilter === "selected")
     displayedFiles = displayedFiles.filter((f) => selectedFileIds.has(f.id));
   if (viewFilter === "main")
@@ -1640,8 +1777,13 @@ export const ClientGallery: React.FC = () => {
       );
   }
 
-  const displayGalleryTitle = projectTitle || getCleanGalleryTitle(gallery);
-  const displayGalleryDescription = projectDescription || getCleanGalleryDescription(gallery);
+  const displayGalleryTitle = activeSubGallery 
+    ? getCleanGalleryTitle(activeSubGallery)
+    : (projectTitle || getCleanGalleryTitle(gallery));
+  const displayGalleryDescription = activeSubGallery
+    ? getCleanGalleryDescription(activeSubGallery)
+    : (projectDescription || getCleanGalleryDescription(gallery));
+  const parentCollectionTitle = parentGallery ? getCleanGalleryTitle(parentGallery) : getCleanGalleryTitle(gallery);
 
   return (
     <div
@@ -1923,7 +2065,78 @@ export const ClientGallery: React.FC = () => {
       {/* Portfolio vs Delivery Gallery Layout */}
       {isPortfolio ? (
         <main className="w-full bg-[#FAF8F5] dark:bg-[#0b0f17] min-h-screen text-slate-900 dark:text-slate-100 pb-24 transition-colors">
-          {displayedFiles.length === 0 ? (
+          {/* Breadcrumb Bar if navigating a child gallery directly */}
+          {parentGallery && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between text-xs tracking-widest uppercase border-b border-slate-200/60 dark:border-slate-800/80">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Link 
+                  to={`/${generateSlug(parentGallery.client_name)}`} 
+                  className="hover:text-slate-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  ← {getCleanGalleryTitle(parentGallery)}
+                </Link>
+                <span className="opacity-40">/</span>
+                <span className="text-slate-900 dark:text-white font-semibold">
+                  {displayGalleryTitle}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Sub-Galleries Tab Switcher Bar (Sticky) */}
+          {subGalleries.length > 0 && (
+            <div className="w-full border-b border-slate-200/80 dark:border-slate-800 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mr-1 hidden sm:inline">
+                    STORIES:
+                  </span>
+                  <button
+                    onClick={() => handleSelectSubGallery(null)}
+                    className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none ${
+                      !activeSubGallery 
+                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
+                    }`}
+                  >
+                    All Stories
+                  </button>
+                  {subGalleries.map((sub) => {
+                    const subTitle = getCleanGalleryTitle(sub);
+                    const isSelected = activeSubGallery?.id === sub.id;
+                    return (
+                      <button
+                        key={sub.id}
+                        onClick={() => handleSelectSubGallery(sub)}
+                        className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none whitespace-nowrap ${
+                          isSelected 
+                            ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
+                        }`}
+                      >
+                        {subTitle}
+                      </button>
+                    );
+                  })}
+                </div>
+                {activeSubGallery && (
+                  <button
+                    onClick={() => handleSelectSubGallery(null)}
+                    className="text-xs tracking-wider uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0 font-medium transition-colors"
+                  >
+                    ← Back to {parentCollectionTitle}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {loadingSubFiles ? (
+            <div className="flex flex-col items-center justify-center py-28 text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin text-slate-600 dark:text-slate-400 mb-3" />
+              <p className="text-xs uppercase tracking-widest font-mono text-slate-500">Loading story...</p>
+            </div>
+          ) : displayedFiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-slate-400">
               <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
               <p className="text-slate-500 font-medium">No photos available in this project.</p>
@@ -1965,12 +2178,23 @@ export const ClientGallery: React.FC = () => {
               {/* 2. Project Title and Description */}
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">
                 <div className="inline-block w-full">
+                  {/* Subtle Sub-Gallery Breadcrumb */}
+                  {activeSubGallery && (
+                    <div className="mb-3">
+                      <button
+                        onClick={() => handleSelectSubGallery(null)}
+                        className="text-xs uppercase tracking-[0.2em] font-sans text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                      >
+                        {parentCollectionTitle} · Sub-Gallery
+                      </button>
+                    </div>
+                  )}
                   <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 dark:text-white uppercase">
                     {displayGalleryTitle || "UNTITLED PROJECT"}
                   </h1>
-                  {projectDescription ? (
+                  {displayGalleryDescription ? (
                     <div className="mt-4 md:mt-6 space-y-4 max-w-2xl mx-auto">
-                      {projectDescription
+                      {displayGalleryDescription
                         .replace(/\\n/g, '\n')
                         .split(/\n\s*\n/)
                         .map((para, idx) => {
@@ -1989,6 +2213,56 @@ export const ClientGallery: React.FC = () => {
                   ) : null}
                 </div>
               </div>
+
+              {/* 2.5 Sub-Galleries Showcase Grid (Rendered when viewing parent overview and child stories exist) */}
+              {subGalleries.length > 0 && !activeSubGallery && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 sm:mb-16">
+                  <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200/60 dark:border-slate-800">
+                    <h2 className="font-serif text-base sm:text-lg tracking-[0.15em] uppercase text-slate-900 dark:text-white font-medium">
+                      Stories in this Collection
+                    </h2>
+                    <span className="text-xs text-slate-400 font-sans tracking-widest uppercase">
+                      {subGalleries.length} {subGalleries.length === 1 ? 'Story' : 'Stories'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
+                    {subGalleries.map((sub) => {
+                      const subTitle = getCleanGalleryTitle(sub);
+                      const subCover = sub.coverUrl;
+                      return (
+                        <div
+                          key={sub.id}
+                          onClick={() => handleSelectSubGallery(sub)}
+                          className="group cursor-pointer flex flex-col text-left"
+                        >
+                          <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
+                            {subCover ? (
+                              <img
+                                src={getOptimizedImageUrl(subCover, 600, 800, 80)}
+                                alt={subTitle}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-none"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <ImageIcon className="w-8 h-8" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                          </div>
+                          <div className="mt-2.5">
+                            <h3 className="font-serif text-sm sm:text-base font-medium uppercase tracking-[0.1em] text-slate-900 dark:text-white group-hover:underline">
+                              {subTitle}
+                            </h3>
+                            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5 font-sans">
+                              {sub.itemCount ? `${sub.itemCount} Photos` : 'View Story →'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* 3. Followed with Images in 2-Column Mobile / 3-Column Desktop Grid */}
               {displayedFiles.length > 1 && (

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { supabase } from '../services/supabase';
 import { Gallery, GalleryFile } from '../types';
-import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getCleanGalleryDescription } from '../utils/formatters';
+import { formatCurrency, formatDate, getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getCleanGalleryDescription, getParentGalleryId, parseGalleryMetadata } from '../utils/formatters';
 import { getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { generateSlug } from '../utils/slug';
 import { getApiUrl } from '../utils/api';
@@ -46,6 +46,14 @@ export const GalleryManager: React.FC = () => {
   const [galleryPassword, setGalleryPassword] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editLayout, setEditLayout] = useState<'grid' | 'swipe'>('grid');
+  const [editParentGalleryId, setEditParentGalleryId] = useState<string>('');
+  const [allPhotographerGalleries, setAllPhotographerGalleries] = useState<Gallery[]>([]);
+  const [subGalleries, setSubGalleries] = useState<Gallery[]>([]);
+  const [isSubGalleryModalOpen, setIsSubGalleryModalOpen] = useState(false);
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubDescription, setNewSubDescription] = useState('');
+  const [isCreatingSub, setIsCreatingSub] = useState(false);
+  const [selectedExistingSubId, setSelectedExistingSubId] = useState('');
   
   // UI States
   const [checkedFiles, setCheckedFiles] = useState<string[]>([]);
@@ -142,23 +150,31 @@ export const GalleryManager: React.FC = () => {
     setPaid(galData.amount_paid === 0 ? '' : galData.amount_paid);
     setDownloadsBeforeClearing(galData.downloads_before_clearing === 0 || !galData.downloads_before_clearing ? '' : galData.downloads_before_clearing);
 
-    let clientNameVal = galData.client_name || '';
-    let titleVal = galData.title || '';
-    if (galData.title) {
-      try {
-        const parsed = JSON.parse(galData.title);
-        if (parsed && typeof parsed === 'object') {
-          if (parsed.projectTitle) clientNameVal = parsed.projectTitle;
-          if (parsed.projectDescription !== undefined) titleVal = parsed.projectDescription;
-        }
-      } catch {
-        // Not JSON formatted title
-      }
-    }
+    const parsedMeta = parseGalleryMetadata(galData);
+    let clientNameVal = parsedMeta.projectTitle || galData.client_name || '';
+    let titleVal = parsedMeta.projectDescription || '';
     setEditClientName(clientNameVal);
     setEditTitle(titleVal);
     setEditCategory(galData.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
     setEditLayout(galData.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
+    setEditParentGalleryId(parsedMeta.parentGalleryId || '');
+
+    // Fetch all galleries by this photographer for parent/sub relationships
+    if (galData.photographer_id) {
+      supabase
+        .from('galleries')
+        .select('*')
+        .eq('photographer_id', galData.photographer_id)
+        .order('created_at', { ascending: false })
+        .then(({ data: allGals }) => {
+          if (allGals) {
+            setAllPhotographerGalleries(allGals);
+            const subs = allGals.filter(g => getParentGalleryId(g) === id);
+            setSubGalleries(subs);
+          }
+        })
+        .catch(err => console.warn('Error loading photographer galleries:', err));
+    }
 
     // Get Files
     let allFiles: GalleryFile[] = [];
@@ -420,13 +436,14 @@ export const GalleryManager: React.FC = () => {
         finalCategory && 
         finalCategory.trim() !== "" && 
         finalCategory.toLowerCase().trim() !== "delivery"
-      );
+      ) || Boolean(editParentGalleryId);
 
       let payloadTitle = editTitle;
       if (isPortfolioGal) {
         payloadTitle = JSON.stringify({
           projectTitle: editClientName,
           projectDescription: editTitle,
+          parentGalleryId: editParentGalleryId || null,
         });
       }
 
@@ -447,6 +464,103 @@ export const GalleryManager: React.FC = () => {
     } catch (error) {
       console.error('Error updating metadata:', error);
       alert('Failed to update details.');
+    }
+  };
+
+  const handleCreateSubGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubName.trim() || !gallery) return;
+    setIsCreatingSub(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const payload = JSON.stringify({
+        projectTitle: newSubName.trim(),
+        projectDescription: newSubDescription.trim(),
+        parentGalleryId: gallery.id,
+      });
+
+      const { data: newGal, error } = await supabase
+        .from('galleries')
+        .insert([{
+          photographer_id: user.id,
+          client_name: newSubName.trim(),
+          title: payload,
+          category: gallery.category || 'Editorial',
+          agreed_balance: 0,
+          amount_paid: 0,
+          link_enabled: true
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      toast.success(`Sub-gallery "${newSubName}" created under ${getCleanGalleryTitle(gallery)}!`);
+      setNewSubName('');
+      setNewSubDescription('');
+      setIsSubGalleryModalOpen(false);
+      fetchGalleryData();
+    } catch (err: any) {
+      console.error('Error creating sub-gallery:', err);
+      toast.error('Failed to create sub-gallery: ' + (err.message || 'Error'));
+    } finally {
+      setIsCreatingSub(false);
+    }
+  };
+
+  const handleLinkExistingSubGallery = async (subGalId: string) => {
+    if (!subGalId || !gallery) return;
+    try {
+      const target = allPhotographerGalleries.find(g => g.id === subGalId);
+      if (!target) return;
+
+      const meta = parseGalleryMetadata(target);
+      const newPayload = JSON.stringify({
+        ...meta,
+        projectTitle: meta.projectTitle || target.client_name,
+        parentGalleryId: gallery.id,
+      });
+
+      const { error } = await supabase
+        .from('galleries')
+        .update({ title: newPayload })
+        .eq('id', subGalId);
+
+      if (error) throw error;
+      toast.success(`Linked "${target.client_name}" as sub-gallery!`);
+      setSelectedExistingSubId('');
+      fetchGalleryData();
+    } catch (err: any) {
+      console.error('Error linking sub-gallery:', err);
+      toast.error('Failed to link sub-gallery');
+    }
+  };
+
+  const handleUnlinkSubGallery = async (subGalId: string, subName: string) => {
+    if (!window.confirm(`Unlink "${subName}" from this collection? It will become a top-level gallery.`)) return;
+    try {
+      const target = allPhotographerGalleries.find(g => g.id === subGalId);
+      if (!target) return;
+
+      const meta = parseGalleryMetadata(target);
+      const newPayload = JSON.stringify({
+        ...meta,
+        projectTitle: meta.projectTitle || target.client_name,
+        parentGalleryId: null,
+      });
+
+      const { error } = await supabase
+        .from('galleries')
+        .update({ title: newPayload })
+        .eq('id', subGalId);
+
+      if (error) throw error;
+      toast.success(`Unlinked "${subName}"`);
+      fetchGalleryData();
+    } catch (err: any) {
+      console.error('Error unlinking sub-gallery:', err);
+      toast.error('Failed to unlink sub-gallery');
     }
   };
 
@@ -1049,6 +1163,28 @@ export const GalleryManager: React.FC = () => {
                             <option value="swipe">Swipe Layout (Horizontal Scroll)</option>
                         </select>
                     )}
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                        Parent Collection (Optional — For Sub-Galleries)
+                      </label>
+                      <select
+                        value={editParentGalleryId}
+                        onChange={(e) => setEditParentGalleryId(e.target.value)}
+                        className="w-full text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-[3px] p-2 text-[13px] focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none bg-white dark:bg-slate-900"
+                      >
+                        <option value="">None (Top-Level Collection)</option>
+                        {allPhotographerGalleries
+                          .filter(g => g.id !== gallery?.id && !getParentGalleryId(g) && g.category && g.category.trim() !== '' && g.category !== 'ABOUT')
+                          .map(g => (
+                            <option key={g.id} value={g.id}>
+                              Inside: {getCleanGalleryTitle(g)}
+                            </option>
+                          ))}
+                      </select>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Assigning a parent nests this gallery inside that collection (e.g. Client A inside Editorial).
+                      </p>
+                    </div>
                     <div className="flex gap-2 pt-1">
                         <button
                             onClick={updateMeta}
@@ -1063,6 +1199,7 @@ export const GalleryManager: React.FC = () => {
                                 setEditTitle(getCleanGalleryDescription(gallery));
                                 setEditCategory(gallery?.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '');
                                 setEditLayout(gallery?.category?.match(/\[swipe\]/i) ? 'swipe' : 'grid');
+                                setEditParentGalleryId(parseGalleryMetadata(gallery).parentGalleryId || '');
                             }}
                             className="font-sans text-[12.5px] font-medium px-4 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
@@ -1248,6 +1385,115 @@ export const GalleryManager: React.FC = () => {
             </button>
           </div>
 
+          {/* Sub-Galleries Management Card */}
+          <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] p-5 mb-5 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-serif font-medium text-[17px] flex items-center gap-2 text-slate-900 dark:text-white">
+                <span className="text-[14px] opacity-60">●</span> Sub-Galleries
+              </h2>
+              <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono font-medium">
+                {subGalleries.length}
+              </span>
+            </div>
+            
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Nest child stories (e.g. Client A, Client B) inside this collection. Visitors can toggle stories directly.
+            </p>
+
+            {/* List of current sub-galleries */}
+            {subGalleries.length > 0 ? (
+              <div className="space-y-2 mb-4 max-h-[240px] overflow-y-auto pr-1">
+                {subGalleries.map((sub) => {
+                  const subTitle = getCleanGalleryTitle(sub);
+                  return (
+                    <div 
+                      key={sub.id} 
+                      className="p-2.5 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-[13px] text-slate-900 dark:text-white truncate">
+                          {subTitle}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">
+                          ID: {sub.id.slice(0, 8)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => navigate(`/gallery/${sub.id}`)}
+                          className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
+                          title="Manage Sub-Gallery"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <a
+                          href={`/g/${sub.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
+                          title="Preview Sub-Gallery"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          onClick={() => handleUnlinkSubGallery(sub.id, subTitle)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
+                          title="Unlink from this collection"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-3 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded bg-slate-50/50 dark:bg-slate-900/50 text-[12px] text-slate-400 mb-4">
+                No sub-galleries yet. Add client stories like Client A, B, etc.
+              </div>
+            )}
+
+            {/* Actions: Add new sub-gallery or attach existing */}
+            <div className="space-y-2">
+              <button
+                onClick={() => setIsSubGalleryModalOpen(true)}
+                className="w-full justify-center font-sans text-[12px] font-medium px-3 py-2 rounded-[3px] bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5"
+              >
+                + Create Sub-Gallery
+              </button>
+
+              {allPhotographerGalleries.filter(g => g.id !== gallery.id && !getParentGalleryId(g) && g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length > 0 && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                    Or Link Existing Collection
+                  </label>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={selectedExistingSubId}
+                      onChange={(e) => setSelectedExistingSubId(e.target.value)}
+                      className="flex-1 font-sans text-[12px] px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-[3px] bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none"
+                    >
+                      <option value="">Select gallery...</option>
+                      {allPhotographerGalleries
+                        .filter(g => g.id !== gallery.id && !getParentGalleryId(g) && g.category && g.category.trim() !== '' && g.category !== 'ABOUT')
+                        .map(g => (
+                          <option key={g.id} value={g.id}>
+                            {getCleanGalleryTitle(g)}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      onClick={() => handleLinkExistingSubGallery(selectedExistingSubId)}
+                      disabled={!selectedExistingSubId}
+                      className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 text-[12px] font-medium rounded-[3px] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Link
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Center Column */}
@@ -1771,6 +2017,83 @@ export const GalleryManager: React.FC = () => {
                   >
                     {isRenaming && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isRenaming ? 'Renaming...' : 'Rename'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Sub-Gallery Modal */}
+      {isSubGalleryModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl w-full max-w-md shadow-xl overflow-hidden pointer-events-auto transition-colors">
+            <div className="p-6 md:p-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-serif font-bold text-slate-900 dark:text-white">
+                    New Sub-Gallery
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Inside: <span className="font-semibold text-slate-700 dark:text-slate-300">{getCleanGalleryTitle(gallery)}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsSubGalleryModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateSubGallery} className="space-y-4">
+                <div>
+                  <label className="block text-[11.5px] font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Sub-Gallery Name / Client (e.g. Client A, Editorial Story 1)
+                  </label>
+                  <input
+                    type="text"
+                    value={newSubName}
+                    onChange={(e) => setNewSubName(e.target.value)}
+                    placeholder="e.g. Client A, Brand Campaign"
+                    required
+                    autoFocus
+                    className="w-full px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-slate-400 dark:focus:border-slate-500"
+                    disabled={isCreatingSub}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11.5px] font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    value={newSubDescription}
+                    onChange={(e) => setNewSubDescription(e.target.value)}
+                    placeholder="Story details, campaign notes, or client credits..."
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 resize-y"
+                    disabled={isCreatingSub}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsSubGalleryModalOpen(false)}
+                    disabled={isCreatingSub}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors font-medium text-[13px]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingSub || !newSubName.trim()}
+                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2 rounded-lg font-medium text-[13px] transition-colors flex items-center gap-2"
+                  >
+                    {isCreatingSub && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isCreatingSub ? 'Creating...' : 'Create Sub-Gallery'}
                   </button>
                 </div>
               </form>

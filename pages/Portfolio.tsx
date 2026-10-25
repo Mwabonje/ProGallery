@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../types';
-import { getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle } from '../utils/formatters';
+import { getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getParentGalleryId } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
@@ -15,6 +15,7 @@ interface PortfolioGallery extends Gallery {
   baseCategory?: string;
   coverUrl?: string | null;
   coverType?: string | null;
+  subGalleryCount?: number;
 }
 
 const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
@@ -285,7 +286,16 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           }
         }
 
-        // 3. Portfolio items - strictly exclude delivery galleries and system configuration records
+        // Track sub-galleries count per parent collection
+        const subGalleryCountMap = new Map<string, number>();
+        allGalleries.forEach(g => {
+          const parentId = getParentGalleryId(g);
+          if (parentId) {
+            subGalleryCountMap.set(parentId, (subGalleryCountMap.get(parentId) || 0) + 1);
+          }
+        });
+
+        // 3. Portfolio items - strictly exclude child sub-galleries, delivery galleries and system configuration records
         const rawPortfolioItems = allGalleries.filter(
           g => g.category && 
                g.category.trim() !== '' && 
@@ -295,7 +305,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                g.category !== 'FAQ' &&
                g.client_name !== '__FAQ__' &&
                g.client_name !== '__ABOUT__' &&
-               g.client_name !== 'SITE_SETTINGS'
+               g.client_name !== 'SITE_SETTINGS' &&
+               !getParentGalleryId(g) // exclude child sub-galleries so they live inside their parent collection
         );
 
         const sortedItems = [...rawPortfolioItems].sort((a, b) => {
@@ -321,6 +332,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
               coverUrl: rawCover,
               coverType: files && files.length > 0 ? files[0].file_type : null,
+              subGalleryCount: subGalleryCountMap.get(gallery.id) || 0,
             };
           })
         );
@@ -589,7 +601,9 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                         {getCleanGalleryTitle(gallery)}
                       </h3>
                       <p className="text-slate-300 text-xs tracking-wider uppercase mt-1 font-sans">
-                        View Gallery
+                        {gallery.subGalleryCount && gallery.subGalleryCount > 0
+                          ? `${gallery.subGalleryCount} ${gallery.subGalleryCount === 1 ? 'Sub-Gallery' : 'Sub-Galleries'} · Explore Collection`
+                          : 'View Gallery'}
                       </p>
                     </div>
 

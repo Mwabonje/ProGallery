@@ -148,7 +148,8 @@ const App: React.FC = () => {
               ) : <Navigate to="/login" />
             } />
 
-            {/* Vanity URL for Galleries (must be last before catch-all) */}
+            {/* Vanity URL for Galleries and Sub-Galleries (e.g. /editorial/client-a) */}
+            <Route path="/:galleryId/:subGallerySlug" element={<ClientGallery />} />
             <Route path="/:galleryId" element={<ClientGallery />} />
 
             {/* Default */}

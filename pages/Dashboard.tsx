@@ -3,7 +3,7 @@ import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Cl
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getOptimizedImageUrl, formatDate, rewriteUrlToR2 } from '../utils/formatters';
+import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle } from '../utils/formatters';
 import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
@@ -117,6 +117,7 @@ export const Dashboard: React.FC = () => {
   const [newDescription, setNewDescription] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
   const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
+  const [newParentGalleryId, setNewParentGalleryId] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -483,6 +484,7 @@ export const Dashboard: React.FC = () => {
   const handleOpenCreateModal = () => {
     setNewClientName('');
     setNewDescription('');
+    setNewParentGalleryId('');
     if (userEmail !== 'ringa.michael@gmail.com') {
       setNewCategory(''); // Force empty so they can only create client deliveries
     }
@@ -499,7 +501,7 @@ export const Dashboard: React.FC = () => {
         matchedCategory = existingMatch.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
     }
     const baseCategory = matchedCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
-    const isPortfolio = baseCategory !== '' && baseCategory.toLowerCase() !== 'delivery';
+    const isPortfolio = Boolean(baseCategory !== '' && baseCategory.toLowerCase() !== 'delivery') || Boolean(newParentGalleryId);
     const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
@@ -524,9 +526,19 @@ export const Dashboard: React.FC = () => {
         payloadTitle = JSON.stringify({
           projectTitle: newClientName,
           projectDescription: cleanDesc,
+          parentGalleryId: newParentGalleryId || null,
         });
       } else if (cleanDesc) {
         payloadTitle = cleanDesc;
+      }
+
+      // If user selected a parent gallery, inherit parent category if blank
+      let resolvedCategory = isPortfolio ? `${baseCategory || 'Editorial'} [${newLayout}]` : newCategory;
+      if (newParentGalleryId) {
+        const parentGal = galleries.find(g => g.id === newParentGalleryId);
+        if (parentGal?.category) {
+          resolvedCategory = parentGal.category;
+        }
       }
 
       const { data, error } = await supabase
@@ -535,7 +547,7 @@ export const Dashboard: React.FC = () => {
           photographer_id: user.id,
           client_name: newClientName,
           title: payloadTitle,
-          category: isPortfolio ? `${baseCategory} [${newLayout}]` : newCategory,
+          category: resolvedCategory,
           agreed_balance: 0,
           amount_paid: 0,
           link_enabled: true
@@ -1320,7 +1332,29 @@ export const Dashboard: React.FC = () => {
                   return (
                     <div key={gallery.id} className="ledger-row" onClick={() => navigate(`/gallery/${gallery.id}`)}>
                       <div className="swatch" style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}></div>
-                      <div className="flex items-center gap-3 font-medium text-slate-900">{gallery.client_name}</div>
+                      <div className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100 flex-wrap">
+                        <span>{gallery.client_name}</span>
+                        {(() => {
+                          const parentId = getParentGalleryId(gallery);
+                          if (parentId) {
+                            const parentGal = galleries.find(g => g.id === parentId);
+                            return (
+                              <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40">
+                                ↳ Sub-gallery of {parentGal ? getCleanGalleryTitle(parentGal) : 'parent'}
+                              </span>
+                            );
+                          }
+                          const childCount = galleries.filter(g => getParentGalleryId(g) === gallery.id).length;
+                          if (childCount > 0) {
+                            return (
+                              <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/40">
+                                Collection · {childCount} {childCount === 1 ? 'sub-gallery' : 'sub-galleries'}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                       <div className="text-slate-500 text-[12px]">{gallery.category?.replace(/s*\[(swipe|grid)\]/gi, '')}</div>
                       <div className={`status ${statusClass}`}><span className="status-dot"></span>{statusText}</div>
                       <div className="text-slate-500 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
@@ -1558,7 +1592,40 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
               )}
-
+              {userEmail === 'ringa.michael@gmail.com' && (
+                <div className="mb-6">
+                  <label htmlFor="parentGallery" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Parent Collection (Optional — for Sub-Galleries)
+                  </label>
+                  <select
+                    id="parentGallery"
+                    value={newParentGalleryId}
+                    onChange={(e) => {
+                      setNewParentGalleryId(e.target.value);
+                      if (e.target.value) {
+                        const parent = galleries.find(g => g.id === e.target.value);
+                        if (parent?.category) {
+                          setNewCategory(parent.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim());
+                        }
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm"
+                    disabled={isCreating}
+                  >
+                    <option value="">None (Top-Level Collection)</option>
+                    {galleries
+                      .filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT' && !getParentGalleryId(g))
+                      .map(g => (
+                        <option key={g.id} value={g.id}>
+                          Inside: {getCleanGalleryTitle(g)} ({g.category?.replace(/\s*\[(swipe|grid)\]/gi, '')})
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                    Select a parent collection (e.g. Editorial) to nest this as a sub-gallery (e.g. Client A, Client B).
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3 justify-end mt-8">
                 <button

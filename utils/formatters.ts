@@ -135,3 +135,69 @@ export const getCleanGalleryDescription = (gal?: { title?: string | null } | nul
 
   return raw;
 };
+
+export interface GalleryMetadataPayload {
+  projectTitle?: string;
+  projectDescription?: string;
+  parentGalleryId?: string | null;
+  isParentGallery?: boolean;
+  subGalleryIds?: string[];
+}
+
+export const parseGalleryMetadata = (gal?: { title?: string | null; client_name?: string | null } | null): GalleryMetadataPayload => {
+  if (!gal || !gal.title) {
+    return {
+      projectTitle: gal?.client_name || '',
+      projectDescription: '',
+      parentGalleryId: null,
+      isParentGallery: false,
+      subGalleryIds: []
+    };
+  }
+  const raw = gal.title.trim();
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          projectTitle: parsed.projectTitle || parsed.title || gal.client_name || '',
+          projectDescription: parsed.projectDescription || parsed.description || '',
+          parentGalleryId: parsed.parentGalleryId || null,
+          isParentGallery: Boolean(parsed.isParentGallery || (parsed.subGalleryIds && parsed.subGalleryIds.length > 0)),
+          subGalleryIds: Array.isArray(parsed.subGalleryIds) ? parsed.subGalleryIds : []
+        };
+      }
+    } catch {}
+  }
+  return {
+    projectTitle: gal.client_name || '',
+    projectDescription: raw,
+    parentGalleryId: null,
+    isParentGallery: false,
+    subGalleryIds: []
+  };
+};
+
+export const getParentGalleryId = (gal?: { title?: string | null } | null): string | null => {
+  if (!gal || !gal.title) return null;
+  const raw = gal.title.trim();
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.parentGalleryId) {
+        return parsed.parentGalleryId;
+      }
+    } catch {}
+  }
+  return null;
+};
+
+export const encodeGalleryMetadata = (meta: GalleryMetadataPayload): string => {
+  return JSON.stringify({
+    projectTitle: meta.projectTitle || '',
+    projectDescription: meta.projectDescription || '',
+    parentGalleryId: meta.parentGalleryId || null,
+    isParentGallery: Boolean(meta.isParentGallery),
+    subGalleryIds: Array.isArray(meta.subGalleryIds) ? meta.subGalleryIds : []
+  });
+};
