@@ -4,7 +4,6 @@ import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle } from '../utils/formatters';
-import { getThemedCoverImage, getThemedLookbookImages, isRealPortfolioUrl } from '../utils/portfolioImages';
 import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
 import { WebsiteSettingsModal } from '../components/WebsiteSettingsModal';
@@ -421,13 +420,20 @@ export const Dashboard: React.FC = () => {
           let coverUrl = coverFile ? coverFile.file_url : null;
           let itemCount = count || 0;
 
-          if (isPortfolioGal) {
-            if (!coverUrl || !isRealPortfolioUrl(coverUrl)) {
-              coverUrl = getThemedCoverImage(gallery.client_name, gallery.category);
-            }
-            const themedLookbook = getThemedLookbookImages(gallery.client_name, gallery.category);
-            if (itemCount === 0 || !allFiles?.some(f => isRealPortfolioUrl(f.file_url))) {
-              itemCount = themedLookbook.length;
+          // If a portfolio gallery has no direct cover, but has child sub-galleries, retrieve cover from child
+          if (!coverUrl && isPortfolioGal) {
+            const childGal = (galleriesData || []).find(g => getParentGalleryId(g) === gallery.id);
+            if (childGal) {
+              const { data: childFiles } = await supabase
+                .from('files')
+                .select('file_url')
+                .eq('gallery_id', childGal.id)
+                .neq('file_path', 'GALLERY_PASSWORD')
+                .order('created_at', { ascending: false })
+                .limit(1);
+              if (childFiles && childFiles.length > 0) {
+                coverUrl = childFiles[0].file_url;
+              }
             }
           }
 

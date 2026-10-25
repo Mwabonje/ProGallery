@@ -431,25 +431,7 @@ export const ClientGallery: React.FC = () => {
     );
 
     if (isPortfolioGal) {
-      if (allFiles.length > 0) {
-        setFiles(allFiles);
-      } else {
-        const authenticUrls = getThemedLookbookImages(galData.client_name, galData.category);
-        const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
-          id: `portfolio-${activeGalleryId}-${idx}`,
-          gallery_id: activeGalleryId,
-          file_url: url,
-          file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
-          file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
-          title: `${galData.client_name} ${idx + 1}`,
-          caption: galData.client_name,
-          download_count: 0,
-          is_edited: false,
-          created_at: galData.created_at,
-          expires_at: '2126-10-10T00:00:00.000Z',
-        }));
-        setFiles(syntheticFiles);
-      }
+      setFiles(allFiles);
     } else {
       if (allFiles.length === 0) {
         setError(
@@ -502,21 +484,7 @@ export const ClientGallery: React.FC = () => {
       if (fileData && fileData.length > 0) {
         setActiveSubFiles(fileData);
       } else {
-        const authenticUrls = getThemedLookbookImages(subGal.client_name, subGal.category);
-        const syntheticFiles: GalleryFile[] = authenticUrls.map((url, idx) => ({
-          id: `portfolio-${subGal.id}-${idx}`,
-          gallery_id: subGal.id,
-          file_url: url,
-          file_path: url.replace(/^https?:\/\/[^\/]+\//, ''),
-          file_type: url.match(/\.(mp4|mov|webm)$/i) ? 'video' : 'image',
-          title: `${subGal.client_name} ${idx + 1}`,
-          caption: subGal.client_name,
-          download_count: 0,
-          is_edited: false,
-          created_at: subGal.created_at,
-          expires_at: '2126-10-10T00:00:00.000Z',
-        }));
-        setActiveSubFiles(syntheticFiles);
+        setActiveSubFiles([]);
       }
     } catch (e) {
       console.warn("Failed to load sub-gallery files:", e);
@@ -671,13 +639,8 @@ export const ClientGallery: React.FC = () => {
                       .neq("file_path", "GALLERY_PASSWORD")
                       .order("created_at", { ascending: false });
 
-                    let cover = cFiles && cFiles.length > 0 ? cFiles[0].file_url : null;
-                    let count = cFiles ? cFiles.length : 0;
-                    if (!cover) {
-                      const lookbook = getThemedLookbookImages(child.client_name, child.category);
-                      cover = lookbook[0] || null;
-                      count = lookbook.length;
-                    }
+                    const cover = cFiles && cFiles.length > 0 ? cFiles[0].file_url : null;
+                    const count = cFiles ? cFiles.length : 0;
                     return {
                       ...child,
                       coverUrl: cover,
@@ -2136,7 +2099,7 @@ export const ClientGallery: React.FC = () => {
               <Loader2 className="w-8 h-8 animate-spin text-slate-600 dark:text-slate-400 mb-3" />
               <p className="text-xs uppercase tracking-widest font-mono text-slate-500">Loading story...</p>
             </div>
-          ) : displayedFiles.length === 0 ? (
+          ) : displayedFiles.length === 0 && (subGalleries.length === 0 || activeSubGallery) ? (
             <div className="flex flex-col items-center justify-center py-28 text-slate-400">
               <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
               <p className="text-slate-500 font-medium">No photos available in this project.</p>
@@ -2144,36 +2107,51 @@ export const ClientGallery: React.FC = () => {
           ) : (
             <>
               {/* 1. Cover Image (Full Bleed Edge-to-Edge Hero) */}
-              <div className="w-full">
-                <div
-                  className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden"
-                >
-                  <div id={`skeleton-cover-${displayedFiles[0].id}`} className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800 animate-pulse" />
-                  {displayedFiles[0].file_type === "video" || displayedFiles[0].file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
-                    <video
-                      src={`${rewriteUrlToR2(displayedFiles[0].file_url)}#t=0.001`}
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      onLoad={() => {
-                        const skeleton = document.getElementById(`skeleton-cover-${displayedFiles[0].id}`);
-                        if (skeleton) skeleton.style.display = 'none';
-                      }}
-                      src={getOptimizedImageUrl(getDisplayUrl(displayedFiles[0]), 2560, 1440, 85)}
-                      alt={displayGalleryTitle || "Cover Image"}
-                      className="w-full h-full object-cover"
-                      loading="eager"
-                      // @ts-ignore
-                      fetchPriority="high"
-                    />
-                  )}
-                </div>
-              </div>
+              {(() => {
+                const coverTarget = displayedFiles[0];
+                const fallbackCoverUrl = subGalleries.find(s => s.coverUrl)?.coverUrl;
+                const coverUrl = coverTarget ? getDisplayUrl(coverTarget) : fallbackCoverUrl;
+                if (!coverUrl) return null;
+                const isVideo = coverTarget 
+                  ? (coverTarget.file_type === "video" || coverTarget.file_url?.match(/\.(mp4|mov|webm|ogg)$/i))
+                  : false;
+                return (
+                  <div className="w-full">
+                    <div
+                      className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden"
+                    >
+                      {coverTarget && (
+                        <div id={`skeleton-cover-${coverTarget.id}`} className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800 animate-pulse" />
+                      )}
+                      {isVideo ? (
+                        <video
+                          src={`${rewriteUrlToR2(coverTarget.file_url)}#t=0.001`}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                        />
+                      ) : (
+                        <img
+                          onLoad={() => {
+                            if (coverTarget) {
+                              const skeleton = document.getElementById(`skeleton-cover-${coverTarget.id}`);
+                              if (skeleton) skeleton.style.display = 'none';
+                            }
+                          }}
+                          src={getOptimizedImageUrl(coverUrl, 2560, 1440, 85)}
+                          alt={displayGalleryTitle || "Cover Image"}
+                          className="w-full h-full object-cover"
+                          loading="eager"
+                          // @ts-ignore
+                          fetchPriority="high"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* 2. Project Title and Description */}
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">

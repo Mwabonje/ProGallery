@@ -324,14 +324,33 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
               .order('created_at', { ascending: false })
               .limit(1);
 
-            const rawCover = files && files.length > 0 ? files[0].file_url : null;
+            let rawCover = files && files.length > 0 ? files[0].file_url : null;
+            let coverType = files && files.length > 0 ? files[0].file_type : null;
+
+            // If no direct cover file, check if child sub-gallery has a cover
+            if (!rawCover) {
+              const childGal = allGalleries.find(g => getParentGalleryId(g) === gallery.id);
+              if (childGal) {
+                const { data: childFiles } = await supabase
+                  .from('files')
+                  .select('file_url, file_type')
+                  .eq('gallery_id', childGal.id)
+                  .neq('file_path', 'GALLERY_PASSWORD')
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+                if (childFiles && childFiles.length > 0) {
+                  rawCover = childFiles[0].file_url;
+                  coverType = childFiles[0].file_type;
+                }
+              }
+            }
 
             return {
               ...gallery,
               client_name: gallery.client_name,
               baseCategory: (gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '').trim() || '').toUpperCase(),
               coverUrl: rawCover,
-              coverType: files && files.length > 0 ? files[0].file_type : null,
+              coverType,
               subGalleryCount: subGalleryCountMap.get(gallery.id) || 0,
             };
           })
