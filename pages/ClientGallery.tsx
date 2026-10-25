@@ -2046,30 +2046,23 @@ export const ClientGallery: React.FC = () => {
             </div>
           )}
 
-          {/* Sub-Galleries Tab Switcher Bar (Sticky) */}
-          {/* Sub-Galleries Sticky Navigation Bar */}
-          {subGalleries.length > 0 && (
+          {/* Sub-Galleries Sticky Navigation Bar - only displayed when inside a specific story */}
+          {subGalleries.length > 0 && activeSubGallery && (
             <div className="w-full border-b border-slate-200/80 dark:border-slate-800 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
                 <button
                   onClick={() => handleSelectSubGallery(null)}
-                  className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none ${
-                    !activeSubGallery 
-                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
-                  }`}
+                  className="px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80 cursor-pointer"
                 >
                   All Stories
                 </button>
 
-                {activeSubGallery && (
-                  <button
-                    onClick={() => handleSelectSubGallery(null)}
-                    className="text-xs tracking-wider uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0 font-medium transition-colors cursor-pointer"
-                  >
-                    ← Back to {parentCollectionTitle}
-                  </button>
-                )}
+                <button
+                  onClick={() => handleSelectSubGallery(null)}
+                  className="text-xs tracking-wider uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0 font-medium transition-colors cursor-pointer"
+                >
+                  ← Back to {parentCollectionTitle}
+                </button>
               </div>
             </div>
           )}
