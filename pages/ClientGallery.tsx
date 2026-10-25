@@ -2195,15 +2195,7 @@ export const ClientGallery: React.FC = () => {
               {/* 2.5 Sub-Galleries Showcase Grid (Rendered when viewing parent overview and child stories exist) */}
               {subGalleries.length > 0 && !activeSubGallery && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 sm:mb-16">
-                  <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200/60 dark:border-slate-800">
-                    <h2 className="font-serif text-base sm:text-lg tracking-[0.15em] uppercase text-slate-900 dark:text-white font-medium">
-                      Stories in this Collection
-                    </h2>
-                    <span className="text-xs text-slate-400 font-sans tracking-widest uppercase">
-                      {subGalleries.length} {subGalleries.length === 1 ? 'Story' : 'Stories'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 md:gap-7">
                     {subGalleries.map((sub) => {
                       const subTitle = getCleanGalleryTitle(sub);
                       const subCover = sub.coverUrl;
@@ -2216,22 +2208,22 @@ export const ClientGallery: React.FC = () => {
                           <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
                             {subCover ? (
                               <img
-                                src={getOptimizedImageUrl(subCover, 600, 800, 80)}
+                                src={getOptimizedImageUrl(subCover, 900, 1200, 85)}
                                 alt={subTitle}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-none"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                <ImageIcon className="w-8 h-8" />
+                                <ImageIcon className="w-10 h-10" />
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
                           </div>
-                          <div className="mt-2.5">
-                            <h3 className="font-serif text-sm sm:text-base font-medium uppercase tracking-[0.1em] text-slate-900 dark:text-white group-hover:underline">
+                          <div className="mt-3">
+                            <h3 className="font-serif text-base sm:text-lg font-medium uppercase tracking-[0.12em] text-slate-900 dark:text-white group-hover:underline">
                               {subTitle}
                             </h3>
-                            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5 font-sans">
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-sans">
                               {sub.itemCount ? `${sub.itemCount} Photos` : 'View Story →'}
                             </p>
                           </div>

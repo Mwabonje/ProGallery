@@ -620,9 +620,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                         {getCleanGalleryTitle(gallery)}
                       </h3>
                       <p className="text-slate-300 text-xs tracking-wider uppercase mt-1 font-sans">
-                        {gallery.subGalleryCount && gallery.subGalleryCount > 0
-                          ? `${gallery.subGalleryCount} ${gallery.subGalleryCount === 1 ? 'Sub-Gallery' : 'Sub-Galleries'} · Explore Collection`
-                          : 'View Gallery'}
+                        View Gallery
                       </p>
                     </div>
 
