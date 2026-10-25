@@ -2156,17 +2156,6 @@ export const ClientGallery: React.FC = () => {
               {/* 2. Project Title and Description */}
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">
                 <div className="inline-block w-full">
-                  {/* Subtle Sub-Gallery Breadcrumb */}
-                  {activeSubGallery && (
-                    <div className="mb-3">
-                      <button
-                        onClick={() => handleSelectSubGallery(null)}
-                        className="text-xs uppercase tracking-[0.2em] font-sans text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                      >
-                        {parentCollectionTitle} · Sub-Gallery
-                      </button>
-                    </div>
-                  )}
                   <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 dark:text-white uppercase">
                     {displayGalleryTitle || "UNTITLED PROJECT"}
                   </h1>
