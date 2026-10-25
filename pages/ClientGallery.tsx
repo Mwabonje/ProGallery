@@ -2047,45 +2047,25 @@ export const ClientGallery: React.FC = () => {
           )}
 
           {/* Sub-Galleries Tab Switcher Bar (Sticky) */}
+          {/* Sub-Galleries Sticky Navigation Bar */}
           {subGalleries.length > 0 && (
             <div className="w-full border-b border-slate-200/80 dark:border-slate-800 bg-[#FAF8F5]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mr-1 hidden sm:inline">
-                    STORIES:
-                  </span>
-                  <button
-                    onClick={() => handleSelectSubGallery(null)}
-                    className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none ${
-                      !activeSubGallery 
-                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
-                    }`}
-                  >
-                    All Stories
-                  </button>
-                  {subGalleries.map((sub) => {
-                    const subTitle = getCleanGalleryTitle(sub);
-                    const isSelected = activeSubGallery?.id === sub.id;
-                    return (
-                      <button
-                        key={sub.id}
-                        onClick={() => handleSelectSubGallery(sub)}
-                        className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none whitespace-nowrap ${
-                          isSelected 
-                            ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
-                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
-                        }`}
-                      >
-                        {subTitle}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+                <button
+                  onClick={() => handleSelectSubGallery(null)}
+                  className={`px-3.5 py-1.5 text-xs font-sans tracking-[0.15em] uppercase font-medium transition-all rounded-none ${
+                    !activeSubGallery 
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm" 
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-900/80"
+                  }`}
+                >
+                  All Stories
+                </button>
+
                 {activeSubGallery && (
                   <button
                     onClick={() => handleSelectSubGallery(null)}
-                    className="text-xs tracking-wider uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0 font-medium transition-colors"
+                    className="text-xs tracking-wider uppercase text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0 font-medium transition-colors cursor-pointer"
                   >
                     ← Back to {parentCollectionTitle}
                   </button>
