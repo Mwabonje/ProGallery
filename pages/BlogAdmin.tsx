@@ -26,7 +26,7 @@ export const BlogAdmin: React.FC = () => {
     wasCompressed: boolean;
   } | null>(null);
   const [isDraggingCover, setIsDraggingCover] = useState(false);
-  const [showManualCoverUrl, setShowManualCoverUrl] = useState(false);
+  const [coverSourceTab, setCoverSourceTab] = useState<'upload' | 'url'>('upload');
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
   const editingPostRef = useRef(editingPost);
@@ -121,7 +121,8 @@ export const BlogAdmin: React.FC = () => {
   const handleEdit = (post: BlogPost) => {
     setEditingPost(post);
     setCoverCompressionInfo(null);
-    setShowManualCoverUrl(!post.cover_image);
+    const isPexelsOrExternal = Boolean(post.cover_image && !post.cover_image.includes('r2.dev') && !post.cover_image.includes('supabase'));
+    setCoverSourceTab(isPexelsOrExternal ? 'url' : 'upload');
     setIsEditing(true);
   };
 
@@ -141,7 +142,7 @@ export const BlogAdmin: React.FC = () => {
       status: 'draft'
     });
     setCoverCompressionInfo(null);
-    setShowManualCoverUrl(false);
+    setCoverSourceTab('upload');
     setIsEditing(true);
   };
 
@@ -509,43 +510,154 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-slate-700">Cover Image</label>
-                  <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Auto-compressed if &gt; 300 KB
-                  </span>
+                  {coverSourceTab === 'upload' && (
+                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Auto-compressed if &gt; 300 KB
+                    </span>
+                  )}
                 </div>
 
-                {/* Hidden File Input for Local Machine Upload */}
-                <input
-                  type="file"
-                  ref={coverFileInputRef}
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handleCoverUpload(file);
-                  }}
-                />
+                {/* Dual Mode Switcher Tabs - Both options clearly visible */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg mb-3 border border-slate-200 w-full sm:w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setCoverSourceTab('upload')}
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                      coverSourceTab === 'upload'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload from computer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverSourceTab('url')}
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                      coverSourceTab === 'url'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    Paste image URL (Pexels / Unsplash)
+                  </button>
+                </div>
 
-                {/* Cover Image Preview if set */}
-                {editingPost.cover_image ? (
-                  <div className="space-y-2">
-                    <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-900 group shadow-sm">
+                {/* Option 1: Upload from local machine */}
+                {coverSourceTab === 'upload' && (
+                  <div>
+                    {/* Hidden File Input for Local Machine Upload */}
+                    <input
+                      type="file"
+                      ref={coverFileInputRef}
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleCoverUpload(file);
+                      }}
+                    />
+
+                    <div
+                      onDragOver={e => {
+                        e.preventDefault();
+                        setIsDraggingCover(true);
+                      }}
+                      onDragLeave={() => setIsDraggingCover(false)}
+                      onDrop={e => {
+                        e.preventDefault();
+                        setIsDraggingCover(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) handleCoverUpload(file);
+                      }}
+                      onClick={() => {
+                        if (!isUploadingCover) coverFileInputRef.current?.click();
+                      }}
+                      className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${
+                        isDraggingCover
+                          ? 'border-emerald-500 bg-emerald-50/50'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isUploadingCover ? (
+                        <div className="space-y-3 py-1">
+                          <Loader2 className="w-7 h-7 text-emerald-600 animate-spin mx-auto" />
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700">Compressing &amp; Uploading...</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Images &gt; 300KB are automatically resized &amp; compressed</p>
+                          </div>
+                          <div className="w-48 mx-auto bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${coverUploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 py-0.5">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-600">
+                            <Upload className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700">
+                              Click to choose an image from your computer <span className="text-slate-400 font-normal">or drag &amp; drop</span>
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              JPEG, PNG, WebP · Auto-compressed if over 300 KB
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Option 2: Paste Image URL (Original option for Pexels, Unsplash, external web links) */}
+                {coverSourceTab === 'url' && (
+                  <div className="space-y-1.5">
+                    <input
+                      type="url"
+                      value={editingPost.cover_image || ''}
+                      onChange={e => {
+                        setEditingPost({ ...editingPost, cover_image: e.target.value });
+                        setCoverCompressionInfo(null);
+                      }}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono"
+                      placeholder="https://images.pexels.com/photos/... or https://images.unsplash.com/..."
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Paste a direct image link from Pexels, Unsplash, or any image URL.
+                    </p>
+                  </div>
+                )}
+
+                {/* Live Cover Image Preview (Works for both upload and pasted URL) */}
+                {editingPost.cover_image && (
+                  <div className="mt-3 space-y-1.5">
+                    <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-900 group shadow-sm max-h-56">
                       <img
                         src={editingPost.cover_image}
                         alt="Blog Cover Preview"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.opacity = '0.4';
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
-                        <button
-                          type="button"
-                          onClick={() => coverFileInputRef.current?.click()}
-                          disabled={isUploadingCover}
-                          className="px-3 py-1.5 bg-white/90 hover:bg-white text-slate-900 rounded text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <Upload className="w-3.5 h-3.5" /> Replace Image
-                        </button>
+                        {coverSourceTab === 'upload' ? (
+                          <button
+                            type="button"
+                            onClick={() => coverFileInputRef.current?.click()}
+                            disabled={isUploadingCover}
+                            className="px-3 py-1.5 bg-white/90 hover:bg-white text-slate-900 rounded text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Upload className="w-3.5 h-3.5" /> Upload different
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => {
@@ -555,11 +667,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                           disabled={isUploadingCover}
                           className="px-3 py-1.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Remove
+                          <Trash2 className="w-3.5 h-3.5" /> Clear Image
                         </button>
                       </div>
 
-                      {/* Compression indicator badge */}
+                      {/* Compression indicator badge if uploaded & auto-compressed */}
                       {coverCompressionInfo && (
                         <div className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
                           <CheckCircle2 className="w-3 h-3" />
@@ -572,101 +684,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                      <span className="truncate max-w-md">Preview: {editingPost.cover_image}</span>
                       <button
                         type="button"
-                        onClick={() => coverFileInputRef.current?.click()}
-                        disabled={isUploadingCover}
-                        className="text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 cursor-pointer"
+                        onClick={() => {
+                          setEditingPost({ ...editingPost, cover_image: '' });
+                          setCoverCompressionInfo(null);
+                        }}
+                        className="text-rose-500 hover:text-rose-600 hover:underline cursor-pointer shrink-0 ml-2"
                       >
-                        <Upload className="w-3.5 h-3.5" /> Upload from computer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowManualCoverUrl(!showManualCoverUrl)}
-                        className="text-slate-400 hover:text-slate-600 underline cursor-pointer"
-                      >
-                        {showManualCoverUrl ? 'Hide manual URL' : 'Edit URL directly'}
+                        Remove
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  /* Dropzone when no cover image is uploaded */
-                  <div
-                    onDragOver={e => {
-                      e.preventDefault();
-                      setIsDraggingCover(true);
-                    }}
-                    onDragLeave={() => setIsDraggingCover(false)}
-                    onDrop={e => {
-                      e.preventDefault();
-                      setIsDraggingCover(false);
-                      const file = e.dataTransfer.files?.[0];
-                      if (file) handleCoverUpload(file);
-                    }}
-                    onClick={() => {
-                      if (!isUploadingCover) coverFileInputRef.current?.click();
-                    }}
-                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${
-                      isDraggingCover
-                        ? 'border-emerald-500 bg-emerald-50/50'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
-                    }`}
-                  >
-                    {isUploadingCover ? (
-                      <div className="space-y-3 py-2">
-                        <Loader2 className="w-7 h-7 text-emerald-600 animate-spin mx-auto" />
-                        <div>
-                          <p className="text-xs font-semibold text-slate-700">Compressing &amp; Uploading...</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">Images &gt; 300KB are automatically resized and compressed</p>
-                        </div>
-                        <div className="w-48 mx-auto bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${coverUploadProgress}%` }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 py-1">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-500">
-                          <Upload className="w-5 h-5 text-slate-600" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-slate-700">
-                            Click to upload cover image <span className="text-slate-400 font-normal">or drag &amp; drop</span>
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            JPEG, PNG, WebP · Auto-compressed if over 300 KB
-                          </p>
-                        </div>
-                        <div className="pt-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowManualCoverUrl(!showManualCoverUrl);
-                            }}
-                            className="text-[11px] text-slate-400 hover:text-slate-600 underline inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <Link2 className="w-3 h-3" /> Or enter image URL
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Optional manual URL input if toggled */}
-                {showManualCoverUrl && (
-                  <div className="mt-2.5 animate-in fade-in duration-200">
-                    <input
-                      type="text"
-                      value={editingPost.cover_image || ''}
-                      onChange={e => setEditingPost({ ...editingPost, cover_image: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono"
-                      placeholder="https://example.com/image.jpg"
-                    />
                   </div>
                 )}
               </div>
