@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -896,13 +896,6 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3" />
-                  <span className="text-[13px] font-medium">Proposals</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
-              </div>
               <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'delivery' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3" />
@@ -924,21 +917,6 @@ export const Dashboard: React.FC = () => {
               <div onClick={() => navigate('/dashboard?view=pages')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'pages' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Pages</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Business</h2>
-            <div className="px-3 space-y-0.5">
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                  </div>
-                  <span className="text-[13px] font-medium">Messages</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">4</span>
               </div>
             </div>
           </div>
@@ -1012,7 +990,7 @@ export const Dashboard: React.FC = () => {
                   Overview
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-                  A working summary of galleries, client proposals, and storage usage.
+                  A working summary of galleries, client deliveries, and storage usage.
                 </p>
               </div>
 
@@ -1159,22 +1137,22 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 2: Active Proposals */}
+              {/* Card 2: Portfolio Collections */}
               <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Active Proposals
+                    Portfolio Collections
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <FileText className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
                   <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    6
+                    {portfolioCount}
                   </h3>
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <span>2 awaiting client review</span>
+                    <span>Public lookbooks & stories</span>
                   </div>
                 </div>
               </div>
@@ -1200,23 +1178,23 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 4: Client Messages */}
+              {/* Card 4: Client Downloads */}
               <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Client Inquiries
+                    Client Downloads
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Mail className="w-4 h-4" />
+                    <Download className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
                   <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    4
+                    {galleries.reduce((acc, g) => acc + (g.downloadCount || 0), 0).toLocaleString()}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <span>Awaiting reply</span>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Client portal downloads</span>
                   </div>
                 </div>
               </div>
