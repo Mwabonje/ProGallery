@@ -241,6 +241,12 @@ export const GalleryManager: React.FC = () => {
 
   const isPortfolio = Boolean(gallery?.category && gallery.category.trim() !== '');
   const isPrintsGallery = Boolean(gallery?.category && gallery.category.toLowerCase().includes('print'));
+  const isGalleryExpired = Boolean(
+    !isPortfolio &&
+    files.length > 0 &&
+    files.some(f => f.expires_at) &&
+    files.every(f => !f.expires_at || new Date(f.expires_at) < new Date())
+  );
   
   const [localLimit, setLocalLimit] = useState<number | ''>('');
   useEffect(() => {
@@ -1250,6 +1256,27 @@ export const GalleryManager: React.FC = () => {
               <button onClick={() => updateSelectionStatus('pending')} className="text-rose-900 underline underline-offset-2 hover:text-rose-700">Reopen selection</button>
             </div>
           </div>
+      )}
+
+      {/* Expired Banner */}
+      {!isPortfolio && isGalleryExpired && (
+        <div className="flex justify-between items-center bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 border-l-[3px] border-l-rose-600 rounded-[3px] px-4 py-3.5 mb-6 flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-rose-600 shrink-0" />
+            <div>
+              <div className="text-[13.5px] font-semibold text-rose-900 dark:text-rose-200 mb-0.5">This delivery archive has expired</div>
+              <div className="text-[12.5px] text-rose-700 dark:text-rose-300">
+                Clients can no longer view or download files. Extend expiration to reactivate client access.
+              </div>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsExtendModalOpen(true)} 
+            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+          >
+            Extend Expiration
+          </button>
+        </div>
       )}
 
       {/* Layout */}
