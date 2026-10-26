@@ -980,7 +980,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-y-contain [will-change:scroll-position] [-webkit-overflow-scrolling:touch]">
         {currentView === 'dashboard' && (
           <div className="max-w-[1240px] mx-auto p-6 sm:p-8 lg:p-10 space-y-7">
             {/* Header */}
@@ -1673,7 +1673,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {currentView === 'blogs' && (
-          <div className="p-8">
+          <div className="p-6 md:p-8 max-w-[1240px] mx-auto w-full">
              <BlogAdmin />
           </div>
         )}

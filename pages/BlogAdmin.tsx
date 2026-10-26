@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
 import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, MousePointerClick, RefreshCw, Upload, Image as ImageIcon, Sparkles, CheckCircle2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadBlogCoverImage, formatFileSize } from '../utils/imageCompressor';
+import { getOptimizedImageUrl } from '../utils/formatters';
 
 export const BlogAdmin: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -250,10 +251,15 @@ export const BlogAdmin: React.FC = () => {
     }
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    post.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return posts;
+    return posts.filter(post => 
+      post.title.toLowerCase().includes(q) || 
+      post.category?.toLowerCase().includes(q) ||
+      post.slug?.toLowerCase().includes(q)
+    );
+  }, [posts, searchQuery]);
 
   const generateSlug = (title: string) => {
     return title
@@ -848,7 +854,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
             {searchQuery ? 'No posts found matching your search.' : 'No blog posts yet. Create your first one!'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overscroll-x-contain touch-pan-y">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
@@ -863,18 +869,30 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredPosts.map((post) => (
-                  <tr key={post.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr 
+                    key={post.id} 
+                    className="hover:bg-slate-50/70 border-b border-slate-100 last:border-b-0"
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: '0 72px' }}
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded overflow-hidden bg-slate-100 flex-shrink-0">
+                        <div className="w-12 h-12 rounded overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200/50">
                           {post.cover_image ? (
-                            <img src={post.cover_image} alt="" className="w-full h-full object-cover" />
+                            <img 
+                              src={getOptimizedImageUrl(post.cover_image, 100, 100, 75)} 
+                              alt="" 
+                              loading="lazy"
+                              decoding="async"
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover" 
+                            />
                           ) : (
                             <FileText className="w-6 h-6 m-auto text-slate-300 mt-3" />
                           )}
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                          <div className="font-semibold text-slate-900">
                             {post.title}
                           </div>
                           <div className="text-xs text-slate-500 font-mono mt-0.5">/{post.slug}</div>
@@ -911,17 +929,17 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       {new Date(post.date).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleEdit(post)}
-                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                           title="Edit post"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(post.id!)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Delete post"
                         >
                           <Trash2 className="w-4 h-4" />
