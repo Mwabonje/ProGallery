@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -14,7 +14,8 @@ import { TextSelection } from '@tiptap/pm/state';
 import { 
   Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, 
   List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, 
-  AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon, Highlighter, RemoveFormatting 
+  AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon, Highlighter, RemoveFormatting,
+  Sparkles
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -22,12 +23,144 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
 }
 
+export interface FormatInfo {
+  tag: 'H1' | 'H2' | 'H3' | 'P' | 'Quote' | 'Other';
+  label: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  dotColor: string;
+  activeBtnClass: string;
+}
+
+/**
+ * Returns color-coded metadata for the currently highlighted / selected text block
+ */
+export function getCurrentFormatInfo(editor: any): FormatInfo {
+  if (!editor) {
+    return {
+      tag: 'P',
+      label: 'Paragraph (P)',
+      badgeBg: 'bg-slate-100',
+      badgeText: 'text-slate-800',
+      badgeBorder: 'border-slate-300',
+      dotColor: 'bg-slate-600',
+      activeBtnClass: 'bg-slate-900 text-white font-bold shadow-sm ring-2 ring-slate-400',
+    };
+  }
+
+  // 1. Check active heading levels
+  if (editor.isActive('heading', { level: 1 })) {
+    return {
+      tag: 'H1',
+      label: 'H1 Heading',
+      badgeBg: 'bg-purple-100',
+      badgeText: 'text-purple-800',
+      badgeBorder: 'border-purple-300',
+      dotColor: 'bg-purple-600',
+      activeBtnClass: 'bg-purple-600 text-white font-bold shadow-sm ring-2 ring-purple-400',
+    };
+  }
+
+  if (editor.isActive('heading', { level: 2 })) {
+    return {
+      tag: 'H2',
+      label: 'H2 Subheading',
+      badgeBg: 'bg-indigo-100',
+      badgeText: 'text-indigo-800',
+      badgeBorder: 'border-indigo-300',
+      dotColor: 'bg-indigo-600',
+      activeBtnClass: 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-400',
+    };
+  }
+
+  if (editor.isActive('heading', { level: 3 })) {
+    return {
+      tag: 'H3',
+      label: 'H3 Section',
+      badgeBg: 'bg-emerald-100',
+      badgeText: 'text-emerald-800',
+      badgeBorder: 'border-emerald-300',
+      dotColor: 'bg-emerald-600',
+      activeBtnClass: 'bg-emerald-600 text-white font-bold shadow-sm ring-2 ring-emerald-400',
+    };
+  }
+
+  if (editor.isActive('blockquote')) {
+    return {
+      tag: 'Quote',
+      label: 'Quote',
+      badgeBg: 'bg-amber-100',
+      badgeText: 'text-amber-800',
+      badgeBorder: 'border-amber-300',
+      dotColor: 'bg-amber-600',
+      activeBtnClass: 'bg-amber-600 text-white font-bold shadow-sm ring-2 ring-amber-400',
+    };
+  }
+
+  // Direct check of parent node for selection
+  try {
+    const { selection } = editor.state;
+    if (selection && selection.$from) {
+      const parent = selection.$from.parent;
+      if (parent && parent.type.name === 'heading') {
+        const level = parent.attrs.level;
+        if (level === 1) {
+          return {
+            tag: 'H1',
+            label: 'H1 Heading',
+            badgeBg: 'bg-purple-100',
+            badgeText: 'text-purple-800',
+            badgeBorder: 'border-purple-300',
+            dotColor: 'bg-purple-600',
+            activeBtnClass: 'bg-purple-600 text-white font-bold shadow-sm ring-2 ring-purple-400',
+          };
+        }
+        if (level === 2) {
+          return {
+            tag: 'H2',
+            label: 'H2 Subheading',
+            badgeBg: 'bg-indigo-100',
+            badgeText: 'text-indigo-800',
+            badgeBorder: 'border-indigo-300',
+            dotColor: 'bg-indigo-600',
+            activeBtnClass: 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-400',
+          };
+        }
+        if (level === 3) {
+          return {
+            tag: 'H3',
+            label: 'H3 Section',
+            badgeBg: 'bg-emerald-100',
+            badgeText: 'text-emerald-800',
+            badgeBorder: 'border-emerald-300',
+            dotColor: 'bg-emerald-600',
+            activeBtnClass: 'bg-emerald-600 text-white font-bold shadow-sm ring-2 ring-emerald-400',
+          };
+        }
+      }
+    }
+  } catch (e) {
+    // fallback
+  }
+
+  return {
+    tag: 'P',
+    label: 'Paragraph (P)',
+    badgeBg: 'bg-slate-100',
+    badgeText: 'text-slate-800',
+    badgeBorder: 'border-slate-300',
+    dotColor: 'bg-slate-600',
+    activeBtnClass: 'bg-slate-900 text-white font-bold shadow-sm ring-2 ring-slate-400',
+  };
+}
+
 /**
  * Tiptap Extension to handle Enter key inside headings:
- * 1. If at end of heading, press Enter creates a regular paragraph (<p>) below,
+ * 1. If at end of heading, pressing Enter creates a regular paragraph (<p>) below,
  *    preventing subsequent body text from inadvertently remaining in H3.
- * 2. If heading is empty, press Enter converts it to a regular paragraph.
- * 3. If at start of heading, press Enter creates an empty paragraph above.
+ * 2. If heading is empty, pressing Enter converts it to a regular paragraph.
+ * 3. If at start of heading, pressing Enter creates an empty paragraph above.
  */
 export const HeadingEnterExit = Extension.create({
   name: 'headingEnterExit',
@@ -382,6 +515,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
     return null;
   }
 
+  const format = getCurrentFormatInfo(editor);
+
   const addImage = () => {
     const url = window.prompt('URL of the image');
     if (url) {
@@ -406,7 +541,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-lg">
+    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-lg">
       <button
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
@@ -425,7 +560,9 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <Redo className="w-4 h-4" />
       </button>
+      
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+      
       <select
         value={editor.getAttributes('textStyle').fontFamily || ''}
         onChange={(e) => {
@@ -442,44 +579,83 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <option value="Montserrat">Montserrat</option>
         <option value="Playfair Display">Playfair Display</option>
       </select>
+
       <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+
+      {/* Heading 1 - Purple Indicator */}
       <button
         type="button"
         onClick={() => handleSmartHeadingToggle(editor, 1)}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
-        title="Heading 1"
+        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+          editor.isActive('heading', { level: 1 })
+            ? 'bg-purple-600 text-white font-bold shadow-sm ring-2 ring-purple-400'
+            : 'text-slate-600 hover:bg-purple-50 hover:text-purple-700'
+        }`}
+        title="Heading 1 (Purple)"
       >
         <Heading1 className="w-4 h-4" />
+        <span className="hidden sm:inline">H1</span>
       </button>
+
+      {/* Heading 2 - Indigo Indicator */}
       <button
         type="button"
         onClick={() => handleSmartHeadingToggle(editor, 2)}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
-        title="Heading 2"
+        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+          editor.isActive('heading', { level: 2 })
+            ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-400'
+            : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
+        }`}
+        title="Heading 2 (Indigo)"
       >
         <Heading2 className="w-4 h-4" />
+        <span className="hidden sm:inline">H2</span>
       </button>
+
+      {/* Heading 3 - Emerald Indicator */}
       <button
         type="button"
         onClick={() => handleSmartHeadingToggle(editor, 3)}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
-        title="Heading 3"
+        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+          editor.isActive('heading', { level: 3 })
+            ? 'bg-emerald-600 text-white font-bold shadow-sm ring-2 ring-emerald-400'
+            : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+        }`}
+        title="Heading 3 (Emerald Green)"
       >
         <Heading3 className="w-4 h-4" />
+        <span className="hidden sm:inline">H3</span>
       </button>
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+
+      {/* Paragraph (P) - Slate Indicator */}
       <button
         type="button"
         onClick={() => handleSmartParagraph(editor)}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors text-sm font-bold ${editor.isActive('paragraph') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Paragraph"
+        className={`px-2.5 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+          editor.isActive('paragraph')
+            ? 'bg-slate-900 text-white font-bold shadow-sm ring-2 ring-slate-400'
+            : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+        }`}
+        title="Paragraph (Charcoal / Slate)"
       >
         P
       </button>
+
+      {/* Color-coded Current Format Pill */}
+      <div 
+        className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border transition-all ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}
+        title={`Active format: ${format.label}`}
+      >
+        <span className={`w-2 h-2 rounded-full ${format.dotColor} shrink-0`} />
+        <span>{format.label}</span>
+      </div>
+
+      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bold') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bold') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
         title="Bold"
       >
         <Bold className="w-4 h-4" />
@@ -487,7 +663,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('italic') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('italic') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
         title="Italic"
       >
         <Italic className="w-4 h-4" />
@@ -495,7 +671,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
         title="Underline"
       >
         <UnderlineIcon className="w-4 h-4" />
@@ -579,8 +755,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('blockquote') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Blockquote"
+        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('blockquote') ? 'bg-amber-600 text-white font-bold ring-2 ring-amber-400' : 'text-slate-600 hover:bg-amber-50 hover:text-amber-700'}`}
+        title="Blockquote (Amber)"
       >
         <Quote className="w-4 h-4" />
       </button>
@@ -598,6 +774,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
 };
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) => {
+  const [, setSelectionTick] = useState(0);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -639,6 +817,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     },
   });
 
+  // Re-render automatically whenever selection or cursor changes to update color indicators in real-time
+  useEffect(() => {
+    if (!editor) return;
+    const handleUpdate = () => setSelectionTick(t => t + 1);
+    editor.on('selectionUpdate', handleUpdate);
+    editor.on('transaction', handleUpdate);
+    return () => {
+      editor.off('selectionUpdate', handleUpdate);
+      editor.off('transaction', handleUpdate);
+    };
+  }, [editor]);
+
   const setLink = () => {
     if (!editor) return;
     const previousUrl = editor.getAttributes('link').href;
@@ -656,6 +846,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
+  const format = getCurrentFormatInfo(editor);
+  const textContent = editor ? editor.getText() : '';
+  const wordCount = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
+  const charCount = textContent.length;
+
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-shadow">
       <MenuBar editor={editor} />
@@ -663,82 +858,76 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         {editor && (
           <BubbleMenu 
             editor={editor} 
-            className="flex items-center bg-white shadow-lg border border-slate-200 rounded-lg overflow-hidden py-1 px-2 gap-1 z-50"
+            className="flex items-center bg-white shadow-xl border border-slate-200 rounded-lg overflow-hidden py-1 px-2 gap-1 z-50 animate-in fade-in zoom-in-95 duration-150"
           >
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().undo().run()}
-              disabled={!editor.can().undo()}
-              className={`p-1.5 rounded transition-colors ${editor.can().undo() ? 'hover:bg-slate-100 text-slate-600' : 'text-slate-300 cursor-not-allowed'}`}
-              title="Undo"
+            {/* Automatic Color Indicator for Highlighted Text */}
+            <div 
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold border shadow-xs select-none transition-colors ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}
+              title={`This highlighted text is formatted as ${format.label}`}
             >
-              <Undo className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().redo().run()}
-              disabled={!editor.can().redo()}
-              className={`p-1.5 rounded transition-colors ${editor.can().redo() ? 'hover:bg-slate-100 text-slate-600' : 'text-slate-300 cursor-not-allowed'}`}
-              title="Redo"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
-            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
-            <select
-              value={editor.getAttributes('textStyle').fontFamily || ''}
-              onChange={(e) => {
-                if (e.target.value) {
-                  editor.chain().focus().setFontFamily(e.target.value).run();
-                } else {
-                  editor.chain().focus().unsetFontFamily().run();
-                }
-              }}
-              className="p-1 rounded bg-transparent hover:bg-slate-100 text-sm font-medium text-slate-700 outline-none cursor-pointer"
-              title="Font Family"
-            >
-              <option value="">Default Font</option>
-              <option value="Montserrat">Montserrat</option>
-              <option value="Playfair Display">Playfair Display</option>
-            </select>
-            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+              <span className={`w-2 h-2 rounded-full ${format.dotColor} animate-pulse`} />
+              <span>{format.label}</span>
+            </div>
+
+            <div className="w-px h-5 bg-slate-300 mx-1 self-center" />
+
+            {/* Quick Action Heading Buttons in Highlight Bubble - Color Coded */}
             <button
               type="button"
               onClick={() => handleSmartHeadingToggle(editor, 1)}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-600'}`}
-              title="Heading 1"
+              className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                editor.isActive('heading', { level: 1 })
+                  ? 'bg-purple-600 text-white font-bold shadow-sm ring-1 ring-purple-600'
+                  : 'text-slate-600 hover:bg-purple-50 hover:text-purple-700'
+              }`}
+              title="Convert highlighted text to H1 (Purple)"
             >
-              <Heading1 className="w-4 h-4" />
+              H1
             </button>
             <button
               type="button"
               onClick={() => handleSmartHeadingToggle(editor, 2)}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-600'}`}
-              title="Heading 2"
+              className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                editor.isActive('heading', { level: 2 })
+                  ? 'bg-indigo-600 text-white font-bold shadow-sm ring-1 ring-indigo-600'
+                  : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
+              }`}
+              title="Convert highlighted text to H2 (Indigo)"
             >
-              <Heading2 className="w-4 h-4" />
+              H2
             </button>
             <button
               type="button"
               onClick={() => handleSmartHeadingToggle(editor, 3)}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-600'}`}
-              title="Heading 3"
+              className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                editor.isActive('heading', { level: 3 })
+                  ? 'bg-emerald-600 text-white font-bold shadow-sm ring-1 ring-emerald-600'
+                  : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+              }`}
+              title="Convert highlighted text to H3 (Emerald)"
             >
-              <Heading3 className="w-4 h-4" />
+              H3
             </button>
-            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
             <button
               type="button"
               onClick={() => handleSmartParagraph(editor)}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors text-xs font-bold ${editor.isActive('paragraph') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
-              title="Paragraph"
+              className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                editor.isActive('paragraph')
+                  ? 'bg-slate-900 text-white font-bold shadow-sm ring-1 ring-slate-900'
+                  : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+              }`}
+              title="Convert highlighted text to normal Paragraph (P)"
             >
               P
             </button>
-            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+
+            <div className="w-px h-5 bg-slate-300 mx-1 self-center" />
+
+            {/* Standard Text Formatting Buttons */}
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('bold') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('bold') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
               title="Bold"
             >
               <Bold className="w-4 h-4" />
@@ -746,7 +935,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('italic') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('italic') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
               title="Italic"
             >
               <Italic className="w-4 h-4" />
@@ -754,7 +943,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('underline') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
               title="Underline"
             >
               <UnderlineIcon className="w-4 h-4" />
@@ -772,7 +961,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             <button
               type="button"
               onClick={setLink}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('link') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive('link') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
               title="Link"
             >
               <LinkIcon className="w-4 h-4" />
@@ -785,11 +974,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             >
               <RemoveFormatting className="w-4 h-4" />
             </button>
-            <div className="w-px h-4 bg-slate-300 mx-1 self-center" />
+
+            <div className="w-px h-5 bg-slate-300 mx-1 self-center" />
+
             <button
               type="button"
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
               title="Align Left"
             >
               <AlignLeft className="w-4 h-4" />
@@ -797,7 +988,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             <button
               type="button"
               onClick={() => editor.chain().focus().setTextAlign('center').run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
               title="Align Center"
             >
               <AlignCenter className="w-4 h-4" />
@@ -805,22 +996,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             <button
               type="button"
               onClick={() => editor.chain().focus().setTextAlign('right').run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
+              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
               title="Align Right"
             >
               <AlignRight className="w-4 h-4" />
             </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-              className={`p-1.5 rounded hover:bg-slate-100 transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}
-              title="Justify"
-            >
-              <AlignJustify className="w-4 h-4" />
-            </button>
           </BubbleMenu>
         )}
         <EditorContent editor={editor} />
+      </div>
+
+      {/* Live Editor Footer Bar with Format Color Indicator & Word Counts */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-t border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-slate-600">Selected text:</span>
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold border transition-all ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}>
+            <span className={`w-2 h-2 rounded-full ${format.dotColor}`} />
+            {format.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 text-slate-400">
+          <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+          <span>•</span>
+          <span>{charCount} characters</span>
+        </div>
       </div>
     </div>
   );
