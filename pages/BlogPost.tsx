@@ -7,6 +7,8 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { PublicHeader } from '../components/PublicHeader';
+import { BlogSocialShare } from '../components/BlogSocialShare';
+import { BlogContentWithPinterest } from '../components/BlogContentWithPinterest';
 
 export const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -238,13 +240,13 @@ export const BlogPost: React.FC = () => {
         </h1>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto px-4 mb-8 md:mb-16">
+      <div className="w-full max-w-5xl mx-auto px-4 mb-8 md:mb-14">
         {post.cover_image && (
-          <div className="aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative rounded-sm">
+          <div className="group/hero relative aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[2.5/1] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden rounded-sm shadow-sm">
             <img 
               src={post.cover_image} 
               alt={`${post.title} — Photography by Mwabonje in Kenya`} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover/hero:scale-[1.01]"
               loading="eager"
               // @ts-ignore
               fetchPriority="high"
@@ -252,21 +254,54 @@ export const BlogPost: React.FC = () => {
               width={1200}
               height={630}
             />
+            {/* Quick Pin on Cover Image */}
+            <button
+              type="button"
+              onClick={() => {
+                const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(pageUrl)}&media=${encodeURIComponent(post.cover_image)}&description=${encodeURIComponent(post.title)}`;
+                window.open(pinUrl, '_blank', 'width=650,height=550,noopener,noreferrer');
+              }}
+              className="absolute top-4 right-4 opacity-0 group-hover/hero:opacity-100 transition-all duration-200 bg-[#E60023] hover:bg-[#ad081b] text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-black/25 z-20 cursor-pointer transform hover:scale-105 active:scale-95"
+              title="Save cover photo to Pinterest"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.334 1.357-.057.24-.19.291-.44.175-1.644-.766-2.671-3.169-2.671-5.102 0-4.156 3.019-7.973 8.709-7.973 4.572 0 8.125 3.259 8.125 7.614 0 4.544-2.864 8.2-6.84 8.2-1.336 0-2.591-.695-3.021-1.514l-.823 3.138c-.298 1.146-1.104 2.583-1.644 3.456C9.882 23.834 10.926 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+              </svg>
+              <span>Save</span>
+            </button>
           </div>
         )}
       </div>
 
       {/* Content */}
       <div className="w-full max-w-3xl mx-auto px-4 lg:px-8">
-        <div 
-          className="prose prose-slate dark:prose-invert prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-slate-900 dark:prose-a:text-amber-400 hover:prose-a:text-slate-600 dark:hover:prose-a:text-amber-300 prose-img:rounded-sm text-slate-700 dark:text-slate-300"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+        {/* Top Social Share Bar (Pinterest, WhatsApp, Copy Link) */}
+        <BlogSocialShare 
+          title={post.title} 
+          url={pageUrl} 
+          coverImage={post.cover_image} 
+          variant="compact" 
+        />
+
+        {/* Article Body with Automatic Pinterest Hover Pinning */}
+        <BlogContentWithPinterest 
+          content={post.content} 
+          postTitle={post.title} 
+          pageUrl={pageUrl} 
         />
         
         {/* Author at the bottom */}
         <div className="mt-8 text-center text-slate-500 dark:text-slate-400 italic">
           <p>By {post.author}</p>
         </div>
+
+        {/* Bottom Social Share Card */}
+        <BlogSocialShare 
+          title={post.title} 
+          url={pageUrl} 
+          coverImage={post.cover_image} 
+          variant="card" 
+        />
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (

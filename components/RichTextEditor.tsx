@@ -15,8 +15,11 @@ import {
   Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, 
   List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, 
   AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon, Highlighter, RemoveFormatting,
-  Sparkles
+  Sparkles, LayoutGrid
 } from 'lucide-react';
+import { EditorialGridNode } from './EditorialGridNode';
+import { EditorialGridModal } from './EditorialGridModal';
+import { EditorialGridData } from '../utils/editorialGrid';
 
 interface RichTextEditorProps {
   content: string;
@@ -510,7 +513,7 @@ export function handleSmartParagraph(editor: any) {
   editor.chain().focus().setParagraph().run();
 }
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: () => void }) => {
   if (!editor) {
     return null;
   }
@@ -765,9 +768,18 @@ const MenuBar = ({ editor }: { editor: any }) => {
         type="button"
         onClick={addImage}
         className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
-        title="Insert Image"
+        title="Insert Single Image"
       >
         <ImageIcon className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onOpenGridModal}
+        className="px-2.5 py-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 hover:border-emerald-400 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ml-1"
+        title="Insert Editorial Photo Grid (Magazine Spread / Diptych / Triptych)"
+      >
+        <LayoutGrid className="w-3.5 h-3.5 text-emerald-600" />
+        <span className="hidden sm:inline">Magazine Grid</span>
       </button>
     </div>
   );
@@ -775,11 +787,13 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) => {
   const [, setSelectionTick] = useState(0);
+  const [isGridModalOpen, setIsGridModalOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       HeadingEnterExit,
+      EditorialGridNode,
       Image,
       Underline,
       Highlight.configure({
@@ -846,6 +860,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
+  const handleInsertEditorialGrid = (data: EditorialGridData) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'editorialPhotoGrid',
+      attrs: {
+        layout: data.layout,
+        images: data.images,
+        caption: data.caption,
+      },
+    }).run();
+  };
+
   const format = getCurrentFormatInfo(editor);
   const textContent = editor ? editor.getText() : '';
   const wordCount = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
@@ -853,7 +879,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
 
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-shadow">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} onOpenGridModal={() => setIsGridModalOpen(true)} />
       <div className="flex-1 overflow-y-auto max-h-[600px] relative">
         {editor && (
           <BubbleMenu 
@@ -1021,6 +1047,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
           <span>{charCount} characters</span>
         </div>
       </div>
+
+      {/* Editorial Photo Grid Modal */}
+      <EditorialGridModal 
+        isOpen={isGridModalOpen} 
+        onClose={() => setIsGridModalOpen(false)} 
+        onInsert={handleInsertEditorialGrid} 
+      />
     </div>
   );
 };
