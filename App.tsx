@@ -155,6 +155,7 @@ const App: React.FC = () => {
             {/* Default */}
             <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
           </Routes>
+          <WhatsAppFloatingChat />
         </Router>
       </UploadProvider>
     </ThemeProvider>

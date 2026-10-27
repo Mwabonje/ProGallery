@@ -3498,7 +3498,7 @@ export const ClientGallery: React.FC = () => {
                 Instagram
               </a>
               <a
-                href="https://wa.me/254700000000"
+                href="https://wa.me/254705268604"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
