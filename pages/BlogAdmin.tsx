@@ -55,8 +55,7 @@ export const BlogAdmin: React.FC = () => {
     
     setEditingPost(prev => prev ? {
       ...prev,
-      category: formatCategories(next),
-      categories: next
+      category: formatCategories(next)
     } : null);
   };
 
@@ -68,11 +67,20 @@ export const BlogAdmin: React.FC = () => {
       const next = [...current, trimmed];
       setEditingPost(prev => prev ? {
         ...prev,
-        category: formatCategories(next),
-        categories: next
+        category: formatCategories(next)
       } : null);
     }
     setCustomCategoryInput('');
+  };
+
+  const sanitizePostForSave = (post: Partial<BlogPost>) => {
+    // Exclude virtual/helper client properties such as 'categories' so Supabase PostgREST doesn't error
+    const { categories, ...rest } = post as any;
+    return {
+      ...rest,
+      category: rest.category ? formatCategories(parseCategories(rest.category)) : '',
+      ...(rest.id ? { id: rest.id } : {})
+    };
   };
 
   const editingPostRef = useRef(editingPost);
@@ -94,10 +102,7 @@ export const BlogAdmin: React.FC = () => {
       }
 
       try {
-        const postData = {
-          ...postToSave,
-          ...(postToSave.id ? { id: postToSave.id } : {})
-        };
+        const postData = sanitizePostForSave(postToSave);
 
         const { data, error } = await supabase
           .from('blogs')
@@ -267,11 +272,7 @@ export const BlogAdmin: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const postData = {
-        ...editingPost,
-        // Remove id if it's a new post so Supabase generates one (if using uuid default)
-        ...(editingPost.id ? { id: editingPost.id } : {})
-      };
+      const postData = sanitizePostForSave(editingPost);
 
       const { error } = await supabase
         .from('blogs')
