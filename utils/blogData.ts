@@ -50,3 +50,45 @@ export const calculateReadingTime = (content: string): number => {
   const wordCount = text.trim().split(/\s+/).length;
   return Math.max(1, Math.ceil(wordCount / 200));
 };
+
+export const DEFAULT_BLOG_CATEGORIES = [
+  'Hospitality',
+  'Portraits',
+  'Documentary',
+  'Wedding',
+  'Travel',
+  'Places & Travel',
+  'Commercial',
+  'Events',
+  'Photography Tips',
+  'Maternity',
+  'Personal'
+];
+
+/**
+ * Parses a category field (which may be a comma-separated string, a single string, or an array)
+ * into a clean array of category names.
+ */
+export const parseCategories = (category?: string | string[] | null): string[] => {
+  if (!category) return [];
+  if (Array.isArray(category)) {
+    return Array.from(new Set(category.map(c => String(c).trim()).filter(Boolean)));
+  }
+  return Array.from(
+    new Set(
+      String(category)
+        .split(',')
+        .map(c => c.trim())
+        .filter(Boolean)
+    )
+  );
+};
+
+/**
+ * Formats an array of categories into a clean, comma-separated string for DB storage.
+ */
+export const formatCategories = (categories: string[]): string => {
+  const unique = Array.from(new Set(categories.map(c => c.trim()).filter(Boolean)));
+  return unique.join(', ');
+};
+

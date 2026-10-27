@@ -69,6 +69,7 @@ export interface BlogPost {
   author: string;
   cover_image: string;
   category: string;
+  categories?: string[];
   tags: string[];
   seo_title?: string;
   seo_description?: string;

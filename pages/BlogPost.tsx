@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { calculateReadingTime } from '../utils/blogData';
+import { calculateReadingTime, parseCategories } from '../utils/blogData';
 import { BlogPost as BlogPostType } from '../types';
 import { supabase } from '../services/supabase';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -82,14 +82,18 @@ export const BlogPost: React.FC = () => {
       }
 
       if (relatedData.length === 0 && data && data.category) {
+        const currentCats = parseCategories(data.category);
         const { data: catData, error: catError } = await supabase
           .from('blogs')
           .select('*')
-          .eq('category', data.category)
-          .neq('id', data.id);
+          .neq('id', data.id)
+          .limit(30);
           
         if (!catError && catData) {
-          relatedData = catData;
+          relatedData = catData.filter(p => {
+            const pCats = parseCategories(p.category);
+            return currentCats.some(c => pCats.includes(c));
+          });
         }
       }
       
@@ -209,8 +213,22 @@ export const BlogPost: React.FC = () => {
           </Link>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-4 md:mb-6 text-[9px] md:text-[11px] tracking-[0.2em] uppercase text-slate-500 dark:text-slate-400 font-bold">
-          <span>{post.category}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+          {parseCategories(post.category).length > 0 && (
+            <>
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {parseCategories(post.category).map(cat => (
+                  <Link 
+                    key={cat}
+                    to="/blog"
+                    className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                  >
+                    {cat}
+                  </Link>
+                ))}
+              </div>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+            </>
+          )}
           <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
           <span>{calculateReadingTime(post.content)} min read</span>
@@ -285,7 +303,13 @@ export const BlogPost: React.FC = () => {
                 </Link>
                 <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 dark:text-slate-400 font-semibold">
                   <span>{new Date(relatedPost.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                  {parseCategories(relatedPost.category).length > 0 && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                      <span>{parseCategories(relatedPost.category).join(', ')}</span>
+                    </>
+                  )}
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 hidden sm:inline-block"></span>
                   <span className="hidden sm:inline-block">{calculateReadingTime(relatedPost.content)} min read</span>
                 </div>
                 <Link to={`/blog/${relatedPost.slug}`} className="block group">
