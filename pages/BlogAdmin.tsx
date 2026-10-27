@@ -313,7 +313,12 @@ export const BlogAdmin: React.FC = () => {
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-_]/g, '')
+      .trim()
+      .replace(/[\s_]+/g, '-')
+      .replace(/-+/g, '-')
       .replace(/(^-|-$)+/g, '');
   };
 
@@ -485,11 +490,50 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">URL Slug</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">URL Slug</label>
+                  {editingPost.title && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingPost(prev => prev ? { ...prev, slug: generateSlug(prev.title || '') } : null)}
+                      className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3" /> Auto-generate from title
+                    </button>
+                  )}
+                </div>
                 <input 
                   type="text" 
                   value={editingPost.slug || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, slug: e.target.value })}
+                  onChange={e => {
+                    const val = e.target.value
+                      .toLowerCase()
+                      .replace(/[\s_]+/g, '-')
+                      .replace(/[^a-z0-9-_]/g, '')
+                      .replace(/-+/g, '-');
+                    setEditingPost(prev => prev ? { ...prev, slug: val } : null);
+                  }}
+                  onPaste={e => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text');
+                    if (text) {
+                      const cleanPasted = generateSlug(text);
+                      const input = e.currentTarget;
+                      const start = input.selectionStart ?? 0;
+                      const end = input.selectionEnd ?? (editingPost.slug || '').length;
+                      const currentVal = editingPost.slug || '';
+                      const merged = currentVal.slice(0, start) + cleanPasted + currentVal.slice(end);
+                      const finalSlug = generateSlug(merged);
+                      setEditingPost(prev => prev ? { ...prev, slug: finalSlug } : null);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (editingPost?.slug) {
+                      const clean = editingPost.slug.replace(/(^-|-$)+/g, '');
+                      setEditingPost(prev => prev ? { ...prev, slug: clean } : null);
+                    }
+                  }}
+                  placeholder="e.g. wedding-photography-in-lamu-kenya"
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-slate-50 font-mono text-sm"
                   required
                 />
