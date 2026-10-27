@@ -17,6 +17,7 @@ import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { About } from './pages/About';
 import { FAQ } from './pages/FAQ';
+import { WhatsAppFloatingChat } from './components/WhatsAppFloatingChat';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
