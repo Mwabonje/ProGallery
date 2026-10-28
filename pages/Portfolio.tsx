@@ -5,11 +5,14 @@ import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../typ
 import { getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getParentGalleryId } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
-import { ChevronDown, Menu, X, ArrowUpRight, Play } from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowUpRight, Play, MapPin, Sparkles } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { formatWhatsappUrl } from '../components/AboutSettingsModal';
 import { PublicHeader } from '../components/PublicHeader';
+import { LocationShowcaseHub } from '../components/LocationShowcaseHub';
+import { DestinationAvailabilityChecker } from '../components/DestinationAvailabilityChecker';
+import { DESTINATIONS } from '../data/destinations';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -158,6 +161,10 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   });
 
   const selectedCategory = searchParams.get('category') || 'ALL';
+  const selectedLocation = (searchParams.get('location') || 'all').toLowerCase();
+  const [checkerDestinationId, setCheckerDestinationId] = useState<string>(
+    selectedLocation !== 'all' ? selectedLocation : 'watamu'
+  );
 
   const handleGalleryClick = (slug: string, id: string) => {
     try {
@@ -429,11 +436,44 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   }, [galleries, loading, selectedCategory]);
 
   const handleCategorySelect = (cat: string) => {
+    const nextParams = new URLSearchParams(searchParams);
     if (cat === 'ALL') {
-      setSearchParams({});
+      nextParams.delete('category');
     } else {
-      setSearchParams({ category: cat });
+      nextParams.set('category', cat);
     }
+    setSearchParams(nextParams);
+  };
+
+  const handleLocationSelect = (loc: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (loc === 'all') {
+      nextParams.delete('location');
+    } else {
+      nextParams.set('location', loc);
+      setCheckerDestinationId(loc);
+    }
+    setSearchParams(nextParams);
+  };
+
+  const getGalleryLocation = (g: Gallery): string | null => {
+    const text = `${g.client_name || ''} ${g.title || ''} ${g.category || ''} ${g.description || ''}`.toLowerCase();
+    if (text.includes('watamu') || text.includes('tamu') || text.includes('dacoum') || text.includes('mida') || text.includes('hemingways') || text.includes('medina') || text.includes('chiedza')) return 'watamu';
+    if (text.includes('lamu') || text.includes('shela') || text.includes('kilele') || text.includes('peponi') || text.includes('manda')) return 'lamu';
+    if (text.includes('malindi') || text.includes('che shale') || text.includes('driftwood') || text.includes('warehouse') || text.includes('raffaella')) return 'malindi';
+    if (text.includes('diani') || text.includes('galu') || text.includes('tiwi') || text.includes('ambrah') || text.includes('yashvi')) return 'diani';
+    if (text.includes('safari') || text.includes('mara') || text.includes('tsavo') || text.includes('amboseli') || text.includes('bush') || text.includes('wildlife')) return 'safari';
+    return null;
+  };
+
+  const getGalleryLocationLabel = (g: Gallery): string | null => {
+    const loc = getGalleryLocation(g);
+    if (loc === 'watamu') return 'Watamu';
+    if (loc === 'lamu') return 'Lamu';
+    if (loc === 'malindi') return 'Malindi';
+    if (loc === 'diani') return 'Diani';
+    if (loc === 'safari') return 'Safari';
+    return null;
   };
 
   const categories = [
@@ -446,7 +486,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     { label: 'FILMS', value: 'FILMS' },
   ];
 
-  const filteredGalleries = selectedCategory === 'ALL'
+  const categoryFiltered = selectedCategory === 'ALL'
     ? galleries
     : galleries.filter(g => {
         const cat = (g.baseCategory || '').toUpperCase();
@@ -460,25 +500,39 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
         return cat.includes(sel);
       });
 
+  const filteredGalleries = selectedLocation === 'all'
+    ? categoryFiltered
+    : (() => {
+        const matching = categoryFiltered.filter(g => getGalleryLocation(g) === selectedLocation);
+        return matching.length > 0 ? matching : categoryFiltered;
+      })();
+
   // Hero Background image: prioritize configured hero image or top portfolio gallery image
   const firstPortfolioCover = galleries.find(g => g.coverUrl)?.coverUrl || null;
   const heroBg = heroImageUrl || firstPortfolioCover || REAL_HERO_IMAGE_URL;
 
+const pageTitle =
+  "Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi";
+
+const pageDesc =
+  "Mwabonje Photography is an editorial and lifestyle photography studio based in Malindi, Kenya, capturing coastal weddings, hospitality spaces, and portraits across Watamu, Malindi, and Lamu.";
+
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi</title>
-        <meta name="description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
         <link rel="canonical" href="https://mwabonje.co.ke/" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mwabonje.co.ke/" />
-        <meta property="og:title" content="Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi" />
-        <meta property="og:description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
         <meta property="og:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://mwabonje.co.ke/" />
-        <meta name="twitter:title" content="Mwabonje Photography — Lifestyle, Wedding & Hospitality Photographer in Malindi" />
-        <meta name="twitter:description" content="Editorial and lifestyle photography studio based in Malindi, Kenya — capturing coastal weddings, hospitality retreats, portraits, and visual narratives across Watamu, Malindi, and Lamu." />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
         <meta name="twitter:image" content={heroBg.startsWith('http') ? heroBg : `https://mwabonje.co.ke${heroBg}`} />
       </Helmet>
 
@@ -528,19 +582,28 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             {settings.heroSubtitle}
           </p>
 
-          <button 
-            onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
-            className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-white/80 hover:text-white transition-colors cursor-pointer group"
-          >
-            <span>Explore Works</span>
-            <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-1" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <button 
+              onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-white/80 hover:text-white transition-colors cursor-pointer group px-4 py-2"
+            >
+              <span>Explore Works</span>
+              <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-1" />
+            </button>
+            <button 
+              onClick={() => document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white text-white hover:text-slate-950 backdrop-blur-md border border-white/25 text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm cursor-pointer group"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-300 group-hover:text-emerald-700 transition-colors" />
+              <span>Check Dates &amp; Availability</span>
+            </button>
+          </div>
         </div>
       </section>
 
       {/* Portfolio Showcase Section */}
       <section id="work" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-slate-200/60 dark:border-slate-800 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-slate-200/60 dark:border-slate-800 gap-6">
           <div>
             <h2 className="font-serif text-3xl md:text-5xl font-normal text-slate-900 dark:text-white tracking-tight mb-3">
               Selected Works
@@ -567,6 +630,16 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
             ))}
           </div>
         </div>
+
+        {/* Coastal Location Showcase Hub */}
+        <LocationShowcaseHub 
+          selectedLocation={selectedLocation} 
+          onSelectLocation={handleLocationSelect}
+          onCheckAvailability={(destId) => {
+            setCheckerDestinationId(destId);
+            document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
 
         {/* Portfolio Grid */}
         {loading ? (
@@ -606,11 +679,17 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
                   {/* Gentle Gradient Shadow on Lower Half */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none" />
 
-                  {/* Top Badge */}
-                  <div className="absolute top-4 left-4 z-10">
+                  {/* Top Badges */}
+                  <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
                     <span className="inline-block px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[10px] font-bold tracking-widest uppercase text-slate-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10">
                       {displayCategory}
                     </span>
+                    {getGalleryLocationLabel(gallery) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-[10px] font-medium tracking-wider uppercase text-emerald-300 shadow-sm border border-emerald-500/30">
+                        <MapPin className="w-2.5 h-2.5 text-emerald-400" />
+                        <span>{getGalleryLocationLabel(gallery)}</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Bottom Information */}
@@ -744,6 +823,15 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
           </section>
         );
       })()}
+
+      {/* Interactive Date & Destination Availability Checker Section */}
+      <section id="availability" className="py-20 px-4 sm:px-6 md:px-12 max-w-6xl mx-auto scroll-mt-20">
+        <DestinationAvailabilityChecker 
+          initialDestinationId={checkerDestinationId}
+          whatsappLink={settings.whatsappLink}
+          brandName={settings.brandName}
+        />
+      </section>
 
       {/* Editorial Footer */}
       <footer className="bg-slate-950 text-white py-20 px-6 md:px-12 border-t border-white/10">

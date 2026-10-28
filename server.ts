@@ -662,20 +662,23 @@ async function startServer() {
   });
 
   // --- RATE LIMITING FOR GALLERY ACCESS ---
-  // Protect against brute-forcing gallery URLs by rate-limiting HTML page requests
+  // Protect against brute-forcing gallery passwords
   const galleryLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 50, // limit each IP to 50 requests per windowMs
-    message: "Too many requests to access galleries from this IP, please try again after 5 minutes.",
+    max: 100, // limit each IP
+    message: "Too many password verification attempts from this IP, please try again after 5 minutes.",
     skip: (req) => {
-      // Skip rate limiting for static assets and API routes
+      // Always skip rate limiting in development or for any code/asset requests
+      if (process.env.NODE_ENV !== "production") return true;
       return req.path.startsWith('/assets/') || 
-             req.path.startsWith('/api/') || 
-             !!req.path.match(/\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i);
+             req.path.startsWith('/@') || 
+             req.path.startsWith('/node_modules/') || 
+             !!req.path.match(/\.(js|jsx|ts|tsx|mjs|css|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i);
     }
   });
 
-  app.use(galleryLimiter);
+  // Apply rate limiter specifically to password attempts, not global scripts
+  app.use("/api/gallery/:id/verify-password", galleryLimiter);
 
   // 301 Permanent Redirect from legacy Netlify hostname to canonical domain
   app.use((req, res, next) => {

@@ -110,10 +110,16 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Safety timeout: never block the UI for more than 500ms on auth checks
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-400">Loading...</div>;
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <ThemeProvider>
@@ -121,10 +127,10 @@ const App: React.FC = () => {
         <Toaster position="top-center" richColors />
         <Router>
           <Routes>
-            {/* Public Routes */}
+            {/* Public Routes - Render immediately */}
             <Route path="/" element={<Portfolio />} />
-            <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/admin" element={!session ? <Navigate to="/login" /> : <Navigate to="/dashboard" />} />
+            <Route path="/login" element={loading ? <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 text-slate-400">Loading...</div> : (!session ? <Login /> : <Navigate to="/dashboard" replace />)} />
+            <Route path="/admin" element={loading ? <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 text-slate-400">Loading...</div> : (!session ? <Navigate to="/login" replace /> : <Navigate to="/dashboard" replace />)} />
             <Route path="/g/:galleryId" element={<ClientGallery />} />
             <Route path="/g/:galleryId/display" element={<LiveDisplay />} />
             <Route path="/p/:photographerId" element={<Portfolio />} />
@@ -136,25 +142,29 @@ const App: React.FC = () => {
 
             {/* Protected Photographer Routes */}
             <Route path="/dashboard" element={
-              session ? (
-                  <Dashboard />
-              ) : <Navigate to="/login" />
+              loading ? (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 text-slate-400">Loading...</div>
+              ) : session ? (
+                <Dashboard />
+              ) : <Navigate to="/login" replace />
             } />
             
             <Route path="/gallery/:id" element={
-              session ? (
+              loading ? (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 text-slate-400">Loading...</div>
+              ) : session ? (
                 <Layout>
                   <GalleryManager />
                 </Layout>
-              ) : <Navigate to="/login" />
+              ) : <Navigate to="/login" replace />
             } />
 
             {/* Vanity URL for Galleries and Sub-Galleries (e.g. /editorial/client-a) */}
             <Route path="/:galleryId/:subGallerySlug" element={<ClientGallery />} />
             <Route path="/:galleryId" element={<ClientGallery />} />
 
-            {/* Default */}
-            <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+            {/* Default fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <WhatsAppFloatingChat />
         </Router>
