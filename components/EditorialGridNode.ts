@@ -66,24 +66,37 @@ export const EditorialGridNode = Node.create({
     const images: EditorialGridImage[] = node.attrs.images || [];
     const caption: string = node.attrs.caption || '';
 
-    // Create a temporary element to return the rendered HTML string as DOMSpec
-    // ProseMirror accepts string or DOM elements. We create a container div:
-    const htmlString = generateEditorialGridHtml({ layout, images, caption });
-    
-    // We parse the generated HTML into a DOM node so TipTap outputs the exact structure
-    const temp = document.createElement('div');
-    temp.innerHTML = htmlString;
-    const gridEl = temp.firstElementChild;
+    const figures = images.map(img => [
+      'figure',
+      { class: 'group/pin relative overflow-hidden bg-slate-100 dark:bg-slate-800 rounded-sm m-0 flex flex-col' },
+      [
+        'div',
+        { class: 'relative w-full aspect-[3/4] sm:aspect-[4/5] overflow-hidden' },
+        ['img', { src: img.url, alt: img.alt || '', class: 'w-full h-full object-cover', loading: 'lazy' }]
+      ],
+      img.caption ? ['figcaption', { class: 'mt-2 text-xs text-slate-500 italic text-center font-serif' }, img.caption] : ''
+    ].filter(Boolean));
 
-    if (gridEl) {
-      // Return ProseMirror DOMSpec format
-      const dom = gridEl as HTMLElement;
-      return {
-        dom,
-      };
-    }
+    const gridClass = layout === '3-col' 
+      ? 'grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-stretch'
+      : layout === 'mosaic'
+      ? 'grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch'
+      : layout === 'full-width'
+      ? 'w-full'
+      : 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-stretch';
 
-    return ['div', { class: 'editorial-photo-grid' }, ''];
+    return [
+      'div',
+      {
+        class: 'editorial-photo-grid not-prose my-10',
+        'data-editorial-grid': 'true',
+        'data-layout': layout,
+        'data-images': JSON.stringify(images),
+        'data-caption': caption,
+      },
+      ['div', { class: gridClass }, ...figures],
+      caption ? ['p', { class: 'mt-3 text-center text-xs tracking-widest uppercase text-slate-400 font-sans' }, caption] : ''
+    ].filter(Boolean) as any;
   },
 
   addNodeView() {

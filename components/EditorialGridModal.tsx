@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, LayoutGrid, Check, Sparkles, Image as ImageIcon, Eye } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, LayoutGrid, Check, Sparkles, Image as ImageIcon, Eye, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { EditorialGridData, EditorialGridImage, EditorialGridLayout, EDITORIAL_LAYOUT_CONFIGS } from '../utils/editorialGrid';
 
 interface EditorialGridModalProps {
@@ -38,6 +40,7 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
     { url: '', caption: '', alt: '' },
   ]);
   const [mainCaption, setMainCaption] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
@@ -45,6 +48,7 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
   const countNeeded = currentConfig.recommendedCount;
 
   const handleUpdateImage = (index: number, field: keyof EditorialGridImage, value: string) => {
+    setErrorMessage('');
     setImages(prev => {
       const copy = [...prev];
       if (!copy[index]) {
@@ -55,7 +59,12 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
     });
   };
 
-  const handleQuickFillSample = () => {
+  const handleQuickFillSample = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setErrorMessage('');
     setImages([
       SAMPLE_COASTAL_IMAGES[0],
       SAMPLE_COASTAL_IMAGES[1],
@@ -64,11 +73,16 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
     setMainCaption('Coastal Editorial Series · Malindi & Watamu');
   };
 
-  const handleInsert = (e: React.FormEvent) => {
+  const handleInsertClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    setErrorMessage('');
+
     const activeImages = images.slice(0, countNeeded).filter(img => Boolean(img.url.trim()));
     if (activeImages.length === 0) {
-      alert('Please add at least one valid image URL for this grid layout.');
+      const msg = `Please enter at least one valid image URL for Photo #1, or click "Quick-fill demo images" above.`;
+      setErrorMessage(msg);
+      toast.error('Please enter at least one image URL');
       return;
     }
 
@@ -80,11 +94,19 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div 
         className="w-full max-w-2xl bg-white dark:bg-[#111722] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-[#0c1017]">
@@ -108,13 +130,14 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleInsert} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {/* Step 1: Layout Selection */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -138,7 +161,10 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setSelectedLayout(key)}
+                    onClick={() => {
+                      setSelectedLayout(key);
+                      setErrorMessage('');
+                    }}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? 'bg-emerald-50/70 border-emerald-500 dark:bg-emerald-950/30 dark:border-emerald-500 ring-2 ring-emerald-500/20'
@@ -204,8 +230,14 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                         placeholder="Image URL (Pexels, Cloudflare R2, or web link)..."
                         value={img.url}
                         onChange={e => handleUpdateImage(idx, 'url', e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleInsertClick(e);
+                          }
+                        }}
                         className="w-full px-3 py-1.5 text-xs bg-white dark:bg-[#0f1520] border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                        required
                       />
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -214,6 +246,13 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                           placeholder="Optional photo caption..."
                           value={img.caption || ''}
                           onChange={e => handleUpdateImage(idx, 'caption', e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleInsertClick(e);
+                            }
+                          }}
                           className="w-full px-2.5 py-1 text-xs bg-white dark:bg-[#0f1520] border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         />
                         <input
@@ -221,6 +260,13 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                           placeholder="Alt description for SEO / Pinterest..."
                           value={img.alt || ''}
                           onChange={e => handleUpdateImage(idx, 'alt', e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleInsertClick(e);
+                            }
+                          }}
                           className="w-full px-2.5 py-1 text-xs bg-white dark:bg-[#0f1520] border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         />
                       </div>
@@ -241,9 +287,24 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
               placeholder="e.g. Watamu Beach Ceremony & Detail Styling · Photography by Mwabonje"
               value={mainCaption}
               onChange={e => setMainCaption(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleInsertClick(e);
+                }
+              }}
               className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#161f2e] border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
+
+          {/* Error Message Alert */}
+          {errorMessage && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
@@ -255,15 +316,18 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={handleInsertClick}
               className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span>Insert Editorial Grid</span>
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

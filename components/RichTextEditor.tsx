@@ -20,6 +20,7 @@ import {
 import { EditorialGridNode } from './EditorialGridNode';
 import { EditorialGridModal } from './EditorialGridModal';
 import { EditorialGridData } from '../utils/editorialGrid';
+import { toast } from 'sonner';
 
 interface RichTextEditorProps {
   content: string;
@@ -862,14 +863,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
 
   const handleInsertEditorialGrid = (data: EditorialGridData) => {
     if (!editor) return;
-    editor.chain().focus().insertContent({
-      type: 'editorialPhotoGrid',
-      attrs: {
-        layout: data.layout,
-        images: data.images,
-        caption: data.caption,
-      },
-    }).run();
+    try {
+      editor.chain().focus().insertContent({
+        type: 'editorialPhotoGrid',
+        attrs: {
+          layout: data.layout,
+          images: data.images,
+          caption: data.caption,
+        },
+      }).insertContent({
+        type: 'paragraph',
+        content: [],
+      }).run();
+      toast.success('Editorial grid inserted!');
+    } catch (err) {
+      console.error('Failed to insert editorial grid:', err);
+      toast.error('Failed to insert grid');
+    }
   };
 
   const format = getCurrentFormatInfo(editor);
