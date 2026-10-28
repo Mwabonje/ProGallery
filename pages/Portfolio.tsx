@@ -154,7 +154,7 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     heroSubtitle: "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.",
     contactLink: "https://mwabonjebooking.netlify.app/",
     whatsappLink: "https://wa.me/254705268604",
-    footerEmail: "hello@mwabonje.studio",
+    footerEmail: "info@mwabonje.co.ke",
     instagramLink: "https://www.instagram.com/mwabonje_/",
     tiktokLink: "https://www.tiktok.com/@mwabonje_",
     servicesSection: DEFAULT_SERVICES_SECTION as ServicesSectionConfig | undefined
