@@ -5,7 +5,17 @@ import { EditorialGridImage, EditorialGridLayout, EDITORIAL_LAYOUT_CONFIGS } fro
 
 export const EditorialGridNodeView: React.FC<any> = ({ node, deleteNode }) => {
   const layout: EditorialGridLayout = node.attrs.layout || '2-col';
-  const images: EditorialGridImage[] = node.attrs.images || [];
+  const rawImages = node.attrs.images;
+  let images: EditorialGridImage[] = [];
+  if (Array.isArray(rawImages)) {
+    images = rawImages;
+  } else if (typeof rawImages === 'string') {
+    try {
+      images = JSON.parse(rawImages.replace(/&quot;/g, '"'));
+    } catch (e) {
+      images = [];
+    }
+  }
   const caption: string = node.attrs.caption || '';
   const config = EDITORIAL_LAYOUT_CONFIGS[layout] || EDITORIAL_LAYOUT_CONFIGS['2-col'];
 

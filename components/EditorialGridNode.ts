@@ -24,17 +24,24 @@ export const EditorialGridNode = Node.create({
           const raw = element.getAttribute('data-images');
           if (raw) {
             try {
-              return JSON.parse(raw);
+              const decoded = raw.replace(/&quot;/g, '"');
+              const parsed = JSON.parse(decoded);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+              }
             } catch (e) {
               // fallback to querying img tags
             }
           }
           const imgs = element.querySelectorAll('img');
-          return Array.from(imgs).map(img => ({
-            url: img.getAttribute('src') || '',
-            alt: img.getAttribute('alt') || '',
-            caption: img.closest('figure')?.querySelector('figcaption')?.textContent || '',
-          }));
+          if (imgs.length > 0) {
+            return Array.from(imgs).map(img => ({
+              url: img.getAttribute('src') || '',
+              alt: img.getAttribute('alt') || '',
+              caption: img.closest('figure')?.querySelector('figcaption')?.textContent || '',
+            }));
+          }
+          return [];
         },
         renderHTML: attributes => ({
           'data-images': JSON.stringify(attributes.images || []),
