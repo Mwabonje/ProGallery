@@ -77,7 +77,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
   const handleOpenEmail = () => {
     const subject = encodeURIComponent(`${currentExperience.title} Inquiry — ${currentDestination.name} (${formattedDate})`);
     const body = encodeURIComponent(whatsappMessage);
-    window.location.href = `mailto:hello@mwabonje.studio?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:info@mwabonje.co.ke?subject=${subject}&body=${body}`;
   };
 
   return (
