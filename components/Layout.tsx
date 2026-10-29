@@ -73,13 +73,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3" />
-                  <span className="text-[13px] font-medium">Proposals</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">6</span>
-              </div>
               <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${isGalleryManager ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="flex items-center">
                   <div className="w-[15px] h-[15px] mr-3" />
@@ -94,30 +87,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div onClick={() => navigate('/dashboard?view=pages')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${isPages ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
                 <div className="w-[15px] h-[15px] mr-3" />
                 <span className="text-[13px] font-medium">Pages</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Business</h2>
-            <div className="px-3 space-y-0.5">
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                  </div>
-                  <span className="text-[13px] font-medium">Print orders</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">3</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group hover:text-white hover:bg-[#222]">
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                  </div>
-                  <span className="text-[13px] font-medium">Messages</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">4</span>
               </div>
             </div>
           </div>
