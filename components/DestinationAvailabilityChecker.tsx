@@ -110,15 +110,10 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
         <div className="relative px-6 sm:px-10 md:px-12 pb-12 space-y-8">
           {/* Step 1: Destination Selection */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                <span>1. Select Coastal Destination</span>
-              </label>
-              <span className="text-[11px] text-slate-400">
-                Currently exploring: <strong className="text-white">{currentDestination.name}</strong>
-              </span>
-            </div>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+              <span>1. Select Coastal Destination</span>
+            </label>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
               {DESTINATIONS.map((dest) => {
