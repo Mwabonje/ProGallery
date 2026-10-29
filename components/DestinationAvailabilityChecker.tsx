@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Calendar as CalendarIcon, MapPin, Sparkles, Send, 
   CheckCircle2, Clock, Users, ArrowRight, Heart 
@@ -19,6 +19,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
 }) => {
   const [selectedDestId, setSelectedDestId] = useState<string>(initialDestinationId);
   const [selectedExperienceId, setSelectedExperienceId] = useState<string>('wedding');
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Keep selected destination in sync if parent passes a new initialDestinationId (e.g. from location hub)
   React.useEffect(() => {
@@ -207,13 +208,24 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
                 <span>3. Requested Shoot Date</span>
               </label>
 
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer"
+                onClick={() => {
+                  try {
+                    dateInputRef.current?.showPicker?.();
+                  } catch {
+                    // Fallback for browsers that already handle native click
+                  }
+                }}
+              >
                 <input
+                  ref={dateInputRef}
                   type="date"
                   value={selectedDate}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={e => setSelectedDate(e.target.value)}
-                  className="w-full px-4 py-2.5 text-xs bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400"
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full px-4 py-2.5 text-xs bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 [color-scheme:dark] cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:rounded-md [&::-webkit-calendar-picker-indicator]:opacity-90 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
                 />
               </div>
 
