@@ -126,11 +126,19 @@ export const SHOOT_EXPERIENCES = [
     inquiryTopic: 'Luxury Villa / Hospitality Architecture Shoot'
   },
   {
-    id: 'portrait',
-    title: 'Editorial & Couple Portraits',
-    subtitle: 'Lifestyle & Honeymoon Visuals',
+    id: 'editorial_portraits',
+    title: 'Editorial Portraits',
+    subtitle: 'Fashion, Brand & Creative Narratives',
     icon: '📸',
-    suggestedDuration: '2–3 Hours (Sunrise or Sunset Session)',
-    inquiryTopic: 'Editorial Couple / Portrait Session'
+    suggestedDuration: '2–3 Hours (Editorial Styling)',
+    inquiryTopic: 'Editorial Portraits Session'
+  },
+  {
+    id: 'couple_portraits',
+    title: 'Couple Portraits',
+    subtitle: 'Honeymoon, Anniversary & Lifestyle',
+    icon: '✨',
+    suggestedDuration: '1.5–2.5 Hours (Golden Hour Session)',
+    inquiryTopic: 'Couple Portraits Session'
   }
 ];

@@ -32,7 +32,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
     d.setMonth(d.getMonth() + 3);
     return d.toISOString().split('T')[0];
   });
-  const [guestCount, setGuestCount] = useState<string>('20-60');
+  const [guestCount, setGuestCount] = useState<string>('Classic (30 – 80 Guests)');
   const [specialNotes, setSpecialNotes] = useState<string>('');
 
   const currentDestination: DestinationInfo = 
@@ -58,8 +58,8 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
     text += `• Experience: ${currentExperience.title}\n`;
     text += `• Destination: ${currentDestination.name}, Kenya\n`;
     text += `• Requested Date: ${formattedDate}\n`;
-    if (selectedExperienceId === 'wedding' || selectedExperienceId === 'elopement') {
-      text += `• Estimated Guests: ${guestCount}\n`;
+    if (guestCount) {
+      text += `• Scope / Guests: ${guestCount}\n`;
     }
     if (specialNotes.trim()) {
       text += `• Venue / Vision: ${specialNotes.trim()}\n`;
@@ -159,14 +159,27 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
               <span>2. Choose Shoot Experience</span>
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
               {SHOOT_EXPERIENCES.map((exp) => {
                 const isSelected = selectedExperienceId === exp.id;
                 return (
                   <button
                     key={exp.id}
                     type="button"
-                    onClick={() => setSelectedExperienceId(exp.id)}
+                    onClick={() => {
+                      setSelectedExperienceId(exp.id);
+                      if (exp.id === 'editorial_portraits') {
+                        setGuestCount('Editorial Portraits');
+                      } else if (exp.id === 'couple_portraits') {
+                        setGuestCount('Couples Portraits');
+                      } else if (exp.id === 'elopement') {
+                        setGuestCount('Just Couple (Elopement)');
+                      } else if (exp.id === 'hospitality') {
+                        setGuestCount('Commercial / Full Property');
+                      } else if (exp.id === 'wedding' && (guestCount === 'Editorial Portraits' || guestCount === 'Couples Portraits' || guestCount === 'Commercial / Full Property')) {
+                        setGuestCount('Classic (30 – 80 Guests)');
+                      }
+                    }}
                     className={`p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? 'bg-emerald-950/60 border-emerald-400/80 ring-2 ring-emerald-500/30 text-white'
@@ -231,14 +244,16 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
                 onChange={e => setGuestCount(e.target.value)}
                 className="w-full px-3 py-2.5 text-xs bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400"
               >
-                <option value="Just Couple (Elopement)">Just Couple (Elopement / Couple Shoot)</option>
+                <option value="Editorial Portraits">Editorial Portraits (Solo / Fashion / Brand)</option>
+                <option value="Couples Portraits">Couples Portraits (Engagement / Honeymoon)</option>
+                <option value="Just Couple (Elopement)">Just Couple (Elopement)</option>
                 <option value="Intimate (< 25 Guests)">Intimate Gathering (&lt; 25 Guests)</option>
                 <option value="Classic (30 – 80 Guests)">Classic Celebration (30 – 80 Guests)</option>
                 <option value="Grand (80 – 150+ Guests)">Grand Destination Wedding (80 – 150+ Guests)</option>
                 <option value="Commercial / Full Property">Full Property / Commercial Retreat</option>
               </select>
               <p className="text-[10px] text-slate-400">
-                Helps determine second photographer &amp; aerial coverage needs.
+                Helps determine creative direction, crew &amp; timing requirements.
               </p>
             </div>
 
