@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import { Gallery } from '../types';
 import { getCleanGalleryTitle } from '../utils/formatters';
+import { generateSlug } from '../utils/slug';
 
 export interface WhatsAppDeliveryShareModalProps {
   isOpen: boolean;
@@ -51,8 +52,13 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
   const cleanTitle = getCleanGalleryTitle(gallery);
   const galleryUnlockPin = gallery.id ? gallery.id.split('-')[0].slice(0, 4).toUpperCase() : '';
   const effectivePassword = (initialPassword ?? gallery.password ?? '').trim();
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const portalUrl = `${origin}/${gallery.id}`;
+  const rawOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const origin = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app')
+    ? 'https://mwabonje.co.ke'
+    : rawOrigin;
+  const cleanSlug = gallery.client_name ? generateSlug(gallery.client_name) : '';
+  const portalUrl = `${origin}/${cleanSlug || gallery.id}`;
+  const rawIdUrl = `${origin}/${gallery.id}`;
 
   // Pre-fill recipient name if gallery client_name seems like a person or property
   useEffect(() => {
@@ -253,6 +259,8 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
                 {cleanTitle}
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+                <span>Link: <strong className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{portalUrl.replace(/^https?:\/\//, '')}</strong></span>
+                <span>•</span>
                 <span>PIN: <strong className="font-mono text-slate-800 dark:text-slate-200">{galleryUnlockPin || 'None'}</strong></span>
                 <span>•</span>
                 <span>Password: <strong className="font-mono text-slate-800 dark:text-slate-200">{effectivePassword || 'Public'}</strong></span>
