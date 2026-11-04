@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,6 +13,7 @@ import { FAQManagerModal } from '../components/FAQManagerModal';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BlogAdmin } from "./BlogAdmin";
 import { PagesAdmin } from "./PagesAdmin";
+import { WhatsAppDeliveryShareModal } from '../components/WhatsAppDeliveryShareModal';
 import { BlogAnalytics } from "../components/BlogAnalytics";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Helmet } from 'react-helmet-async';
@@ -114,6 +115,7 @@ export const Dashboard: React.FC = () => {
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false);
+  const [selectedWhatsAppGallery, setSelectedWhatsAppGallery] = useState<DashboardGallery | null>(null);
   const [newClientName, setNewClientName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newCategory, setNewCategory] = useState('Wedding');
@@ -849,8 +851,8 @@ export const Dashboard: React.FC = () => {
       <style>{`
         .admin-theme { --sand:#F2EDE2; --surface:#FFFFFF; --ink:#1C1B18; --ink-soft:#4A473E; --line:#DED6C2; --line-soft:#E9E3D4; --muted:#8E8571; --indigo:#242C4C; --indigo-soft:#3B4676; --indigo-tint:#E7E9F1; --ochre:#B9822A; --ochre-tint:#F4E7CD; --rose:#A23B45; --green:#3F6B4A; }
         .ledger { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 38px; }
-        .ledger-head { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; font-weight: 600; }
-        .ledger-row { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 80px; align-items: center; padding: 11px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; transition: background .12s ease; cursor: pointer; }
+        .ledger-head { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 110px; padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+        .ledger-row { display: grid; grid-template-columns: 34px 2.2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1fr 110px; align-items: center; padding: 11px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; transition: background .12s ease; cursor: pointer; }
         .ledger-row:hover { background: #f8fafc; }
         .swatch { width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0; background-size: cover; background-position: center; }
         .status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; }
@@ -1439,7 +1441,17 @@ export const Dashboard: React.FC = () => {
                       <div className="text-slate-500 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
                       <div className="text-slate-500 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
                       <div className="text-slate-500 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
-                      <div className="flex justify-end pr-2 gap-1">
+                      <div className="flex justify-end pr-2 gap-1 items-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedWhatsAppGallery(gallery);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
+                            title="Send Gallery via WhatsApp"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
                           <button 
                               onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
@@ -1639,6 +1651,17 @@ export const Dashboard: React.FC = () => {
                         <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
 
                         <div className="flex justify-end pr-2 gap-1 items-center">
+                            {/* 1-Click WhatsApp Delivery Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWhatsAppGallery(gallery);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
+                              title="Send Gallery via WhatsApp"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
                             {/* Quick Extend button if gallery is expired */}
                             {gallery.isExpired && (
                               <button 
@@ -1956,6 +1979,16 @@ export const Dashboard: React.FC = () => {
           isOpen={isFaqModalOpen}
           userId={userId}
           onClose={() => setIsFaqModalOpen(false)}
+        />
+      )}
+
+      {/* 1-Click WhatsApp Delivery Share Modal */}
+      {selectedWhatsAppGallery && (
+        <WhatsAppDeliveryShareModal
+          isOpen={!!selectedWhatsAppGallery}
+          onClose={() => setSelectedWhatsAppGallery(null)}
+          gallery={selectedWhatsAppGallery}
+          itemCount={selectedWhatsAppGallery.itemCount}
         />
       )}
     </div>
