@@ -19,6 +19,8 @@ import { Gallery } from '../types';
 import { getCleanGalleryTitle } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 
+export type ClientArchetype = 'general' | 'bride' | 'villa' | 'couple' | 'event' | 'commercial';
+
 export interface WhatsAppDeliveryShareModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,7 +28,7 @@ export interface WhatsAppDeliveryShareModalProps {
   password?: string | null;
   itemCount?: number;
   recipientPhone?: string;
-  clientType?: 'bride' | 'villa' | 'couple' | 'commercial';
+  clientType?: ClientArchetype;
 }
 
 export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProps> = ({
@@ -36,10 +38,10 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
   password: initialPassword,
   itemCount,
   recipientPhone: initialRecipientPhone = '',
-  clientType: initialClientType = 'bride'
+  clientType: initialClientType = 'general'
 }) => {
   const [recipientPhone, setRecipientPhone] = useState(initialRecipientPhone);
-  const [clientType, setClientType] = useState<'bride' | 'villa' | 'couple' | 'commercial'>(initialClientType);
+  const [clientType, setClientType] = useState<ClientArchetype>(initialClientType);
   const [recipientName, setRecipientName] = useState('');
   const [includePin, setIncludePin] = useState(true);
   const [includePassword, setIncludePassword] = useState(true);
@@ -73,12 +75,16 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
     const text = `${cleanTitle} ${gallery.category || ''} ${gallery.client_name || ''}`.toLowerCase();
     if (text.includes('villa') || text.includes('resort') || text.includes('hotel') || text.includes('hospitality')) {
       setClientType('villa');
-    } else if (text.includes('&') || text.includes('wedding') || text.includes('vow') || text.includes('bride')) {
+    } else if (text.includes('wedding') || text.includes('bride') || text.includes('vow') || text.includes('nuptial')) {
       setClientType('bride');
-    } else if (text.includes('couple') || text.includes('engagement') || text.includes('honeymoon')) {
+    } else if (text.includes('couple') || text.includes('honeymoon') || text.includes('engagement') || text.includes('elopement')) {
       setClientType('couple');
-    } else {
+    } else if (text.includes('party') || text.includes('birthday') || text.includes('celebration') || text.includes('gathering') || text.includes('friends') || text.includes('event')) {
+      setClientType('event');
+    } else if (text.includes('brand') || text.includes('corporate') || text.includes('campaign')) {
       setClientType('commercial');
+    } else {
+      setClientType('general');
     }
   }, [gallery.id]);
 
@@ -94,6 +100,16 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
     let closingLine = '';
 
     switch (clientType) {
+      case 'general':
+        greetingLine = `Hello ${nameGreeting},`;
+        introLine = `Your completed visual gallery for *${cleanTitle}* is now ready${photosCountText}! It has been carefully curated and retouched for you.`;
+        closingLine = `You can browse the gallery, mark your favourites, and download your high-resolution images via the portal link below. Let me know if you need anything else!`;
+        break;
+      case 'event':
+        greetingLine = `Hi ${nameGreeting}! 🎉`;
+        introLine = `Your event gallery for *${cleanTitle}* is now live${photosCountText}! Capturing these vibrant moments and memories with everyone was wonderful.`;
+        closingLine = `Feel free to share the link with family and friends so everyone can relive the celebration and save their favourite shots.`;
+        break;
       case 'villa':
         greetingLine = `Dear ${nameGreeting},`;
         introLine = `I am delighted to deliver the architectural and hospitality visual archive for *${cleanTitle}*${photosCountText}. Every image has been meticulously color-graded to celebrate your property's coastal light and natural spaces.`;
@@ -289,21 +305,25 @@ export const WhatsAppDeliveryShareModal: React.FC<WhatsAppDeliveryShareModalProp
                 Client Archetype / Tone
               </label>
               <div className="grid grid-cols-2 gap-1.5">
-                {(['bride', 'villa', 'couple', 'commercial'] as const).map((type) => (
+                {([
+                  { key: 'general', label: '📦 General Delivery' },
+                  { key: 'bride', label: '👰 Wedding / Bride' },
+                  { key: 'villa', label: '🏨 Villa & Hospitality' },
+                  { key: 'couple', label: '✨ Couple Portrait' },
+                  { key: 'event', label: '🎉 Event / Friends' },
+                  { key: 'commercial', label: '💼 Commercial / Brand' },
+                ] as const).map(({ key, label }) => (
                   <button
-                    key={type}
+                    key={key}
                     type="button"
-                    onClick={() => setClientType(type)}
-                    className={`px-3 py-2 text-xs font-medium rounded-lg border text-left capitalize transition-all ${
-                      clientType === type 
+                    onClick={() => setClientType(key)}
+                    className={`px-2.5 py-2 text-xs font-medium rounded-lg border text-left transition-all ${
+                      clientType === key 
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-500 dark:text-emerald-300 font-semibold shadow-xs' 
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
-                    {type === 'bride' && '👰 Wedding / Bride'}
-                    {type === 'villa' && '🏨 Villa & Hospitality'}
-                    {type === 'couple' && '✨ Couple Portrait'}
-                    {type === 'commercial' && '💼 Commercial / Brand'}
+                    {label}
                   </button>
                 ))}
               </div>
