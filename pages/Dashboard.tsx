@@ -1442,16 +1442,6 @@ export const Dashboard: React.FC = () => {
                       <div className="text-slate-500 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
                       <div className="text-slate-500 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
                       <div className="flex justify-end pr-2 gap-1 items-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedWhatsAppGallery(gallery);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
-                            title="Send Gallery via WhatsApp"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
                           <button 
                               onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"

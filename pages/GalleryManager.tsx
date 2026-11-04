@@ -1222,13 +1222,15 @@ export const GalleryManager: React.FC = () => {
           <button onClick={handleCopyLink} className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5">
             {linkCopied ? <><Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"/> <span className="text-emerald-600 dark:text-emerald-400">Copied</span></> : <><Copy className="w-3.5 h-3.5"/> Copy link</>}
           </button>
-          <button 
-            onClick={() => setIsWhatsAppShareModalOpen(true)} 
-            className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-emerald-500/60 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
-            title="Send gallery delivery link, password & PIN via WhatsApp"
-          >
-            <Send className="w-3.5 h-3.5" /> Send via WhatsApp
-          </button>
+          {!isPortfolio && (
+            <button 
+              onClick={() => setIsWhatsAppShareModalOpen(true)} 
+              className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-emerald-500/60 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+              title="Send gallery delivery link, password & PIN via WhatsApp"
+            >
+              <Send className="w-3.5 h-3.5" /> Send via WhatsApp
+            </button>
+          )}
           <a href={`/${gallery.id}/display`} target="_blank" rel="noreferrer" className="font-sans text-[12.5px] font-medium px-3.5 py-2 rounded-[3px] border border-indigo-100 dark:border-indigo-950 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors inline-flex items-center gap-1.5">
             <LayoutGrid className="w-3.5 h-3.5" /> Live display
           </a>
@@ -1294,36 +1296,38 @@ export const GalleryManager: React.FC = () => {
         {/* Left Column */}
         <div className="flex flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
-          {/* 1-Click "Share Gallery via WhatsApp" Delivery Card */}
-          <div className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/30 rounded-[4px] p-4 sm:p-5 mb-5 relative overflow-hidden transition-all shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-400">
-                  Client Delivery
+          {/* 1-Click "Share Gallery via WhatsApp" Delivery Card (Delivery galleries only, not portfolio) */}
+          {!isPortfolio && (
+            <div className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/30 rounded-[4px] p-4 sm:p-5 mb-5 relative overflow-hidden transition-all shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-400">
+                    Client Delivery
+                  </span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                  1-Click WhatsApp
                 </span>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                1-Click WhatsApp
-              </span>
+
+              <h3 className="font-serif font-medium text-[16px] sm:text-[17px] text-slate-900 dark:text-white mb-1.5">
+                Send to Client on WhatsApp
+              </h3>
+
+              <p className="text-[11.5px] text-slate-600 dark:text-slate-300 mb-3.5 leading-relaxed">
+                Generate an editorial delivery note with your direct portal link, PIN ({gallery.id ? gallery.id.split('-')[0].slice(0, 4).toUpperCase() : '—'}), and password ready to send to bride or villa manager.
+              </p>
+
+              <button
+                onClick={() => setIsWhatsAppShareModalOpen(true)}
+                className="w-full justify-center font-sans text-[12.5px] font-semibold px-4 py-2.5 rounded-[3px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Share Gallery via WhatsApp</span>
+              </button>
             </div>
-
-            <h3 className="font-serif font-medium text-[16px] sm:text-[17px] text-slate-900 dark:text-white mb-1.5">
-              Send to Client on WhatsApp
-            </h3>
-
-            <p className="text-[11.5px] text-slate-600 dark:text-slate-300 mb-3.5 leading-relaxed">
-              Generate an editorial delivery note with your direct portal link, PIN ({gallery.id ? gallery.id.split('-')[0].slice(0, 4).toUpperCase() : '—'}), and password ready to send to bride or villa manager.
-            </p>
-
-            <button
-              onClick={() => setIsWhatsAppShareModalOpen(true)}
-              className="w-full justify-center font-sans text-[12.5px] font-semibold px-4 py-2.5 rounded-[3px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Share Gallery via WhatsApp</span>
-            </button>
-          </div>
+          )}
 
           {!isPortfolio && (
             <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-[4px] p-5 mb-5 transition-colors">
