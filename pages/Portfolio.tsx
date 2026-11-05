@@ -13,6 +13,8 @@ import { PublicHeader } from '../components/PublicHeader';
 import { LocationShowcaseHub } from '../components/LocationShowcaseHub';
 import { DestinationAvailabilityChecker } from '../components/DestinationAvailabilityChecker';
 import { DESTINATIONS } from '../data/destinations';
+import { GoogleReviewsSlider } from '../components/GoogleReviewsSlider';
+import { DEFAULT_GOOGLE_BUSINESS_CONFIG, GoogleBusinessProfileConfig } from '../data/googleReviews';
 
 interface PortfolioGallery extends Gallery {
   baseCategory?: string;
@@ -157,7 +159,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
     footerEmail: "info@mwabonje.co.ke",
     instagramLink: "https://www.instagram.com/mwabonje_/",
     tiktokLink: "https://www.tiktok.com/@mwabonje_",
-    servicesSection: DEFAULT_SERVICES_SECTION as ServicesSectionConfig | undefined
+    servicesSection: DEFAULT_SERVICES_SECTION as ServicesSectionConfig | undefined,
+    googleReviews: DEFAULT_GOOGLE_BUSINESS_CONFIG as GoogleBusinessProfileConfig | undefined
   });
 
   const selectedCategory = searchParams.get('category') || 'ALL';
@@ -823,6 +826,11 @@ const pageDesc =
           </section>
         );
       })()}
+
+      {/* Google Business Reviews Slider */}
+      <GoogleReviewsSlider 
+        config={settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG} 
+      />
 
       {/* Interactive Date & Destination Availability Checker Section */}
       <section id="availability" className="py-20 px-4 sm:px-6 md:px-12 max-w-6xl mx-auto scroll-mt-20">

@@ -3036,7 +3036,7 @@ export const ClientGallery: React.FC = () => {
           onClick={() => setLightboxFile(null)}
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-            {!isPortfolio && (
+            {!isPortfolio && !isSelectionMode && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

@@ -6,7 +6,8 @@ import { useUpload } from '../contexts/UploadContext';
 import { AboutSettingsModal } from './AboutSettingsModal';
 import { FAQManagerModal } from './FAQManagerModal';
 import { ServicesSettingsManager } from './ServicesSettingsManager';
-import { Layers } from 'lucide-react';
+import { Layers, Star, Plus, Trash2, Edit3 } from 'lucide-react';
+import { DEFAULT_GOOGLE_BUSINESS_CONFIG, GoogleBusinessProfileConfig, GoogleReviewItem } from '../data/googleReviews';
 
 export interface WebsiteSettingsModalProps {
   onClose: () => void;
@@ -37,6 +38,7 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
     footerEmail: 'info@mwabonje.co.ke',
     instagramLink: 'https://www.instagram.com/mwabonje_/',
     tiktokLink: 'https://www.tiktok.com/@mwabonje_',
+    googleReviews: DEFAULT_GOOGLE_BUSINESS_CONFIG as GoogleBusinessProfileConfig,
   });
 
   useEffect(() => {
@@ -508,6 +510,265 @@ export const WebsiteSettingsModal: React.FC<WebsiteSettingsModalProps> = ({
                           onChange={(e) => setSettings({ ...settings, tiktokLink: e.target.value })}
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
                         />
+                      </div>
+                    </div>
+
+                    {/* Google Business Reviews & Place Profile Config */}
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                            Google Business Reviews Slider
+                          </h4>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={settings.googleReviews?.enabled ?? true}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              googleReviews: {
+                                ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                enabled: e.target.checked
+                              }
+                            })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Display verified 5.0-star Google reviews on your homepage carousel with direct links to your Google Business Profile.
+                      </p>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                          Google Profile / Reviews Link
+                        </label>
+                        <input
+                          type="url"
+                          value={settings.googleReviews?.googleProfileUrl || 'https://share.google/JNg3LLWIVUgmB1fFr'}
+                          onChange={(e) => setSettings({
+                            ...settings,
+                            googleReviews: {
+                              ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                              googleProfileUrl: e.target.value
+                            }
+                          })}
+                          placeholder="https://share.google/... or https://maps.app.goo.gl/..."
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
+                        />
+                        <span className="text-[11px] text-slate-400 block mt-1">
+                          Your connected profile: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">https://share.google/JNg3LLWIVUgmB1fFr</strong>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                            Verified Star Rating
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="1"
+                            max="5"
+                            value={settings.googleReviews?.rating || 5.0}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              googleReviews: {
+                                ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                rating: parseFloat(e.target.value) || 5.0
+                              }
+                            })}
+                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                            Total Google Reviews
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={settings.googleReviews?.totalReviews || 28}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              googleReviews: {
+                                ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                totalReviews: parseInt(e.target.value, 10) || 28
+                              }
+                            })}
+                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 rounded-lg text-sm focus:outline-none focus:border-slate-400 dark:text-white font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Real Google Reviews Management List */}
+                      <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h5 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                              Real Google Reviews Showcase ({((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews).length})
+                            </h5>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Add the exact words and names from your Google Business Profile to feature on your homepage carousel.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentList = settings.googleReviews?.reviews || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews;
+                              const newReview: GoogleReviewItem = {
+                                id: `rev-${Date.now()}`,
+                                authorName: 'Client Name',
+                                rating: 5,
+                                relativeTimeDescription: 'Recently',
+                                shootType: 'Destination Wedding',
+                                location: 'Watamu',
+                                highlightQuote: 'Incredible photography and presence along the coast.',
+                                text: 'Paste the exact review text from your Google profile here...',
+                                verified: true
+                              };
+                              setSettings({
+                                ...settings,
+                                googleReviews: {
+                                  ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                  reviews: [newReview, ...currentList]
+                                }
+                              });
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Review</span>
+                          </button>
+                        </div>
+
+                        {/* List of Reviews */}
+                        <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                          {((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews).map((rev, revIdx) => (
+                            <div 
+                              key={rev.id || revIdx} 
+                              className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-2.5 text-xs"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    type="text"
+                                    value={rev.authorName}
+                                    placeholder="Reviewer Name (e.g. Sarah K.)"
+                                    onChange={(e) => {
+                                      const currentList = [...((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews)];
+                                      currentList[revIdx] = { ...currentList[revIdx], authorName: e.target.value };
+                                      setSettings({
+                                        ...settings,
+                                        googleReviews: {
+                                          ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                          reviews: currentList
+                                        }
+                                      });
+                                    }}
+                                    className="font-semibold text-slate-900 dark:text-white bg-white dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 w-44"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={rev.location || ''}
+                                    placeholder="Location (Watamu, Lamu...)"
+                                    onChange={(e) => {
+                                      const currentList = [...((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews)];
+                                      currentList[revIdx] = { ...currentList[revIdx], location: e.target.value as any };
+                                      setSettings({
+                                        ...settings,
+                                        googleReviews: {
+                                          ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                          reviews: currentList
+                                        }
+                                      });
+                                    }}
+                                    className="text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 w-32"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={rev.relativeTimeDescription || ''}
+                                    placeholder="Time (e.g. 2 weeks ago)"
+                                    onChange={(e) => {
+                                      const currentList = [...((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews)];
+                                      currentList[revIdx] = { ...currentList[revIdx], relativeTimeDescription: e.target.value };
+                                      setSettings({
+                                        ...settings,
+                                        googleReviews: {
+                                          ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                          reviews: currentList
+                                        }
+                                      });
+                                    }}
+                                    className="text-slate-500 bg-white dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 w-28"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const currentList = ((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews).filter((_, i) => i !== revIdx);
+                                    setSettings({
+                                      ...settings,
+                                      googleReviews: {
+                                        ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                        reviews: currentList
+                                      }
+                                    });
+                                  }}
+                                  className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                                  title="Delete Review"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <div>
+                                <input
+                                  type="text"
+                                  value={rev.highlightQuote || ''}
+                                  placeholder="One-line Highlight Quote (e.g. He captured our wedding flawlessly)"
+                                  onChange={(e) => {
+                                    const currentList = [...((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews)];
+                                    currentList[revIdx] = { ...currentList[revIdx], highlightQuote: e.target.value };
+                                    setSettings({
+                                      ...settings,
+                                      googleReviews: {
+                                        ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                        reviews: currentList
+                                      }
+                                    });
+                                  }}
+                                  className="w-full font-serif text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 italic"
+                                />
+                              </div>
+
+                              <div>
+                                <textarea
+                                  value={rev.text}
+                                  rows={2}
+                                  placeholder="Full Google Review Text..."
+                                  onChange={(e) => {
+                                    const currentList = [...((settings.googleReviews?.reviews) || DEFAULT_GOOGLE_BUSINESS_CONFIG.reviews)];
+                                    currentList[revIdx] = { ...currentList[revIdx], text: e.target.value };
+                                    setSettings({
+                                      ...settings,
+                                      googleReviews: {
+                                        ...(settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG),
+                                        reviews: currentList
+                                      }
+                                    });
+                                  }}
+                                  className="w-full text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
