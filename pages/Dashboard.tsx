@@ -816,16 +816,53 @@ export const Dashboard: React.FC = () => {
   
   const handleDeleteGallery = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-        try {
-            const { error } = await supabase.from('galleries').delete().eq('id', id);
-            if (error) throw error;
-            toast.success('Gallery deleted successfully');
-            setGalleries(galleries.filter(g => g.id !== id));
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to delete gallery');
+    if (!window.confirm(`Are you sure you want to delete the gallery "${name}"?\nThis action cannot be undone and will permanently delete all associated photos, high-res originals, and watermark files from Cloudflare R2.`)) {
+      return;
+    }
+
+    try {
+      // 1. Query all files belonging to this gallery from database
+      const { data: filesData } = await supabase
+        .from('files')
+        .select('file_path')
+        .eq('gallery_id', id);
+
+      if (filesData && filesData.length > 0) {
+        const paths = filesData.map(f => f.file_path).filter(Boolean);
+        if (paths.length > 0) {
+          // Deletes the high-res files AND automatically cleans up their watermark copies in R2
+          await fetch(getApiUrl('/api/delete-file'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePaths: paths })
+          });
         }
+      }
+
+      // 2. Delete any remaining folder contents in Cloudflare R2 (e.g. galleries/[id] or [id])
+      await fetch(getApiUrl('/api/delete-folder'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderPath: `galleries/${id}` })
+      });
+      await fetch(getApiUrl('/api/delete-folder'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderPath: id })
+      });
+
+      // 3. Clean up database record (cascade deletes selections and files in Supabase DB)
+      const { error } = await supabase.from('galleries').delete().eq('id', id);
+      if (error) throw error;
+
+      toast.success(`Gallery "${name}" and all associated files deleted successfully`);
+      setGalleries(prev => prev.filter(g => g.id !== id));
+      
+      // Refresh dashboard data to recalculate real storage stats and recent activities
+      fetchData();
+    } catch (err: any) {
+      console.error('Failed to delete gallery:', err);
+      toast.error(`Failed to delete gallery: ${err?.message || 'Unknown error'}`);
     }
   };
 
