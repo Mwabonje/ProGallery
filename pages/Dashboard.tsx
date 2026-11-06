@@ -163,6 +163,20 @@ export const Dashboard: React.FC = () => {
         console.warn("Server purge endpoint error, falling back to direct purge:", endpointErr);
       }
 
+      // Also sweep and purge any orphaned R2 files that have no matching active gallery
+      try {
+        const orphanEndpoint = getApiUrl('/api/clean-orphaned-storage');
+        const orphanRes = await fetch(orphanEndpoint, { method: 'POST' });
+        if (orphanRes.ok) {
+          const orphanData = await orphanRes.json();
+          if (orphanData.orphanedCount > 0) {
+            purgedR2Objects += orphanData.orphanedCount;
+          }
+        }
+      } catch (orphanErr) {
+        console.warn("Orphaned storage check error:", orphanErr);
+      }
+
       // 2. Direct fallback if serverless endpoint is not reachable or errored
       if (!success) {
         const now = new Date().toISOString();

@@ -280,6 +280,129 @@ async function startServer() {
     }
   });
 
+  // Inspect and purge orphaned R2 files that have no matching gallery in database
+  app.post("/api/clean-orphaned-storage", async (req, res) => {
+    if (!s3 || !isR2Configured) {
+      return res.status(500).json({ error: "R2 is not configured" });
+    }
+
+    try {
+      // 1. Fetch all existing gallery IDs and active file paths from Supabase
+      const galRes = await fetch(`${supabaseUrl}/rest/v1/galleries?select=id`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      });
+      const galleries = (await galRes.json()) as any;
+      const activeGalleryIds = new Set<string>();
+      if (Array.isArray(galleries)) {
+        for (const g of galleries) {
+          if (g.id) activeGalleryIds.add(String(g.id).toLowerCase());
+        }
+      }
+
+      // Also get all registered file_paths in the files table
+      const filesRes = await fetch(`${supabaseUrl}/rest/v1/files?select=file_path`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      });
+      const registeredFiles = (await filesRes.json()) as any;
+      const registeredPaths = new Set<string>();
+      if (Array.isArray(registeredFiles)) {
+        for (const f of registeredFiles) {
+          if (f.file_path) registeredPaths.add(f.file_path);
+        }
+      }
+
+      // 2. List all objects in Cloudflare R2
+      let continuationToken = undefined;
+      const orphanedKeys: string[] = [];
+      let totalOrphanedBytes = 0;
+      let totalR2ObjectsScanned = 0;
+
+      do {
+        const listCmd: any = new ListObjectsV2Command({
+          Bucket: R2_BUCKET_NAME!,
+          ContinuationToken: continuationToken,
+        });
+        const listRes = (await s3.send(listCmd)) as any;
+        if (listRes.Contents) {
+          totalR2ObjectsScanned += listRes.Contents.length;
+          for (const item of listRes.Contents) {
+            const key: string = item.Key || "";
+            if (!key) continue;
+
+            // Check if key belongs to a gallery
+            // Common paths: galleries/<gallery_id>/... or <gallery_id>/...
+            let extractedGalId: string | null = null;
+            if (key.startsWith("galleries/")) {
+              const parts = key.split("/");
+              if (parts.length > 1) {
+                extractedGalId = parts[1].toLowerCase();
+              }
+            } else if (key.includes("/")) {
+              const parts = key.split("/");
+              // Check if first part matches UUID pattern
+              if (parts[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                extractedGalId = parts[0].toLowerCase();
+              }
+            }
+
+            // If it belongs to a gallery ID that NO LONGER exists in the database
+            const isOrphanedByGallery = extractedGalId && !activeGalleryIds.has(extractedGalId);
+            
+            // Also if it's an uploaded file inside galleries/ that is neither in registeredPaths nor a watermark of a registered path
+            let isOrphanedFile = false;
+            if (key.startsWith("galleries/") && !isOrphanedByGallery) {
+              const baseKey = key.replace(/watermark_/, "");
+              if (!registeredPaths.has(key) && !registeredPaths.has(baseKey)) {
+                isOrphanedFile = true;
+              }
+            }
+
+            if (isOrphanedByGallery || isOrphanedFile) {
+              orphanedKeys.push(key);
+              totalOrphanedBytes += item.Size || 0;
+            }
+          }
+        }
+        continuationToken = listRes.NextContinuationToken;
+      } while (continuationToken);
+
+      // If dryRun query parameter is passed (?dryRun=true), just report without deleting
+      const isDryRun = req.query.dryRun === "true";
+      if (!isDryRun && orphanedKeys.length > 0) {
+        for (let i = 0; i < orphanedKeys.length; i += 1000) {
+          const chunk = orphanedKeys.slice(i, i + 1000);
+          await s3.send(
+            new DeleteObjectsCommand({
+              Bucket: R2_BUCKET_NAME!,
+              Delete: {
+                Objects: chunk.map((Key: string) => ({ Key })),
+                Quiet: true,
+              },
+            })
+          );
+        }
+      }
+
+      res.json({
+        success: true,
+        dryRun: isDryRun,
+        totalR2ObjectsScanned,
+        orphanedCount: orphanedKeys.length,
+        orphanedMB: Number((totalOrphanedBytes / (1024 * 1024)).toFixed(2)),
+        sampleOrphanedKeys: orphanedKeys.slice(0, 10),
+      });
+    } catch (e: any) {
+      console.error("Clean orphaned storage error:", e);
+      res.status(500).json({ error: "Failed to scan/clean orphaned storage: " + e.message });
+    }
+  });
+
   // Delete an entire folder using a prefix
   app.post("/api/delete-folder", async (req, res) => {
     if (!s3 || !isR2Configured) {
