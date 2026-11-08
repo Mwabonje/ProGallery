@@ -827,11 +827,6 @@ const pageDesc =
         );
       })()}
 
-      {/* Google Business Reviews Slider */}
-      <GoogleReviewsSlider 
-        config={settings.googleReviews || DEFAULT_GOOGLE_BUSINESS_CONFIG} 
-      />
-
       {/* Interactive Date & Destination Availability Checker Section */}
       <section id="availability" className="py-20 px-4 sm:px-6 md:px-12 max-w-6xl mx-auto scroll-mt-20">
         <DestinationAvailabilityChecker 
