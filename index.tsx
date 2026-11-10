@@ -82,25 +82,46 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
             <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '20px' }}>
               The application encountered a temporary display issue.
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              style={{
-                padding: '10px 24px',
-                borderRadius: '9999px',
-                backgroundColor: '#10b981',
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer'
-              }}
-            >
-              Reload Page
-            </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '9999px',
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Reload Page
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.href = '/dashboard';
+                }}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Go to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       );
