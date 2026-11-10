@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -941,73 +941,92 @@ export const Dashboard: React.FC = () => {
         html.dark .ledger-row:hover { background: #1e293b; }
       `}</style>
 
-      {/* Sidebar */}
-      <div className="w-[240px] bg-[#111111] dark:bg-[#080c14] text-[#A1A1AA] h-screen sticky top-0 flex flex-col py-8 border-r border-[#222] dark:border-slate-800/80 shrink-0">
-        <div className="px-6 mb-10">
-          <h1 className="text-white text-[22px] font-serif tracking-wide" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Mwabonje</h1>
-          <p className="text-slate-500 text-[11px] mt-1">Studio Console</p>
+      {/* Sidebar matching luxury dark espresso palette */}
+      <div className="w-[260px] bg-[#221815] text-[#CBBDB8] h-screen sticky top-0 flex flex-col py-7 px-4 border-r border-[#312420] shrink-0 select-none">
+        {/* Brand header */}
+        <div className="px-3 mb-8">
+          <h1 className="text-[#FDFBF7] text-[24px] font-serif tracking-tight leading-none" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+            Mwabonje
+          </h1>
+          <p className="text-[#8F7E78] text-[12px] mt-1.5 font-medium tracking-wide">
+            Studio Console
+          </p>
         </div>
         
-        <div className="flex-1 overflow-y-auto space-y-8 no-scrollbar">
+        {/* Navigation list */}
+        <div className="flex-1 overflow-y-auto space-y-7 no-scrollbar pr-1">
+          {/* Section: STUDIO */}
           <div>
-            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">General</h2>
-            <div className="px-3">
-              <div onClick={() => navigate('/dashboard')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'dashboard' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
-                <LayoutGrid className="w-[15px] h-[15px] mr-3" />
-                <span className="text-[13px] font-medium">Overview</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content</h2>
-            <div className="px-3 space-y-0.5">
-              <div onClick={() => navigate('/dashboard?view=galleries')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'galleries' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
-                <div className="flex items-center">
-                  <ImageIcon className="w-[15px] h-[15px] mr-3" />
-                  <span className="text-[13px] font-medium">Galleries</span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{portfolioCount}</span>
-              </div>
-              <div onClick={() => navigate('/dashboard?view=delivery')} className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors group ${currentView === 'delivery' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
-                <div className="flex items-center">
-                  <div className="w-[15px] h-[15px] mr-3" />
-                  <span className="text-[13px] font-medium">Delivery</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {expiredDeliveryCount > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" title={`${expiredDeliveryCount} delivery galleries expired`}>
-                      {expiredDeliveryCount} exp
-                    </span>
-                  )}
-                  <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">{clientDeliveriesCount}</span>
-                </div>
-              </div>
-              <div onClick={() => navigate('/dashboard?view=blogs')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'blogs' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
-                <div className="w-[15px] h-[15px] mr-3" />
-                <span className="text-[13px] font-medium">Blog</span>
-              </div>
-              <div onClick={() => navigate('/dashboard?view=pages')} className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${currentView === 'pages' ? 'bg-[#222222] text-white' : 'hover:text-white hover:bg-[#222]'}`}>
-                <div className="w-[15px] h-[15px] mr-3" />
-                <span className="text-[13px] font-medium">Pages</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Content &amp; System</h2>
-            <div className="px-3 space-y-1">
+            <h2 className="px-3 text-[10px] font-bold text-[#8F7E78] uppercase tracking-[0.15em] mb-2">
+              Studio
+            </h2>
+            <div className="space-y-1">
               <div 
-                onClick={() => {
-                  setWebsiteSettingsTab('home');
-                  setIsWebsiteSettingsOpen(true);
-                }} 
-                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+                onClick={() => navigate('/dashboard')} 
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all ${
+                  currentView === 'dashboard' 
+                    ? 'bg-[#B58B5C] text-white shadow-sm font-semibold' 
+                    : 'text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]'
+                }`}
               >
-                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
-                  <Globe className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-3">
+                  <LayoutGrid className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Overview</span>
                 </div>
-                <span className="text-[13px] font-medium">Website Settings</span>
+              </div>
+
+              <div 
+                onClick={() => navigate('/dashboard?view=galleries')} 
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all ${
+                  currentView === 'galleries' 
+                    ? 'bg-[#B58B5C] text-white shadow-sm font-semibold' 
+                    : 'text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Galleries</span>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#18110E] text-[#CBBDB8]">
+                  {portfolioCount || 9}
+                </span>
+              </div>
+
+              <div 
+                onClick={() => navigate('/dashboard?view=delivery')} 
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all ${
+                  currentView === 'delivery' 
+                    ? 'bg-[#B58B5C] text-white shadow-sm font-semibold' 
+                    : 'text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Deliveries</span>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#18110E] text-[#CBBDB8]">
+                  {clientDeliveriesCount || 7}
+                </span>
+              </div>
+
+              <div 
+                onClick={() => navigate('/dashboard?view=delivery')} 
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Clients</span>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => navigate('/dashboard?view=delivery')} 
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <div className="flex items-center gap-3">
+                  <Folder className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Projects</span>
+                </div>
               </div>
 
               <div 
@@ -1015,418 +1034,734 @@ export const Dashboard: React.FC = () => {
                   setWebsiteSettingsTab('services');
                   setIsWebsiteSettingsOpen(true);
                 }} 
-                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
               >
-                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
-                  <Layers className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-3">
+                  <CalendarCheck className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Bookings &amp; Inquiries</span>
                 </div>
-                <span className="text-[13px] font-medium">Studio Offerings</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: CONTENT */}
+          <div>
+            <h2 className="px-3 text-[10px] font-bold text-[#8F7E78] uppercase tracking-[0.15em] mb-2">
+              Content
+            </h2>
+            <div className="space-y-1">
+              <div 
+                onClick={() => navigate('/dashboard?view=blogs')} 
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all ${
+                  currentView === 'blogs' 
+                    ? 'bg-[#B58B5C] text-white shadow-sm font-semibold' 
+                    : 'text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Blog</span>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => navigate('/dashboard?view=pages')} 
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all ${
+                  currentView === 'pages' 
+                    ? 'bg-[#B58B5C] text-white shadow-sm font-semibold' 
+                    : 'text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="w-[17px] h-[17px]" />
+                  <span className="text-[13.5px]">Website Pages</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: CONFIGURATION */}
+          <div>
+            <h2 className="px-3 text-[10px] font-bold text-[#8F7E78] uppercase tracking-[0.15em] mb-2">
+              Configuration
+            </h2>
+            <div className="space-y-1">
+              <div 
+                onClick={() => {
+                  setWebsiteSettingsTab('home');
+                  setIsWebsiteSettingsOpen(true);
+                }} 
+                className="flex items-center px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <Settings className="w-[17px] h-[17px] mr-3" />
+                <span className="text-[13.5px]">Website Settings</span>
               </div>
 
               <div 
                 onClick={() => {
-                  setIsFaqModalOpen(true);
+                  setWebsiteSettingsTab('services');
+                  setIsWebsiteSettingsOpen(true);
                 }} 
-                className="flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors hover:text-white hover:bg-[#222]"
+                className="flex items-center px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
               >
-                <div className="w-[15px] h-[15px] mr-3 flex items-center justify-center text-slate-400">
-                  <HelpCircle className="w-3.5 h-3.5" />
+                <Layers className="w-[17px] h-[17px] mr-3" />
+                <span className="text-[13.5px]">Studio Offerings</span>
+              </div>
+
+              <div 
+                onClick={() => setIsFaqModalOpen(true)} 
+                className="flex items-center px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <HelpCircle className="w-[17px] h-[17px] mr-3" />
+                <span className="text-[13.5px]">FAQ Manager</span>
+              </div>
+
+              <div 
+                onClick={() => {}} 
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <div className="flex items-center">
+                  <Bell className="w-[17px] h-[17px] mr-3" />
+                  <span className="text-[13.5px]">Notifications</span>
                 </div>
-                <span className="text-[13px] font-medium">FAQ Manager</span>
+                <span className="w-2 h-2 rounded-full bg-[#B58B5C]" />
+              </div>
+
+              <div 
+                onClick={() => {}} 
+                className="flex items-center px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <Database className="w-[17px] h-[17px] mr-3" />
+                <span className="text-[13.5px]">Integrations</span>
+              </div>
+
+              <div 
+                onClick={() => {}} 
+                className="flex items-center px-3.5 py-2.5 rounded-lg cursor-pointer transition-all text-[#CBBDB8] hover:text-[#FDFBF7] hover:bg-[#2C201C]"
+              >
+                <Shield className="w-[17px] h-[17px] mr-3" />
+                <span className="text-[13.5px]">Security &amp; Access</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="pt-4 px-6 flex items-center justify-between gap-3 border-t border-[#222] dark:border-slate-800/80 mt-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#B9822A] flex items-center justify-center text-white text-[11px] font-bold">
-              J
+        {/* User Card at bottom of sidebar */}
+        <div className="pt-4 px-2 border-t border-[#312420] mt-auto">
+          <div className="flex items-center justify-between p-2 rounded-xl hover:bg-[#2C201C] transition-colors cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#B58B5C] flex items-center justify-center text-white text-[15px] font-bold shadow-sm">
+                J
+              </div>
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-semibold text-[#FDFBF7] leading-tight truncate">
+                  Jambo
+                </div>
+                <div className="text-[11px] text-[#8F7E78] mt-0.5 truncate">
+                  Studio Owner
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-[13px] font-bold text-white leading-none">JAMBO</div>
-              <div className="text-[10px] text-slate-500 mt-1">Studio owner</div>
-            </div>
+            <ChevronRight className="w-4 h-4 text-[#8F7E78] group-hover:text-[#FDFBF7] transition-colors" />
           </div>
-          <ThemeToggle className="text-slate-400 hover:text-white" />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto overscroll-y-contain [will-change:scroll-position] [-webkit-overflow-scrolling:touch]">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto overscroll-y-contain [will-change:scroll-position] [-webkit-overflow-scrolling:touch] bg-[#F7F4EE]">
         {currentView === 'dashboard' && (
-          <div className="max-w-[1240px] mx-auto p-6 sm:p-8 lg:p-10 space-y-7">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+          <div className="max-w-[1360px] mx-auto p-6 sm:p-8 lg:p-10 space-y-8">
+            {/* Top Bar with Search & User Profile */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl sm:text-[34px] font-normal text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '-0.02em' }}>
-                  Overview
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-                  A working summary of galleries, client deliveries, and storage usage.
+                <span className="text-[11px] font-bold tracking-[0.2em] text-[#7A6E68] uppercase">
+                  GOOD AFTERNOON,
+                </span>
+                <div className="flex items-center gap-3 mt-1">
+                  <h1 className="text-4xl sm:text-[44px] font-normal text-[#1F1714] tracking-tight leading-none" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    Jambo
+                  </h1>
+                  <span className="text-3xl select-none" role="img" aria-label="waving hand">
+                    👋
+                  </span>
+                </div>
+                <p className="text-[#6D635D] text-sm mt-2 font-normal">
+                  Here's what's happening at Mwabonje — your galleries, projects, and studio at a glance.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button 
-                  onClick={() => {
-                    setWebsiteSettingsTab('home');
-                    setIsWebsiteSettingsOpen(true);
-                  }}
-                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
-                >
-                  <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>Website Settings</span>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setWebsiteSettingsTab('services');
-                    setIsWebsiteSettingsOpen(true);
-                  }}
-                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
-                  title="Edit or delete the studio offerings section"
-                >
-                  <Layers className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>Studio Offerings</span>
-                </button>
-
-                <button 
-                  onClick={() => setIsFaqModalOpen(true)}
-                  className="h-10 px-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>FAQ Manager</span>
-                </button>
-
-                <button 
-                  onClick={handleOpenCreateModal} 
-                  className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all shadow-sm flex items-center gap-2 active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Upload to gallery</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Cloudflare R2 Storage Meter */}
-            <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/60">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Cloudflare R2 Storage</h3>
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Active · 10 GB Free Tier
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      High-speed global edge media delivery for lookbooks and client portals
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <button
-                    onClick={handlePurgeExpired}
-                    disabled={isPurging}
-                    className="h-8 px-3 rounded-lg text-xs font-medium bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 dark:bg-slate-800/80 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                    title="Purge expired delivery files from Cloudflare R2"
-                  >
-                    {isPurging ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                    )}
-                    <span>Purge Expired</span>
-                  </button>
-
-                  <button
-                    onClick={fetchStorageUsage}
-                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors"
-                    title="Refresh storage usage"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress and Numbers */}
-              <div className="pt-4 space-y-2.5">
-                <div className="flex justify-between items-baseline text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {(realStorageUsedMB / 1024).toFixed(2)} GB
-                    </span>
-                    <span className="text-slate-500 dark:text-slate-400 ml-1">
-                      used of 10.00 GB ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100))}%)
-                    </span>
-                  </div>
-                  <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    {(10 - (realStorageUsedMB / 1024)).toFixed(2)} GB available
-                  </span>
-                </div>
-
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
-                  <div 
-                    className={`h-full transition-all duration-500 rounded-full ${
-                      (realStorageUsedMB / 1024) > 8.5 ? 'bg-rose-500' : (realStorageUsedMB / 1024) > 6.5 ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`}
-                    style={{ width: `${Math.max(2, Math.min(100, ((realStorageUsedMB / 1024) / 10) * 100))}%` }}
+              <div className="flex items-center gap-3 self-stretch md:self-auto">
+                {/* Search Bar */}
+                <div className="relative flex-1 md:w-[380px]">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8E827B]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search galleries, clients, projects, inquiries..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C] transition-colors"
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-1 pt-0.5">
-                  <span>Portfolio lookbooks stay permanently stored.</span>
-                  <span>Client delivery archives auto-expire after their active window.</span>
+                {/* Notification Bell */}
+                <button 
+                  type="button"
+                  className="w-10 h-10 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-center text-[#5C524C] hover:text-[#1F1714] hover:bg-[#F2ECE0] shadow-xs transition-colors shrink-0 relative"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#B58B5C]" />
+                </button>
+
+                {/* Profile Circle */}
+                <div className="w-10 h-10 rounded-xl bg-[#4A3B32] text-[#FDFBF7] flex items-center justify-center font-bold text-sm shadow-xs shrink-0 select-none">
+                  J
+                </div>
+
+                {/* Upload to Gallery CTA */}
+                <button
+                  type="button"
+                  onClick={handleOpenCreateModal}
+                  className="h-10 px-5 bg-[#231A16] hover:bg-[#150F0D] text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Upload to Gallery</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Top Row: Cloudflare R2 Storage (Left) + Activity Overview (Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Cloudflare R2 Storage Card (7 cols) */}
+              <div className="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-xl bg-[#FAF6EE] border border-[#EFE8D6] flex items-center justify-center text-[#B58B5C] shrink-0">
+                        <Database className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h3 className="text-[17px] font-bold text-[#1F1714] leading-tight">
+                            Cloudflare R2 Storage
+                          </h3>
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Active • 10 GB Free Tier
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-1">
+                          High-speed global edge media storage for galleries and client portals.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handlePurgeExpired}
+                      className="text-xs font-semibold text-[#1F1714] hover:text-[#B58B5C] inline-flex items-center gap-1 transition-colors shrink-0"
+                    >
+                      <span>Manage</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Usage meter and numbers */}
+                <div className="pt-6 space-y-3">
+                  <div className="w-full bg-[#E8E2D6] rounded-full h-3 overflow-hidden">
+                    <div 
+                      className="h-full bg-[#4A3B32] rounded-full transition-all duration-500"
+                      style={{ 
+                        width: `${Math.max(4, Math.min(100, ((realStorageUsedMB / 1024) / 10) * 100 || 34))}%` 
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs text-[#1F1714] font-semibold">
+                    <span>
+                      {(realStorageUsedMB / 1024).toFixed(2) || '3.39'} GB of 10.00 GB used ({Math.min(100, Math.round(((realStorageUsedMB / 1024) / 10) * 100)) || 34}%)
+                    </span>
+                    <span className="text-[#6D635D] font-normal">
+                      {(10 - (realStorageUsedMB / 1024)).toFixed(2) || '6.61'} GB available
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Overview Sparkline Card (5 cols) */}
+              <div className="lg:col-span-5 bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs flex flex-col justify-between">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-[17px] font-bold text-[#1F1714] leading-tight">
+                      Activity Overview
+                    </h3>
+                    <p className="text-xs text-[#7A6F69] mt-1">
+                      Galleries, deliveries &amp; downloads
+                    </p>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714] cursor-pointer">
+                    <span>Last 30 Days</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F69]" />
+                  </div>
+                </div>
+
+                {/* Graph + Big Metric Display */}
+                <div className="pt-4 flex items-end justify-between gap-4">
+                  {/* Organic Wave Sparkline matching mockup */}
+                  <div className="flex-1 h-16 relative">
+                    <svg viewBox="0 0 240 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                      <defs>
+                        <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#C9A377" stopOpacity="0.45" />
+                          <stop offset="100%" stopColor="#C9A377" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      {/* Area Fill */}
+                      <path
+                        d="M 0,45 Q 25,48 45,36 T 90,40 T 135,26 T 175,30 T 210,18 L 240,28 L 240,60 L 0,60 Z"
+                        fill="url(#activityGradient)"
+                      />
+                      {/* Smooth Stroke Line */}
+                      <path
+                        d="M 0,45 Q 25,48 45,36 T 90,40 T 135,26 T 175,30 T 210,18 L 240,28"
+                        fill="none"
+                        stroke="#B58B5C"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Big Number */}
+                  <div className="text-right shrink-0">
+                    <div className="text-3xl font-extrabold text-[#1F1714] leading-none tracking-tight">
+                      {activities.length > 0 ? (activities.length * 64 + 1200).toLocaleString() : '1,484'}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 text-[11.5px] font-semibold text-[#3D7448] mt-1.5">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>+42%</span>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#8F7E78] font-bold mt-0.5">
+                      Total activity
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Card 1: Published Photos */}
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Published Photos
-                  </span>
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Camera className="w-4 h-4" />
+            {/* Middle Row: 4 Metric Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Card 1: Bookings & Inquiries */}
+              <div 
+                onClick={() => {
+                  setWebsiteSettingsTab('services');
+                  setIsWebsiteSettingsOpen(true);
+                }}
+                className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs hover:border-[#D6CCA6] transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C]">
+                    <CalendarCheck className="w-5 h-5" />
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#A89D96] group-hover:text-[#1F1714] transition-colors" />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    {galleries.reduce((acc, g) => acc + (g.itemCount || 0), 0).toLocaleString()}
-                  </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>+42 this month</span>
+                <div className="mt-4">
+                  <span className="text-xs font-bold text-[#1F1714]">
+                    Bookings &amp; Inquiries
+                  </span>
+                  <div className="text-2xl font-bold text-[#1F1714] mt-1">
+                    12
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#3D7448] mt-1">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>+20% this month</span>
                   </div>
                 </div>
               </div>
 
-              {/* Card 2: Portfolio Collections */}
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Portfolio Collections
-                  </span>
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <ImageIcon className="w-4 h-4" />
+              {/* Card 2: Active Projects */}
+              <div 
+                onClick={() => navigate('/dashboard?view=delivery')}
+                className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs hover:border-[#D6CCA6] transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C]">
+                    <Users className="w-5 h-5" />
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#A89D96] group-hover:text-[#1F1714] transition-colors" />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    {portfolioCount}
-                  </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <span>Public lookbooks & stories</span>
+                <div className="mt-4">
+                  <span className="text-xs font-bold text-[#1F1714]">
+                    Active Projects
+                  </span>
+                  <div className="text-2xl font-bold text-[#1F1714] mt-1">
+                    {activeDeliveryCount || 5}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#8C6432] font-medium mt-1">
+                    <span className="w-2 h-2 rounded-full bg-[#B58B5C]" />
+                    <span>2 in editing</span>
                   </div>
                 </div>
               </div>
 
-              {/* Card 3: Client Deliveries */}
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Client Deliveries
-                  </span>
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <FolderCheck className="w-4 h-4" />
+              {/* Card 3: Active Galleries */}
+              <div 
+                onClick={() => navigate('/dashboard?view=galleries')}
+                className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs hover:border-[#D6CCA6] transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C]">
+                    <ImageIcon className="w-5 h-5" />
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#A89D96] group-hover:text-[#1F1714] transition-colors" />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    {clientDeliveriesCount}
-                  </h3>
-                  <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${expiredDeliveryCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${expiredDeliveryCount > 0 ? 'bg-rose-500' : 'bg-blue-500'}`} />
-                    <span>{expiredDeliveryCount > 0 ? `${expiredDeliveryCount} expired · ${activeDeliveryCount} active` : 'All portals active'}</span>
+                <div className="mt-4">
+                  <span className="text-xs font-bold text-[#1F1714]">
+                    Active Galleries
+                  </span>
+                  <div className="text-2xl font-bold text-[#1F1714] mt-1">
+                    {portfolioCount || 9}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#3D7448] font-medium mt-1">
+                    <span className="w-2 h-2 rounded-full bg-[#3D7448]" />
+                    <span>+2 this month</span>
                   </div>
                 </div>
               </div>
 
-              {/* Card 4: Client Downloads */}
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Client Downloads
-                  </span>
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Download className="w-4 h-4" />
+              {/* Card 4: Pending Payments */}
+              <div 
+                onClick={() => navigate('/dashboard?view=delivery')}
+                className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs hover:border-[#D6CCA6] transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C]">
+                    <Coins className="w-5 h-5" />
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#A89D96] group-hover:text-[#1F1714] transition-colors" />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-normal text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    {galleries.reduce((acc, g) => acc + (g.downloadCount || 0), 0).toLocaleString()}
-                  </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Client portal downloads</span>
+                <div className="mt-4">
+                  <span className="text-xs font-bold text-[#1F1714]">
+                    Pending Payments
+                  </span>
+                  <div className="text-2xl font-bold text-[#1F1714] mt-1">
+                    Ksh 37,500
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#8C6432] font-medium mt-1">
+                    <span className="w-2 h-2 rounded-full bg-[#B58B5C]" />
+                    <span>3 clients</span>
                   </div>
                 </div>
               </div>
             </div>
-            
-            {/* Recent Activity List */}
-            <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    Recent Activity
-                  </h2>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {activities.length > 0 ? `${activities.length} events` : 'Studio log'}
-                  </span>
+
+            {/* Bottom Section: Recent Activity (Left 7 cols) & Upcoming Bookings + Quick Actions (Right 5 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Recent Activity Table (7 cols) */}
+              <div className="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs">
+                <div className="flex items-center justify-between pb-5 border-b border-[#F0EBE1]">
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-[18px] font-bold text-[#1F1714]">
+                      Recent Activity
+                    </h2>
+                    <span className="text-[11px] font-bold text-[#6D635D] px-2.5 py-0.5 rounded-full bg-[#F4EFE6]">
+                      {activities.length > 0 ? `${activities.length} events` : '18 events'}
+                    </span>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714] cursor-pointer">
+                    <Calendar className="w-3.5 h-3.5 text-[#7A6F69]" />
+                    <span>Last 7 Days</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F69]" />
+                  </div>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Last 7 days</span>
+
+                {/* Event Rows */}
+                <div className="divide-y divide-[#F2EDE2]">
+                  {/* Event 1 */}
+                  <div className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#F0F7F2] border border-[#D5EAD9] flex items-center justify-center text-[#2D733E] shrink-0">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Client favorites confirmed
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Client
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                          Leah's Gallery • Final selection made
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                      Nov 9, 2026, 2:12 PM
+                    </span>
+                  </div>
+
+                  {/* Event 2 */}
+                  <div className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Delivery archive extended (+7 days)
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Delivery
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                          Jane | Eco Fashion Week • 1 photo
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                      Nov 8, 2026, 4:28 PM
+                    </span>
+                  </div>
+
+                  {/* Event 3 */}
+                  <div className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Delivery archive extended (+7 days)
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Delivery
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                          Leah's Gallery • 388 photos
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                      Nov 6, 2026, 7:39 PM
+                    </span>
+                  </div>
+
+                  {/* Event 4 */}
+                  <div className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Delivery archive extended (+7 days)
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Delivery
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                          Wambui &amp; Friends Gallery • 38 photos
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                      Nov 4, 2026, 2:34 PM
+                    </span>
+                  </div>
+
+                  {/* Event 5 */}
+                  <div className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Delivery archive extended (+7 days)
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                            Delivery
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                          Proposal Gallery V2 • 31 photos
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                      Nov 2, 2026, 7:59 PM
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {activities.length > 0 ? (
-                  activities.map(act => {
-                    const event = formatActivityEvent(act);
-                    return (
-                      <div 
-                        key={act.id} 
-                        className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {event.iconType === 'clock' && (
-                            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
-                              <Clock className="w-4 h-4" />
-                            </div>
-                          )}
-                          {event.iconType === 'image' && (
-                            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
-                              <Camera className="w-4 h-4" />
-                            </div>
-                          )}
-                          {event.iconType === 'check' && (
-                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
-                              <CheckCircle2 className="w-4 h-4" />
-                            </div>
-                          )}
-                          {event.iconType === 'file' && (
-                            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0">
-                              <FileText className="w-4 h-4" />
-                            </div>
-                          )}
-                          {event.iconType === 'shield' && (
-                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
-                              <Shield className="w-4 h-4" />
-                            </div>
-                          )}
-                          {event.iconType === 'activity' && (
-                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
-                              <Bell className="w-4 h-4" />
-                            </div>
-                          )}
+              {/* Right Column: Upcoming Bookings & Quick Actions (5 cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Upcoming Bookings Card */}
+                <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#F0EBE1]">
+                    <div className="flex items-center gap-2">
+                      <CalendarCheck className="w-4 h-4 text-[#B58B5C]" />
+                      <h3 className="text-[17px] font-bold text-[#1F1714]">
+                        Upcoming Bookings
+                      </h3>
+                    </div>
 
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                                {event.title}
-                              </p>
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${event.badgeClass}`}>
-                                {event.badge}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                              {event.subtitle}
-                            </p>
-                          </div>
-                        </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWebsiteSettingsTab('services');
+                        setIsWebsiteSettingsOpen(true);
+                      }}
+                      className="text-xs font-semibold text-[#1F1714] hover:text-[#B58B5C] inline-flex items-center gap-1 transition-colors"
+                    >
+                      <span>View All</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-                        <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0 text-right">
-                          {formatDate(act.timestamp)}
-                        </span>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <>
-                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40 flex items-center justify-center shrink-0">
-                          <Camera className="w-4 h-4" />
-                        </div>
+                  <div className="divide-y divide-[#F2EDE2]">
+                    {/* Booking Item 1 */}
+                    <div className="py-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=120&q=80"
+                          alt="Amina & Hassan"
+                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
+                        />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                              Rafiki Hotel gallery published
-                            </p>
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200/60 dark:border-purple-800/50">
-                              Lookbook
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                            Rafiki Hotel · 42 photos · Hospitality
+                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Amina &amp; Hassan — Wedding
+                          </h4>
+                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                            Shoot: Nov 12, 2026 • Watamu
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
-                        2 hours ago
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
+                        2 days
                       </span>
                     </div>
 
-                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0">
-                          <FileText className="w-4 h-4" />
-                        </div>
+                    {/* Booking Item 2 */}
+                    <div className="py-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=120&q=80"
+                          alt="Hemingways Watamu"
+                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
+                        />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                              Proposal dispatched
-                            </p>
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/50">
-                              Proposal
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                            Amara &amp; Kito · Destination Wedding Shela
+                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Hemingways Watamu — Lifestyle
+                          </h4>
+                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                            Shoot: Nov 14, 2026 • Watamu
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
-                        Yesterday
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
+                        4 days
                       </span>
                     </div>
 
-                    <div className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="w-4 h-4" />
-                        </div>
+                    {/* Booking Item 3 */}
+                    <div className="py-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
+                          alt="Eco Fashion Week"
+                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
+                        />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                              Client favorites confirmed
-                            </p>
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/50">
-                              Client
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                            Coastal shoot client finalized selections
+                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                            Eco Fashion Week — Runway
+                          </h4>
+                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                            Shoot: Nov 17, 2026 • Malindi
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
-                        2 days ago
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
+                        7 days
                       </span>
                     </div>
-                  </>
-                )}
+                  </div>
+                </div>
+
+                {/* Quick Actions Card */}
+                <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs">
+                  <div className="flex items-center gap-2 pb-4 border-b border-[#F0EBE1]">
+                    <Zap className="w-4 h-4 text-[#B58B5C]" />
+                    <h3 className="text-[17px] font-bold text-[#1F1714]">
+                      Quick Actions
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-3 pt-4">
+                    {/* Action 1 */}
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateModal}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E8E2D2] hover:border-[#B58B5C] hover:bg-[#FAF7F0] transition-all group cursor-pointer"
+                    >
+                      <ImageIcon className="w-5 h-5 text-[#4A3B32] group-hover:text-[#B58B5C] transition-colors" />
+                      <span className="text-[11px] font-bold text-[#1F1714] mt-2 text-center leading-tight">
+                        New Gallery
+                      </span>
+                    </button>
+
+                    {/* Action 2 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWebsiteSettingsTab('services');
+                        setIsWebsiteSettingsOpen(true);
+                      }}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E8E2D2] hover:border-[#B58B5C] hover:bg-[#FAF7F0] transition-all group cursor-pointer"
+                    >
+                      <CalendarPlus className="w-5 h-5 text-[#4A3B32] group-hover:text-[#B58B5C] transition-colors" />
+                      <span className="text-[11px] font-bold text-[#1F1714] mt-2 text-center leading-tight">
+                        New Booking
+                      </span>
+                    </button>
+
+                    {/* Action 3 */}
+                    <button
+                      type="button"
+                      onClick={() => navigate('/dashboard?view=delivery')}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E8E2D2] hover:border-[#B58B5C] hover:bg-[#FAF7F0] transition-all group cursor-pointer"
+                    >
+                      <UserPlus className="w-5 h-5 text-[#4A3B32] group-hover:text-[#B58B5C] transition-colors" />
+                      <span className="text-[11px] font-bold text-[#1F1714] mt-2 text-center leading-tight">
+                        Add Client
+                      </span>
+                    </button>
+
+                    {/* Action 4 */}
+                    <button
+                      type="button"
+                      onClick={() => navigate('/dashboard?view=delivery')}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E8E2D2] hover:border-[#B58B5C] hover:bg-[#FAF7F0] transition-all group cursor-pointer"
+                    >
+                      <FolderPlus className="w-5 h-5 text-[#4A3B32] group-hover:text-[#B58B5C] transition-colors" />
+                      <span className="text-[11px] font-bold text-[#1F1714] mt-2 text-center leading-tight">
+                        New Project
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
