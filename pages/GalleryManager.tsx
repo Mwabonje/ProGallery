@@ -70,7 +70,7 @@ export const GalleryManager: React.FC = () => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameTargetFile, setRenameTargetFile] = useState<GalleryFile | null>(null);
 
-  const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'main' | 'extras'>('all');
+  const [viewFilter, setViewFilter] = useState<'all' | 'selected' | 'notes' | 'main' | 'extras'>('all');
   const [showEditedIndicator, setShowEditedIndicator] = useState(false);
   const editedIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -802,11 +802,12 @@ export const GalleryManager: React.FC = () => {
     
     // Create CSV content definition
     const rows = [
-      ["File Name", "Uploaded At", "Status", "Edited"],
+      ["File Name", "Uploaded At", "Status", "Client Note", "Edited"],
       ...selectedFiles.map(f => [
         f.title || f.file_path.split('/').pop() || 'unknown',
         new Date(f.created_at).toLocaleString(),
         "Selected",
+        selectionNotes[f.id] || '',
         f.is_edited ? "Yes" : "No"
       ])
     ];
@@ -1037,6 +1038,7 @@ export const GalleryManager: React.FC = () => {
 
   let visibleFiles = files;
   if (viewFilter === 'selected') visibleFiles = files.filter(f => clientSelections.includes(f.id));
+  if (viewFilter === 'notes') visibleFiles = files.filter(f => Boolean(selectionNotes[f.id]?.trim()));
   if (viewFilter === 'main') visibleFiles = files.filter(f => mainSelections.includes(f.id));
   if (viewFilter === 'extras') visibleFiles = files.filter(f => extraSelections.includes(f.id));
 
@@ -1397,17 +1399,20 @@ export const GalleryManager: React.FC = () => {
             <button 
                onClick={() => {
                   const csvRows = [
-                      ["Filename", "Client Selected", "Main Selection", "Extra Selection", "Edited", "Downloads"],
+                      ["Filename", "Client Selected", "Main Selection", "Extra Selection", "Client Note", "Edited", "Downloads"],
                       ...files.map(f => [
                           (f.title || f.file_url.split('/').pop() || 'file'),
                           clientSelections.includes(f.id) ? 'Yes' : 'No',
                           mainSelections.includes(f.id) ? 'Yes' : 'No',
                           limit > 0 && clientSelections.indexOf(f.id) >= limit ? 'Yes' : 'No',
+                          selectionNotes[f.id] || '',
                           f.is_edited ? 'Yes' : 'No',
                           f.download_count || 0
                       ])
                   ];
-                  const csvContent = csvRows.map(e => e.join(",")).join("\n");
+                  const csvContent = csvRows.map(row => 
+                      row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(',')
+                  ).join("\n");
                   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                   const link = document.createElement("a");
                   const url = URL.createObjectURL(blob);
@@ -1568,6 +1573,12 @@ export const GalleryManager: React.FC = () => {
             <div className="flex gap-1.5 flex-wrap">
               <div onClick={() => setViewFilter('all')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>All ({files.length})</div>
               <div onClick={() => setViewFilter('selected')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'selected' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Selected ({clientSelections.length})</div>
+              {Object.keys(selectionNotes).filter(id => Boolean(selectionNotes[id]?.trim())).length > 0 && (
+                <div onClick={() => setViewFilter('notes')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all inline-flex items-center gap-1.5 ${viewFilter === 'notes' ? 'bg-amber-600 border-amber-600 text-white' : 'border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'}`}>
+                  <MessageSquare className="w-3 h-3" />
+                  <span>Notes ({Object.keys(selectionNotes).filter(id => Boolean(selectionNotes[id]?.trim())).length})</span>
+                </div>
+              )}
               {limit > 0 && (
                   <>
                   <div onClick={() => setViewFilter('main')} className={`text-[12px] px-3 py-1.5 rounded-full border cursor-pointer font-medium transition-all ${viewFilter === 'main' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Main ({mainSelections.length})</div>
@@ -1666,9 +1677,15 @@ export const GalleryManager: React.FC = () => {
                                 <Edit2 className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                             </div>
                             <div className="md:hidden text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{new Date(file.created_at).toLocaleDateString()} &middot; {new Date(file.created_at).toLocaleTimeString([], {timeStyle: 'short'})}</div>
-                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                            <div className="flex gap-1.5 mt-1.5 flex-wrap items-center">
                                 {isSelected && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-emerald-600 text-white">Selected</span>}
                                 {file.is_edited && <span className="text-[9.5px] font-semibold tracking-[0.04em] px-2 py-0.5 rounded-full uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">Edited</span>}
+                                {selectionNotes[file.id] && (
+                                  <span className="text-[10px] font-medium tracking-[0.02em] px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/60 inline-flex items-center gap-1 max-w-[260px] truncate" title={`Client note: "${selectionNotes[file.id]}"`}>
+                                    <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span className="truncate">"{selectionNotes[file.id]}"</span>
+                                  </span>
+                                )}
                             </div>
                         </div>
 

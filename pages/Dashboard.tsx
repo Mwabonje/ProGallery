@@ -28,6 +28,7 @@ interface DashboardGallery extends Gallery {
   expires_at: string | null;
   isExpired?: boolean;
   timeRemainingText?: string;
+  selectionNotesCount?: number;
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
 }
 
@@ -525,6 +526,24 @@ export const Dashboard: React.FC = () => {
             }
           }
 
+          // Fetch count of client selection notes for delivery galleries
+          let selectionNotesCount = 0;
+          if (!isPortfolioGal) {
+            try {
+              const { data: notesData } = await supabase
+                .from('selections')
+                .select('client_note')
+                .eq('gallery_id', gallery.id)
+                .not('client_note', 'is', null);
+
+              if (notesData) {
+                selectionNotesCount = notesData.filter(s => Boolean(s.client_note && s.client_note.trim())).length;
+              }
+            } catch (err) {
+              // Non-blocking
+            }
+          }
+
           return {
             ...gallery,
             itemCount,
@@ -540,6 +559,7 @@ export const Dashboard: React.FC = () => {
             expires_at: latestExpiresAt,
             isExpired,
             timeRemainingText,
+            selectionNotesCount,
           };
         })
       );
@@ -1645,6 +1665,12 @@ export const Dashboard: React.FC = () => {
 
                         <div className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100 flex-wrap">
                           <span>{gallery.client_name}</span>
+                          {Boolean(gallery.selectionNotesCount && gallery.selectionNotesCount > 0) && (
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1 shadow-xs" title={`${gallery.selectionNotesCount} photo note(s) from client`}>
+                              <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>{gallery.selectionNotesCount} note{gallery.selectionNotesCount === 1 ? '' : 's'}</span>
+                            </span>
+                          )}
                           {gallery.isExpired && (
                             <span className="text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
                               <Clock className="w-3 h-3 text-rose-500" />
