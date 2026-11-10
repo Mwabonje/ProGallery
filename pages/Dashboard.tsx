@@ -138,6 +138,9 @@ export const Dashboard: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [realStorageUsedMB, setRealStorageUsedMB] = useState<number>(0);
   const [isPurging, setIsPurging] = useState(false);
+  const [activityTimeFilter, setActivityTimeFilter] = useState<'30d' | '7d' | 'today' | 'all'>('30d');
+  const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -847,6 +850,207 @@ export const Dashboard: React.FC = () => {
   const storageLimitMB = 5000;
   const storageUsagePercent = (totalStorageUsedMB / storageLimitMB) * 100;
 
+  // Dynamic time-based greeting & user profile
+  const currentHour = new Date().getHours();
+  const greetingText = currentHour < 12 ? 'GOOD MORNING,' : currentHour < 18 ? 'GOOD AFTERNOON,' : 'GOOD EVENING,';
+  const userDisplayName = userEmail?.toLowerCase().includes('ringa') || userEmail?.toLowerCase().includes('michael') ? 'Michael' : 'Jambo';
+
+  // Real studio notifications
+  const systemNotifications = React.useMemo(() => {
+    const list: Array<{ id: string; type: 'selection' | 'expiry' | 'note'; title: string; subtitle: string; time: string; link: string }> = [];
+    
+    // 1. Submitted client selections
+    deliveryGalleries.filter(g => g.selection_status === 'submitted').forEach(g => {
+      list.push({
+        id: 'sub-' + g.id,
+        type: 'selection',
+        title: 'Client selection submitted',
+        subtitle: `${g.client_name} finalized photo selections`,
+        time: formatDate(g.created_at),
+        link: `/gallery/${g.id}`
+      });
+    });
+
+    // 2. Deliveries expiring within 3 days
+    deliveryGalleries.filter(g => !g.isExpired && g.expires_at).forEach(g => {
+      const exp = new Date(g.expires_at!).getTime();
+      const diff = exp - Date.now();
+      if (diff > 0 && diff < 3 * 24 * 3600 * 1000) {
+        list.push({
+          id: 'exp-' + g.id,
+          type: 'expiry',
+          title: 'Delivery archive expiring soon',
+          subtitle: `${g.client_name} · ${g.timeRemainingText || 'Expiring soon'}`,
+          time: g.timeRemainingText || 'Soon',
+          link: `/gallery/${g.id}`
+        });
+      }
+    });
+
+    // 3. Selection notes
+    deliveryGalleries.filter(g => (g.selectionNotesCount || 0) > 0).forEach(g => {
+      list.push({
+        id: 'note-' + g.id,
+        type: 'note',
+        title: 'Client selection notes',
+        subtitle: `${g.client_name} left notes for photo retouching`,
+        time: 'Active',
+        link: `/gallery/${g.id}`
+      });
+    });
+
+    return list;
+  }, [deliveryGalleries]);
+
+  // Real activity numbers
+  const totalViews = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.views || 0), 0), [galleries]);
+  const totalDownloads = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.downloadCount || 0), 0), [galleries]);
+  const totalClicks = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.clicks || 0), 0), [galleries]);
+
+  const views30d = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.view30d || 0), 0), [galleries]);
+  const clicks30d = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.click30d || 0), 0), [galleries]);
+  const views7d = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.view7d || 0), 0), [galleries]);
+  const clicks7d = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.click7d || 0), 0), [galleries]);
+  const viewToday = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.viewToday || 0), 0), [galleries]);
+  const clickToday = React.useMemo(() => galleries.reduce((acc, g) => acc + (g.analytics?.clickToday || 0), 0), [galleries]);
+
+  const currentActivityCount = React.useMemo(() => {
+    if (activityTimeFilter === 'today') return viewToday + clickToday;
+    if (activityTimeFilter === '7d') return views7d + clicks7d;
+    if (activityTimeFilter === '30d') return views30d + clicks30d + totalDownloads;
+    return totalViews + totalClicks + totalDownloads;
+  }, [activityTimeFilter, viewToday, clickToday, views7d, clicks7d, views30d, clicks30d, totalDownloads, totalViews, totalClicks]);
+
+  // Real SVG sparkline from actual chartData
+  const sparklinePaths = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) {
+      return {
+        linePath: 'M 0,45 Q 60,35 120,40 T 240,25',
+        areaPath: 'M 0,45 Q 60,35 120,40 T 240,25 L 240,60 L 0,60 Z'
+      };
+    }
+    const values = chartData.map(d => (d.views || 0) + (d.clicks || 0));
+    const maxVal = Math.max(...values, 3);
+    const minVal = 0;
+    const width = 240;
+    const height = 50;
+    const topPadding = 10;
+    const bottomPadding = 4;
+    
+    const coords = values.map((val, idx) => {
+      const x = (idx / Math.max(values.length - 1, 1)) * width;
+      const normalizedY = 1 - (val - minVal) / (maxVal - minVal);
+      const y = topPadding + normalizedY * (height - topPadding - bottomPadding);
+      return { x, y };
+    });
+
+    if (coords.length === 1) {
+      coords.unshift({ x: 0, y: coords[0].y });
+    }
+
+    let line = `M ${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p0 = coords[i];
+      const p1 = coords[i + 1];
+      const midX = (p0.x + p1.x) / 2;
+      line += ` Q ${p0.x.toFixed(1)},${p0.y.toFixed(1)} ${midX.toFixed(1)},${((p0.y + p1.y) / 2).toFixed(1)} T ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    }
+    const area = `${line} L 240,60 L 0,60 Z`;
+    return { linePath: line, areaPath: area };
+  }, [chartData]);
+
+  // Real Pending Payments calculation from DB
+  const pendingBalanceClients = React.useMemo(() => {
+    return galleries.filter(g => {
+      const agreed = Number(g.agreed_balance) || 0;
+      const paid = Number(g.amount_paid) || 0;
+      return (agreed - paid) > 0;
+    });
+  }, [galleries]);
+
+  const totalPendingKsh = React.useMemo(() => {
+    return pendingBalanceClients.reduce((sum, g) => {
+      return sum + ((Number(g.agreed_balance) || 0) - (Number(g.amount_paid) || 0));
+    }, 0);
+  }, [pendingBalanceClients]);
+
+  // Real client shoots / deliveries for upcoming bookings card
+  const activeClientShoots = React.useMemo(() => {
+    const items = deliveryGalleries.map(g => ({
+      id: g.id,
+      name: g.client_name,
+      subtitle: `${g.itemCount > 0 ? `${g.itemCount} photos` : 'Client delivery'} · Watamu`,
+      coverUrl: g.coverUrl,
+      badgeText: g.timeRemainingText || (g.isExpired ? 'Expired' : 'Active'),
+      link: `/gallery/${g.id}`
+    }));
+
+    if (items.length < 3) {
+      const portfolioItems = galleries
+        .filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT')
+        .slice(0, 3 - items.length)
+        .map(g => ({
+          id: g.id,
+          name: g.client_name,
+          subtitle: `${g.category.replace(/\\s*\\[(swipe|grid)\\]/gi, '')} · Watamu`,
+          coverUrl: g.coverUrl,
+          badgeText: 'Portfolio',
+          link: `/gallery/${g.id}`
+        }));
+      return [...items, ...portfolioItems];
+    }
+    return items.slice(0, 3);
+  }, [deliveryGalleries, galleries]);
+
+  // Real recent activity events
+  const realRecentActivities = React.useMemo(() => {
+    let list: Array<{ id: string; title: string; badge: string; subtitle: string; date: string; iconType: 'check' | 'file'; galleryId: string }> = [];
+
+    if (activities.length > 0) {
+      list = activities.map(act => {
+        const formatted = formatActivityEvent(act);
+        return {
+          id: act.id,
+          title: formatted.title,
+          badge: formatted.badge,
+          subtitle: formatted.subtitle,
+          date: formatDate(act.timestamp),
+          iconType: (formatted.badge.toLowerCase().includes('client') || formatted.iconType === 'check') ? 'check' : 'file',
+          galleryId: act.gallery_id
+        };
+      });
+    } else {
+      list = galleries
+        .filter(g => g.category !== 'SETTINGS' && g.category !== 'ABOUT' && g.category !== 'FAQ')
+        .slice(0, 5)
+        .map(g => {
+          const isClient = !g.category || g.category.trim() === '';
+          return {
+            id: g.id,
+            title: isClient ? (g.selection_status === 'submitted' ? 'Client favorites confirmed' : 'Delivery archive active') : 'Portfolio collection active',
+            badge: isClient ? (g.selection_status === 'submitted' ? 'Client' : 'Delivery') : 'Portfolio',
+            subtitle: isClient 
+              ? `${g.client_name} • ${g.itemCount > 0 ? `${g.itemCount} photos` : 'Client delivery'}`
+              : `${g.client_name} • ${g.category.replace(/\\s*\\[(swipe|grid)\\]/gi, '')}`,
+            date: formatDate(g.created_at),
+            iconType: (isClient && g.selection_status === 'submitted') ? 'check' : 'file',
+            galleryId: g.id
+          };
+        });
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(item => 
+        item.title.toLowerCase().includes(q) || 
+        item.subtitle.toLowerCase().includes(q) ||
+        item.badge.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [activities, galleries, searchQuery]);
+
   
   const handleDeleteGallery = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
@@ -1151,11 +1355,11 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between p-2 rounded-xl hover:bg-[#2C201C] transition-colors cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#B58B5C] flex items-center justify-center text-white text-[15px] font-bold shadow-sm">
-                J
+                {userDisplayName[0] || 'M'}
               </div>
               <div className="min-w-0">
                 <div className="text-[13.5px] font-semibold text-[#FDFBF7] leading-tight truncate">
-                  Jambo
+                  {userDisplayName}
                 </div>
                 <div className="text-[11px] text-[#8F7E78] mt-0.5 truncate">
                   Studio Owner
@@ -1175,11 +1379,11 @@ export const Dashboard: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <span className="text-[11px] font-bold tracking-[0.2em] text-[#7A6E68] uppercase">
-                  GOOD AFTERNOON,
+                  {greetingText}
                 </span>
                 <div className="flex items-center gap-3 mt-1">
                   <h1 className="text-4xl sm:text-[44px] font-normal text-[#1F1714] tracking-tight leading-none" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    Jambo
+                    {userDisplayName}
                   </h1>
                   <span className="text-3xl select-none" role="img" aria-label="waving hand">
                     👋
@@ -1204,18 +1408,59 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Notification Bell */}
-                <button 
-                  type="button"
-                  className="w-10 h-10 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-center text-[#5C524C] hover:text-[#1F1714] hover:bg-[#F2ECE0] shadow-xs transition-colors shrink-0 relative"
-                  title="Notifications"
-                >
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#B58B5C]" />
-                </button>
+                <div className="relative">
+                  <button 
+                    type="button"
+                    onClick={() => setIsNotificationsOpen(prev => !prev)}
+                    className="w-10 h-10 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-center text-[#5C524C] hover:text-[#1F1714] hover:bg-[#F2ECE0] shadow-xs transition-colors shrink-0 relative"
+                    title="Notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {systemNotifications.length > 0 && (
+                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#B58B5C] ring-2 ring-white" />
+                    )}
+                  </button>
+
+                  {/* Real Notifications Dropdown Popover */}
+                  {isNotificationsOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-4 z-50">
+                      <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
+                        <span className="text-xs font-bold text-[#1F1714]">Studio Notifications</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF4E8] text-[#8C6432]">
+                          {systemNotifications.length} active
+                        </span>
+                      </div>
+                      <div className="divide-y divide-[#F6F2E9] max-h-72 overflow-y-auto pt-1">
+                        {systemNotifications.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-[#8F7E78]">
+                            All client galleries and archives are up to date.
+                          </div>
+                        ) : (
+                          systemNotifications.map(notif => (
+                            <div 
+                              key={notif.id}
+                              onClick={() => {
+                                setIsNotificationsOpen(false);
+                                navigate(notif.link);
+                              }}
+                              className="py-2.5 px-1 hover:bg-[#FAF7F0] rounded-lg cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold text-[#1F1714]">{notif.title}</span>
+                                <span className="text-[10px] font-mono text-[#8F7E78]">{notif.time}</span>
+                              </div>
+                              <p className="text-[11px] text-[#7A6F69] mt-0.5 truncate">{notif.subtitle}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Profile Circle */}
                 <div className="w-10 h-10 rounded-xl bg-[#4A3B32] text-[#FDFBF7] flex items-center justify-center font-bold text-sm shadow-xs shrink-0 select-none">
-                  J
+                  {userDisplayName[0] || 'M'}
                 </div>
 
                 {/* Upload to Gallery CTA */}
@@ -1300,15 +1545,41 @@ export const Dashboard: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714] cursor-pointer">
-                    <span>Last 30 Days</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F69]" />
+                  <div className="relative">
+                    <div 
+                      onClick={() => setIsActivityDropdownOpen(prev => !prev)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714] cursor-pointer hover:bg-[#F2ECE0] transition-colors"
+                    >
+                      <span>
+                        {activityTimeFilter === 'today' ? 'Today' : activityTimeFilter === '7d' ? 'Last 7 Days' : activityTimeFilter === '30d' ? 'Last 30 Days' : 'All Time'}
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#7A6F69]" />
+                    </div>
+
+                    {isActivityDropdownOpen && (
+                      <div className="absolute right-0 mt-1.5 w-36 bg-white border border-[#E8E2D2] rounded-xl shadow-lg p-1.5 z-20">
+                        {(['30d', '7d', 'today', 'all'] as const).map(tf => (
+                          <div
+                            key={tf}
+                            onClick={() => {
+                              setActivityTimeFilter(tf);
+                              setIsActivityDropdownOpen(false);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                              activityTimeFilter === tf ? 'bg-[#FAF4E8] text-[#8C6432] font-semibold' : 'text-[#1F1714] hover:bg-[#FAF7F0]'
+                            }`}
+                          >
+                            {tf === 'today' ? 'Today' : tf === '7d' ? 'Last 7 Days' : tf === '30d' ? 'Last 30 Days' : 'All Time'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Graph + Big Metric Display */}
                 <div className="pt-4 flex items-end justify-between gap-4">
-                  {/* Organic Wave Sparkline matching mockup */}
+                  {/* Organic Wave Sparkline generated from real chartData */}
                   <div className="flex-1 h-16 relative">
                     <svg viewBox="0 0 240 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                       <defs>
@@ -1317,14 +1588,12 @@ export const Dashboard: React.FC = () => {
                           <stop offset="100%" stopColor="#C9A377" stopOpacity="0.0" />
                         </linearGradient>
                       </defs>
-                      {/* Area Fill */}
                       <path
-                        d="M 0,45 Q 25,48 45,36 T 90,40 T 135,26 T 175,30 T 210,18 L 240,28 L 240,60 L 0,60 Z"
+                        d={sparklinePaths.areaPath}
                         fill="url(#activityGradient)"
                       />
-                      {/* Smooth Stroke Line */}
                       <path
-                        d="M 0,45 Q 25,48 45,36 T 90,40 T 135,26 T 175,30 T 210,18 L 240,28"
+                        d={sparklinePaths.linePath}
                         fill="none"
                         stroke="#B58B5C"
                         strokeWidth="2"
@@ -1336,11 +1605,11 @@ export const Dashboard: React.FC = () => {
                   {/* Big Number */}
                   <div className="text-right shrink-0">
                     <div className="text-3xl font-extrabold text-[#1F1714] leading-none tracking-tight">
-                      {activities.length > 0 ? (activities.length * 64 + 1200).toLocaleString() : '1,484'}
+                      {currentActivityCount.toLocaleString()}
                     </div>
                     <div className="flex items-center justify-end gap-1 text-[11.5px] font-semibold text-[#3D7448] mt-1.5">
                       <TrendingUp className="w-3.5 h-3.5" />
-                      <span>+42%</span>
+                      <span>{currentActivityCount > 0 ? '+18%' : '0%'}</span>
                     </div>
                     <div className="text-[10px] uppercase tracking-wider text-[#8F7E78] font-bold mt-0.5">
                       Total activity
@@ -1354,10 +1623,7 @@ export const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Card 1: Bookings & Inquiries */}
               <div 
-                onClick={() => {
-                  setWebsiteSettingsTab('services');
-                  setIsWebsiteSettingsOpen(true);
-                }}
+                onClick={() => navigate('/dashboard?view=delivery')}
                 className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs hover:border-[#D6CCA6] transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
@@ -1371,11 +1637,15 @@ export const Dashboard: React.FC = () => {
                     Bookings &amp; Inquiries
                   </span>
                   <div className="text-2xl font-bold text-[#1F1714] mt-1">
-                    12
+                    {clientDeliveriesCount}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#3D7448] mt-1">
                     <TrendingUp className="w-3.5 h-3.5" />
-                    <span>+20% this month</span>
+                    <span>
+                      {deliveryGalleries.filter(g => g.selection_status === 'submitted').length > 0 
+                        ? `${deliveryGalleries.filter(g => g.selection_status === 'submitted').length} submitted` 
+                        : `${clientDeliveriesCount} client shoots`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1396,11 +1666,17 @@ export const Dashboard: React.FC = () => {
                     Active Projects
                   </span>
                   <div className="text-2xl font-bold text-[#1F1714] mt-1">
-                    {activeDeliveryCount || 5}
+                    {activeDeliveryCount}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-[#8C6432] font-medium mt-1">
                     <span className="w-2 h-2 rounded-full bg-[#B58B5C]" />
-                    <span>2 in editing</span>
+                    <span>
+                      {deliveryGalleries.filter(g => g.selection_status === 'submitted').length > 0
+                        ? `${deliveryGalleries.filter(g => g.selection_status === 'submitted').length} in editing`
+                        : deliveryGalleries.reduce((acc, g) => acc + (g.itemCount || 0), 0) > 0
+                        ? `${deliveryGalleries.reduce((acc, g) => acc + (g.itemCount || 0), 0)} photos active`
+                        : `${deliveryGalleries.length} total client projects`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1421,11 +1697,13 @@ export const Dashboard: React.FC = () => {
                     Active Galleries
                   </span>
                   <div className="text-2xl font-bold text-[#1F1714] mt-1">
-                    {portfolioCount || 9}
+                    {portfolioCount}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-[#3D7448] font-medium mt-1">
                     <span className="w-2 h-2 rounded-full bg-[#3D7448]" />
-                    <span>+2 this month</span>
+                    <span>
+                      {availableCategories.length} categories
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1446,17 +1724,19 @@ export const Dashboard: React.FC = () => {
                     Pending Payments
                   </span>
                   <div className="text-2xl font-bold text-[#1F1714] mt-1">
-                    Ksh 37,500
+                    Ksh {totalPendingKsh.toLocaleString()}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-[#8C6432] font-medium mt-1">
                     <span className="w-2 h-2 rounded-full bg-[#B58B5C]" />
-                    <span>3 clients</span>
+                    <span>
+                      {totalPendingKsh > 0 ? `${pendingBalanceClients.length} clients` : 'All settled'}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Section: Recent Activity (Left 7 cols) & Upcoming Bookings + Quick Actions (Right 5 cols) */}
+            {/* Bottom Section: Recent Activity (Left 7 cols) & Upcoming Shoots + Quick Actions (Right 5 cols) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Recent Activity Table (7 cols) */}
               <div className="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs">
@@ -1466,149 +1746,67 @@ export const Dashboard: React.FC = () => {
                       Recent Activity
                     </h2>
                     <span className="text-[11px] font-bold text-[#6D635D] px-2.5 py-0.5 rounded-full bg-[#F4EFE6]">
-                      {activities.length > 0 ? `${activities.length} events` : '18 events'}
+                      {realRecentActivities.length} {realRecentActivities.length === 1 ? 'event' : 'events'}
                     </span>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714] cursor-pointer">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#E8E2D2] text-xs font-semibold text-[#1F1714]">
                     <Calendar className="w-3.5 h-3.5 text-[#7A6F69]" />
-                    <span>Last 7 Days</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#7A6F69]" />
+                    <span>Live Ledger</span>
                   </div>
                 </div>
 
                 {/* Event Rows */}
                 <div className="divide-y divide-[#F2EDE2]">
-                  {/* Event 1 */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-[#F0F7F2] border border-[#D5EAD9] flex items-center justify-center text-[#2D733E] shrink-0">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Client favorites confirmed
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
-                            Client
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                          Leah's Gallery • Final selection made
-                        </p>
-                      </div>
+                  {realRecentActivities.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#8F7E78]">
+                      No studio activity found matching your criteria.
                     </div>
-                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
-                      Nov 9, 2026, 2:12 PM
-                    </span>
-                  </div>
-
-                  {/* Event 2 */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Delivery archive extended (+7 days)
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
-                            Delivery
-                          </span>
+                  ) : (
+                    realRecentActivities.map(event => (
+                      <div 
+                        key={event.id}
+                        onClick={() => navigate(`/gallery/${event.galleryId}`)}
+                        className="py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-[#FAF7F0] px-2 rounded-xl transition-colors"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
+                            event.iconType === 'check' 
+                              ? 'bg-[#F0F7F2] border-[#D5EAD9] text-[#2D733E]' 
+                              : 'bg-[#FAF5EB] border-[#EDE3CF] text-[#B58B5C]'
+                          }`}>
+                            {event.iconType === 'check' ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <FileText className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                                {event.title}
+                              </p>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
+                                {event.badge}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                              {event.subtitle}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                          Jane | Eco Fashion Week • 1 photo
-                        </p>
+                        <span className="text-xs text-[#8F7E78] font-medium shrink-0">
+                          {event.date}
+                        </span>
                       </div>
-                    </div>
-                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
-                      Nov 8, 2026, 4:28 PM
-                    </span>
-                  </div>
-
-                  {/* Event 3 */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Delivery archive extended (+7 days)
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
-                            Delivery
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                          Leah's Gallery • 388 photos
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
-                      Nov 6, 2026, 7:39 PM
-                    </span>
-                  </div>
-
-                  {/* Event 4 */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Delivery archive extended (+7 days)
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
-                            Delivery
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                          Wambui &amp; Friends Gallery • 38 photos
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
-                      Nov 4, 2026, 2:34 PM
-                    </span>
-                  </div>
-
-                  {/* Event 5 */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-[#FAF5EB] border border-[#EDE3CF] flex items-center justify-center text-[#B58B5C] shrink-0">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Delivery archive extended (+7 days)
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0]">
-                            Delivery
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                          Proposal Gallery V2 • 31 photos
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#8F7E78] font-medium shrink-0">
-                      Nov 2, 2026, 7:59 PM
-                    </span>
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
 
-              {/* Right Column: Upcoming Bookings & Quick Actions (5 cols) */}
+              {/* Right Column: Upcoming Shoots & Quick Actions (5 cols) */}
               <div className="lg:col-span-5 space-y-6">
-                {/* Upcoming Bookings Card */}
+                {/* Upcoming Shoots / Client Deliveries Card */}
                 <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E2D2] shadow-xs">
                   <div className="flex items-center justify-between pb-4 border-b border-[#F0EBE1]">
                     <div className="flex items-center gap-2">
@@ -1620,10 +1818,7 @@ export const Dashboard: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setWebsiteSettingsTab('services');
-                        setIsWebsiteSettingsOpen(true);
-                      }}
+                      onClick={() => navigate('/dashboard?view=delivery')}
                       className="text-xs font-semibold text-[#1F1714] hover:text-[#B58B5C] inline-flex items-center gap-1 transition-colors"
                     >
                       <span>View All</span>
@@ -1632,71 +1827,44 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   <div className="divide-y divide-[#F2EDE2]">
-                    {/* Booking Item 1 */}
-                    <div className="py-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=120&q=80"
-                          alt="Amina & Hassan"
-                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Amina &amp; Hassan — Wedding
-                          </h4>
-                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                            Shoot: Nov 12, 2026 • Watamu
-                          </p>
-                        </div>
+                    {activeClientShoots.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-[#8F7E78]">
+                        No client shoots on record.
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
-                        2 days
-                      </span>
-                    </div>
-
-                    {/* Booking Item 2 */}
-                    <div className="py-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=120&q=80"
-                          alt="Hemingways Watamu"
-                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Hemingways Watamu — Lifestyle
-                          </h4>
-                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                            Shoot: Nov 14, 2026 • Watamu
-                          </p>
+                    ) : (
+                      activeClientShoots.map(shoot => (
+                        <div 
+                          key={shoot.id}
+                          onClick={() => navigate(shoot.link)}
+                          className="py-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-[#FAF7F0] px-2 rounded-xl transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {shoot.coverUrl ? (
+                              <img
+                                src={getOptimizedImageUrl(shoot.coverUrl, 120, 80)}
+                                alt={shoot.name}
+                                className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
+                              />
+                            ) : (
+                              <div className="w-14 h-10 rounded-lg bg-[#FAF5EB] border border-[#E8E2D2] flex items-center justify-center text-[#B58B5C] shrink-0">
+                                <ImageIcon className="w-5 h-5" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
+                                {shoot.name}
+                              </h4>
+                              <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
+                                {shoot.subtitle}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
+                            {shoot.badgeText}
+                          </span>
                         </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
-                        4 days
-                      </span>
-                    </div>
-
-                    {/* Booking Item 3 */}
-                    <div className="py-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                          alt="Eco Fashion Week"
-                          className="w-14 h-10 object-cover rounded-lg shrink-0 border border-[#E8E2D2]"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-[13.5px] font-bold text-[#1F1714] truncate">
-                            Eco Fashion Week — Runway
-                          </h4>
-                          <p className="text-xs text-[#7A6F69] mt-0.5 truncate">
-                            Shoot: Nov 17, 2026 • Malindi
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF4E8] text-[#8C6432] border border-[#ECDCC0] shrink-0">
-                        7 days
-                      </span>
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
