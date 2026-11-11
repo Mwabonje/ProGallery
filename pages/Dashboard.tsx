@@ -30,6 +30,8 @@ interface DashboardGallery extends Gallery {
   timeRemainingText?: string;
   selectionNotesCount?: number;
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
+  files?: { id: string; file_url: string; file_type?: string }[];
+  password?: string;
 }
 
 interface EnrichedActivityLog extends ActivityLog {
@@ -143,12 +145,12 @@ export const Dashboard: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Delivery workspace state
-  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string>('amina-hassan');
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string>('');
   const [deliveryTab, setDeliveryTab] = useState<'gallery' | 'settings' | 'access' | 'download' | 'store' | 'seo' | 'analytics'>('gallery');
   const [deliveryViewMode, setDeliveryViewMode] = useState<'detail' | 'all'>('detail');
   const [deliveryGridMode, setDeliveryGridMode] = useState<'grid' | 'list'>('grid');
   const [deliveryIsPrivate, setDeliveryIsPrivate] = useState<boolean>(true);
-  const [deliveryPassword, setDeliveryPassword] = useState<string>('coastalwedding2026');
+  const [deliveryPassword, setDeliveryPassword] = useState<string>('');
   const [deliveryShowPassword, setDeliveryShowPassword] = useState<boolean>(false);
   const [deliveryAllowDownloads, setDeliveryAllowDownloads] = useState<boolean>(true);
   const [deliveryAllowFavorites, setDeliveryAllowFavorites] = useState<boolean>(true);
@@ -159,7 +161,7 @@ export const Dashboard: React.FC = () => {
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
   const [isDeliverySwitcherOpen, setIsDeliverySwitcherOpen] = useState<boolean>(false);
   const [deliveryTitleEditing, setDeliveryTitleEditing] = useState<boolean>(false);
-  const [editableDeliveryTitle, setEditableDeliveryTitle] = useState<string>('Amina & Hassan – Wedding');
+  const [editableDeliveryTitle, setEditableDeliveryTitle] = useState<string>('');
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -466,12 +468,28 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('file_url, file_type, download_count, created_at, expires_at')
+            .select('id, file_url, file_type, download_count, created_at, expires_at')
             .eq('gallery_id', gallery.id)
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false });
 
           if (filesError) console.error("Files query error for gallery", gallery.id, filesError);
+
+          // Get password for delivery gallery if configured
+          let galleryPassword = '';
+          try {
+            const { data: pwRow } = await supabase
+              .from('files')
+              .select('caption')
+              .eq('gallery_id', gallery.id)
+              .eq('file_path', 'GALLERY_PASSWORD')
+              .maybeSingle();
+            if (pwRow?.caption) {
+              galleryPassword = pwRow.caption;
+            }
+          } catch (err) {
+            // Non-blocking
+          }
 
           const coverFile = allFiles && allFiles.length > 0 ? allFiles[0] : null;
           const downloadCount = (allFiles || []).reduce((acc, f) => acc + (f.download_count || 0), 0);
@@ -582,6 +600,8 @@ export const Dashboard: React.FC = () => {
             isExpired,
             timeRemainingText,
             selectionNotesCount,
+            files: (allFiles || []).map(f => ({ id: f.id, file_url: f.file_url, file_type: f.file_type })),
+            password: galleryPassword,
           };
         })
       );
@@ -817,6 +837,90 @@ export const Dashboard: React.FC = () => {
   const activeDeliveryCount = React.useMemo(() => {
     return deliveryGalleries.filter(g => !g.isExpired && g.link_enabled).length;
   }, [deliveryGalleries]);
+
+  // Current active delivery gallery dynamically sourced from real database data
+  const currentDelivery = React.useMemo(() => {
+    if (deliveryGalleries.length === 0) return null;
+    if (selectedDeliveryId) {
+      const match = deliveryGalleries.find(g => g.id === selectedDeliveryId);
+      if (match) return match;
+    }
+    return deliveryGalleries[0];
+  }, [deliveryGalleries, selectedDeliveryId]);
+
+  useEffect(() => {
+    if (currentDelivery) {
+      if (!selectedDeliveryId) {
+        setSelectedDeliveryId(currentDelivery.id);
+      }
+      setDeliveryPassword(currentDelivery.password || '');
+      setDeliveryIsPrivate(Boolean(currentDelivery.password || currentDelivery.link_enabled));
+      setEditableDeliveryTitle(currentDelivery.client_name);
+    }
+  }, [currentDelivery?.id]);
+
+  const handleSaveDeliveryTitle = async () => {
+    setDeliveryTitleEditing(false);
+    if (!currentDelivery || !editableDeliveryTitle.trim() || editableDeliveryTitle.trim() === currentDelivery.client_name) return;
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ client_name: editableDeliveryTitle.trim() })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success('Gallery title updated');
+      fetchData();
+    } catch (err) {
+      console.error('Failed to update gallery title:', err);
+      toast.error('Failed to update gallery title');
+    }
+  };
+
+  const handleSaveDeliveryPassword = async (newPass: string) => {
+    if (!currentDelivery) return;
+    try {
+      const cleanPass = newPass.trim();
+      if (!cleanPass) {
+        await supabase
+          .from('files')
+          .delete()
+          .eq('gallery_id', currentDelivery.id)
+          .eq('file_path', 'GALLERY_PASSWORD');
+        setDeliveryPassword('');
+        toast.success("Password protection removed");
+        return;
+      }
+      const { data: existing } = await supabase
+        .from('files')
+        .select('id')
+        .eq('gallery_id', currentDelivery.id)
+        .eq('file_path', 'GALLERY_PASSWORD')
+        .maybeSingle();
+
+      if (existing?.id) {
+        await supabase
+          .from('files')
+          .update({ caption: cleanPass })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('files')
+          .insert([{
+            gallery_id: currentDelivery.id,
+            file_url: 'PASSWORD_SETTING',
+            file_path: 'GALLERY_PASSWORD',
+            file_type: 'image',
+            caption: cleanPass,
+            expires_at: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString()
+          }]);
+      }
+      setDeliveryPassword(cleanPass);
+      toast.success("Access password saved");
+    } catch (err) {
+      console.error("Error saving password:", err);
+      toast.error("Failed to update password");
+    }
+  };
 
   const availableCategories = React.useMemo(() => {
       const cats = new Set<string>();
@@ -2080,11 +2184,7 @@ export const Dashboard: React.FC = () => {
                     onClick={() => setIsDeliverySwitcherOpen(prev => !prev)}
                     className="font-bold text-[#1F1714] flex items-center gap-1.5 hover:text-[#B58B5C] transition-colors cursor-pointer"
                   >
-                    <span>
-                      {selectedDeliveryId === 'amina-hassan' 
-                        ? editableDeliveryTitle 
-                        : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.client_name || editableDeliveryTitle)}
-                    </span>
+                    <span>{currentDelivery?.client_name || 'Delivery Gallery'}</span>
                     <ChevronDown className="w-3 h-3 text-[#7A6F69]" />
                   </button>
 
@@ -2093,28 +2193,11 @@ export const Dashboard: React.FC = () => {
                     <div className="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
                       <div className="text-[10px] uppercase font-bold text-[#8F7E78] px-3 py-1.5 tracking-wider flex items-center justify-between">
                         <span>Select Delivery Gallery</span>
-                        <span className="text-[9px] bg-[#FAF4E8] text-[#8C6432] px-2 py-0.5 rounded-full font-semibold">Portals</span>
+                        <span className="text-[9px] bg-[#FAF4E8] text-[#8C6432] px-2 py-0.5 rounded-full font-semibold">
+                          {deliveryGalleries.length} Portals
+                        </span>
                       </div>
                       <div className="max-h-64 overflow-y-auto space-y-1">
-                        <button
-                          onClick={() => {
-                            setSelectedDeliveryId('amina-hassan');
-                            setDeliveryViewMode('detail');
-                            setIsDeliverySwitcherOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                            selectedDeliveryId === 'amina-hassan' && deliveryViewMode === 'detail'
-                              ? 'bg-[#FAF4E8] text-[#8C6432] font-bold shadow-xs'
-                              : 'hover:bg-[#FAF7F0] text-[#1F1714]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            <span className="truncate">{editableDeliveryTitle}</span>
-                          </div>
-                          <span className="text-[10px] font-mono text-[#8F7E78]">432 photos</span>
-                        </button>
-
                         {deliveryGalleries.map(g => (
                           <button
                             key={g.id}
@@ -2125,7 +2208,7 @@ export const Dashboard: React.FC = () => {
                               setIsDeliverySwitcherOpen(false);
                             }}
                             className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                              selectedDeliveryId === g.id && deliveryViewMode === 'detail'
+                              currentDelivery?.id === g.id && deliveryViewMode === 'detail'
                                 ? 'bg-[#FAF4E8] text-[#8C6432] font-bold shadow-xs'
                                 : 'hover:bg-[#FAF7F0] text-[#1F1714]'
                             }`}
@@ -2240,8 +2323,8 @@ export const Dashboard: React.FC = () => {
                           type="text"
                           value={editableDeliveryTitle}
                           onChange={(e) => setEditableDeliveryTitle(e.target.value)}
-                          onBlur={() => setDeliveryTitleEditing(false)}
-                          onKeyDown={(e) => e.key === 'Enter' && setDeliveryTitleEditing(false)}
+                          onBlur={handleSaveDeliveryTitle}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryTitle()}
                           autoFocus
                           className="text-2xl sm:text-[32px] font-serif text-[#1F1714] border-b-2 border-[#B58B5C] bg-transparent focus:outline-none"
                         />
@@ -2250,9 +2333,7 @@ export const Dashboard: React.FC = () => {
                           className="text-2xl sm:text-[32px] font-normal text-[#1F1714] tracking-tight leading-none" 
                           style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
                         >
-                          {selectedDeliveryId === 'amina-hassan' 
-                            ? editableDeliveryTitle 
-                            : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.client_name || editableDeliveryTitle)}
+                          {editableDeliveryTitle || currentDelivery?.client_name || 'Delivery Gallery'}
                         </h1>
                       )}
                       <button
@@ -2265,12 +2346,24 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2.5 mt-2 flex-wrap">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                        Live
-                      </span>
+                      {currentDelivery?.isExpired ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                          Expired
+                        </span>
+                      ) : currentDelivery?.link_enabled ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+                          Live
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                          Hidden
+                        </span>
+                      )}
                       <span className="text-xs text-[#7A6F69]">
-                        Private Client Gallery · {selectedDeliveryId === 'amina-hassan' ? '432' : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.itemCount || '432')} photos · 2 videos
+                        Private Client Gallery · {currentDelivery?.itemCount || currentDelivery?.files?.length || 0} photos{(currentDelivery?.files?.filter(f => f.file_type === 'video').length || 0) > 0 ? ` · ${currentDelivery!.files!.filter(f => f.file_type === 'video').length} videos` : ''}
                       </span>
                     </div>
                   </div>
@@ -2280,11 +2373,8 @@ export const Dashboard: React.FC = () => {
                     {/* Preview Button */}
                     <button
                       onClick={() => {
-                        const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
-                        if (targetId) {
-                          window.open(`/g/${targetId}`, '_blank');
-                        } else {
-                          toast.info("Viewing preview for Amina & Hassan – Wedding");
+                        if (currentDelivery?.id) {
+                          window.open(`/g/${currentDelivery.id}`, '_blank');
                         }
                       }}
                       className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
@@ -2296,26 +2386,9 @@ export const Dashboard: React.FC = () => {
                     {/* Share Button (WhatsApp / Client Share) */}
                     <button
                       onClick={() => {
-                        const targetGallery = deliveryGalleries.find(g => g.id === selectedDeliveryId) || deliveryGalleries[0] || ({
-                          id: 'amina-hassan',
-                          client_name: editableDeliveryTitle,
-                          title: editableDeliveryTitle,
-                          coverUrl: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80',
-                          itemCount: 432,
-                          downloadCount: 74,
-                          category: '',
-                          link_enabled: true,
-                          created_at: new Date().toISOString(),
-                          expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
-                          timeRemainingText: '30 days left',
-                          gallerySizeBytes: 1200000000,
-                          selectionNotesCount: 0,
-                          analytics: { views: 286, clicks: 80, viewToday: 12, clickToday: 4, view7d: 84, click7d: 22, view30d: 286, click30d: 80 },
-                          photographer_id: '8e52e363-c24b-47b3-a823-ad0ad727125a',
-                          amount_paid: 0,
-                          agreed_balance: 0
-                        } as any);
-                        setSelectedWhatsAppGallery(targetGallery);
+                        if (currentDelivery) {
+                          setSelectedWhatsAppGallery(currentDelivery);
+                        }
                       }}
                       className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                     >
@@ -2334,12 +2407,11 @@ export const Dashboard: React.FC = () => {
                         <ChevronDown className="w-3.5 h-3.5 text-[#CBBDB8]" />
                       </button>
 
-                      {isClientLinkDropdownOpen && (
+                      {isClientLinkDropdownOpen && currentDelivery && (
                         <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
                           <button
                             onClick={() => {
-                              const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || 'amina-hassan') : selectedDeliveryId;
-                              const url = `${window.location.origin}/g/${targetId}`;
+                              const url = `${window.location.origin}/g/${currentDelivery.id}`;
                               navigator.clipboard.writeText(url);
                               toast.success("Client link copied to clipboard!");
                               setIsClientLinkDropdownOpen(false);
@@ -2351,8 +2423,7 @@ export const Dashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
-                              const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || 'amina-hassan') : selectedDeliveryId;
-                              window.open(`/g/${targetId}`, '_blank');
+                              window.open(`/g/${currentDelivery.id}`, '_blank');
                               setIsClientLinkDropdownOpen(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
@@ -2362,7 +2433,8 @@ export const Dashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(deliveryPassword);
+                              const pw = deliveryPassword || currentDelivery.password || '';
+                              navigator.clipboard.writeText(pw);
                               toast.success("Client access password copied!");
                               setIsClientLinkDropdownOpen(false);
                             }}
@@ -2374,10 +2446,7 @@ export const Dashboard: React.FC = () => {
                           <div className="border-t border-[#F0EBE0] my-1" />
                           <button
                             onClick={() => {
-                              const targetGallery = deliveryGalleries.find(g => g.id === selectedDeliveryId) || deliveryGalleries[0];
-                              if (targetGallery) {
-                                setSelectedWhatsAppGallery(targetGallery);
-                              }
+                              setSelectedWhatsAppGallery(currentDelivery);
                               setIsClientLinkDropdownOpen(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2.5 cursor-pointer"
@@ -2428,8 +2497,8 @@ export const Dashboard: React.FC = () => {
                     {/* Hero Cover Banner */}
                     <div className="relative rounded-3xl overflow-hidden min-h-[340px] sm:min-h-[380px] flex items-center justify-center text-center shadow-xs border border-[#E8E2D2] group">
                       <img
-                        src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1600&q=80"
-                        alt="Amina & Hassan Wedding"
+                        src={currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1600&q=80'}
+                        alt={currentDelivery?.client_name || 'Delivery Banner'}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
@@ -2442,22 +2511,20 @@ export const Dashboard: React.FC = () => {
                       {/* Center Overlay Text & Button */}
                       <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
                         <div className="text-[11px] sm:text-xs tracking-[0.25em] font-semibold uppercase text-white/90 drop-shadow-sm">
-                          AMINA &amp; HASSAN
+                          {currentDelivery?.client_name ? currentDelivery.client_name.toUpperCase() : 'MWABONJE STUDIO'}
                         </div>
                         <h2 
                           className="text-4xl sm:text-5xl font-normal tracking-tight text-white mt-1.5 drop-shadow-md"
                           style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
                         >
-                          Our Wedding
+                          {currentDelivery?.title ? getCleanGalleryTitle(currentDelivery.title) : currentDelivery?.client_name || 'Our Gallery'}
                         </h2>
                         <p className="text-xs sm:text-sm text-white/85 mt-2 font-normal drop-shadow-sm max-w-sm mx-auto">
-                          A celebration of love on the Kenyan coast
+                          Private client delivery collection · East African Coast
                         </p>
                         <button
                           onClick={() => {
-                            const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
-                            if (targetId) window.open(`/g/${targetId}`, '_blank');
-                            else toast.info("Opening photo viewer for Amina & Hassan – Wedding");
+                            if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
                           }}
                           className="mt-5 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white hover:bg-[#FAF7F0] text-[#231A16] text-xs font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer"
                         >
@@ -2468,7 +2535,9 @@ export const Dashboard: React.FC = () => {
 
                       {/* Bottom-Right Change Cover Button */}
                       <button
-                        onClick={() => toast.info("Select any photo below or upload a new image to set as the cover")}
+                        onClick={() => {
+                          if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                        }}
                         className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-[11px] font-medium border border-white/20 transition-all cursor-pointer shadow-sm"
                       >
                         <ImageIcon className="w-3.5 h-3.5" />
@@ -2504,9 +2573,7 @@ export const Dashboard: React.FC = () => {
                         {/* + Add Photos */}
                         <button
                           onClick={() => {
-                            const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
-                            if (targetId) navigate(`/gallery/${targetId}`);
-                            else handleOpenCreateModal();
+                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
                           }}
                           className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
@@ -2516,7 +2583,9 @@ export const Dashboard: React.FC = () => {
 
                         {/* + Add Videos */}
                         <button
-                          onClick={() => toast.info("Video delivery upload: MP4, MOV up to 4K supported")}
+                          onClick={() => {
+                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                          }}
                           className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
                           <Camera className="w-4 h-4 text-[#8E827B]" />
@@ -2525,7 +2594,9 @@ export const Dashboard: React.FC = () => {
 
                         {/* Create Section */}
                         <button
-                          onClick={() => toast.info("New gallery section created (e.g. Ceremony, Sunset Portraits, Reception)")}
+                          onClick={() => {
+                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                          }}
                           className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
                           <FolderPlus className="w-4 h-4 text-[#8E827B]" />
@@ -2569,7 +2640,7 @@ export const Dashboard: React.FC = () => {
                         </div>
 
                         <button
-                          onClick={() => toast.info("Filter active: Showing all sections")}
+                          onClick={() => toast.info("Filter active: Showing all gallery files")}
                           className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] p-2 rounded-xl shadow-xs transition-colors cursor-pointer"
                           title="Filter Options"
                         >
@@ -2580,93 +2651,70 @@ export const Dashboard: React.FC = () => {
 
                     {/* Photo Grid (2 rows x 4 columns) */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                      {/* Photo 1: Bride portrait */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&q=80"
-                          alt="Bride earring portrait"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 2: Rings on sand */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=700&q=80"
-                          alt="Wedding rings on sand"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 3: Beach arch with palms */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1544078751-58fee2d8a03b?auto=format&fit=crop&w=700&q=80"
-                          alt="Beach wedding arch"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 4: Couple walking into sunset waves */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=700&q=80"
-                          alt="Couple walking waves sunset"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 5: White rose bridal bouquet */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=700&q=80"
-                          alt="Bridal bouquet white roses"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 6: Palm shadow on warm sand */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80"
-                          alt="Palm leaf shadow sand"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 7: Candlelit reception dinner table */}
-                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
-                        <img
-                          src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=700&q=80"
-                          alt="Reception dinner candles"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-
-                      {/* Photo 8: + 428 more photos Dark Card */}
-                      <div
-                        onClick={() => {
-                          const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
-                          if (targetId) navigate(`/gallery/${targetId}`);
-                          else toast.info("Loading full client gallery of 432 photos...");
-                        }}
-                        className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#3B2E28] hover:bg-[#4A3B34] text-white flex flex-col items-center justify-center p-3 cursor-pointer shadow-xs border border-[#2D221D] transition-colors"
-                      >
-                        <Plus className="w-6 h-6 text-white/80 group-hover:scale-110 transition-transform mb-0.5" />
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">
-                          428
-                        </span>
-                        <span className="text-[11px] text-[#CBBDB8] mt-1 font-medium">
-                          more photos
-                        </span>
-                      </div>
+                      {currentDelivery?.files && currentDelivery.files.length > 0 ? (
+                        <>
+                          {currentDelivery.files.slice(0, 7).map((file, idx) => (
+                            <div
+                              key={file.id || idx}
+                              onClick={() => {
+                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                              }}
+                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all cursor-pointer"
+                            >
+                              <img
+                                src={getOptimizedImageUrl(file.file_url, 600, 450)}
+                                alt={`Photo ${idx + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            </div>
+                          ))}
+                          {currentDelivery.files.length > 7 ? (
+                            <div
+                              onClick={() => {
+                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                              }}
+                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#3B2E28] hover:bg-[#4A3B34] text-white flex flex-col items-center justify-center p-3 cursor-pointer shadow-xs border border-[#2D221D] transition-colors"
+                            >
+                              <Plus className="w-6 h-6 text-white/80 group-hover:scale-110 transition-transform mb-0.5" />
+                              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">
+                                {currentDelivery.files.length - 7}
+                              </span>
+                              <span className="text-[11px] text-[#CBBDB8] mt-1 font-medium">
+                                more photos
+                              </span>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => {
+                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                              }}
+                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#FAF7F2] hover:bg-[#F3EFE8] border-2 border-dashed border-[#D6CCA6] text-[#7A6F69] flex flex-col items-center justify-center p-3 cursor-pointer transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-[#B58B5C] mb-1" />
+                              <span className="text-xs font-semibold text-[#1F1714]">Add Photos</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="col-span-full py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
+                          <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
+                          <h3 className="text-base font-semibold text-[#1F1714]">No Photos Uploaded Yet</h3>
+                          <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                            Upload photos to "{currentDelivery?.client_name}" to activate client download and viewing.
+                          </p>
+                          <button
+                            onClick={() => {
+                              if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                            }}
+                            className="mt-4 px-4 py-2 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Upload Photos to Gallery</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2680,11 +2728,17 @@ export const Dashboard: React.FC = () => {
                           <h3 className="text-sm font-bold text-[#1F1714]">Gallery Overview</h3>
                         </div>
                         {/* Cover Thumbnail */}
-                        <img
-                          src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=200&q=80"
-                          alt="Gallery thumbnail"
-                          className="w-12 h-12 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
-                        />
+                        {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
+                          <img
+                            src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
+                            alt="Gallery thumbnail"
+                            className="w-12 h-12 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] border border-[#EDE5D8] flex items-center justify-center text-[#B58B5C]">
+                            <ImageIcon className="w-5 h-5 opacity-50" />
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2.5 text-xs">
@@ -2693,7 +2747,7 @@ export const Dashboard: React.FC = () => {
                             <Eye className="w-4 h-4 text-[#8E827B]" />
                             <span>Views</span>
                           </div>
-                          <span className="font-semibold text-[#1F1714]">286</span>
+                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.analytics?.views || 0}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-[#6D635D]">
@@ -2701,7 +2755,7 @@ export const Dashboard: React.FC = () => {
                             <Download className="w-4 h-4 text-[#8E827B]" />
                             <span>Downloads</span>
                           </div>
-                          <span className="font-semibold text-[#1F1714]">74</span>
+                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.downloadCount || 0}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-[#6D635D]">
@@ -2709,7 +2763,7 @@ export const Dashboard: React.FC = () => {
                             <Heart className="w-4 h-4 text-[#8E827B]" />
                             <span>Favorites</span>
                           </div>
-                          <span className="font-semibold text-[#1F1714]">26</span>
+                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.selectionNotesCount || 0}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-[#6D635D]">
@@ -2717,7 +2771,7 @@ export const Dashboard: React.FC = () => {
                             <Calendar className="w-4 h-4 text-[#8E827B]" />
                             <span>Created</span>
                           </div>
-                          <span className="font-semibold text-[#1F1714]">Nov 12, 2026</span>
+                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.created_at ? formatDate(currentDelivery.created_at) : '—'}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-[#6D635D] pt-1 border-t border-[#F4EFE6]">
@@ -2725,8 +2779,12 @@ export const Dashboard: React.FC = () => {
                             <Clock className="w-4 h-4 text-[#8E827B]" />
                             <span>Expires</span>
                           </div>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-[#FAF4E8] text-[#8C6432] font-semibold text-[11px] border border-[#EEDFCA]">
-                            Dec 12, 2026 (30 days left)
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg font-semibold text-[11px] border ${
+                            currentDelivery?.isExpired
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-[#FAF4E8] text-[#8C6432] border-[#EEDFCA]'
+                          }`}>
+                            {currentDelivery?.timeRemainingText || (currentDelivery?.expires_at ? formatDate(currentDelivery.expires_at) : 'Active · No Expiry')}
                           </span>
                         </div>
                       </div>
@@ -2767,6 +2825,8 @@ export const Dashboard: React.FC = () => {
                             type={deliveryShowPassword ? 'text' : 'password'}
                             value={deliveryPassword}
                             onChange={(e) => setDeliveryPassword(e.target.value)}
+                            onBlur={() => handleSaveDeliveryPassword(deliveryPassword)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
                             placeholder="Set gallery password"
                             className="w-full pl-3.5 pr-10 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
                           />
@@ -2870,13 +2930,17 @@ export const Dashboard: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2.5">
                         {/* 1. Photo Selection */}
                         <button
-                          onClick={() => toast.success("Photo selection enabled for client album proofing")}
+                          onClick={() => {
+                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                          }}
                           className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
                         >
                           <ImageIcon className="w-4 h-4 text-[#B58B5C] mb-1.5" />
                           <div>
                             <div className="text-xs font-bold text-[#1F1714]">Photo Selection</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Client Picks)</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                              {currentDelivery?.selection_status === 'submitted' ? '(Submitted)' : '(Client Picks)'}
+                            </div>
                           </div>
                         </button>
 
@@ -2894,19 +2958,23 @@ export const Dashboard: React.FC = () => {
 
                         {/* 3. Client Notes */}
                         <button
-                          onClick={() => toast.info("Client notes channel ready for revision requests")}
+                          onClick={() => toast.info(`Client notes: ${currentDelivery?.selectionNotesCount || 0} notes registered`)}
                           className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
                         >
                           <MessageSquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
                           <div>
                             <div className="text-xs font-bold text-[#1F1714]">Client Notes</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Private Comments)</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                              ({currentDelivery?.selectionNotesCount || 0} Private Comments)
+                            </div>
                           </div>
                         </button>
 
                         {/* 4. Slideshow */}
                         <button
-                          onClick={() => toast.success("Auto-play slideshow mode enabled")}
+                          onClick={() => {
+                            if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
+                          }}
                           className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
                         >
                           <PlaySquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
@@ -2930,13 +2998,20 @@ export const Dashboard: React.FC = () => {
 
                         {/* 6. Expiring Gallery */}
                         <button
-                          onClick={() => toast.info("Auto-expiry set for 30 days with client warning email")}
+                          onClick={(e) => {
+                            if (currentDelivery?.id) {
+                              handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name);
+                            }
+                          }}
                           className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          title="Click to extend expiry (+7 days)"
                         >
                           <Clock className="w-4 h-4 text-[#B58B5C] mb-1.5" />
                           <div>
                             <div className="text-xs font-bold text-[#1F1714]">Expiring Gallery</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Set Auto Expiry)</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                              {currentDelivery?.timeRemainingText ? `(${currentDelivery.timeRemainingText})` : '(Set Auto Expiry)'}
+                            </div>
                           </div>
                         </button>
                       </div>
@@ -2979,17 +3054,23 @@ export const Dashboard: React.FC = () => {
 
                         {/* Open Graph Card Preview */}
                         <div className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] flex items-center gap-3">
-                          <img
-                            src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=200&q=80"
-                            alt="Open Graph preview"
-                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[#E6DFC6]"
-                          />
+                          {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
+                            <img
+                              src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
+                              alt="Open Graph preview"
+                              className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[#E6DFC6]"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-[#FAF7F0] border border-[#E6DFC6] flex items-center justify-center text-[#B58B5C] shrink-0">
+                              <ImageIcon className="w-5 h-5 opacity-50" />
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1">
                             <h4 className="text-xs font-bold text-[#1F1714] truncate">
-                              Amina &amp; Hassan – Wedding | Mwabonje Photography
+                              {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
                             </h4>
                             <p className="text-[11px] text-[#7A6F69] truncate mt-0.5">
-                              A coastal wedding in Kenya, captured by Mwabonje Photography.
+                              Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
                             </p>
                           </div>
                           <button
