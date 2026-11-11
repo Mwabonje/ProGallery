@@ -817,39 +817,144 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
             </div>
 
             {/* Featured Image */}
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs">
                 <label className="font-semibold text-[#1F1714]">Featured Image *</label>
-                {coverCompressionInfo && (
+                {coverCompressionInfo && coverSourceTab === 'upload' && (
                   <span className="text-[11px] text-[#16A34A] font-medium flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> Auto-compressed ({formatFileSize(coverCompressionInfo.compressedSize)})
                   </span>
                 )}
               </div>
 
-              {isUploadingCover ? (
-                <div className="border border-[#E6DFC6] rounded-2xl bg-white p-8 text-center space-y-3">
-                  <Loader2 className="w-7 h-7 text-[#B58B5C] animate-spin mx-auto" />
-                  <p className="text-xs font-semibold text-[#1F1714]">Compressing &amp; Uploading...</p>
-                  <div className="w-48 mx-auto bg-[#E6DFC6] rounded-full h-1.5 overflow-hidden">
+              {/* Dual Mode Switcher: Upload from computer vs Paste image URL (Pexels / Unsplash) */}
+              <div className="flex items-center gap-1 p-1 bg-[#FAF8F5] rounded-xl border border-[#E6DFC6] w-full sm:w-fit">
+                <button
+                  type="button"
+                  onClick={() => setCoverSourceTab('upload')}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                    coverSourceTab === 'upload'
+                      ? 'bg-[#3B2E28] text-white shadow-xs'
+                      : 'text-[#6D635D] hover:text-[#1F1714]'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload from computer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverSourceTab('url')}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                    coverSourceTab === 'url'
+                      ? 'bg-[#3B2E28] text-white shadow-xs'
+                      : 'text-[#6D635D] hover:text-[#1F1714]'
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Paste image URL (Pexels / Unsplash)</span>
+                </button>
+              </div>
+
+              {/* Option A: Upload Tab */}
+              {coverSourceTab === 'upload' && (
+                <div>
+                  {isUploadingCover ? (
+                    <div className="border border-[#E6DFC6] rounded-2xl bg-white p-8 text-center space-y-3">
+                      <Loader2 className="w-7 h-7 text-[#B58B5C] animate-spin mx-auto" />
+                      <p className="text-xs font-semibold text-[#1F1714]">Compressing &amp; Uploading...</p>
+                      <div className="w-48 mx-auto bg-[#E6DFC6] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#B58B5C] h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${coverUploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : !editingPost.cover_image ? (
                     <div
-                      className="bg-[#B58B5C] h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${coverUploadProgress}%` }}
-                    />
+                      onDragOver={e => {
+                        e.preventDefault();
+                        setIsDraggingCover(true);
+                      }}
+                      onDragLeave={() => setIsDraggingCover(false)}
+                      onDrop={e => {
+                        e.preventDefault();
+                        setIsDraggingCover(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) handleCoverUpload(file);
+                      }}
+                      onClick={() => coverFileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors shadow-xs ${
+                        isDraggingCover
+                          ? 'border-[#B58B5C] bg-[#FAF8F5]'
+                          : 'border-[#E6DFC6] hover:border-[#B58B5C] bg-white'
+                      }`}
+                    >
+                      <Upload className="w-8 h-8 text-[#8E827B] mx-auto mb-2" />
+                      <p className="text-xs font-semibold text-[#1F1714]">Click to upload featured image <span className="text-[#8E827B] font-normal">or drag &amp; drop</span></p>
+                      <p className="text-[11px] text-[#7A6E68] mt-1">JPEG, PNG, WebP · Auto-compressed under 300 KB</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Option B: URL Tab for Pexels, Unsplash, or External CDN link */}
+              {coverSourceTab === 'url' && (
+                <div className="bg-white border border-[#E6DFC6] rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
+                  <div>
+                    <label className="block text-xs font-medium text-[#1F1714] mb-1.5">
+                      Direct Image URL (Pexels, Unsplash, or CDN)
+                    </label>
+                    <div className="relative">
+                      <Link2 className="w-4 h-4 text-[#8E827B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="url"
+                        value={editingPost.cover_image || ''}
+                        onChange={e => {
+                          setEditingPost({ ...editingPost, cover_image: e.target.value.trim() });
+                          setCoverCompressionInfo(null);
+                        }}
+                        placeholder="https://images.pexels.com/photos/... or https://images.unsplash.com/..."
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF8F5] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C]"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#7A6E68]">
+                    <span>Paste any image link from <strong>Pexels</strong>, <strong>Unsplash</strong>, or your preferred photo website.</span>
+                    {editingPost.cover_image && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPost({ ...editingPost, cover_image: '' });
+                          setCoverCompressionInfo(null);
+                        }}
+                        className="text-rose-600 hover:underline font-medium cursor-pointer"
+                      >
+                        Clear URL
+                      </button>
+                    )}
                   </div>
                 </div>
-              ) : editingPost.cover_image ? (
+              )}
+
+              {/* Live Preview Card (shown whenever cover_image is populated, regardless of source) */}
+              {editingPost.cover_image && !isUploadingCover && (
                 <div className="relative rounded-2xl overflow-hidden border border-[#E6DFC6] bg-stone-900 group shadow-xs">
                   <img
                     src={editingPost.cover_image}
                     alt={editingPost.title || 'Cover image'}
                     className="w-full h-[280px] sm:h-[340px] object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.opacity = '0.5';
+                    }}
                   />
                   {/* Bottom-left Action Pills */}
                   <div className="absolute bottom-3.5 left-3.5 flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => coverFileInputRef.current?.click()}
+                      onClick={() => {
+                        setCoverSourceTab('upload');
+                        coverFileInputRef.current?.click();
+                      }}
                       className="px-3 py-1.5 bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-medium rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                     >
                       <RefreshCw className="w-3 h-3" />
@@ -866,13 +971,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                     <button
                       type="button"
                       onClick={() => {
+                        setCoverSourceTab('url');
                         setCustomUrlInput(editingPost.cover_image || '');
                         setIsUrlModalOpen(true);
                       }}
                       className="px-3 py-1.5 bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-medium rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
-                      <span>Edit</span>
+                      <span>Edit Link</span>
                     </button>
                   </div>
                   {/* Bottom-right Trash Pill */}
@@ -889,15 +995,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div
-                  onClick={() => coverFileInputRef.current?.click()}
-                  className="border-2 border-dashed border-[#E6DFC6] hover:border-[#B58B5C] bg-white rounded-2xl p-8 text-center cursor-pointer transition-colors shadow-xs"
-                >
-                  <Upload className="w-8 h-8 text-[#8E827B] mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-[#1F1714]">Click to upload featured image</p>
-                  <p className="text-[11px] text-[#7A6E68] mt-1">JPEG, PNG, WebP · Auto-compressed under 300 KB</p>
                 </div>
               )}
             </div>
