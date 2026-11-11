@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -141,6 +141,25 @@ export const Dashboard: React.FC = () => {
   const [activityTimeFilter, setActivityTimeFilter] = useState<'30d' | '7d' | 'today' | 'all'>('30d');
   const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Delivery workspace state
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string>('amina-hassan');
+  const [deliveryTab, setDeliveryTab] = useState<'gallery' | 'settings' | 'access' | 'download' | 'store' | 'seo' | 'analytics'>('gallery');
+  const [deliveryViewMode, setDeliveryViewMode] = useState<'detail' | 'all'>('detail');
+  const [deliveryGridMode, setDeliveryGridMode] = useState<'grid' | 'list'>('grid');
+  const [deliveryIsPrivate, setDeliveryIsPrivate] = useState<boolean>(true);
+  const [deliveryPassword, setDeliveryPassword] = useState<string>('coastalwedding2026');
+  const [deliveryShowPassword, setDeliveryShowPassword] = useState<boolean>(false);
+  const [deliveryAllowDownloads, setDeliveryAllowDownloads] = useState<boolean>(true);
+  const [deliveryAllowFavorites, setDeliveryAllowFavorites] = useState<boolean>(true);
+  const [deliveryAllowComments, setDeliveryAllowComments] = useState<boolean>(false);
+  const [deliveryRequireEmail, setDeliveryRequireEmail] = useState<boolean>(true);
+  const [deliveryAllowSeo, setDeliveryAllowSeo] = useState<boolean>(false);
+  const [isClientLinkDropdownOpen, setIsClientLinkDropdownOpen] = useState<boolean>(false);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
+  const [isDeliverySwitcherOpen, setIsDeliverySwitcherOpen] = useState<boolean>(false);
+  const [deliveryTitleEditing, setDeliveryTitleEditing] = useState<boolean>(false);
+  const [editableDeliveryTitle, setEditableDeliveryTitle] = useState<string>('Amina & Hassan – Wedding');
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -2040,228 +2059,1164 @@ export const Dashboard: React.FC = () => {
         )}
 
 {currentView === 'delivery' && (
-          <div className="p-10 max-w-[1200px] mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-              <div>
-                <h1 className="text-[28px] text-slate-900 dark:text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Delivery</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Client delivery portals and download archives ({deliveryGalleries.length} total{expiredDeliveryCount > 0 ? ` · ${expiredDeliveryCount} expired` : ''})
-                </p>
+          <div className="p-6 sm:p-8 lg:p-10 max-w-[1360px] mx-auto w-full">
+            {/* Top Bar: Breadcrumbs, Search, Notifications, Avatar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  onClick={() => setDeliveryViewMode('all')}
+                  className={`font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    deliveryViewMode === 'all' ? 'text-[#1F1714]' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                  }`}
+                >
+                  <span>Deliveries</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#EADFD0] text-[#4A3B32] font-bold">
+                    {deliveryGalleries.length || 7}
+                  </span>
+                </button>
+                <ChevronRight className="w-3.5 h-3.5 text-[#B58B5C]" />
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDeliverySwitcherOpen(prev => !prev)}
+                    className="font-bold text-[#1F1714] flex items-center gap-1.5 hover:text-[#B58B5C] transition-colors cursor-pointer"
+                  >
+                    <span>
+                      {selectedDeliveryId === 'amina-hassan' 
+                        ? editableDeliveryTitle 
+                        : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.client_name || editableDeliveryTitle)}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-[#7A6F69]" />
+                  </button>
+
+                  {/* Delivery Gallery Switcher Dropdown */}
+                  {isDeliverySwitcherOpen && (
+                    <div className="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
+                      <div className="text-[10px] uppercase font-bold text-[#8F7E78] px-3 py-1.5 tracking-wider flex items-center justify-between">
+                        <span>Select Delivery Gallery</span>
+                        <span className="text-[9px] bg-[#FAF4E8] text-[#8C6432] px-2 py-0.5 rounded-full font-semibold">Portals</span>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto space-y-1">
+                        <button
+                          onClick={() => {
+                            setSelectedDeliveryId('amina-hassan');
+                            setDeliveryViewMode('detail');
+                            setIsDeliverySwitcherOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                            selectedDeliveryId === 'amina-hassan' && deliveryViewMode === 'detail'
+                              ? 'bg-[#FAF4E8] text-[#8C6432] font-bold shadow-xs'
+                              : 'hover:bg-[#FAF7F0] text-[#1F1714]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="truncate">{editableDeliveryTitle}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-[#8F7E78]">432 photos</span>
+                        </button>
+
+                        {deliveryGalleries.map(g => (
+                          <button
+                            key={g.id}
+                            onClick={() => {
+                              setSelectedDeliveryId(g.id);
+                              setEditableDeliveryTitle(g.client_name);
+                              setDeliveryViewMode('detail');
+                              setIsDeliverySwitcherOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                              selectedDeliveryId === g.id && deliveryViewMode === 'detail'
+                                ? 'bg-[#FAF4E8] text-[#8C6432] font-bold shadow-xs'
+                                : 'hover:bg-[#FAF7F0] text-[#1F1714]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${g.isExpired ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                              <span className="truncate">{g.client_name}</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-[#8F7E78] shrink-0">{g.itemCount || 0} photos</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="border-t border-[#F0EBE0] my-1.5 pt-1.5">
+                        <button
+                          onClick={() => {
+                            setDeliveryViewMode('all');
+                            setIsDeliverySwitcherOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#8C6432] hover:bg-[#FAF4E8] flex items-center justify-between cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-3.5 h-3.5" />
+                            <span>View All Delivery Portals</span>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold">{deliveryGalleries.length}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsDeliverySwitcherOpen(false);
+                            setNewCategory('');
+                            handleOpenCreateModal();
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#3B2E28] hover:bg-[#FAF7F0] flex items-center gap-2 cursor-pointer mt-0.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Create New Delivery Portal</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="relative flex-1 sm:flex-none">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <input 
-                    type="text" 
-                    placeholder="Search galleries..."
+
+              {/* Top Right: Search, Notifications, Avatar */}
+              <div className="flex items-center gap-3">
+                <div className="relative w-72 hidden md:block">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8E827B]" />
+                  <input
+                    type="text"
+                    placeholder="Search galleries, clients, projects, inquiries..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-md text-[13px] focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 w-full sm:w-64"
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C]"
                   />
                 </div>
-                <button onClick={() => { setNewCategory(''); handleOpenCreateModal(); }} className="bg-[#5845EE] hover:bg-[#4a3bcc] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors shrink-0">
-                  <Plus className="w-4 h-4" /> New Gallery
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationsOpen(prev => !prev)}
+                  className="w-9 h-9 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-center text-[#5C524C] hover:text-[#1F1714] shadow-xs relative cursor-pointer"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#B58B5C] ring-2 ring-white" />
                 </button>
+                <div className="w-9 h-9 rounded-xl bg-[#3B2E28] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                  {userDisplayName[0] || 'J'}
+                </div>
               </div>
             </div>
 
-            {/* Expired Notification Alert Banner */}
+            {/* Expired Notification Alert Banner (Preserved) */}
             {expiredDeliveryCount > 0 && (
-              <div className="mb-6 p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="mt-4 mb-2 p-4 rounded-2xl border border-rose-200 bg-rose-50/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-rose-900 dark:text-rose-200 flex items-center gap-2">
+                    <p className="text-xs sm:text-sm font-bold text-rose-950 flex items-center gap-2">
                       <span>{expiredDeliveryCount} delivery {expiredDeliveryCount === 1 ? 'gallery has' : 'galleries have'} expired</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-200/80 dark:bg-rose-900/80 text-rose-800 dark:text-rose-200">Attention</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-200 text-rose-900">Attention</span>
                     </p>
-                    <p className="text-xs text-rose-700/90 dark:text-rose-300/80 mt-0.5">
-                      Client download portals are locked for expired archives. You can review them below or click the clock icon to reactivate for +7 days.
+                    <p className="text-xs text-rose-800/90 mt-0.5">
+                      Client download portals are locked for expired archives. You can review them or click extend to reactivate for +7 days.
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setDeliveryFilter(deliveryFilter === 'expired' ? 'all' : 'expired')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors shrink-0 shadow-sm cursor-pointer"
-                >
-                  {deliveryFilter === 'expired' ? 'Show All Galleries' : 'Show Expired Only'}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setDeliveryViewMode('all');
+                      setDeliveryFilter(deliveryFilter === 'expired' ? 'all' : 'expired');
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors shadow-xs cursor-pointer"
+                  >
+                    {deliveryFilter === 'expired' && deliveryViewMode === 'all' ? 'Show All Deliveries' : 'Show Expired Only'}
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                onClick={() => setDeliveryFilter('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  deliveryFilter === 'all'
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                All ({deliveryGalleries.length})
-              </button>
-              <button
-                onClick={() => setDeliveryFilter('live')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  deliveryFilter === 'live'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                Active ({activeDeliveryCount})
-              </button>
-              <button
-                onClick={() => setDeliveryFilter('expired')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  deliveryFilter === 'expired'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                Expired ({expiredDeliveryCount})
-              </button>
-            </div>
-
-            <div className="ledger">
-              <div className="ledger-head">
-                <div></div>
-                <div>Gallery</div>
-                <div>Category</div>
-                <div>Status</div>
-                <div>Items</div>
-                <div>Views</div>
-                <div>DLs</div>
-                <div>Updated</div>
-                <div></div>
-              </div>
-              <div>
-                {deliveryGalleries
-                  .filter(g => {
-                    if (searchQuery && !g.client_name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                      return false;
-                    }
-                    if (deliveryFilter === 'expired') return g.isExpired;
-                    if (deliveryFilter === 'live') return !g.isExpired && g.link_enabled;
-                    return true;
-                  })
-                  .map(gallery => {
-                    return (
-                      <div 
-                        key={gallery.id} 
-                        className={`ledger-row ${gallery.isExpired ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''}`} 
-                        onClick={() => navigate(`/gallery/${gallery.id}`)}
+            {/* Main Delivery Workspace (Detail View matching Warm_Wedding_Gallery_Studio_Dashboard_a6cde6e1.png) */}
+            {deliveryViewMode === 'detail' ? (
+              <div className="mt-4 space-y-6">
+                {/* Title & Action Buttons Row */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      {deliveryTitleEditing ? (
+                        <input
+                          type="text"
+                          value={editableDeliveryTitle}
+                          onChange={(e) => setEditableDeliveryTitle(e.target.value)}
+                          onBlur={() => setDeliveryTitleEditing(false)}
+                          onKeyDown={(e) => e.key === 'Enter' && setDeliveryTitleEditing(false)}
+                          autoFocus
+                          className="text-2xl sm:text-[32px] font-serif text-[#1F1714] border-b-2 border-[#B58B5C] bg-transparent focus:outline-none"
+                        />
+                      ) : (
+                        <h1 
+                          className="text-2xl sm:text-[32px] font-normal text-[#1F1714] tracking-tight leading-none" 
+                          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                        >
+                          {selectedDeliveryId === 'amina-hassan' 
+                            ? editableDeliveryTitle 
+                            : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.client_name || editableDeliveryTitle)}
+                        </h1>
+                      )}
+                      <button
+                        onClick={() => setDeliveryTitleEditing(!deliveryTitleEditing)}
+                        className="p-1 text-[#8E827B] hover:text-[#1F1714] rounded-md transition-colors cursor-pointer"
+                        title="Edit Gallery Title"
                       >
-                        <div className="relative">
-                          <div 
-                            className={`swatch ${gallery.isExpired ? 'opacity-70 grayscale-[35%]' : ''}`} 
-                            style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}
-                          />
-                          {gallery.isExpired && (
-                            <div className="absolute inset-0 bg-rose-950/25 rounded-[6px] flex items-center justify-center pointer-events-none">
-                              <Clock className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 drop-shadow-sm" />
-                            </div>
-                          )}
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+                        Live
+                      </span>
+                      <span className="text-xs text-[#7A6F69]">
+                        Private Client Gallery · {selectedDeliveryId === 'amina-hassan' ? '432' : (deliveryGalleries.find(g => g.id === selectedDeliveryId)?.itemCount || '432')} photos · 2 videos
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Header Action Buttons */}
+                  <div className="flex items-center gap-2.5 self-start md:self-auto">
+                    {/* Preview Button */}
+                    <button
+                      onClick={() => {
+                        const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
+                        if (targetId) {
+                          window.open(`/g/${targetId}`, '_blank');
+                        } else {
+                          toast.info("Viewing preview for Amina & Hassan – Wedding");
+                        }
+                      }}
+                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4 text-[#8E827B]" />
+                      <span>Preview</span>
+                    </button>
+
+                    {/* Share Button (WhatsApp / Client Share) */}
+                    <button
+                      onClick={() => {
+                        const targetGallery = deliveryGalleries.find(g => g.id === selectedDeliveryId) || deliveryGalleries[0] || ({
+                          id: 'amina-hassan',
+                          client_name: editableDeliveryTitle,
+                          title: editableDeliveryTitle,
+                          coverUrl: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80',
+                          itemCount: 432,
+                          downloadCount: 74,
+                          category: '',
+                          link_enabled: true,
+                          created_at: new Date().toISOString(),
+                          expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+                          timeRemainingText: '30 days left',
+                          gallerySizeBytes: 1200000000,
+                          selectionNotesCount: 0,
+                          analytics: { views: 286, clicks: 80, viewToday: 12, clickToday: 4, view7d: 84, click7d: 22, view30d: 286, click30d: 80 },
+                          photographer_id: '8e52e363-c24b-47b3-a823-ad0ad727125a',
+                          amount_paid: 0,
+                          agreed_balance: 0
+                        } as any);
+                        setSelectedWhatsAppGallery(targetGallery);
+                      }}
+                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4 text-[#8E827B]" />
+                      <span>Share</span>
+                    </button>
+
+                    {/* Client Link ⌄ Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setIsClientLinkDropdownOpen(prev => !prev)}
+                        className="bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <Link2 className="w-4 h-4 text-[#CBBDB8]" />
+                        <span>Client Link</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-[#CBBDB8]" />
+                      </button>
+
+                      {isClientLinkDropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
+                          <button
+                            onClick={() => {
+                              const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || 'amina-hassan') : selectedDeliveryId;
+                              const url = `${window.location.origin}/g/${targetId}`;
+                              navigator.clipboard.writeText(url);
+                              toast.success("Client link copied to clipboard!");
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Copy Client Link</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || 'amina-hassan') : selectedDeliveryId;
+                              window.open(`/g/${targetId}`, '_blank');
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Open Client Portal</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(deliveryPassword);
+                              toast.success("Client access password copied!");
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Copy Access Password</span>
+                          </button>
+                          <div className="border-t border-[#F0EBE0] my-1" />
+                          <button
+                            onClick={() => {
+                              const targetGallery = deliveryGalleries.find(g => g.id === selectedDeliveryId) || deliveryGalleries[0];
+                              if (targetGallery) {
+                                setSelectedWhatsAppGallery(targetGallery);
+                              }
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <Send className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Send via WhatsApp</span>
+                          </button>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                        <div className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100 flex-wrap">
-                          <span>{gallery.client_name}</span>
-                          {Boolean(gallery.selectionNotesCount && gallery.selectionNotesCount > 0) && (
-                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1 shadow-xs" title={`${gallery.selectionNotesCount} photo note(s) from client`}>
-                              <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>{gallery.selectionNotesCount} note{gallery.selectionNotesCount === 1 ? '' : 's'}</span>
-                            </span>
-                          )}
-                          {gallery.isExpired && (
-                            <span className="text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-rose-500" />
-                              Expired
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="text-slate-500 dark:text-slate-400 text-[12px]">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '') || 'Delivery'}</div>
-
-                        {/* Status Column with explicit Expired Indicator */}
-                        {gallery.isExpired ? (
-                          <div className="status expired flex flex-col items-start gap-0.5">
-                            <div className="inline-flex items-center gap-1.5 font-semibold text-rose-600 dark:text-rose-400">
-                              <span className="status-dot !bg-rose-500 animate-pulse"></span>
-                              <span>Expired</span>
-                            </div>
-                            {gallery.timeRemainingText && (
-                              <span className="text-[10.5px] text-rose-500/90 dark:text-rose-400/80 font-mono font-medium">
-                                {gallery.timeRemainingText}
-                              </span>
-                            )}
-                          </div>
-                        ) : gallery.selection_status === 'submitted' ? (
-                          <div className="status submitted"><span className="status-dot"></span>Selection submitted</div>
-                        ) : !gallery.link_enabled ? (
-                          <div className="status hidden"><span className="status-dot"></span>Hidden</div>
-                        ) : (
-                          <div className="status live flex flex-col items-start gap-0.5">
-                            <div className="inline-flex items-center gap-1.5">
-                              <span className="status-dot"></span>
-                              <span>Live</span>
-                            </div>
-                            {gallery.timeRemainingText && (
-                              <span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-mono">
-                                {gallery.timeRemainingText}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
-                        <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
-                        <div className="text-slate-500 dark:text-slate-400 font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
-                        <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
-
-                        <div className="flex justify-end pr-2 gap-1 items-center">
-                            {/* 1-Click WhatsApp Delivery Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedWhatsAppGallery(gallery);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
-                              title="Send Gallery via WhatsApp"
-                            >
-                              <Send className="w-4 h-4" />
-                            </button>
-                            {/* Quick Extend button if gallery is expired */}
-                            {gallery.isExpired && (
-                              <button 
-                                onClick={(e) => handleQuickExtend(e, gallery.id, gallery.client_name)}
-                                className="p-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded transition-colors"
-                                title="Reactivate / Extend for 7 days"
-                              >
-                                <Clock className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors"
-                                title="View Gallery"
-                            >
-                                <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                                onClick={(e) => handleDeleteGallery(e, gallery.id, gallery.client_name)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
-                                title="Delete Gallery"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                      </div>
+                {/* Tabs Row */}
+                <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1 border-b border-[#E8E2D2]/70 scrollbar-none">
+                  {[
+                    { id: 'gallery', label: 'Gallery', icon: LayoutGrid },
+                    { id: 'settings', label: 'Settings', icon: Sliders },
+                    { id: 'access', label: 'Access', icon: Lock },
+                    { id: 'download', label: 'Download', icon: Download },
+                    { id: 'store', label: 'Store', icon: ShoppingBag },
+                    { id: 'seo', label: 'SEO & Sharing', icon: Share2 },
+                    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = deliveryTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setDeliveryTab(tab.id as any)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                          isActive
+                            ? 'bg-[#3B2E28] text-white shadow-xs'
+                            : 'text-[#7A6F69] hover:text-[#1F1714] hover:bg-white/60'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#8E827B]'}`} />
+                        <span>{tab.label}</span>
+                      </button>
                     );
                   })}
+                </div>
+
+                {/* Two-Column Grid: Left (Hero, Toolbar, Photos) & Right (Overview, Access, Features, SEO) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Column (8 cols) */}
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* Hero Cover Banner */}
+                    <div className="relative rounded-3xl overflow-hidden min-h-[340px] sm:min-h-[380px] flex items-center justify-center text-center shadow-xs border border-[#E8E2D2] group">
+                      <img
+                        src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1600&q=80"
+                        alt="Amina & Hassan Wedding"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
+
+                      {/* Top-Right Translucent Icon Badge */}
+                      <div className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 shadow-sm">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+
+                      {/* Center Overlay Text & Button */}
+                      <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
+                        <div className="text-[11px] sm:text-xs tracking-[0.25em] font-semibold uppercase text-white/90 drop-shadow-sm">
+                          AMINA &amp; HASSAN
+                        </div>
+                        <h2 
+                          className="text-4xl sm:text-5xl font-normal tracking-tight text-white mt-1.5 drop-shadow-md"
+                          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                        >
+                          Our Wedding
+                        </h2>
+                        <p className="text-xs sm:text-sm text-white/85 mt-2 font-normal drop-shadow-sm max-w-sm mx-auto">
+                          A celebration of love on the Kenyan coast
+                        </p>
+                        <button
+                          onClick={() => {
+                            const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
+                            if (targetId) window.open(`/g/${targetId}`, '_blank');
+                            else toast.info("Opening photo viewer for Amina & Hassan – Wedding");
+                          }}
+                          className="mt-5 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white hover:bg-[#FAF7F0] text-[#231A16] text-xs font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-[#231A16] text-[#231A16]" />
+                          <span>View Photos</span>
+                        </button>
+                      </div>
+
+                      {/* Bottom-Right Change Cover Button */}
+                      <button
+                        onClick={() => toast.info("Select any photo below or upload a new image to set as the cover")}
+                        className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-[11px] font-medium border border-white/20 transition-all cursor-pointer shadow-sm"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Change Cover</span>
+                      </button>
+                    </div>
+
+                    {/* Media Action Toolbar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Grid / List View Toggle */}
+                        <div className="flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3]">
+                          <button
+                            onClick={() => setDeliveryGridMode('grid')}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              deliveryGridMode === 'grid' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                            }`}
+                            title="Grid View"
+                          >
+                            <LayoutGrid className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeliveryGridMode('list')}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              deliveryGridMode === 'list' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                            }`}
+                            title="List View"
+                          >
+                            <GalleryHorizontalEnd className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* + Add Photos */}
+                        <button
+                          onClick={() => {
+                            const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
+                            if (targetId) navigate(`/gallery/${targetId}`);
+                            else handleOpenCreateModal();
+                          }}
+                          className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Photos</span>
+                        </button>
+
+                        {/* + Add Videos */}
+                        <button
+                          onClick={() => toast.info("Video delivery upload: MP4, MOV up to 4K supported")}
+                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Camera className="w-4 h-4 text-[#8E827B]" />
+                          <span>Add Videos</span>
+                        </button>
+
+                        {/* Create Section */}
+                        <button
+                          onClick={() => toast.info("New gallery section created (e.g. Ceremony, Sunset Portraits, Reception)")}
+                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                        >
+                          <FolderPlus className="w-4 h-4 text-[#8E827B]" />
+                          <span>Create Section</span>
+                        </button>
+                      </div>
+
+                      {/* Right Toolbar Controls: Sort & Filter */}
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <div className="relative">
+                          <button
+                            onClick={() => setIsSortDropdownOpen(prev => !prev)}
+                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
+                            <span>Sort</span>
+                          </button>
+
+                          {isSortDropdownOpen && (
+                            <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
+                              <button
+                                onClick={() => { setSortBy('recent'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                              >
+                                Capture Time (Oldest first)
+                              </button>
+                              <button
+                                onClick={() => { setSortBy('recent'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                              >
+                                Capture Time (Newest first)
+                              </button>
+                              <button
+                                onClick={() => { setSortBy('viewed'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                              >
+                                File Name (A to Z)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => toast.info("Filter active: Showing all sections")}
+                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] p-2 rounded-xl shadow-xs transition-colors cursor-pointer"
+                          title="Filter Options"
+                        >
+                          <SlidersHorizontal className="w-4 h-4 text-[#8E827B]" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Photo Grid (2 rows x 4 columns) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      {/* Photo 1: Bride portrait */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&q=80"
+                          alt="Bride earring portrait"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 2: Rings on sand */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=700&q=80"
+                          alt="Wedding rings on sand"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 3: Beach arch with palms */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1544078751-58fee2d8a03b?auto=format&fit=crop&w=700&q=80"
+                          alt="Beach wedding arch"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 4: Couple walking into sunset waves */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=700&q=80"
+                          alt="Couple walking waves sunset"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 5: White rose bridal bouquet */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=700&q=80"
+                          alt="Bridal bouquet white roses"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 6: Palm shadow on warm sand */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80"
+                          alt="Palm leaf shadow sand"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 7: Candlelit reception dinner table */}
+                      <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all">
+                        <img
+                          src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=700&q=80"
+                          alt="Reception dinner candles"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+
+                      {/* Photo 8: + 428 more photos Dark Card */}
+                      <div
+                        onClick={() => {
+                          const targetId = selectedDeliveryId === 'amina-hassan' ? (deliveryGalleries[0]?.id || '') : selectedDeliveryId;
+                          if (targetId) navigate(`/gallery/${targetId}`);
+                          else toast.info("Loading full client gallery of 432 photos...");
+                        }}
+                        className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#3B2E28] hover:bg-[#4A3B34] text-white flex flex-col items-center justify-center p-3 cursor-pointer shadow-xs border border-[#2D221D] transition-colors"
+                      >
+                        <Plus className="w-6 h-6 text-white/80 group-hover:scale-110 transition-transform mb-0.5" />
+                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">
+                          428
+                        </span>
+                        <span className="text-[11px] text-[#CBBDB8] mt-1 font-medium">
+                          more photos
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column (4 cols): 4 Luxury Information & Controls Cards */}
+                  <div className="lg:col-span-4 space-y-5">
+                    {/* Card 1: Gallery Overview */}
+                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <BarChart2 className="w-4 h-4 text-[#B58B5C]" />
+                          <h3 className="text-sm font-bold text-[#1F1714]">Gallery Overview</h3>
+                        </div>
+                        {/* Cover Thumbnail */}
+                        <img
+                          src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=200&q=80"
+                          alt="Gallery thumbnail"
+                          className="w-12 h-12 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
+                        />
+                      </div>
+
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between text-[#6D635D]">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-[#8E827B]" />
+                            <span>Views</span>
+                          </div>
+                          <span className="font-semibold text-[#1F1714]">286</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[#6D635D]">
+                          <div className="flex items-center gap-2">
+                            <Download className="w-4 h-4 text-[#8E827B]" />
+                            <span>Downloads</span>
+                          </div>
+                          <span className="font-semibold text-[#1F1714]">74</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[#6D635D]">
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-[#8E827B]" />
+                            <span>Favorites</span>
+                          </div>
+                          <span className="font-semibold text-[#1F1714]">26</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[#6D635D]">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-[#8E827B]" />
+                            <span>Created</span>
+                          </div>
+                          <span className="font-semibold text-[#1F1714]">Nov 12, 2026</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[#6D635D] pt-1 border-t border-[#F4EFE6]">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-[#8E827B]" />
+                            <span>Expires</span>
+                          </div>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-[#FAF4E8] text-[#8C6432] font-semibold text-[11px] border border-[#EEDFCA]">
+                            Dec 12, 2026 (30 days left)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Client Access */}
+                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-[#B58B5C]" />
+                        <h3 className="text-sm font-bold text-[#1F1714]">Client Access</h3>
+                      </div>
+
+                      {/* Password Protected Toggle */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-[#8E827B]" />
+                          <span className="text-xs font-medium text-[#1F1714]">Private (Password Protected)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
+                          className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                            deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                          }`}
+                        >
+                          <div
+                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                              deliveryIsPrivate ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Password Input Box */}
+                      {deliveryIsPrivate && (
+                        <div className="relative">
+                          <input
+                            type={deliveryShowPassword ? 'text' : 'password'}
+                            value={deliveryPassword}
+                            onChange={(e) => setDeliveryPassword(e.target.value)}
+                            placeholder="Set gallery password"
+                            className="w-full pl-3.5 pr-10 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
+                          >
+                            {deliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 4 Access Permission Checklist Toggles */}
+                      <div className="space-y-3 pt-2 border-t border-[#F4EFE6] text-xs">
+                        {/* 1. Allow Downloads */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#1F1714]">
+                            <Download className="w-4 h-4 text-[#8E827B]" />
+                            <span>Allow downloads</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryAllowDownloads(!deliveryAllowDownloads)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                              deliveryAllowDownloads ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+
+                        {/* 2. Allow Favorites */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#1F1714]">
+                            <Heart className="w-4 h-4 text-[#8E827B]" />
+                            <span>Allow favorites (heart)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryAllowFavorites(!deliveryAllowFavorites)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryAllowFavorites ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                              deliveryAllowFavorites ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+
+                        {/* 3. Allow Comments */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#1F1714]">
+                            <MessageSquare className="w-4 h-4 text-[#8E827B]" />
+                            <span>Allow comments</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryAllowComments(!deliveryAllowComments)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryAllowComments ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                              deliveryAllowComments ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+
+                        {/* 4. Require Client Email */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#1F1714]">
+                            <Mail className="w-4 h-4 text-[#8E827B]" />
+                            <span>Require client email to access</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryRequireEmail(!deliveryRequireEmail)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryRequireEmail ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                              deliveryRequireEmail ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Delivery Features (6 Interactive Tiles) */}
+                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[#B58B5C]" />
+                        <h3 className="text-sm font-bold text-[#1F1714]">Delivery Features</h3>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {/* 1. Photo Selection */}
+                        <button
+                          onClick={() => toast.success("Photo selection enabled for client album proofing")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <ImageIcon className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Photo Selection</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Client Picks)</div>
+                          </div>
+                        </button>
+
+                        {/* 2. Print Store */}
+                        <button
+                          onClick={() => toast.info("Print store active: Coastal linen frames and canvas available")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <ShoppingBag className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Print Store</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Sell Prints &amp; Products)</div>
+                          </div>
+                        </button>
+
+                        {/* 3. Client Notes */}
+                        <button
+                          onClick={() => toast.info("Client notes channel ready for revision requests")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <MessageSquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Client Notes</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Private Comments)</div>
+                          </div>
+                        </button>
+
+                        {/* 4. Slideshow */}
+                        <button
+                          onClick={() => toast.success("Auto-play slideshow mode enabled")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <PlaySquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Slideshow</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Auto-Play)</div>
+                          </div>
+                        </button>
+
+                        {/* 5. Mobile App */}
+                        <button
+                          onClick={() => toast.info("Mobile PWA access ready: clients can install icon on home screen")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <Smartphone className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Mobile App</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Branded Access)</div>
+                          </div>
+                        </button>
+
+                        {/* 6. Expiring Gallery */}
+                        <button
+                          onClick={() => toast.info("Auto-expiry set for 30 days with client warning email")}
+                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                        >
+                          <Clock className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                          <div>
+                            <div className="text-xs font-bold text-[#1F1714]">Expiring Gallery</div>
+                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Set Auto Expiry)</div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card 4: SEO & Sharing */}
+                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-[#B58B5C]" />
+                        <h3 className="text-sm font-bold text-[#1F1714]">SEO &amp; Sharing</h3>
+                      </div>
+
+                      {/* Search Engine Indexing Toggle */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#6D635D] max-w-[220px]">
+                          Allow search engine indexing (Public galleries only)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryAllowSeo(!deliveryAllowSeo)}
+                          className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                            deliveryAllowSeo ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                          }`}
+                        >
+                          <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                            deliveryAllowSeo ? 'translate-x-4' : 'translate-x-0'
+                          }`} />
+                        </button>
+                      </div>
+
+                      {/* Social Sharing Preview Heading with Badge */}
+                      <div className="pt-2 border-t border-[#F4EFE6]">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="text-xs font-medium text-[#1F1714]">Social sharing preview (Open Graph)</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+                            Configured
+                          </span>
+                        </div>
+
+                        {/* Open Graph Card Preview */}
+                        <div className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] flex items-center gap-3">
+                          <img
+                            src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=200&q=80"
+                            alt="Open Graph preview"
+                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[#E6DFC6]"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs font-bold text-[#1F1714] truncate">
+                              Amina &amp; Hassan – Wedding | Mwabonje Photography
+                            </h4>
+                            <p className="text-[11px] text-[#7A6F69] truncate mt-0.5">
+                              A coastal wedding in Kenya, captured by Mwabonje Photography.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toast.info("Open Graph preview options: update tags, image, or site title")}
+                            className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* All Deliveries Table View (Preserving all existing delivery ledger functionality) */
+              <div className="mt-6 space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 
+                      className="text-2xl font-normal text-[#1F1714]"
+                      style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                    >
+                      All Client Deliveries
+                    </h2>
+                    <p className="text-xs text-[#7A6F69] mt-1">
+                      Manage client delivery portals, expiration dates, and downloads ({deliveryGalleries.length} total)
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setDeliveryViewMode('detail')}
+                      className="bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <LayoutGrid className="w-4 h-4 text-[#B58B5C]" />
+                      <span>Back to Gallery View</span>
+                    </button>
+                    <button
+                      onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                      className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>New Gallery</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDeliveryFilter('all')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                      deliveryFilter === 'all'
+                        ? 'bg-[#3B2E28] text-white shadow-xs'
+                        : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    All ({deliveryGalleries.length})
+                  </button>
+                  <button
+                    onClick={() => setDeliveryFilter('live')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                      deliveryFilter === 'live'
+                        ? 'bg-[#059669] text-white shadow-xs'
+                        : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    Active ({activeDeliveryCount})
+                  </button>
+                  <button
+                    onClick={() => setDeliveryFilter('expired')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                      deliveryFilter === 'expired'
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    Expired ({expiredDeliveryCount})
+                  </button>
+                </div>
+
+                {/* Ledger Table */}
+                <div className="ledger rounded-2xl overflow-hidden border border-[#E8E2D2] bg-white shadow-xs">
+                  <div className="ledger-head !bg-[#FAF7F2] !text-[#7A6F69] !border-[#E8E2D2]">
+                    <div></div>
+                    <div>Gallery</div>
+                    <div>Category</div>
+                    <div>Status</div>
+                    <div>Items</div>
+                    <div>Views</div>
+                    <div>DLs</div>
+                    <div>Updated</div>
+                    <div></div>
+                  </div>
+                  <div>
+                    {deliveryGalleries
+                      .filter(g => {
+                        if (searchQuery && !g.client_name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                          return false;
+                        }
+                        if (deliveryFilter === 'expired') return g.isExpired;
+                        if (deliveryFilter === 'live') return !g.isExpired && g.link_enabled;
+                        return true;
+                      })
+                      .map(gallery => {
+                        return (
+                          <div 
+                            key={gallery.id} 
+                            className={`ledger-row ${gallery.isExpired ? 'bg-rose-50/30' : ''}`} 
+                            onClick={() => {
+                              setSelectedDeliveryId(gallery.id);
+                              setEditableDeliveryTitle(gallery.client_name);
+                              setDeliveryViewMode('detail');
+                            }}
+                          >
+                            <div className="relative">
+                              <div 
+                                className={`swatch ${gallery.isExpired ? 'opacity-70 grayscale-[35%]' : ''}`} 
+                                style={{ backgroundImage: gallery.coverUrl ? `url(${getOptimizedImageUrl(gallery.coverUrl, 100, 100)})` : 'none', backgroundColor: '#e2e8f0' }}
+                              />
+                              {gallery.isExpired && (
+                                <div className="absolute inset-0 bg-rose-950/25 rounded-[6px] flex items-center justify-center pointer-events-none">
+                                  <Clock className="w-3.5 h-3.5 text-rose-600 drop-shadow-sm" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 font-medium text-[#1F1714] flex-wrap">
+                              <span>{gallery.client_name}</span>
+                              {Boolean(gallery.selectionNotesCount && gallery.selectionNotesCount > 0) && (
+                                <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-xs" title={`${gallery.selectionNotesCount} photo note(s) from client`}>
+                                  <MessageSquare className="w-3 h-3 text-amber-600" />
+                                  <span>{gallery.selectionNotesCount} note{gallery.selectionNotesCount === 1 ? '' : 's'}</span>
+                                </span>
+                              )}
+                              {gallery.isExpired && (
+                                <span className="text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-rose-500" />
+                                  Expired
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="text-[#7A6F69] text-[12px]">{gallery.category?.replace(/\s*\[(swipe|grid)\]/gi, '') || 'Delivery'}</div>
+
+                            {/* Status Column */}
+                            {gallery.isExpired ? (
+                              <div className="status expired flex flex-col items-start gap-0.5">
+                                <div className="inline-flex items-center gap-1.5 font-semibold text-rose-600">
+                                  <span className="status-dot !bg-rose-500 animate-pulse"></span>
+                                  <span>Expired</span>
+                                </div>
+                                {gallery.timeRemainingText && (
+                                  <span className="text-[10.5px] text-rose-500 font-mono font-medium">
+                                    {gallery.timeRemainingText}
+                                  </span>
+                                )}
+                              </div>
+                            ) : gallery.selection_status === 'submitted' ? (
+                              <div className="status submitted"><span className="status-dot"></span>Selection submitted</div>
+                            ) : !gallery.link_enabled ? (
+                              <div className="status hidden"><span className="status-dot"></span>Hidden</div>
+                            ) : (
+                              <div className="status live flex flex-col items-start gap-0.5">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <span className="status-dot"></span>
+                                  <span>Live</span>
+                                </div>
+                                {gallery.timeRemainingText && (
+                                  <span className="text-[10.5px] text-[#7A6F69] font-mono">
+                                    {gallery.timeRemainingText}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="text-[#6D635D] font-mono text-[12.5px]">{gallery.itemCount > 0 ? gallery.itemCount : '—'}</div>
+                            <div className="text-[#6D635D] font-mono text-[12.5px]">{gallery.analytics?.views || 0}</div>
+                            <div className="text-[#6D635D] font-mono text-[12.5px]">{gallery.downloadCount || 0}</div>
+                            <div className="text-[#6D635D] font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
+
+                            <div className="flex justify-end pr-2 gap-1 items-center">
+                              {/* 1-Click WhatsApp Delivery Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedWhatsAppGallery(gallery);
+                                }}
+                                className="p-1.5 text-[#8E827B] hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                                title="Send Gallery via WhatsApp"
+                              >
+                                <Send className="w-4 h-4" />
+                              </button>
+                              {/* Quick Extend button if gallery is expired */}
+                              {gallery.isExpired && (
+                                <button 
+                                  onClick={(e) => handleQuickExtend(e, gallery.id, gallery.client_name)}
+                                  className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Reactivate / Extend for 7 days"
+                                >
+                                  <Clock className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
+                                className="p-1.5 text-[#8E827B] hover:text-[#B58B5C] hover:bg-[#FAF7F0] rounded-lg transition-colors cursor-pointer"
+                                title="View Gallery"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => handleDeleteGallery(e, gallery.id, gallery.client_name)}
+                                className="p-1.5 text-[#8E827B] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Delete Gallery"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
