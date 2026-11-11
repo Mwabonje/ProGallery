@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
+  lastSavedText?: string;
 }
 
 export interface FormatInfo {
@@ -544,249 +545,199 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
+  const activeHeadingLevel = editor.isActive('heading', { level: 1 })
+    ? 'h1'
+    : editor.isActive('heading', { level: 2 })
+    ? 'h2'
+    : editor.isActive('heading', { level: 3 })
+    ? 'h3'
+    : editor.isActive('blockquote')
+    ? 'blockquote'
+    : 'p';
+
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-lg">
+    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-[#E6DFC6] bg-[#FAF8F5]">
+      {/* Format Dropdown (Paragraph, H1, H2, H3, Quote) */}
+      <div className="relative">
+        <select
+          value={activeHeadingLevel}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'h1') handleSmartHeadingToggle(editor, 1);
+            else if (val === 'h2') handleSmartHeadingToggle(editor, 2);
+            else if (val === 'h3') handleSmartHeadingToggle(editor, 3);
+            else if (val === 'blockquote') editor.chain().focus().toggleBlockquote().run();
+            else handleSmartParagraph(editor);
+          }}
+          className="appearance-none bg-white border border-[#E6DFC6] hover:border-[#C9C0B3] text-[#231A16] font-medium text-xs rounded-lg pl-3 pr-7 py-1.5 focus:outline-none focus:border-[#B58B5C] cursor-pointer shadow-xs transition-colors"
+          title="Text Style"
+        >
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1 (H1)</option>
+          <option value="h2">Heading 2 (H2)</option>
+          <option value="h3">Heading 3 (H3)</option>
+          <option value="blockquote">Quote</option>
+        </select>
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#7A6E68] text-xs">⌄</span>
+      </div>
+
+      <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
+
+      {/* Undo / Redo */}
       <button
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
-        className={`p-2 rounded transition-colors ${editor.can().undo() ? 'hover:bg-slate-200 text-slate-600' : 'text-slate-300 cursor-not-allowed'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.can().undo() ? 'hover:bg-[#EFEAE1] text-[#5C524C]' : 'text-[#C9C0B3] cursor-not-allowed'}`}
         title="Undo"
       >
-        <Undo className="w-4 h-4" />
+        <Undo className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().redo()}
-        className={`p-2 rounded transition-colors ${editor.can().redo() ? 'hover:bg-slate-200 text-slate-600' : 'text-slate-300 cursor-not-allowed'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.can().redo() ? 'hover:bg-[#EFEAE1] text-[#5C524C]' : 'text-[#C9C0B3] cursor-not-allowed'}`}
         title="Redo"
       >
-        <Redo className="w-4 h-4" />
-      </button>
-      
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
-      
-      <select
-        value={editor.getAttributes('textStyle').fontFamily || ''}
-        onChange={(e) => {
-          if (e.target.value) {
-            editor.chain().focus().setFontFamily(e.target.value).run();
-          } else {
-            editor.chain().focus().unsetFontFamily().run();
-          }
-        }}
-        className="p-1.5 rounded bg-transparent hover:bg-slate-200 text-sm font-medium text-slate-700 outline-none cursor-pointer"
-        title="Font Family"
-      >
-        <option value="">Default Font</option>
-        <option value="Montserrat">Montserrat</option>
-        <option value="Playfair Display">Playfair Display</option>
-      </select>
-
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
-
-      {/* Heading 1 - Purple Indicator */}
-      <button
-        type="button"
-        onClick={() => handleSmartHeadingToggle(editor, 1)}
-        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-          editor.isActive('heading', { level: 1 })
-            ? 'bg-purple-600 text-white font-bold shadow-sm ring-2 ring-purple-400'
-            : 'text-slate-600 hover:bg-purple-50 hover:text-purple-700'
-        }`}
-        title="Heading 1 (Purple)"
-      >
-        <Heading1 className="w-4 h-4" />
-        <span className="hidden sm:inline">H1</span>
+        <Redo className="w-3.5 h-3.5" />
       </button>
 
-      {/* Heading 2 - Indigo Indicator */}
-      <button
-        type="button"
-        onClick={() => handleSmartHeadingToggle(editor, 2)}
-        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-          editor.isActive('heading', { level: 2 })
-            ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-400'
-            : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
-        }`}
-        title="Heading 2 (Indigo)"
-      >
-        <Heading2 className="w-4 h-4" />
-        <span className="hidden sm:inline">H2</span>
-      </button>
+      <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
 
-      {/* Heading 3 - Emerald Indicator */}
-      <button
-        type="button"
-        onClick={() => handleSmartHeadingToggle(editor, 3)}
-        className={`px-2 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-          editor.isActive('heading', { level: 3 })
-            ? 'bg-emerald-600 text-white font-bold shadow-sm ring-2 ring-emerald-400'
-            : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
-        }`}
-        title="Heading 3 (Emerald Green)"
-      >
-        <Heading3 className="w-4 h-4" />
-        <span className="hidden sm:inline">H3</span>
-      </button>
-
-      {/* Paragraph (P) - Slate Indicator */}
-      <button
-        type="button"
-        onClick={() => handleSmartParagraph(editor)}
-        className={`px-2.5 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
-          editor.isActive('paragraph')
-            ? 'bg-slate-900 text-white font-bold shadow-sm ring-2 ring-slate-400'
-            : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-        }`}
-        title="Paragraph (Charcoal / Slate)"
-      >
-        P
-      </button>
-
-      {/* Color-coded Current Format Pill */}
-      <div 
-        className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border transition-all ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}
-        title={`Active format: ${format.label}`}
-      >
-        <span className={`w-2 h-2 rounded-full ${format.dotColor} shrink-0`} />
-        <span>{format.label}</span>
-      </div>
-
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
-
+      {/* Bold, Italic, Link */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bold') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('bold') ? 'bg-[#3B2E28] text-white font-bold' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
         title="Bold"
       >
-        <Bold className="w-4 h-4" />
+        <Bold className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('italic') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('italic') ? 'bg-[#3B2E28] text-white font-bold' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
         title="Italic"
       >
-        <Italic className="w-4 h-4" />
+        <Italic className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-600'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('underline') ? 'bg-[#3B2E28] text-white font-bold' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
         title="Underline"
       >
-        <UnderlineIcon className="w-4 h-4" />
+        <UnderlineIcon className="w-3.5 h-3.5" />
       </button>
-      <div className="flex items-center gap-1 p-1 rounded hover:bg-slate-200 transition-colors">
-        <Highlighter className="w-4 h-4 text-slate-600" />
-        <input
-          type="color"
-          onInput={(event) => editor.chain().focus().setHighlight({ color: event.currentTarget.value }).run()}
-          value={editor.getAttributes('highlight').color || '#ffff00'}
-          className="w-5 h-5 p-0 border-0 bg-transparent cursor-pointer"
-          title="Highlight Color"
-        />
-      </div>
       <button
         type="button"
         onClick={setLink}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('link') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('link') ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
         title="Link"
       >
-        <LinkIcon className="w-4 h-4" />
+        <LinkIcon className="w-3.5 h-3.5" />
       </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-        className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
-        title="Clear Formatting"
-      >
-        <RemoveFormatting className="w-4 h-4" />
-      </button>
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Align Left"
-      >
-        <AlignLeft className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Align Center"
-      >
-        <AlignCenter className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Align Right"
-      >
-        <AlignRight className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Justify"
-      >
-        <AlignJustify className="w-4 h-4" />
-      </button>
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+
+      <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
+
+      {/* Lists & Quote */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('bulletList') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('bulletList') ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
         title="Bullet List"
       >
-        <List className="w-4 h-4" />
+        <List className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('orderedList') ? 'bg-slate-200 text-slate-900' : 'text-slate-600'}`}
-        title="Ordered List"
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('orderedList') ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Numbered List"
       >
-        <ListOrdered className="w-4 h-4" />
+        <ListOrdered className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-2 rounded hover:bg-slate-200 transition-colors ${editor.isActive('blockquote') ? 'bg-amber-600 text-white font-bold ring-2 ring-amber-400' : 'text-slate-600 hover:bg-amber-50 hover:text-amber-700'}`}
-        title="Blockquote (Amber)"
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive('blockquote') ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Blockquote"
       >
-        <Quote className="w-4 h-4" />
+        <Quote className="w-3.5 h-3.5" />
       </button>
-      <div className="w-px h-6 bg-slate-300 mx-1 self-center" />
+
+      <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
+
+      {/* Alignment */}
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Align Left"
+      >
+        <AlignLeft className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Align Center"
+      >
+        <AlignCenter className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Align Right"
+      >
+        <AlignRight className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+        className={`p-1.5 rounded-md transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-[#3B2E28] text-white' : 'text-[#5C524C] hover:bg-[#EFEAE1]'}`}
+        title="Justify"
+      >
+        <AlignJustify className="w-3.5 h-3.5" />
+      </button>
+
+      <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
+
+      {/* Media & Magazine Layout */}
       <button
         type="button"
         onClick={addImage}
-        className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
-        title="Insert Single Image"
+        className="p-1.5 rounded-md hover:bg-[#EFEAE1] transition-colors text-[#5C524C]"
+        title="Insert Image"
       >
-        <ImageIcon className="w-4 h-4" />
+        <ImageIcon className="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onClick={onOpenGridModal}
-        className="px-2.5 py-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 hover:border-emerald-400 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ml-1"
+        className="px-2.5 py-1 rounded-md bg-white hover:bg-[#FAF8F5] text-[#3B2E28] border border-[#E6DFC6] font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
         title="Insert Editorial Photo Grid (Magazine Spread / Diptych / Triptych)"
       >
-        <LayoutGrid className="w-3.5 h-3.5 text-emerald-600" />
+        <LayoutGrid className="w-3.5 h-3.5 text-[#B58B5C]" />
         <span className="hidden sm:inline">Magazine Grid</span>
+      </button>
+
+      {/* Clear formatting */}
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+        className="p-1.5 rounded-md hover:bg-[#EFEAE1] transition-colors text-[#8E827B] ml-auto"
+        title="Clear Formatting"
+      >
+        <RemoveFormatting className="w-3.5 h-3.5" />
       </button>
     </div>
   );
 };
 
-export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) => {
+export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, lastSavedText }) => {
   const [, setSelectionTick] = useState(0);
   const [isGridModalOpen, setIsGridModalOpen] = useState(false);
 
@@ -888,7 +839,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
   const charCount = textContent.length;
 
   return (
-    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-shadow">
+    <div className="border border-[#E6DFC6] rounded-xl bg-white overflow-hidden flex flex-col focus-within:border-[#B58B5C] transition-shadow shadow-xs">
       <MenuBar editor={editor} onOpenGridModal={() => setIsGridModalOpen(true)} />
       <div className="flex-1 overflow-y-auto max-h-[600px] relative">
         {editor && (
@@ -1042,19 +993,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         <EditorContent editor={editor} />
       </div>
 
-      {/* Live Editor Footer Bar with Format Color Indicator & Word Counts */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-t border-slate-200 bg-slate-50/80 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-slate-600">Selected text:</span>
-          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold border transition-all ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}>
-            <span className={`w-2 h-2 rounded-full ${format.dotColor}`} />
-            {format.label}
-          </span>
+      {/* Live Editor Footer Bar with Word Counts & Last Saved Status */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-t border-[#E6DFC6] bg-[#FAF8F5] text-xs text-[#7A6E68]">
+        <div className="flex items-center gap-4">
+          <span className="font-medium text-[#231A16]">Word count: {wordCount}</span>
+          <span className="text-[#C9C0B3]">·</span>
+          <span>Read time: ~ {Math.max(1, Math.ceil(wordCount / 200))} min</span>
+          {format.label !== 'Paragraph (P)' && (
+            <span className={`hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border ${format.badgeBg} ${format.badgeText} ${format.badgeBorder}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${format.dotColor}`} />
+              {format.label}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-4 text-slate-400">
-          <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
-          <span>•</span>
-          <span>{charCount} characters</span>
+        <div className="flex items-center gap-1.5 text-xs text-[#16A34A] font-medium">
+          <svg className="w-3.5 h-3.5 text-[#16A34A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Last saved {lastSavedText || '2 minutes ago'}</span>
         </div>
       </div>
 

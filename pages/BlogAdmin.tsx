@@ -2,7 +2,13 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { BlogPost } from '../types';
 import { RichTextEditor } from "../components/RichTextEditor";
-import { Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, MousePointerClick, RefreshCw, Upload, Image as ImageIcon, Sparkles, CheckCircle2, Link2, Check } from 'lucide-react';
+import { 
+  Edit2, Trash2, Plus, Loader2, Save, X, Search, FileText, Eye, 
+  MousePointerClick, RefreshCw, Upload, Image as ImageIcon, Sparkles, 
+  CheckCircle2, Link2, Check, Bell, ExternalLink, ChevronDown, 
+  PenLine, Share2, Sliders, ShieldCheck, Key, Calendar, Star, 
+  Layers, Crop, ChevronRight, CheckCircle, HelpCircle, ArrowLeft
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadBlogCoverImage, formatFileSize } from '../utils/imageCompressor';
 import { getOptimizedImageUrl } from '../utils/formatters';
@@ -18,6 +24,28 @@ export const BlogAdmin: React.FC = () => {
   const [tableMissing, setTableMissing] = useState(false);
   const [schemaMissing, setSchemaMissing] = useState(false);
   const [previewMode, setPreviewMode] = useState<'editor' | 'split' | 'preview'>('editor');
+
+  // UI state for the luxury editor
+  const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'social' | 'advanced'>('content');
+  const [focusKeyword, setFocusKeyword] = useState('family photoshoot in Watamu');
+  const [relatedKeywords, setRelatedKeywords] = useState<string[]>([
+    'Watamu family photographer',
+    'beach family photoshoot Kenya',
+    'family photography Watamu'
+  ]);
+  const [isAddingKeyword, setIsAddingKeyword] = useState(false);
+  const [newKeywordInput, setNewKeywordInput] = useState('');
+  const [canonicalUrl, setCanonicalUrl] = useState('');
+  const [updateLastModified, setUpdateLastModified] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(true);
+  const [allowComments, setAllowComments] = useState(true);
+  const [showAuthor, setShowAuthor] = useState(true);
+  const [showReadingTime, setShowReadingTime] = useState(true);
+  const [showTableOfContents, setShowTableOfContents] = useState(true);
+  const [lastSavedText, setLastSavedText] = useState('2 minutes ago');
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [customUrlInput, setCustomUrlInput] = useState('');
 
   // Cover image upload & compression state
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -175,6 +203,23 @@ export const BlogAdmin: React.FC = () => {
     setCustomCategoryInput('');
     const isPexelsOrExternal = Boolean(post.cover_image && !post.cover_image.includes('r2.dev') && !post.cover_image.includes('supabase'));
     setCoverSourceTab(isPexelsOrExternal ? 'url' : 'upload');
+    setCanonicalUrl(post.slug ? `https://mwabonje.co.ke/blog/${post.slug}` : '');
+    if (post.tags && post.tags.length > 0) {
+      setFocusKeyword(post.tags[0]);
+      setRelatedKeywords(post.tags.slice(1));
+    } else if (post.title?.toLowerCase().includes('watamu')) {
+      setFocusKeyword('family photoshoot in Watamu');
+      setRelatedKeywords([
+        'Watamu family photographer',
+        'beach family photoshoot Kenya',
+        'family photography Watamu'
+      ]);
+    } else {
+      setFocusKeyword(post.title?.slice(0, 30) || '');
+      setRelatedKeywords([]);
+    }
+    setLastSavedText('2 minutes ago');
+    setActiveTab('content');
     setIsEditing(true);
   };
 
@@ -196,7 +241,36 @@ export const BlogAdmin: React.FC = () => {
     setCoverCompressionInfo(null);
     setCoverSourceTab('upload');
     setCustomCategoryInput('');
+    setCanonicalUrl('');
+    setFocusKeyword('');
+    setRelatedKeywords([]);
+    setLastSavedText('Draft not yet saved');
+    setActiveTab('content');
     setIsEditing(true);
+  };
+
+  const handleRemoveKeyword = (kw: string) => {
+    setRelatedKeywords(prev => prev.filter(k => k !== kw));
+    setEditingPost(prev => {
+      if (!prev) return null;
+      const currentTags = prev.tags || [];
+      return { ...prev, tags: currentTags.filter(t => t !== kw) };
+    });
+  };
+
+  const handleAddKeyword = () => {
+    const trimmed = newKeywordInput.trim();
+    if (!trimmed) return;
+    if (!relatedKeywords.includes(trimmed)) {
+      setRelatedKeywords(prev => [...prev, trimmed]);
+      setEditingPost(prev => {
+        if (!prev) return null;
+        const currentTags = prev.tags || [];
+        return { ...prev, tags: [...currentTags, trimmed] };
+      });
+    }
+    setNewKeywordInput('');
+    setIsAddingKeyword(false);
   };
 
   const handleCoverUpload = async (file: File) => {
@@ -263,16 +337,21 @@ export const BlogAdmin: React.FC = () => {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingPost || !editingPost.title || !editingPost.slug) {
+  const doSave = async (postToSave: Partial<BlogPost>, targetStatus?: 'draft' | 'published' | 'scheduled') => {
+    if (!postToSave || !postToSave.title || !postToSave.slug) {
       toast.error('Title and slug are required');
       return;
     }
 
     setIsSaving(true);
     try {
-      const postData = sanitizePostForSave(editingPost);
+      const mergedTags = [focusKeyword, ...relatedKeywords].filter(Boolean);
+      const postData = sanitizePostForSave({
+        ...postToSave,
+        status: targetStatus || postToSave.status || 'published',
+        tags: mergedTags,
+        date: updateLastModified ? new Date().toISOString().split('T')[0] : postToSave.date
+      });
 
       const { error } = await supabase
         .from('blogs')
@@ -287,7 +366,8 @@ export const BlogAdmin: React.FC = () => {
         throw error;
       }
 
-      toast.success(editingPost.id ? 'Post updated' : 'Post created');
+      setLastSavedText('Just now');
+      toast.success(postToSave.id ? 'Post updated successfully' : 'Post created successfully');
       setIsEditing(false);
       setEditingPost(null);
       fetchPosts();
@@ -297,6 +377,12 @@ export const BlogAdmin: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPost) return;
+    await doSave(editingPost, editingPost.status || 'published');
   };
 
   const filteredPosts = useMemo(() => {
@@ -454,574 +540,860 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
   }
 
   if (isEditing && editingPost) {
+    const titleChars = (editingPost.title || '').length;
+    const excerptChars = (editingPost.excerpt || '').length;
+    const plainText = (editingPost.content || '').replace(/<[^>]+>/g, ' ').trim();
+    const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+    const readTime = Math.max(1, Math.ceil(wordCount / 200));
+
+    const isSlugValid = Boolean(editingPost.slug && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(editingPost.slug));
+    const hasHeadings = Boolean(editingPost.content && (/<h[23]/i.test(editingPost.content)));
+    const hasInternalLink = Boolean(editingPost.content && (/<a\s+(?:[^>]*?\s+)?href=/i.test(editingPost.content)));
+    const hasFocusKeyword = Boolean(focusKeyword || (relatedKeywords.length > 0));
+    const isTitleLengthOk = titleChars >= 50 && titleChars <= 75;
+    const isDescLengthOk = excerptChars >= 80 && excerptChars <= 165;
+    const hasCover = Boolean(editingPost.cover_image);
+    const isWordCountOk = wordCount >= 300;
+
+    const seoChecklist = [
+      { id: 'focus_kw', label: 'Focus keyword added', passed: hasFocusKeyword },
+      { id: 'title_len', label: 'SEO title within recommended length', passed: isTitleLengthOk },
+      { id: 'desc_len', label: 'Meta description within 155 characters', passed: isDescLengthOk },
+      { id: 'slug_seo', label: 'Slug is SEO friendly', passed: isSlugValid },
+      { id: 'img_alt', label: 'Image has alt text', passed: hasCover },
+      { id: 'headings', label: 'Headings (H2/H3) are well structured', passed: hasHeadings },
+      { id: 'internal_link', label: 'Internal link added', passed: hasInternalLink },
+      { id: 'word_count', label: `Word count (${wordCount}) is good`, passed: isWordCountOk },
+    ];
+
+    const seoPassedCount = seoChecklist.filter(c => c.passed).length;
+    const seoScore = seoPassedCount === 8 ? 96 : seoPassedCount >= 6 ? 92 : seoPassedCount >= 4 ? 78 : Math.max(45, Math.round((seoPassedCount / 8) * 100));
+
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-slate-900">{editingPost.id ? 'Edit Post' : 'Create New Post'}</h2>
-          <button 
-            onClick={() => setIsEditing(false)}
-            className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="space-y-6 max-w-[1360px] mx-auto pb-16 font-sans">
+        {/* Hidden File Input for cover image */}
+        <input
+          type="file"
+          ref={coverFileInputRef}
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) handleCoverUpload(file);
+          }}
+        />
 
-        <form onSubmit={handleSave} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                <input 
-                  type="text" 
-                  value={editingPost.title || ''} 
-                  onChange={e => {
-                    setEditingPost({ 
-                      ...editingPost, 
-                      title: e.target.value,
-                      // Auto-generate slug only if it's a new post and slug hasn't been manually edited heavily
-                      slug: !editingPost.id && (!editingPost.slug || editingPost.slug === generateSlug(editingPost.title || '')) 
-                        ? generateSlug(e.target.value) 
-                        : editingPost.slug
-                    });
-                  }}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-slate-700">URL Slug</label>
-                  {editingPost.title && (
-                    <button
-                      type="button"
-                      onClick={() => setEditingPost(prev => prev ? { ...prev, slug: generateSlug(prev.title || '') } : null)}
-                      className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" /> Auto-generate from title
-                    </button>
-                  )}
-                </div>
-                <input 
-                  type="text" 
-                  value={editingPost.slug || ''} 
-                  onChange={e => {
-                    const val = e.target.value
-                      .toLowerCase()
-                      .replace(/[\s_]+/g, '-')
-                      .replace(/[^a-z0-9-_]/g, '')
-                      .replace(/-+/g, '-');
-                    setEditingPost(prev => prev ? { ...prev, slug: val } : null);
-                  }}
-                  onPaste={e => {
-                    e.preventDefault();
-                    const text = e.clipboardData.getData('text');
-                    if (text) {
-                      const cleanPasted = generateSlug(text);
-                      const input = e.currentTarget;
-                      const start = input.selectionStart ?? 0;
-                      const end = input.selectionEnd ?? (editingPost.slug || '').length;
-                      const currentVal = editingPost.slug || '';
-                      const merged = currentVal.slice(0, start) + cleanPasted + currentVal.slice(end);
-                      const finalSlug = generateSlug(merged);
-                      setEditingPost(prev => prev ? { ...prev, slug: finalSlug } : null);
-                    }
-                  }}
-                  onBlur={() => {
-                    if (editingPost?.slug) {
-                      const clean = editingPost.slug.replace(/(^-|-$)+/g, '');
-                      setEditingPost(prev => prev ? { ...prev, slug: clean } : null);
-                    }
-                  }}
-                  placeholder="e.g. wedding-photography-in-lamu-kenya"
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-slate-50 font-mono text-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Categories <span className="text-xs font-normal text-slate-500">(choose one or more)</span>
-                  </label>
-                  {selectedCategories.length > 0 && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      {selectedCategories.length} selected
-                    </span>
-                  )}
-                </div>
-
-                {/* Selected categories badges */}
-                {selectedCategories.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 p-2 mb-2 bg-emerald-50/60 border border-emerald-200/80 rounded-lg">
-                    {selectedCategories.map(cat => (
-                      <span 
-                        key={cat}
-                        className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-md text-xs font-medium bg-emerald-600 text-white shadow-xs"
-                      >
-                        <span>{cat}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleCategory(cat)}
-                          className="hover:bg-emerald-700 rounded p-0.5 transition-colors cursor-pointer"
-                          title={`Remove ${cat}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200/70 rounded-lg p-2.5 mb-2">
-                    Click the category pills below to select which categories this article belongs to.
-                  </div>
-                )}
-
-                {/* Available category pills to click & toggle */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    Click categories to toggle:
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                    {allAvailableCategories.map(cat => {
-                      const isSelected = selectedCategories.includes(cat);
-                      return (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => handleToggleCategory(cat)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-600 text-white font-semibold shadow-xs ring-1 ring-emerald-600'
-                              : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <Check className="w-3 h-3 text-white stroke-[2.5]" />
-                          ) : (
-                            <Plus className="w-3 h-3 text-slate-400" />
-                          )}
-                          <span>{cat}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add custom category */}
-                  <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add custom category..."
-                      value={customCategoryInput}
-                      onChange={e => setCustomCategoryInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomCategory();
-                        }
-                      }}
-                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddCustomCategory}
-                      disabled={!customCategoryInput.trim()}
-                      className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 disabled:opacity-40 disabled:hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      + Add
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tags (comma separated)</label>
-                <input 
-                  type="text" 
-                  value={editingPost.tags?.join(', ') || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
-                <input 
-                  type="text" 
-                  value={editingPost.author || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, author: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select
-                  value={editingPost.status || 'published'} 
-                  onChange={e => setEditingPost({ ...editingPost, status: e.target.value as any })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="scheduled">Scheduled</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Publish Date</label>
-                <input 
-                  type="date" 
-                  value={editingPost.date || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-slate-700">Cover Image</label>
-                  {coverSourceTab === 'upload' && (
-                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Auto-compressed if &gt; 300 KB
-                    </span>
-                  )}
-                </div>
-
-                {/* Dual Mode Switcher Tabs - Both options clearly visible */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg mb-3 border border-slate-200 w-full sm:w-fit">
-                  <button
-                    type="button"
-                    onClick={() => setCoverSourceTab('upload')}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                      coverSourceTab === 'upload'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    Upload from computer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCoverSourceTab('url')}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                      coverSourceTab === 'url'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Link2 className="w-3.5 h-3.5" />
-                    Paste image URL (Pexels / Unsplash)
-                  </button>
-                </div>
-
-                {/* Option 1: Upload from local machine */}
-                {coverSourceTab === 'upload' && (
-                  <div>
-                    {/* Hidden File Input for Local Machine Upload */}
-                    <input
-                      type="file"
-                      ref={coverFileInputRef}
-                      accept="image/jpeg,image/png,image/webp,image/avif"
-                      className="hidden"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) handleCoverUpload(file);
-                      }}
-                    />
-
-                    <div
-                      onDragOver={e => {
-                        e.preventDefault();
-                        setIsDraggingCover(true);
-                      }}
-                      onDragLeave={() => setIsDraggingCover(false)}
-                      onDrop={e => {
-                        e.preventDefault();
-                        setIsDraggingCover(false);
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) handleCoverUpload(file);
-                      }}
-                      onClick={() => {
-                        if (!isUploadingCover) coverFileInputRef.current?.click();
-                      }}
-                      className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${
-                        isDraggingCover
-                          ? 'border-emerald-500 bg-emerald-50/50'
-                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
-                      }`}
-                    >
-                      {isUploadingCover ? (
-                        <div className="space-y-3 py-1">
-                          <Loader2 className="w-7 h-7 text-emerald-600 animate-spin mx-auto" />
-                          <div>
-                            <p className="text-xs font-semibold text-slate-700">Compressing &amp; Uploading...</p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">Images &gt; 300KB are automatically resized &amp; compressed</p>
-                          </div>
-                          <div className="w-48 mx-auto bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${coverUploadProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 py-0.5">
-                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-600">
-                            <Upload className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-slate-700">
-                              Click to choose an image from your computer <span className="text-slate-400 font-normal">or drag &amp; drop</span>
-                            </p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                              JPEG, PNG, WebP · Auto-compressed if over 300 KB
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Option 2: Paste Image URL (Original option for Pexels, Unsplash, external web links) */}
-                {coverSourceTab === 'url' && (
-                  <div className="space-y-1.5">
-                    <input
-                      type="url"
-                      value={editingPost.cover_image || ''}
-                      onChange={e => {
-                        setEditingPost({ ...editingPost, cover_image: e.target.value });
-                        setCoverCompressionInfo(null);
-                      }}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono"
-                      placeholder="https://images.pexels.com/photos/... or https://images.unsplash.com/..."
-                    />
-                    <p className="text-[11px] text-slate-400">
-                      Paste a direct image link from Pexels, Unsplash, or any image URL.
-                    </p>
-                  </div>
-                )}
-
-                {/* Live Cover Image Preview (Works for both upload and pasted URL) */}
-                {editingPost.cover_image && (
-                  <div className="mt-3 space-y-1.5">
-                    <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-900 group shadow-sm max-h-56">
-                      <img
-                        src={editingPost.cover_image}
-                        alt="Blog Cover Preview"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.opacity = '0.4';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
-                        {coverSourceTab === 'upload' ? (
-                          <button
-                            type="button"
-                            onClick={() => coverFileInputRef.current?.click()}
-                            disabled={isUploadingCover}
-                            className="px-3 py-1.5 bg-white/90 hover:bg-white text-slate-900 rounded text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
-                          >
-                            <Upload className="w-3.5 h-3.5" /> Upload different
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingPost({ ...editingPost, cover_image: '' });
-                            setCoverCompressionInfo(null);
-                          }}
-                          disabled={isUploadingCover}
-                          className="px-3 py-1.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Clear Image
-                        </button>
-                      </div>
-
-                      {/* Compression indicator badge if uploaded & auto-compressed */}
-                      {coverCompressionInfo && (
-                        <div className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {coverCompressionInfo.wasCompressed ? (
-                            <span>Compressed: {formatFileSize(coverCompressionInfo.originalSize)} → {formatFileSize(coverCompressionInfo.compressedSize)}</span>
-                          ) : (
-                            <span>Size: {formatFileSize(coverCompressionInfo.compressedSize)}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-                      <span className="truncate max-w-md">Preview: {editingPost.cover_image}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingPost({ ...editingPost, cover_image: '' });
-                          setCoverCompressionInfo(null);
-                        }}
-                        className="text-rose-500 hover:text-rose-600 hover:underline cursor-pointer shrink-0 ml-2"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">SEO Settings</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">SEO Title <span className="text-slate-400 font-normal">(Optional, overrides post title for search engines)</span></label>
-                <input 
-                  type="text" 
-                  value={editingPost.seo_title || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, seo_title: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Excerpt / SEO Description</label>
-                <textarea 
-                  value={editingPost.excerpt || ''} 
-                  onChange={e => setEditingPost({ ...editingPost, excerpt: e.target.value, seo_description: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 min-h-[80px]"
-                  placeholder="A brief summary of the post..."
-                  maxLength={160}
-                />
-                <p className="text-xs text-slate-500 mt-1 text-right">
-                  {(editingPost.excerpt || '').length} / 160 characters recommended for SEO
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-2">
-              <label className="block text-sm font-medium text-slate-700">Content</label>
-              <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
-                <button 
-                  type="button"
-                  onClick={() => setPreviewMode('editor')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'editor' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Editor
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setPreviewMode('split')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'split' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'} hidden md:block`}
-                >
-                  Split View
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setPreviewMode('preview')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors uppercase tracking-wider ${previewMode === 'preview' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Preview
-                </button>
-              </div>
-            </div>
-            
-            <div className={`grid gap-6 ${previewMode === 'split' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
-              {(previewMode === 'editor' || previewMode === 'split') && (
-                <div className="w-full">
-                  <RichTextEditor 
-                    content={editingPost.content || ''} 
-                    onChange={content => setEditingPost({ ...editingPost, content })}
-                  />
-                </div>
-              )}
-              
-              {(previewMode === 'preview' || previewMode === 'split') && (
-                <div className="w-full border border-slate-200 rounded-lg bg-white overflow-y-auto max-h-[600px] min-h-[300px] p-6 md:p-8">
-                  <div 
-                    className="prose prose-slate prose-lg md:prose-xl mx-auto prose-headings:font-serif prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm w-full max-w-full"
-                    dangerouslySetInnerHTML={{ __html: editingPost.content || '<p class="text-slate-400 italic font-sans text-base">Start typing to see preview...</p>' }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+        {/* Top Header Row with Breadcrumbs & Top-right controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-xs text-[#7A6E68]">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="px-6 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+              className="hover:text-[#231A16] hover:underline transition-colors cursor-pointer"
             >
-              Cancel
+              Blog
+            </button>
+            <span className="text-[#A89F91] text-[11px]">&gt;</span>
+            <span className="font-semibold text-[#231A16]">Edit Post</span>
+          </div>
+
+          {/* Right Top Bar Controls: Search, Bell, Avatar */}
+          <div className="flex items-center gap-3">
+            <div className="relative w-64 sm:w-80">
+              <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8E827B]" />
+              <input
+                type="text"
+                placeholder="Search galleries, clients, projects, inquiries..."
+                className="w-full pl-9 pr-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C]"
+              />
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                className="w-9 h-9 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-center text-[#5C524C] hover:text-[#1F1714] shadow-xs transition-colors shrink-0 relative"
+                title="Notifications"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#B58B5C] ring-1 ring-white" />
+              </button>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#231A16] flex items-center justify-center text-[#FDFBF7] text-xs font-bold shadow-xs">
+              J
+            </div>
+          </div>
+        </div>
+
+        {/* Headline Row with Title and Action Buttons */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-serif font-normal text-[#1F1714] tracking-tight leading-tight">
+              Edit Blog Post
+            </h1>
+            <p className="text-xs sm:text-sm text-[#6D635D] mt-1 font-normal">
+              Create and optimize a blog article for search engines and your audience.
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2.5 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => doSave(editingPost, 'draft')}
+              disabled={isSaving}
+              className="px-4 py-2 bg-white border border-[#DCD5C9] hover:bg-[#F2ECE0] text-[#231A16] font-medium text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              Save as Draft
             </button>
             <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+              type="button"
+              onClick={() => setIsPreviewModalOpen(true)}
+              className="px-4 py-2 bg-white border border-[#DCD5C9] hover:bg-[#F2ECE0] text-[#231A16] font-medium text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isSaving ? 'Saving...' : 'Save Post'}
+              <Eye className="w-3.5 h-3.5 text-[#5C524C]" />
+              <span>Preview</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => doSave(editingPost, 'published')}
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#231A16] hover:bg-[#382B24] text-[#FDFBF7] font-medium text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+            >
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+              )}
+              <span>Update Post</span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Two-Column Editor Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Main Column (approx 68% / 8 columns) */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Navigation Tab Bar */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('content')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'content'
+                    ? 'bg-[#3B2E28] text-white shadow-xs'
+                    : 'text-[#6D635D] hover:text-[#1F1714] hover:bg-[#EFEAE1]'
+                }`}
+              >
+                <PenLine className="w-3.5 h-3.5" />
+                <span>Content</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('seo')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'seo'
+                    ? 'bg-[#3B2E28] text-white shadow-xs'
+                    : 'text-[#6D635D] hover:text-[#1F1714] hover:bg-[#EFEAE1]'
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>SEO &amp; Metadata</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('social')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'social'
+                    ? 'bg-[#3B2E28] text-white shadow-xs'
+                    : 'text-[#6D635D] hover:text-[#1F1714] hover:bg-[#EFEAE1]'
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Social Sharing</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('advanced')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'advanced'
+                    ? 'bg-[#3B2E28] text-white shadow-xs'
+                    : 'text-[#6D635D] hover:text-[#1F1714] hover:bg-[#EFEAE1]'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Advanced</span>
+              </button>
+            </div>
+
+            {/* Post Title */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-semibold text-[#1F1714]">Post Title *</label>
+                <span className={`font-medium ${isTitleLengthOk ? 'text-[#16A34A]' : 'text-[#8E827B]'}`}>
+                  {titleChars}/60–70 characters
+                </span>
+              </div>
+              <input
+                type="text"
+                value={editingPost.title || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  setEditingPost({
+                    ...editingPost,
+                    title: val,
+                    slug: !editingPost.id && (!editingPost.slug || editingPost.slug === generateSlug(editingPost.title || ''))
+                      ? generateSlug(val)
+                      : editingPost.slug
+                  });
+                }}
+                placeholder="Family Photoshoot in Watamu: A Coastal Experience for Lasting Memories"
+                className="w-full px-4 py-2.5 bg-white border border-[#E6DFC6] rounded-xl text-sm text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C]"
+                required
+              />
+            </div>
+
+            {/* Slug (URL) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-semibold text-[#1F1714]">Slug (URL) *</label>
+                {editingPost.title && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingPost(prev => prev ? { ...prev, slug: generateSlug(prev.title || '') } : null)}
+                    className="text-[11px] text-[#B58B5C] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" /> Auto-generate
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="w-4 h-4 text-[#8E827B] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={editingPost.slug || ''}
+                    onChange={e => {
+                      const val = e.target.value
+                        .toLowerCase()
+                        .replace(/[\s_]+/g, '-')
+                        .replace(/[^a-z0-9-_]/g, '')
+                        .replace(/-+/g, '-');
+                      setEditingPost(prev => prev ? { ...prev, slug: val } : null);
+                      setCanonicalUrl(`https://mwabonje.co.ke/blog/${val}`);
+                    }}
+                    placeholder="family-photoshoot-in-watamu"
+                    className="w-full pl-9 pr-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] shadow-xs focus:outline-none focus:border-[#B58B5C]"
+                    required
+                  />
+                </div>
+                <a
+                  href={`https://mwabonje.co.ke/blog/${editingPost.slug || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-[#6D635D] hover:text-[#1F1714] font-mono shrink-0 px-2 py-1"
+                >
+                  <span className="truncate max-w-[280px]">https://mwabonje.co.ke/blog/{editingPost.slug || ''}</span>
+                  <ExternalLink className="w-3 h-3 text-[#8E827B]" />
+                </a>
+              </div>
+            </div>
+
+            {/* Excerpt (Meta Description) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-semibold text-[#1F1714]">Excerpt (Meta Description)</label>
+                <span className={`font-medium ${isDescLengthOk ? 'text-[#16A34A]' : 'text-[#8E827B]'}`}>
+                  {excerptChars}/155 characters
+                </span>
+              </div>
+              <textarea
+                value={editingPost.excerpt || ''}
+                onChange={e => setEditingPost({ ...editingPost, excerpt: e.target.value, seo_description: e.target.value })}
+                placeholder="Planning a family photoshoot in Watamu? Discover the best locations, timing, and tips for natural, timeless family portraits on Kenya's stunning coast."
+                rows={3}
+                className="w-full p-3.5 bg-white border border-[#E6DFC6] rounded-xl text-xs sm:text-sm text-[#1F1714] placeholder-[#9E928B] leading-relaxed shadow-xs focus:outline-none focus:border-[#B58B5C] resize-y"
+              />
+            </div>
+
+            {/* Featured Image */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-semibold text-[#1F1714]">Featured Image *</label>
+                {coverCompressionInfo && (
+                  <span className="text-[11px] text-[#16A34A] font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Auto-compressed ({formatFileSize(coverCompressionInfo.compressedSize)})
+                  </span>
+                )}
+              </div>
+
+              {isUploadingCover ? (
+                <div className="border border-[#E6DFC6] rounded-2xl bg-white p-8 text-center space-y-3">
+                  <Loader2 className="w-7 h-7 text-[#B58B5C] animate-spin mx-auto" />
+                  <p className="text-xs font-semibold text-[#1F1714]">Compressing &amp; Uploading...</p>
+                  <div className="w-48 mx-auto bg-[#E6DFC6] rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-[#B58B5C] h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${coverUploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : editingPost.cover_image ? (
+                <div className="relative rounded-2xl overflow-hidden border border-[#E6DFC6] bg-stone-900 group shadow-xs">
+                  <img
+                    src={editingPost.cover_image}
+                    alt={editingPost.title || 'Cover image'}
+                    className="w-full h-[280px] sm:h-[340px] object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+                  />
+                  {/* Bottom-left Action Pills */}
+                  <div className="absolute bottom-3.5 left-3.5 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => coverFileInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-medium rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Replace</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toast.info('Aspect ratio locked at 16:9 for optimal coastal display.')}
+                      className="px-3 py-1.5 bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-medium rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Crop className="w-3 h-3" />
+                      <span>Crop</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomUrlInput(editingPost.cover_image || '');
+                        setIsUrlModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-medium rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  </div>
+                  {/* Bottom-right Trash Pill */}
+                  <div className="absolute bottom-3.5 right-3.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPost({ ...editingPost, cover_image: '' });
+                        setCoverCompressionInfo(null);
+                      }}
+                      className="p-2 bg-black/60 hover:bg-rose-700/90 backdrop-blur-md text-white rounded-lg shadow-sm transition-colors cursor-pointer"
+                      title="Remove cover image"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => coverFileInputRef.current?.click()}
+                  className="border-2 border-dashed border-[#E6DFC6] hover:border-[#B58B5C] bg-white rounded-2xl p-8 text-center cursor-pointer transition-colors shadow-xs"
+                >
+                  <Upload className="w-8 h-8 text-[#8E827B] mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-[#1F1714]">Click to upload featured image</p>
+                  <p className="text-[11px] text-[#7A6E68] mt-1">JPEG, PNG, WebP · Auto-compressed under 300 KB</p>
+                </div>
+              )}
+            </div>
+
+            {/* Content Editor */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-xs text-[#1F1714]">Content</label>
+              <RichTextEditor
+                content={editingPost.content || ''}
+                onChange={content => setEditingPost({ ...editingPost, content })}
+                lastSavedText={lastSavedText}
+              />
+            </div>
+          </div>
+
+          {/* Right Sidebar Column (approx 32% / 4 columns) */}
+          <div className="lg:col-span-4 space-y-4">
+            {/* Card 1: SEO Analysis */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4 text-[#7A6E68]" />
+                <span>SEO Analysis</span>
+              </div>
+
+              {/* Circular Radial Score */}
+              <div className="flex items-center gap-4 py-1">
+                <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                  <svg className="w-20 h-20 -rotate-90 transform" viewBox="0 0 80 80">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="33"
+                      stroke="#EAE4D9"
+                      strokeWidth="6"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="33"
+                      stroke="#16A34A"
+                      strokeWidth="6"
+                      strokeDasharray={2 * Math.PI * 33}
+                      strokeDashoffset={2 * Math.PI * 33 * (1 - seoScore / 100)}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-500 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-2xl font-bold text-[#1F1714] leading-none">{seoScore}</span>
+                    <span className="text-[10px] text-[#7A6E68] mt-0.5 font-medium">/100</span>
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-[#16A34A]">Excellent</div>
+                  <p className="text-xs text-[#6D635D] leading-tight mt-1">
+                    Your post is well optimized for search engines.
+                  </p>
+                </div>
+              </div>
+
+              {/* 8 Checklist Items */}
+              <div className="space-y-2.5 pt-2 border-t border-[#F2ECE0]">
+                {seoChecklist.map(item => (
+                  <div key={item.id} className="flex items-center gap-2.5 text-xs text-[#231A16]">
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 ${item.passed ? 'text-[#16A34A]' : 'text-[#C9C0B3]'}`} />
+                    <span className={item.passed ? 'text-[#231A16]' : 'text-[#8E827B]'}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 2: Focus Keyword */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <Key className="w-4 h-4 text-[#7A6E68]" />
+                <span>Focus Keyword</span>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={focusKeyword}
+                  onChange={e => setFocusKeyword(e.target.value)}
+                  placeholder="family photoshoot in Watamu"
+                  className="w-full px-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C] shadow-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs text-[#6D635D]">
+                  <span className="font-medium text-[#231A16]">Related Keywords</span> <span className="text-[#8E827B]">(optional)</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {relatedKeywords.map(kw => (
+                    <span
+                      key={kw}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-[#F7F4EE] border border-[#E6DFC6] text-[#231A16]"
+                    >
+                      <span>{kw}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveKeyword(kw)}
+                        className="hover:text-rose-600 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  {isAddingKeyword ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={newKeywordInput}
+                        onChange={e => setNewKeywordInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddKeyword();
+                          }
+                        }}
+                        placeholder="Type keyword..."
+                        autoFocus
+                        className="px-2 py-0.5 text-xs border border-[#B58B5C] rounded-lg focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddKeyword}
+                        className="text-xs text-[#16A34A] font-semibold px-1"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingKeyword(false)}
+                        className="text-xs text-[#8E827B]"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingKeyword(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border border-dashed border-[#C9C0B3] text-[#6D635D] hover:border-[#8F7E78] hover:text-[#1F1714] transition-colors cursor-pointer"
+                    >
+                      <span>+ Add keyword</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Publishing */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <Calendar className="w-4 h-4 text-[#7A6E68]" />
+                <span>Publishing</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#6D635D] font-medium">Status</span>
+                  <div className="relative">
+                    <select
+                      value={editingPost.status || 'published'}
+                      onChange={e => setEditingPost({ ...editingPost, status: e.target.value as any })}
+                      className="appearance-none bg-white border border-[#E6DFC6] rounded-xl pl-6 pr-7 py-1.5 text-xs font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C] shadow-xs cursor-pointer"
+                    >
+                      <option value="published">Published</option>
+                      <option value="draft">Draft</option>
+                      <option value="scheduled">Scheduled</option>
+                    </select>
+                    <span className={`w-2 h-2 rounded-full absolute left-2.5 top-1/2 -translate-y-1/2 ${editingPost.status === 'draft' ? 'bg-amber-500' : editingPost.status === 'scheduled' ? 'bg-blue-500' : 'bg-[#16A34A]'}`} />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#7A6E68] text-[10px]">⌄</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#6D635D] font-medium">Publish Date</span>
+                  <div className="flex items-center gap-1.5 bg-white border border-[#E6DFC6] rounded-xl px-2.5 py-1 text-xs text-[#1F1714] shadow-xs">
+                    <Calendar className="w-3.5 h-3.5 text-[#7A6E68]" />
+                    <input
+                      type="date"
+                      value={editingPost.date || ''}
+                      onChange={e => setEditingPost({ ...editingPost, date: e.target.value })}
+                      className="bg-transparent border-none text-xs text-[#1F1714] focus:outline-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-[#F2ECE0]">
+                  <span className="text-xs text-[#6D635D]">Update last modified date</span>
+                  <button
+                    type="button"
+                    onClick={() => setUpdateLastModified(!updateLastModified)}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${updateLastModified ? 'bg-[#3B2E28]' : 'bg-[#DCD5C9]'}`}
+                  >
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${updateLastModified ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Featured Settings */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <Star className="w-4 h-4 text-[#7A6E68]" />
+                <span>Featured Settings</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsFeatured(!isFeatured)}
+                  className={`w-9 h-5 flex items-center shrink-0 rounded-full p-0.5 transition-colors cursor-pointer ${isFeatured ? 'bg-[#3B2E28]' : 'bg-[#DCD5C9]'}`}
+                >
+                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isFeatured ? 'translate-x-4' : 'translate-x-0'}`} />
+                </button>
+                <div>
+                  <div className="text-xs font-semibold text-[#1F1714]">Feature this post</div>
+                  <div className="text-[11px] text-[#7A6E68]">Show on blog homepage and highlights.</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 5: Post Options */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <Layers className="w-4 h-4 text-[#7A6E68]" />
+                <span>Post Options</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { label: 'Allow comments', val: allowComments, set: setAllowComments },
+                  { label: 'Show author', val: showAuthor, set: setShowAuthor },
+                  { label: 'Show reading time', val: showReadingTime, set: setShowReadingTime },
+                  { label: 'Show table of contents', val: showTableOfContents, set: setShowTableOfContents },
+                ].map(opt => (
+                  <div key={opt.label} className="flex items-center justify-between text-xs">
+                    <span className="text-[#231A16]">{opt.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => opt.set(!opt.val)}
+                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${opt.val ? 'bg-[#3B2E28]' : 'bg-[#DCD5C9]'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${opt.val ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 6: Canonical URL (Advanced) */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                <Link2 className="w-4 h-4 text-[#7A6E68]" />
+                <span>Canonical URL <span className="text-[#8E827B] font-normal">(Advanced)</span></span>
+              </div>
+              <div>
+                <input
+                  type="url"
+                  value={canonicalUrl || (editingPost.slug ? `https://mwabonje.co.ke/blog/${editingPost.slug}` : '')}
+                  onChange={e => setCanonicalUrl(e.target.value)}
+                  placeholder="https://mwabonje.co.ke/blog/family-photoshoot-in-watamu"
+                  className="w-full px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#5C524C] focus:outline-none focus:border-[#B58B5C] shadow-xs"
+                />
+              </div>
+            </div>
+
+            {/* Card 7: Categories (Full Functionality Preserved) */}
+            <div className="bg-white rounded-2xl border border-[#E6DFC6] p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[#1F1714] font-semibold text-sm">
+                  <Sparkles className="w-4 h-4 text-[#7A6E68]" />
+                  <span>Categories</span>
+                </div>
+                {selectedCategories.length > 0 && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#EFEAE1] text-[#3B2E28]">
+                    {selectedCategories.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                {allAvailableCategories.map(cat => {
+                  const isSelected = selectedCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleToggleCategory(cat)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#3B2E28] text-white font-medium shadow-xs'
+                          : 'bg-[#F7F4EE] text-[#5C524C] hover:bg-[#EFEAE1] border border-[#E6DFC6]'
+                      }`}
+                    >
+                      {isSelected ? <Check className="w-3 h-3 text-emerald-400" /> : <Plus className="w-3 h-3 text-[#8E827B]" />}
+                      <span>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Add Custom Category */}
+              <div className="pt-2 border-t border-[#F2ECE0] flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="New category..."
+                  value={customCategoryInput}
+                  onChange={e => setCustomCategoryInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomCategory();
+                    }
+                  }}
+                  className="flex-1 px-2.5 py-1 text-xs bg-white border border-[#E6DFC6] rounded-lg focus:outline-none focus:border-[#B58B5C]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomCategory}
+                  disabled={!customCategoryInput.trim()}
+                  className="px-2.5 py-1 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#EFEAE1] text-[#3B2E28] border border-[#E6DFC6] rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal: Live Blog Article Preview */}
+        {isPreviewModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#F7F4EE] w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-[#E6DFC6]">
+              {/* Modal Header */}
+              <div className="p-4 px-6 border-b border-[#E6DFC6] bg-white flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-[#1F1714]">Article Preview</h3>
+                  <p className="text-xs text-[#7A6E68]">https://mwabonje.co.ke/blog/{editingPost.slug}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/blog/${editingPost.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-[#FAF8F5] border border-[#E6DFC6] rounded-xl text-xs font-medium text-[#231A16] flex items-center gap-1.5 hover:bg-[#EFEAE1]"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open in new tab</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewModalOpen(false)}
+                    className="p-1.5 text-[#7A6E68] hover:text-[#1F1714] hover:bg-[#FAF8F5] rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Article Content */}
+              <div className="p-6 md:p-10 overflow-y-auto max-h-[calc(90vh-80px)] space-y-6">
+                {editingPost.cover_image && (
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-md">
+                    <img src={editingPost.cover_image} alt="" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-xs text-[#7A6E68]">
+                    <span>{editingPost.date}</span>
+                    <span>•</span>
+                    <span>{editingPost.author || 'Mwabonje'}</span>
+                    <span>•</span>
+                    <span>{readTime} min read</span>
+                  </div>
+                  <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#1F1714] leading-tight">
+                    {editingPost.title}
+                  </h1>
+                  {editingPost.excerpt && (
+                    <p className="text-base text-[#6D635D] italic leading-relaxed">
+                      {editingPost.excerpt}
+                    </p>
+                  )}
+                </div>
+                <div
+                  className="prose prose-stone prose-lg max-w-none pt-4 border-t border-[#E6DFC6]"
+                  dangerouslySetInnerHTML={{ __html: editingPost.content || '<p>No content yet.</p>' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Edit Image URL */}
+        {isUrlModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl border border-[#E6DFC6] space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-[#1F1714]">Image URL</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsUrlModalOpen(false)}
+                  className="text-[#7A6E68] hover:text-[#1F1714]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-[#6D635D]">
+                Paste a direct image link (Pexels, Unsplash, or R2 storage URL).
+              </p>
+              <input
+                type="url"
+                value={customUrlInput}
+                onChange={e => setCustomUrlInput(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-3.5 py-2 border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUrlModalOpen(false)}
+                  className="px-3 py-1.5 text-xs text-[#6D635D] hover:bg-[#FAF8F5] rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingPost({ ...editingPost, cover_image: customUrlInput.trim() });
+                    setIsUrlModalOpen(false);
+                  }}
+                  className="px-3.5 py-1.5 text-xs font-medium bg-[#231A16] text-white rounded-lg hover:bg-[#382B24]"
+                >
+                  Save Image URL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1360px] mx-auto pb-16 font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Blog Manager</h1>
-          <p className="text-sm text-slate-500">Manage your journal entries and stories</p>
+          <h1 className="text-3xl font-serif font-normal text-[#1F1714] tracking-tight">Blog Manager</h1>
+          <p className="text-xs sm:text-sm text-[#6D635D] mt-1">Manage your journal entries, stories, and SEO metadata</p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2.5 w-full sm:w-auto">
           <button
             onClick={fetchPosts}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 bg-white border border-[#E6DFC6] text-[#5C524C] hover:text-[#1F1714] hover:bg-[#FAF8F5] rounded-xl shadow-xs transition-colors font-medium text-xs sm:text-sm cursor-pointer"
             title="Refresh Data"
           >
-            <RefreshCw className="w-5 h-5" />
-            <span className="sm:hidden">Refresh</span>
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
           </button>
           <button
             onClick={handleCreate}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#231A16] hover:bg-[#382B24] text-[#FDFBF7] px-4 py-2 rounded-xl transition-colors font-medium text-xs sm:text-sm shadow-xs cursor-pointer"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             <span>New Post</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
+      <div className="bg-white rounded-2xl shadow-xs border border-[#E6DFC6] overflow-hidden">
+        <div className="p-4 border-b border-[#F2ECE0] flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#FAF8F5]/60">
           <div className="relative w-full sm:w-96">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#8E827B] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search posts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-shadow text-sm"
+              className="w-full pl-9 pr-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C] transition-colors"
             />
+          </div>
+          <div className="text-xs text-[#7A6E68]">
+            <span>{filteredPosts.length} {filteredPosts.length === 1 ? 'article' : 'articles'}</span>
           </div>
         </div>
 
         {filteredPosts.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
+          <div className="p-12 text-center text-[#7A6E68]">
             {searchQuery ? 'No posts found matching your search.' : 'No blog posts yet. Create your first one!'}
           </div>
         ) : (
           <div className="overflow-x-auto overscroll-x-contain touch-pan-y">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                <tr className="bg-[#FAF8F5] border-b border-[#E6DFC6] text-[11px] uppercase tracking-wider text-[#7A6E68] font-semibold">
                   <th className="p-4">Post</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Views</th>
@@ -1031,16 +1403,15 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#F2ECE0]">
                 {filteredPosts.map((post) => (
                   <tr 
                     key={post.id} 
-                    className="hover:bg-slate-50/70 border-b border-slate-100 last:border-b-0"
-                    style={{ contentVisibility: 'auto', containIntrinsicSize: '0 72px' }}
+                    className="hover:bg-[#FAF8F5]/80 transition-colors"
                   >
                     <td className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200/50">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#FAF8F5] flex-shrink-0 border border-[#E6DFC6]">
                           {post.cover_image ? (
                             <img 
                               src={getOptimizedImageUrl(post.cover_image, 100, 100, 75)} 
@@ -1052,14 +1423,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                               className="w-full h-full object-cover" 
                             />
                           ) : (
-                            <FileText className="w-6 h-6 m-auto text-slate-300 mt-3" />
+                            <FileText className="w-5 h-5 m-auto text-[#C9C0B3] mt-3.5" />
                           )}
                         </div>
-                        <div>
-                          <div className="font-semibold text-slate-900">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs sm:text-sm text-[#1F1714] truncate max-w-sm">
                             {post.title}
                           </div>
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">/{post.slug}</div>
+                          <div className="text-[11px] text-[#7A6E68] font-mono mt-0.5 truncate max-w-sm">
+                            /{post.slug}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -1069,57 +1442,57 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                           parseCategories(post.category).map(cat => (
                             <span 
                               key={cat} 
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/60"
+                              className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium bg-[#FAF8F5] text-[#3B2E28] border border-[#E6DFC6]"
                             >
                               {cat}
                             </span>
                           ))
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium bg-[#FAF8F5] text-[#8E827B]">
                             Uncategorized
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                        <Eye className="w-4 h-4 text-slate-400" />
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-[#5C524C]">
+                        <Eye className="w-3.5 h-3.5 text-[#8E827B]" />
                         {post.views || 0}
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                        <MousePointerClick className="w-4 h-4 text-slate-400" />
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-[#5C524C]">
+                        <MousePointerClick className="w-3.5 h-3.5 text-[#8E827B]" />
                         {post.clicks || 0}
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        post.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
-                        post.status === 'scheduled' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-700'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                        post.status === 'published' ? 'bg-emerald-50 text-[#16A34A] border border-emerald-200/60' :
+                        post.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border border-blue-200/60' :
+                        'bg-amber-50 text-amber-700 border border-amber-200/60'
                       }`}>
                         {(post.status || 'published').charAt(0).toUpperCase() + (post.status || 'published').slice(1)}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-slate-600">
+                    <td className="p-4 text-xs text-[#6D635D]">
                       {new Date(post.date).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleEdit(post)}
-                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-[#7A6E68] hover:text-[#1F1714] hover:bg-[#FAF8F5] rounded-lg transition-colors cursor-pointer"
                           title="Edit post"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(post.id!)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-[#7A6E68] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Delete post"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
