@@ -268,7 +268,7 @@ export const BlogPost: React.FC = () => {
           <img
             src={post.cover_image}
             alt={post.title}
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_68%]"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_28%]"
             loading="eager"
             fetchPriority="high"
             decoding="async"
