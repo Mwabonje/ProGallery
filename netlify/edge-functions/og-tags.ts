@@ -11,7 +11,7 @@ if (url.hostname === "mwabonje.netlify.app") {
   return Response.redirect(`https://mwabonje.co.ke${path}${url.search}`, 301);
 }
 
-  }
+
 
   // Fast bypass for API endpoints, Netlify internal functions, and static files
   if (
