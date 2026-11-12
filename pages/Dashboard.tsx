@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square, CreditCard } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -205,11 +205,13 @@ export const Dashboard: React.FC = () => {
   // ZIP download state
   const [isZipping, setIsZipping] = useState<boolean>(false);
 
-  // Settings tab editing states
+  // Settings & Payment tab editing states
   const [editShootDate, setEditShootDate] = useState<string>('');
   const [editCategory, setEditCategory] = useState<string>('');
   const [editAgreedBalance, setEditAgreedBalance] = useState<number | ''>('');
   const [editAmountPaid, setEditAmountPaid] = useState<number | ''>('');
+  const [editDownloadsBeforeClearing, setEditDownloadsBeforeClearing] = useState<number | ''>('');
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState<boolean>(false);
   const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
 
   const handlePurgeExpired = async () => {
@@ -927,6 +929,9 @@ export const Dashboard: React.FC = () => {
       setDeliveryPassword(currentDelivery.password || '');
       setDeliveryIsPrivate(Boolean(currentDelivery.password || currentDelivery.link_enabled));
       setEditableDeliveryTitle(currentDelivery.client_name);
+      setEditAgreedBalance(currentDelivery.agreed_balance ?? 0);
+      setEditAmountPaid(currentDelivery.amount_paid ?? 0);
+      setEditDownloadsBeforeClearing(currentDelivery.downloads_before_clearing ?? 0);
     }
   }, [currentDelivery?.id]);
 
@@ -1138,6 +1143,62 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleUpdatePayment = async (overridePaid?: number) => {
+    if (!currentDelivery) return;
+    setIsUpdatingPayment(true);
+    try {
+      const agreed = editAgreedBalance === '' ? 0 : Number(editAgreedBalance) || 0;
+      const paid = overridePaid !== undefined ? overridePaid : (editAmountPaid === '' ? 0 : Number(editAmountPaid) || 0);
+      const dlLimit = editDownloadsBeforeClearing === '' ? 0 : Number(editDownloadsBeforeClearing) || 0;
+      const remaining = Math.max(0, agreed - paid);
+
+      const updates: any = {
+        agreed_balance: agreed,
+        amount_paid: paid,
+        downloads_before_clearing: dlLimit,
+      };
+
+      const { error } = await supabase
+        .from('galleries')
+        .update(updates)
+        .eq('id', currentDelivery.id);
+
+      if (error) throw error;
+
+      // Log activity in activity_logs
+      try {
+        await supabase.from('activity_logs').insert({
+          gallery_id: currentDelivery.id,
+          action: remaining === 0 && agreed > 0
+            ? `Payment cleared: Agreed KES ${agreed.toLocaleString()}, Paid KES ${paid.toLocaleString()} (Balance cleared · High-res downloads unlocked)`
+            : `Payment updated: Agreed KES ${agreed.toLocaleString()}, Paid KES ${paid.toLocaleString()} (Remaining KES ${remaining.toLocaleString()})`
+        });
+      } catch (logErr) {
+        console.warn("Activity log failed:", logErr);
+      }
+
+      if (remaining === 0) {
+        toast.success(agreed === 0 ? "Gallery marked as free / collaboration (high-res downloads unlocked)!" : "Balance cleared! High-res downloads are now unlocked for client.");
+      } else {
+        toast.success(`Payment saved. Remaining balance: KES ${remaining.toLocaleString()} (downloads locked until cleared).`);
+      }
+
+      setEditAmountPaid(paid);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error updating payment:', err);
+      toast.error('Failed to update payment: ' + (err.message || 'Error'));
+    } finally {
+      setIsUpdatingPayment(false);
+    }
+  };
+
+  const handleMarkPaidInFull = () => {
+    const agreed = editAgreedBalance === '' ? (currentDelivery?.agreed_balance || 0) : Number(editAgreedBalance) || 0;
+    setEditAmountPaid(agreed);
+    handleUpdatePayment(agreed);
+  };
+
   const handleSaveDeliverySettings = async () => {
     if (!currentDelivery) return;
     setIsSavingSettings(true);
@@ -1147,6 +1208,7 @@ export const Dashboard: React.FC = () => {
       if (editCategory.trim()) updates.category = editCategory.trim();
       if (editAgreedBalance !== '') updates.agreed_balance = Number(editAgreedBalance) || 0;
       if (editAmountPaid !== '') updates.amount_paid = Number(editAmountPaid) || 0;
+      if (editDownloadsBeforeClearing !== '') updates.downloads_before_clearing = Number(editDownloadsBeforeClearing) || 0;
       
       const { error } = await supabase
         .from('galleries')
@@ -3378,7 +3440,145 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Card 2: Client Access */}
+                      {/* Card 2: Payment & High-Res Downloads (Directly controls client high-res download unlock) */}
+                      <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-[#B58B5C]" />
+                            <h3 className="text-sm font-bold text-[#1F1714]">Payment &amp; Downloads</h3>
+                          </div>
+                          {(() => {
+                            const agreed = editAgreedBalance === '' ? (currentDelivery?.agreed_balance || 0) : Number(editAgreedBalance) || 0;
+                            const paid = editAmountPaid === '' ? (currentDelivery?.amount_paid || 0) : Number(editAmountPaid) || 0;
+                            const balance = Math.max(0, agreed - paid);
+
+                            if (agreed === 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  Free / Collab
+                                </span>
+                              );
+                            }
+                            if (balance === 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                                  <Check className="w-3 h-3" /> Paid in Full
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <Lock className="w-3 h-3 text-amber-600" /> KES {balance.toLocaleString()} Due
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        {/* High-res Download Access Status Banner */}
+                        {(() => {
+                          const agreed = editAgreedBalance === '' ? (currentDelivery?.agreed_balance || 0) : Number(editAgreedBalance) || 0;
+                          const paid = editAmountPaid === '' ? (currentDelivery?.amount_paid || 0) : Number(editAmountPaid) || 0;
+                          const balance = Math.max(0, agreed - paid);
+
+                          if (balance === 0) {
+                            return (
+                              <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs flex items-start gap-2.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="font-bold block">High-Res Downloads Unlocked</span>
+                                  <span className="text-[11px] text-emerald-700 leading-tight">
+                                    Client has full access to download original high-resolution photos and ZIP archives on their portal.
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5">
+                              <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold block">High-Res Downloads Locked</span>
+                                <span className="text-[11px] text-amber-800 leading-tight">
+                                  Client portal shows preview only. Original high-res downloads unlock automatically once the remaining balance is cleared.
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Inputs: Agreed Balance, Paid Amount, Remaining Balance */}
+                        <div className="space-y-3 pt-1">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                              Total Agreed Amount (KES)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[#8E827B]">KES</span>
+                              <input
+                                type="number"
+                                value={editAgreedBalance}
+                                onChange={(e) => setEditAgreedBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                                placeholder="0 (Free / Volunteer)"
+                                className="w-full pl-12 pr-3 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                              Amount Paid by Client (KES)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[#8E827B]">KES</span>
+                              <input
+                                type="number"
+                                value={editAmountPaid}
+                                onChange={(e) => setEditAmountPaid(e.target.value === '' ? '' : Number(e.target.value))}
+                                placeholder="0"
+                                className="w-full pl-12 pr-3 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Remaining Balance Display */}
+                          <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EDE5D8] flex items-center justify-between text-xs">
+                            <span className="text-[#6D635D] font-medium">Remaining Balance:</span>
+                            <span className={`font-mono font-bold text-sm ${
+                              Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)) === 0
+                                ? 'text-emerald-700'
+                                : 'text-amber-800'
+                            }`}>
+                              KES {Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)).toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Action Buttons: Save Payment & Clear Balance */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-[#F4EFE6]">
+                            <button
+                              onClick={() => handleUpdatePayment()}
+                              disabled={isUpdatingPayment}
+                              className="flex-1 bg-[#3B2E28] hover:bg-[#4E3D35] text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            >
+                              {isUpdatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                              <span>Save Payment</span>
+                            </button>
+
+                            {Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)) > 0 && (
+                              <button
+                                onClick={handleMarkPaidInFull}
+                                disabled={isUpdatingPayment}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                                title="Sets amount paid equal to agreed balance and unlocks high-res downloads"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Clear Balance</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Client Access */}
                       <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
                         <div className="flex items-center gap-2">
                           <Lock className="w-4 h-4 text-[#B58B5C]" />
@@ -3701,26 +3901,90 @@ export const Dashboard: React.FC = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Agreed Balance (KES)</label>
-                          <input
-                            type="number"
-                            value={editAgreedBalance}
-                            onChange={(e) => setEditAgreedBalance(e.target.value === '' ? '' : Number(e.target.value))}
-                            placeholder={String(currentDelivery?.agreed_balance || 0)}
-                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
-                          />
+                      {/* Payment & Download Lock Section */}
+                      <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-[#1F1714] block">Payment &amp; High-Res Downloads</span>
+                            <span className="text-[11px] text-[#7A6F69]">
+                              High-resolution downloads are locked until the client clears their balance.
+                            </span>
+                          </div>
+                          {Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)) === 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                              <Check className="w-3 h-3" /> Downloads Unlocked
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              <Lock className="w-3 h-3 text-amber-600" /> Downloads Locked
+                            </span>
+                          )}
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Total Agreed Amount (KES)</label>
+                            <input
+                              type="number"
+                              value={editAgreedBalance}
+                              onChange={(e) => setEditAgreedBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                              placeholder="0 (Free / Volunteer)"
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Amount Paid by Client (KES)</label>
+                            <input
+                              type="number"
+                              value={editAmountPaid}
+                              onChange={(e) => setEditAmountPaid(e.target.value === '' ? '' : Number(e.target.value))}
+                              placeholder="0"
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                          <div className="p-3 rounded-xl bg-white border border-[#E6DFC6] flex items-center justify-between">
+                            <span className="text-xs text-[#6D635D] font-medium">Remaining Balance Due:</span>
+                            <span className="font-mono font-bold text-sm text-[#1F1714]">
+                              KES {Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {Math.max(0, (Number(editAgreedBalance) || 0) - (Number(editAmountPaid) || 0)) > 0 ? (
+                              <button
+                                type="button"
+                                onClick={handleMarkPaidInFull}
+                                disabled={isUpdatingPayment}
+                                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Clear Balance (Unlock Downloads)</span>
+                              </button>
+                            ) : (
+                              <div className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-medium text-center border border-emerald-200">
+                                ✓ Balance cleared · Client can download all files
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         <div>
-                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Amount Paid (KES)</label>
+                          <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                            Pre-Clearance Download Allowance (Optional)
+                          </label>
                           <input
                             type="number"
-                            value={editAmountPaid}
-                            onChange={(e) => setEditAmountPaid(e.target.value === '' ? '' : Number(e.target.value))}
-                            placeholder={String(currentDelivery?.amount_paid || 0)}
-                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            value={editDownloadsBeforeClearing}
+                            onChange={(e) => setEditDownloadsBeforeClearing(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder="0 = Locked until cleared"
+                            className="w-full px-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
                           />
+                          <p className="text-[10px] text-[#8E827B] mt-1">
+                            Set number of free high-res photos client can download before clearing balance (0 = none until cleared).
+                          </p>
                         </div>
                       </div>
 
@@ -3870,6 +4134,66 @@ export const Dashboard: React.FC = () => {
                       <h3 className="text-lg font-bold text-[#1F1714]">Direct Download &amp; Archive Export</h3>
                       <p className="text-xs text-[#7A6F69] mt-0.5">Download full gallery archives as ZIP or monitor client download activity.</p>
                     </div>
+
+                    {/* Client High-Res Download Permission Status */}
+                    {(() => {
+                      const agreed = editAgreedBalance === '' ? (currentDelivery?.agreed_balance || 0) : Number(editAgreedBalance) || 0;
+                      const paid = editAmountPaid === '' ? (currentDelivery?.amount_paid || 0) : Number(editAmountPaid) || 0;
+                      const balance = Math.max(0, agreed - paid);
+
+                      if (balance === 0) {
+                        return (
+                          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                                <Check className="w-5 h-5 text-emerald-700" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-emerald-950 flex items-center gap-2">
+                                  <span>Client High-Res Downloads Unlocked</span>
+                                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold uppercase">
+                                    {agreed === 0 ? 'Free / Collab' : 'Paid in Full'}
+                                  </span>
+                                </p>
+                                <p className="text-[11px] text-emerald-800 mt-0.5">
+                                  Client has full permission to download original high-resolution photos and ZIP archives without restriction.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                              <Lock className="w-5 h-5 text-amber-700" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-amber-950 flex items-center gap-2">
+                                <span>Client High-Res Downloads Locked</span>
+                                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase">
+                                  KES {balance.toLocaleString()} Due
+                                </span>
+                              </p>
+                              <p className="text-[11px] text-amber-800 mt-0.5">
+                                Client sees notice to clear their balance before original high-resolution downloads become accessible.
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleMarkPaidInFull}
+                            disabled={isUpdatingPayment}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Clear Balance &amp; Unlock</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
 
                     <div className="p-6 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div>
@@ -4143,6 +4467,29 @@ export const Dashboard: React.FC = () => {
 
                             <div className="flex items-center gap-2 font-medium text-[#1F1714] flex-wrap">
                               <span>{gallery.client_name}</span>
+                              {(() => {
+                                const agreed = Number(gallery.agreed_balance) || 0;
+                                const paid = Number(gallery.amount_paid) || 0;
+                                const bal = Math.max(0, agreed - paid);
+
+                                if (bal > 0) {
+                                  return (
+                                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-xs" title={`Downloads locked · Balance due: KES ${bal.toLocaleString()}`}>
+                                      <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                      <span>KES {bal.toLocaleString()} Due</span>
+                                    </span>
+                                  );
+                                }
+                                if (agreed > 0 && bal === 0) {
+                                  return (
+                                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 shadow-xs" title="Paid in full · High-res downloads unlocked">
+                                      <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                      <span>Paid in Full</span>
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
                               {Boolean(gallery.selectionNotesCount && gallery.selectionNotesCount > 0) && (
                                 <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-xs" title={`${gallery.selectionNotesCount} photo note(s) from client`}>
                                   <MessageSquare className="w-3 h-3 text-amber-600" />
