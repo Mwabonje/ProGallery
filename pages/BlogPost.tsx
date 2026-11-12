@@ -61,50 +61,37 @@ export const BlogPost: React.FC = () => {
     let animationFrame = 0;
 
     const buildTableOfContents = () => {
-      const headings = Array.from(container.querySelectorAll('h1, h2, h3')) as HTMLHeadingElement[];
+      // Support older posts whose section titles were saved as bold paragraphs.
+      const candidates = Array.from(container.querySelectorAll('h1, h2, h3, p')) as HTMLElement[];
+      const headings = candidates.filter((element) => {
+        if (/^H[1-3]$/.test(element.tagName)) return true;
+        const text = element.textContent?.replace(/\s+/g, ' ').trim() || '';
+        if (!text || text.length > 120) return false;
+        const boldText = Array.from(element.querySelectorAll('strong, b'))
+          .map(node => node.textContent || '').join(' ').replace(/\s+/g, ' ').trim();
+        return Boolean(boldText && boldText === text);
+      });
       const usedIds = new Set<string>();
-
       const items = headings.reduce<TocItem[]>((result, heading, index) => {
         const text = heading.textContent?.replace(/\s+/g, ' ').trim();
         if (!text) return result;
-
-        const baseId = text
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '') || `section-${index + 1}`;
-
+        const baseId = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `section-${index + 1}`;
         let id = heading.id || `article-${baseId}`;
         let suffix = 2;
-        while (usedIds.has(id)) {
-          id = `article-${baseId}-${suffix++}`;
-        }
+        while (usedIds.has(id)) id = `article-${baseId}-${suffix++}`;
         usedIds.add(id);
         heading.id = id;
         heading.style.scrollMarginTop = '100px';
-
-        result.push({
-          id,
-          text,
-          level: heading.tagName === 'H3' ? 3 : heading.tagName === 'H1' ? 1 : 2,
-        });
+        result.push({ id, text, level: heading.tagName === 'H3' ? 3 : heading.tagName === 'H1' ? 1 : 2 });
         return result;
       }, []);
-
       setTocItems(items);
       if (intersectionObserver) intersectionObserver.disconnect();
-
       intersectionObserver = new IntersectionObserver((entries) => {
-        const visible = entries
-          .filter(entry => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setActiveHeading(visible[0].target.id);
       }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
-
-      headings.forEach(heading => {
-        if (heading.textContent?.trim()) intersectionObserver?.observe(heading);
-      });
+      headings.forEach(heading => { if (heading.textContent?.trim()) intersectionObserver?.observe(heading); });
     };
 
     const scheduleBuild = () => {
