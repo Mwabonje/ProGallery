@@ -3,9 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { calculateReadingTime, parseCategories } from '../utils/blogData';
 import { BlogPost as BlogPostType } from '../types';
 import { supabase } from '../services/supabase';
-import { ArrowRight, ArrowUpRight, Clock3, List, Loader2, Share2, Bookmark, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Clock3, List, Loader2, Share2, Bookmark, ChevronRight, Search } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { SEO } from '../components/SEO';
-import { PublicHeader } from '../components/PublicHeader';
 import { BlogSocialShare } from '../components/BlogSocialShare';
 import { BlogContentWithPinterest } from '../components/BlogContentWithPinterest';
 
@@ -179,10 +179,39 @@ export const BlogPost: React.FC = () => {
         publishDate={post.date}
         structuredData={articleSchema}
       />
-      <PublicHeader scrollProgress={scrollProgress} />
+
+      <header className="sticky top-0 z-50 border-b border-[#e9dfd2] bg-[#faf6ef]/95 backdrop-blur-md dark:border-slate-800 dark:bg-[#0b0f17]/95">
+        <div className="mx-auto flex h-[58px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <Link to="/" className="group flex shrink-0 flex-col leading-none text-[#1e1713] dark:text-white">
+            <span className="font-editorial text-[25px] font-bold tracking-[-0.04em]">Mwabonje</span>
+            <span className="mt-0.5 text-center text-[7px] font-semibold tracking-[0.32em]">PHOTOGRAPHY</span>
+          </Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex xl:gap-7">
+            <Link to="/" className="text-[11px] font-medium text-[#30251e] hover:text-[#a56c35] dark:text-slate-200">Home</Link>
+            <Link to="/#work" className="text-[11px] font-medium text-[#30251e] hover:text-[#a56c35] dark:text-slate-200">Portfolio</Link>
+            <Link to="/?category=FILMS#work" className="text-[11px] font-medium text-[#30251e] hover:text-[#a56c35] dark:text-slate-200">Films</Link>
+            <Link to="/blog" className="border-b border-[#b77b3e] pb-1 text-[11px] font-semibold text-[#6e3e23] dark:text-amber-300">Blog</Link>
+            <Link to="/about" className="text-[11px] font-medium text-[#30251e] hover:text-[#a56c35] dark:text-slate-200">About</Link>
+            <Link to="/faq" className="text-[11px] font-medium text-[#30251e] hover:text-[#a56c35] dark:text-slate-200">FAQ</Link>
+          </nav>
+          <div className="flex items-center gap-3">
+            <Link to="/blog" aria-label="Search journal" className="hidden text-[#30251e] hover:text-[#a56c35] dark:text-slate-200 sm:inline-flex"><Search className="h-[17px] w-[17px]" /></Link>
+            <ThemeToggle className="text-[#30251e] dark:text-amber-300" />
+            <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md bg-[#442719] px-4 text-[10px] font-semibold text-white transition hover:bg-[#68412b] sm:px-5">Book a Shoot <ArrowUpRight className="h-3.5 w-3.5" /></a>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-5 border-t border-[#eee4d8] px-3 py-2 lg:hidden dark:border-slate-800">
+          <Link to="/" className="text-[10px] text-[#514239] dark:text-slate-300">Home</Link>
+          <Link to="/#work" className="text-[10px] text-[#514239] dark:text-slate-300">Portfolio</Link>
+          <Link to="/?category=FILMS#work" className="text-[10px] text-[#514239] dark:text-slate-300">Films</Link>
+          <Link to="/blog" className="text-[10px] font-semibold text-[#8a542e] dark:text-amber-300">Blog</Link>
+          <Link to="/about" className="text-[10px] text-[#514239] dark:text-slate-300">About</Link>
+          <Link to="/faq" className="text-[10px] text-[#514239] dark:text-slate-300">FAQ</Link>
+        </div>
+      </header>
 
       {/* Cinematic editorial masthead */}
-      <section className="relative isolate min-h-[390px] sm:min-h-[430px] lg:min-h-[470px] overflow-hidden bg-[#3a261d]">
+      <section className="relative isolate min-h-[270px] sm:min-h-[285px] lg:min-h-[300px] overflow-hidden bg-[#3a261d]">
         {post.cover_image && (
           <img
             src={post.cover_image}
@@ -197,7 +226,7 @@ export const BlogPost: React.FC = () => {
         )}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#211713]/85 via-[#211713]/50 to-[#211713]/10" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#211713]/35 via-transparent to-black/10" />
-        <div className="mx-auto flex min-h-[390px] max-w-[1440px] items-end px-6 pb-10 pt-24 sm:min-h-[430px] sm:px-10 sm:pb-12 lg:min-h-[470px] lg:px-14 lg:pb-14">
+        <div className="mx-auto flex min-h-[270px] max-w-[1440px] items-end px-5 pb-7 pt-20 sm:min-h-[285px] sm:px-8 sm:pb-8 lg:min-h-[300px] lg:px-12 lg:pb-9">
           <div className="max-w-3xl text-white">
             <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
               <Link to="/" className="hover:text-white">Home</Link><ChevronRight className="h-3 w-3" />
@@ -209,20 +238,20 @@ export const BlogPost: React.FC = () => {
                 {categories[0]}
               </div>
             )}
-            <h1 className="max-w-3xl font-editorial text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-5xl lg:text-[58px]">
+            <h1 className="max-w-[650px] font-editorial text-[32px] font-semibold leading-[1.04] tracking-[-0.035em] text-white sm:text-[38px] lg:text-[42px]">
               {post.title}
             </h1>
-            {post.excerpt && <p className="mt-5 max-w-xl text-sm leading-6 text-white/90 sm:text-base sm:leading-7">{post.excerpt}</p>}
+            {post.excerpt && <p className="mt-3 max-w-[440px] text-[12px] leading-[1.55] text-white/90 sm:text-[13px]">{post.excerpt}</p>}
           </div>
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-9 px-5 pb-20 pt-7 sm:px-8 lg:grid-cols-[minmax(0,1fr)_330px] lg:gap-10 lg:px-12 lg:pt-8 xl:grid-cols-[minmax(0,1fr)_355px]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 px-5 pb-20 pt-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_285px] lg:gap-10 lg:px-10 lg:pt-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <main className="min-w-0">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#e9dfd2] pb-4 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#dfc9ad] text-sm font-semibold text-[#543522]">
-                {post.cover_image ? <img src={post.cover_image} alt="" className="h-full w-full object-cover" /> : (post.author || 'M').slice(0, 1).toUpperCase()}
+                {(post.author || 'M').slice(0, 1).toUpperCase()}
               </div>
               <div>
                 <p className="text-xs font-bold text-[#241b16] dark:text-white">By {post.author || 'Mwabonje'}</p>
@@ -275,7 +304,7 @@ export const BlogPost: React.FC = () => {
         </main>
 
         <aside className="space-y-5 lg:pt-0">
-          <section className="rounded-2xl border border-[#eee4d8] bg-white/45 p-5 shadow-[0_2px_10px_rgba(61,39,22,0.035)] dark:border-slate-800 dark:bg-slate-900/40">
+          <section className="rounded-xl border border-[#eee4d8] bg-white/35 p-4 shadow-[0_2px_10px_rgba(61,39,22,0.035)] dark:border-slate-800 dark:bg-slate-900/40">
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#75472c]" /><h2 className="font-editorial text-xl font-semibold text-[#2b1d15] dark:text-white">Table of Contents</h2></div>
             {tocItems.length ? (
               <nav aria-label="Table of contents" className="space-y-1">
@@ -291,7 +320,7 @@ export const BlogPost: React.FC = () => {
           <section className="rounded-2xl border border-[#eee4d8] bg-white/45 p-5 shadow-[0_2px_10px_rgba(61,39,22,0.035)] dark:border-slate-800 dark:bg-slate-900/40">
             <h2 className="mb-4 font-editorial text-xl font-semibold text-[#2b1d15] dark:text-white">About the Author</h2>
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#dfc9ad] font-editorial text-xl text-[#543522]">{post.cover_image ? <img src={post.cover_image} alt="" className="h-full w-full object-cover" /> : 'M'}</div>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#dfc9ad] font-editorial text-xl text-[#543522]">{(post.author || 'M').slice(0, 1).toUpperCase()}</div>
               <div><p className="text-sm font-bold text-[#241b16] dark:text-white">{post.author || 'Mwabonje'}</p><p className="mt-1 text-xs text-[#74685e] dark:text-slate-400">Photographer &amp; Visual Storyteller</p></div>
             </div>
             <p className="text-xs leading-5 text-[#5f5147] dark:text-slate-300">A photographer and visual storyteller based on Kenya's coast, creating people-centred imagery for weddings, travel, hospitality and lifestyle brands.</p>
