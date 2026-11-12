@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 
 interface BlogContentWithPinterestProps {
   content: string;
@@ -88,7 +89,7 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
       {/* Article Content */}
       <div 
         className="prose prose-slate dark:prose-invert prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-slate-900 dark:prose-a:text-amber-400 hover:prose-a:text-slate-600 dark:hover:prose-a:text-amber-300 prose-img:rounded-sm text-slate-700 dark:text-slate-300 transition-colors"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
       />
 
       {/* Floating Interactive Pinterest Button on Hovered Image */}
