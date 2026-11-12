@@ -59,3 +59,58 @@ html.dark ::selection {
   background-color: #fbbf24;
   color: #0f172a;
 }
+
+/* Editorial article details: opening drop cap and pull-quote treatment */
+.blog-article-prose > p:first-of-type::first-letter {
+  float: left;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  font-size: 4.35em;
+  line-height: 0.78;
+  font-weight: 600;
+  color: #3f281b;
+  padding: 0.08em 0.12em 0 0;
+  margin: 0.04em 0.02em 0 0;
+}
+
+html.dark .blog-article-prose > p:first-of-type::first-letter {
+  color: #e8c99f;
+}
+
+.blog-article-prose blockquote {
+  margin: 1.8rem 0;
+  padding: 1.05rem 1.35rem;
+  border-left: 3px solid #d69a42;
+  border-radius: 0 0.65rem 0.65rem 0;
+  background: #f5eee5;
+  color: #241a14;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  font-size: 1.35rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.blog-article-prose blockquote p {
+  margin: 0;
+  color: inherit;
+  font: inherit;
+}
+
+html.dark .blog-article-prose blockquote {
+  background: rgba(120, 86, 54, 0.18);
+  border-left-color: #d6a45d;
+  color: #f1e7dc;
+}
+
+@media (max-width: 640px) {
+  .blog-article-prose > p:first-of-type::first-letter {
+    font-size: 3.65em;
+  }
+
+  .blog-article-prose blockquote {
+    margin: 1.4rem 0;
+    padding: 0.9rem 1rem;
+    font-size: 1.2rem;
+  }
+}
+
