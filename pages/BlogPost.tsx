@@ -362,7 +362,7 @@ export const BlogPost: React.FC = () => {
               <nav aria-label="Table of contents" className="space-y-1">
                 {tocItems.map((item, index) => (
                   <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block rounded-lg px-3 py-2 text-xs leading-5 transition-colors ${activeHeading === item.id ? 'border-l-[3px] border-[#c78a3d] bg-[#f3e5d2] font-semibold text-[#4b2d1a] dark:bg-amber-950/40 dark:text-amber-200' : 'text-[#5e5148] hover:bg-[#f5ede3] dark:text-slate-300 dark:hover:bg-slate-800'}`}>
-                    <span className="mr-2">{index + 1}.</span>{item.text}
+                    <span className="mr-2">{index + 1}.</span>{item.text.replace(/^\\s*\\d+[.)]\\s*/, '')}
                   </a>
                 ))}
               </nav>
