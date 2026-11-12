@@ -270,7 +270,7 @@ export const Blog: React.FC = () => {
 
             {/* Remaining journal archive */}
             {paginatedPosts.length > 0 && (
-              <section className="pt-3">
+              <section id="more-stories" className="pt-3 scroll-mt-6">
                 <div className="flex items-end justify-between mb-5">
                   <div>
                     <p className="text-[10px] tracking-[0.2em] uppercase text-[#8a6a50] dark:text-amber-200 font-bold mb-1">Explore the Journal</p>
@@ -295,11 +295,11 @@ export const Blog: React.FC = () => {
 
             {totalPages > 1 && (
               <nav aria-label="Journal pagination" className="flex justify-center items-center gap-2 sm:gap-4 pt-10">
-                <button type="button" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} disabled={currentPage === 1} className="p-2 text-[#57341f] dark:text-amber-100 disabled:opacity-30" aria-label="Previous page"><ArrowLeft size={18} /></button>
+                <button type="button" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === 1} className="p-2 text-[#57341f] dark:text-amber-100 disabled:opacity-30" aria-label="Previous page"><ArrowLeft size={18} /></button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button key={page} type="button" onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentPage === page ? 'page' : undefined} className={`w-9 h-9 rounded-md text-sm transition-colors ${currentPage === page ? 'bg-[#4b2b1b] text-white dark:bg-amber-100 dark:text-[#2b1a10]' : 'text-[#57341f] hover:bg-[#eadbc8] dark:text-slate-300 dark:hover:bg-slate-800'}`}>{page}</button>
+                  <button key={page} type="button" onClick={() => { setCurrentPage(page); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} aria-current={currentPage === page ? 'page' : undefined} className={`w-9 h-9 rounded-md text-sm transition-colors ${currentPage === page ? 'bg-[#4b2b1b] text-white dark:bg-amber-100 dark:text-[#2b1a10]' : 'text-[#57341f] hover:bg-[#eadbc8] dark:text-slate-300 dark:hover:bg-slate-800'}`}>{page}</button>
                 ))}
-                <button type="button" onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} disabled={currentPage === totalPages} className="p-2 text-[#57341f] dark:text-amber-100 disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
+                <button type="button" onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === totalPages} className="p-2 text-[#57341f] dark:text-amber-100 disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
               </nav>
             )}
           </>
