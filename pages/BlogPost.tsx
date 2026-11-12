@@ -48,25 +48,82 @@ export const BlogPost: React.FC = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (!post) return;
+    if (!post) {
+      setTocItems([]);
+      setActiveHeading('');
+      return;
+    }
+
     const container = document.getElementById('article-rich-content');
     if (!container) return;
 
-    const headings = Array.from(container.querySelectorAll('h2, h3')) as HTMLHeadingElement[];
-    const items = headings.map((heading, index) => {
-      const id = heading.id || `article-section-${index + 1}`;
-      heading.id = id;
-      return { id, text: heading.textContent?.trim() || `Section ${index + 1}`, level: heading.tagName === 'H3' ? 3 : 2 };
-    });
-    setTocItems(items);
+    let intersectionObserver: IntersectionObserver | null = null;
+    let animationFrame = 0;
 
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (visible[0]) setActiveHeading(visible[0].target.id);
-    }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
-    headings.forEach(heading => observer.observe(heading));
-    return () => observer.disconnect();
-  }, [post]);
+    const buildTableOfContents = () => {
+      const headings = Array.from(container.querySelectorAll('h1, h2, h3')) as HTMLHeadingElement[];
+      const usedIds = new Set<string>();
+
+      const items = headings.reduce<TocItem[]>((result, heading, index) => {
+        const text = heading.textContent?.replace(/\\s+/g, ' ').trim();
+        if (!text) return result;
+
+        const baseId = text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || `section-${index + 1}`;
+
+        let id = heading.id || `article-${baseId}`;
+        let suffix = 2;
+        while (usedIds.has(id)) {
+          id = `article-${baseId}-${suffix++}`;
+        }
+        usedIds.add(id);
+        heading.id = id;
+        heading.style.scrollMarginTop = '100px';
+
+        result.push({
+          id,
+          text,
+          level: heading.tagName === 'H3' ? 3 : heading.tagName === 'H1' ? 1 : 2,
+        });
+        return result;
+      }, []);
+
+      setTocItems(items);
+      if (intersectionObserver) intersectionObserver.disconnect();
+
+      intersectionObserver = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveHeading(visible[0].target.id);
+      }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+
+      headings.forEach(heading => {
+        if (heading.textContent?.trim()) intersectionObserver?.observe(heading);
+      });
+    };
+
+    const scheduleBuild = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(buildTableOfContents);
+    };
+
+    // Build after the sanitized article HTML has mounted, then keep the TOC
+    // in sync if article content is inserted or updated after the initial render.
+    scheduleBuild();
+    const mutationObserver = new MutationObserver(scheduleBuild);
+    mutationObserver.observe(container, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      mutationObserver.disconnect();
+      intersectionObserver?.disconnect();
+    };
+  }, [post?.id, post?.content]);
 
   const fetchPost = async () => {
     try {
@@ -308,11 +365,15 @@ export const BlogPost: React.FC = () => {
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#75472c]" /><h2 className="font-editorial text-xl font-semibold text-[#2b1d15] dark:text-white">Table of Contents</h2></div>
             {tocItems.length ? (
               <nav aria-label="Table of contents" className="space-y-1">
-                {tocItems.map((item, index) => (
-                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block rounded-lg px-3 py-2 text-xs leading-5 transition-colors ${activeHeading === item.id ? 'border-l-[3px] border-[#c78a3d] bg-[#f3e5d2] font-semibold text-[#4b2d1a] dark:bg-amber-950/40 dark:text-amber-200' : 'text-[#5e5148] hover:bg-[#f5ede3] dark:text-slate-300 dark:hover:bg-slate-800'} ${item.level === 3 ? 'ml-3' : ''}`}>
-                    <span className="mr-2">{item.level === 2 ? `${index + 1}.` : '–'}</span>{item.text}
-                  </a>
-                ))}
+                {tocItems.reduce<React.ReactNode[]>((links, item) => {
+                  const sectionNumber = tocItems.slice(0, tocItems.indexOf(item) + 1).filter(entry => entry.level === 2).length;
+                  links.push(
+                    <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block rounded-lg px-3 py-2 text-xs leading-5 transition-colors ${activeHeading === item.id ? 'border-l-[3px] border-[#c78a3d] bg-[#f3e5d2] font-semibold text-[#4b2d1a] dark:bg-amber-950/40 dark:text-amber-200' : 'text-[#5e5148] hover:bg-[#f5ede3] dark:text-slate-300 dark:hover:bg-slate-800'} ${item.level === 3 ? 'ml-3' : item.level === 1 ? 'font-semibold' : ''}`}>
+                      <span className="mr-2">{item.level === 2 ? `${sectionNumber}.` : item.level === 3 ? '–' : ''}</span>{item.text}
+                    </a>
+                  );
+                  return links;
+                }, [])}
               </nav>
             ) : <p className="text-xs leading-5 text-[#7b6c60] dark:text-slate-400">Section links will appear here when this story includes headings.</p>}
           </section>
