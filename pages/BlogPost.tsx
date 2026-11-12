@@ -265,26 +265,16 @@ export const BlogPost: React.FC = () => {
       {/* Cinematic editorial masthead */}
       <section className="relative isolate min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] overflow-hidden bg-[#3a261d]">
         {post.cover_image && (
-          <>
-            <img
-              src={post.cover_image}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 -z-30 h-full w-full scale-105 object-cover object-center blur-xl opacity-55"
-              loading="eager"
-              decoding="async"
-            />
-            <img
-              src={post.cover_image}
-              alt={post.title}
-              className="absolute inset-0 -z-20 h-full w-full object-contain object-center"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              width={1800}
-              height={900}
-            />
-          </>
+          <img
+            src={post.cover_image}
+            alt={post.title}
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            width={1800}
+            height={900}
+          />
         )}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#211713]/85 via-[#211713]/50 to-[#211713]/10" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#211713]/35 via-transparent to-black/10" />
