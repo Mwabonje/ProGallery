@@ -241,15 +241,24 @@ export const Blog: React.FC = () => {
             {/* Popular stories feature band */}
             {popularPosts.length > 0 && (
               <section className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.95fr] rounded-xl overflow-hidden bg-[#f2e9dd] dark:bg-[#151d29] mb-8 sm:mb-12">
-                {popularPosts[0].cover_image && <img src={popularPosts[0].cover_image} alt={popularPosts[0].title} loading="lazy" className="w-full h-full min-h-[230px] sm:min-h-[300px] object-cover" />}
-                <div className="p-6 sm:p-8 lg:p-9">
-                  <p className="text-[10px] tracking-[0.22em] uppercase font-bold text-[#6a422a] dark:text-amber-200 mb-5">More to Explore</p>
-                  <div className="space-y-5">
+                <div className="relative h-[230px] sm:h-[280px] lg:h-[300px] overflow-hidden bg-[#e7d9c8]">
+                  {popularPosts[0].cover_image && (
+                    <img
+                      src={popularPosts[0].cover_image}
+                      alt={popularPosts[0].title}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover object-[center_72%]"
+                    />
+                  )}
+                </div>
+                <div className="min-h-[280px] lg:h-[300px] flex flex-col justify-center p-6 sm:p-8 lg:px-10 lg:py-7">
+                  <p className="text-[10px] tracking-[0.22em] uppercase font-bold text-[#6a422a] dark:text-amber-200 mb-5">Popular Stories</p>
+                  <div className="space-y-4 sm:space-y-4">
                     {popularPosts.map(post => (
-                      <article key={post.id} className="flex items-center gap-4">
-                        {post.cover_image && storyLink(post, "w-20 h-16 sm:w-24 sm:h-[70px] shrink-0 overflow-hidden rounded-md", <img src={post.cover_image} alt="" loading="lazy" className="w-full h-full object-cover" />)}
+                      <article key={post.id} className="flex items-center gap-4 min-w-0">
+                        {post.cover_image && storyLink(post, "w-20 h-16 sm:w-[88px] sm:h-[68px] shrink-0 overflow-hidden rounded-md", <img src={post.cover_image} alt="" loading="lazy" className="w-full h-full object-cover" />)}
                         <div className="min-w-0">
-                          <h3 className="font-editorial text-lg sm:text-xl leading-tight text-[#211811] dark:text-white">{storyLink(post, "hover:text-[#815536] dark:hover:text-amber-200 transition-colors", post.title)}</h3>
+                          <h3 className="font-editorial text-lg sm:text-xl leading-[1.12] text-[#211811] dark:text-white">{storyLink(post, "hover:text-[#815536] dark:hover:text-amber-200 transition-colors", post.title)}</h3>
                           <p className="mt-1.5 text-[11px] text-[#806d5d] dark:text-slate-400">{formatDate(post.date)} <span className="mx-1">·</span> {calculateReadingTime(post.content)} min read</p>
                         </div>
                       </article>
