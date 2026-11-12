@@ -263,12 +263,12 @@ export const BlogPost: React.FC = () => {
       </header>
 
       {/* Cinematic editorial masthead */}
-      <section className="relative isolate min-h-[340px] sm:min-h-[360px] lg:min-h-[390px] overflow-hidden bg-[#3a261d]">
+      <section className="relative isolate min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] overflow-hidden bg-[#3a261d]">
         {post.cover_image && (
           <img
             src={post.cover_image}
             alt={post.title}
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_28%]"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
             decoding="async"
@@ -278,7 +278,7 @@ export const BlogPost: React.FC = () => {
         )}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#211713]/85 via-[#211713]/50 to-[#211713]/10" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#211713]/35 via-transparent to-black/10" />
-        <div className="mx-auto flex min-h-[340px] max-w-[1440px] items-end px-5 pb-7 pt-20 sm:min-h-[360px] sm:px-8 sm:pb-8 lg:min-h-[390px] lg:px-12 lg:pb-9">
+        <div className="mx-auto flex min-h-[420px] max-w-[1440px] items-end px-5 pb-7 pt-20 sm:min-h-[480px] sm:px-8 sm:pb-8 lg:min-h-[520px] lg:px-12 lg:pb-9">
           <div className="max-w-3xl text-white">
             <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
               <Link to="/" className="hover:text-white">Home</Link><ChevronRight className="h-3 w-3" />
