@@ -55,37 +55,28 @@ export const BlogPost: React.FC = () => {
     }
 
     let cancelled = false;
-    let animationFrame = 0;
-    let attempts = 0;
+    let observer: MutationObserver | null = null;
     let intersectionObserver: IntersectionObserver | null = null;
-    let mutationObserver: MutationObserver | null = null;
+    let refreshFrame = 0;
 
     const buildTableOfContents = () => {
       if (cancelled) return;
       const container = document.getElementById('article-rich-content');
-      if (!container) {
-        if (attempts++ < 30) animationFrame = requestAnimationFrame(buildTableOfContents);
-        return;
-      }
+      if (!container) return;
 
-      // The published article HTML is rendered inside BlogContentWithPinterest.
-      // Query the rendered DOM so the TOC reflects the exact headings readers see.
-      // The table of contents intentionally includes only semantic H2 section headings.
-      // H3s, H1s, paragraphs, and visually bold paragraph text are excluded.
-      const headings = Array.from(container.querySelectorAll('h2')) as HTMLElement[];
-
-      if (!headings.length && attempts++ < 30) {
-        animationFrame = requestAnimationFrame(buildTableOfContents);
-        return;
-      }
+      const headings = Array.from(container.querySelectorAll('h2'))
+        .filter((heading): heading is HTMLElement => heading instanceof HTMLElement);
 
       const usedIds = new Set<string>();
-      const items = headings.reduce<TocItem[]>((result, heading, index) => {
-        const text = heading.textContent?.replace(/\\s+/g, ' ').trim();
+      const items: TocItem[] = headings.reduce<TocItem[]>((result, heading, index) => {
+        const text = (heading.textContent || '').replace(/\s+/g, ' ').trim();
         if (!text) return result;
+
         const baseId = text.toLowerCase().normalize('NFD')
-          .replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '') || `section-${index + 1}`;
+
         let id = heading.id || `article-${baseId}`;
         let suffix = 2;
         while (usedIds.has(id)) id = `article-${baseId}-${suffix++}`;
@@ -97,28 +88,34 @@ export const BlogPost: React.FC = () => {
       }, []);
 
       setTocItems(items);
+
       intersectionObserver?.disconnect();
       intersectionObserver = new IntersectionObserver((entries) => {
-        const visible = entries.filter(entry => entry.isIntersecting)
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setActiveHeading(visible[0].target.id);
       }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
-      headings.forEach(heading => intersectionObserver?.observe(heading));
 
-      if (!mutationObserver) {
-        mutationObserver = new MutationObserver(() => {
-          cancelAnimationFrame(animationFrame);
-          animationFrame = requestAnimationFrame(buildTableOfContents);
-        });
-        mutationObserver.observe(container, { childList: true, subtree: true, characterData: true });
-      }
+      headings.forEach(heading => intersectionObserver?.observe(heading));
     };
 
-    animationFrame = requestAnimationFrame(buildTableOfContents);
+    const scheduleRefresh = () => {
+      cancelAnimationFrame(refreshFrame);
+      refreshFrame = requestAnimationFrame(buildTableOfContents);
+    };
+
+    // Observe the document from the outset so asynchronously rendered article HTML
+    // is detected even when the content wrapper exists before its headings are inserted.
+    observer = new MutationObserver(scheduleRefresh);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    scheduleRefresh();
+
     return () => {
       cancelled = true;
-      cancelAnimationFrame(animationFrame);
-      mutationObserver?.disconnect();
+      cancelAnimationFrame(refreshFrame);
+      observer?.disconnect();
       intersectionObserver?.disconnect();
     };
   }, [post?.id, post?.content]);
