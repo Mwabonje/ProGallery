@@ -65,13 +65,13 @@ export const BlogPost: React.FC = () => {
       const usedIds = new Set<string>();
 
       const items = headings.reduce<TocItem[]>((result, heading, index) => {
-        const text = heading.textContent?.replace(/\\s+/g, ' ').trim();
+        const text = heading.textContent?.replace(/\s+/g, ' ').trim();
         if (!text) return result;
 
         const baseId = text
           .toLowerCase()
           .normalize('NFD')
-          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '') || `section-${index + 1}`;
 
