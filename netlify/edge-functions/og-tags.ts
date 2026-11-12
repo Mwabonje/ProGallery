@@ -5,8 +5,12 @@ export default async (request: Request, context: Context) => {
   const path = url.pathname;
 
   // Canonical Domain Consolidation: 301 redirect legacy netlify hostname to mwabonje.co.ke
-  if (url.hostname.includes("mwabonje.netlify.app")) {
-    return Response.redirect(`https://mwabonje.co.ke${path}${url.search}`, 301);
+  
+// Canonical Domain Consolidation: 301 redirect legacy netlify hostname to mwabonje.co.ke
+if (url.hostname === "mwabonje.netlify.app") {
+  return Response.redirect(`https://mwabonje.co.ke${path}${url.search}`, 301);
+}
+
   }
 
   // Fast bypass for API endpoints, Netlify internal functions, and static files
