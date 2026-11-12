@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle } from '../utils/formatters';
 import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
+import { useUpload } from '../contexts/UploadContext';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { WebsiteSettingsModal } from '../components/WebsiteSettingsModal';
 import { AboutSettingsModal } from '../components/AboutSettingsModal';
 import { HomeSettingsModal } from '../components/HomeSettingsModal';
@@ -17,6 +20,19 @@ import { WhatsAppDeliveryShareModal } from '../components/WhatsAppDeliveryShareM
 import { BlogAnalytics } from "../components/BlogAnalytics";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Helmet } from 'react-helmet-async';
+
+export interface DeliveryFileItem {
+  id: string;
+  file_url: string;
+  file_type?: string;
+  file_path?: string;
+  caption?: string;
+  download_count?: number;
+  created_at?: string;
+  expires_at?: string;
+  is_selected?: boolean;
+  client_note?: string;
+}
 
 // Extended interface for dashboard display
 interface DashboardGallery extends Gallery {
@@ -30,8 +46,9 @@ interface DashboardGallery extends Gallery {
   timeRemainingText?: string;
   selectionNotesCount?: number;
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
-  files?: { id: string; file_url: string; file_type?: string }[];
+  files?: DeliveryFileItem[];
   password?: string;
+  subGalleries?: Gallery[];
 }
 
 interface EnrichedActivityLog extends ActivityLog {
@@ -162,6 +179,38 @@ export const Dashboard: React.FC = () => {
   const [isDeliverySwitcherOpen, setIsDeliverySwitcherOpen] = useState<boolean>(false);
   const [deliveryTitleEditing, setDeliveryTitleEditing] = useState<boolean>(false);
   const [editableDeliveryTitle, setEditableDeliveryTitle] = useState<string>('');
+
+  // In-Dashboard File Upload & Management
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const { uploading, progress, activeGalleryId, uploadFiles } = useUpload();
+  const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+
+  // In-Dashboard Section / Sub-Gallery Creation
+  const [isCreateSectionModalOpen, setIsCreateSectionModalOpen] = useState<boolean>(false);
+  const [newSectionName, setNewSectionName] = useState<string>('');
+  const [newSectionDescription, setNewSectionDescription] = useState<string>('');
+  const [isCreatingSection, setIsCreatingSection] = useState<boolean>(false);
+  const [activeSectionFilter, setActiveSectionFilter] = useState<string>('all');
+
+  // In-Dashboard Cover Photo Selection
+  const [isChangeCoverModalOpen, setIsChangeCoverModalOpen] = useState<boolean>(false);
+
+  // In-Dashboard Photo Lightbox & Management Modal
+  const [selectedPhotoForDetail, setSelectedPhotoForDetail] = useState<DeliveryFileItem | null>(null);
+  const [showAllPhotosInGrid, setShowAllPhotosInGrid] = useState<boolean>(false);
+  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'notes'>('all');
+  const [photosSort, setPhotosSort] = useState<'newest' | 'oldest' | 'downloads' | 'name'>('newest');
+
+  // ZIP download state
+  const [isZipping, setIsZipping] = useState<boolean>(false);
+
+  // Settings tab editing states
+  const [editShootDate, setEditShootDate] = useState<string>('');
+  const [editCategory, setEditCategory] = useState<string>('');
+  const [editAgreedBalance, setEditAgreedBalance] = useState<number | ''>('');
+  const [editAmountPaid, setEditAmountPaid] = useState<number | ''>('');
+  const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -468,7 +517,7 @@ export const Dashboard: React.FC = () => {
           // Get latest file for cover and calculate downloads
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('id, file_url, file_type, download_count, created_at, expires_at')
+            .select('id, file_url, file_type, file_path, caption, download_count, created_at, expires_at')
             .eq('gallery_id', gallery.id)
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false });
@@ -566,23 +615,33 @@ export const Dashboard: React.FC = () => {
             }
           }
 
-          // Fetch count of client selection notes for delivery galleries
+          // Fetch count of client selection notes & individual selections for delivery galleries
           let selectionNotesCount = 0;
+          const selectionsMap: Record<string, { is_selected: boolean; client_note?: string }> = {};
           if (!isPortfolioGal) {
             try {
               const { data: notesData } = await supabase
                 .from('selections')
-                .select('client_note')
-                .eq('gallery_id', gallery.id)
-                .not('client_note', 'is', null);
+                .select('file_id, client_note')
+                .eq('gallery_id', gallery.id);
 
               if (notesData) {
-                selectionNotesCount = notesData.filter(s => Boolean(s.client_note && s.client_note.trim())).length;
+                notesData.forEach(s => {
+                  selectionsMap[s.file_id] = {
+                    is_selected: true,
+                    client_note: s.client_note || undefined,
+                  };
+                  if (s.client_note && s.client_note.trim()) {
+                    selectionNotesCount++;
+                  }
+                });
               }
             } catch (err) {
               // Non-blocking
             }
           }
+
+          const subGalleries = (galleriesData || []).filter(g => getParentGalleryId(g) === gallery.id);
 
           return {
             ...gallery,
@@ -600,8 +659,20 @@ export const Dashboard: React.FC = () => {
             isExpired,
             timeRemainingText,
             selectionNotesCount,
-            files: (allFiles || []).map(f => ({ id: f.id, file_url: f.file_url, file_type: f.file_type })),
+            files: (allFiles || []).map(f => ({
+              id: f.id,
+              file_url: f.file_url,
+              file_type: f.file_type,
+              file_path: f.file_path,
+              caption: f.caption,
+              download_count: f.download_count,
+              created_at: f.created_at,
+              expires_at: f.expires_at,
+              is_selected: Boolean(selectionsMap[f.id]),
+              client_note: selectionsMap[f.id]?.client_note,
+            })),
             password: galleryPassword,
+            subGalleries,
           };
         })
       );
@@ -921,6 +992,177 @@ export const Dashboard: React.FC = () => {
       toast.error("Failed to update password");
     }
   };
+
+  const handleUploadMedia = async (e: React.ChangeEvent<HTMLInputElement>, isVideo = false) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0 || !currentDelivery) return;
+    const filesArray = Array.from(fileList);
+    try {
+      toast.info(`Uploading ${filesArray.length} ${isVideo ? 'video(s)' : 'photo(s)'} to ${currentDelivery.client_name}...`);
+      await uploadFiles(currentDelivery.id, filesArray, 876000);
+      toast.success(`${filesArray.length} file(s) uploaded successfully!`);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      toast.error("Upload failed: " + (err.message || 'Error'));
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleCreateSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSectionName.trim() || !currentDelivery) return;
+    setIsCreatingSection(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("User session not found");
+        return;
+      }
+      const payload = JSON.stringify({
+        projectTitle: newSectionName.trim(),
+        projectDescription: newSectionDescription.trim(),
+        parentGalleryId: currentDelivery.id,
+      });
+      const { error } = await supabase
+        .from('galleries')
+        .insert([{
+          photographer_id: user.id,
+          client_name: `${currentDelivery.client_name} – ${newSectionName.trim()}`,
+          title: payload,
+          category: '',
+          agreed_balance: 0,
+          amount_paid: 0,
+          link_enabled: true
+        }]);
+      if (error) throw error;
+      toast.success(`Section "${newSectionName}" created!`);
+      setNewSectionName('');
+      setNewSectionDescription('');
+      setIsCreateSectionModalOpen(false);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Error creating section:", err);
+      toast.error("Failed to create section: " + (err.message || 'Error'));
+    } finally {
+      setIsCreatingSection(false);
+    }
+  };
+
+  const handleSetCoverPhoto = async (photoUrl: string) => {
+    if (!currentDelivery) return;
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ coverUrl: photoUrl })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success("Gallery cover photo updated!");
+      setIsChangeCoverModalOpen(false);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update cover photo");
+    }
+  };
+
+  const handleDeletePhoto = async (file: DeliveryFileItem) => {
+    if (!window.confirm("Permanently delete this photo from the gallery?")) return;
+    try {
+      if (file.file_path) {
+        try {
+          await fetch(getApiUrl('/api/delete-file'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: file.file_path })
+          });
+        } catch (e) {
+          console.warn("Storage deletion warning:", e);
+        }
+      }
+      const { error } = await supabase.from('files').delete().eq('id', file.id);
+      if (error) throw error;
+      toast.success("Photo deleted");
+      setSelectedPhotoForDetail(null);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Delete photo error:", err);
+      toast.error("Failed to delete photo: " + (err.message || 'Error'));
+    }
+  };
+
+  const handleDownloadAllZip = async () => {
+    if (!currentDelivery || !currentDelivery.files || currentDelivery.files.length === 0) {
+      toast.error("No photos available to download in this gallery");
+      return;
+    }
+    setIsZipping(true);
+    toast.info(`Preparing ZIP archive for ${currentDelivery.client_name}...`);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder((currentDelivery.client_name || 'gallery').replace(/[^\w\s-]/g, '')) || zip;
+      let fetched = 0;
+      const validFiles = currentDelivery.files.filter(f => f.file_url && !f.file_url.includes('PASSWORD_SETTING'));
+
+      await Promise.all(
+        validFiles.map(async (file, index) => {
+          try {
+            const directUrl = rewriteUrlToR2(file.file_url);
+            const resp = await fetch(directUrl);
+            if (resp.ok) {
+              const blob = await resp.blob();
+              const ext = file.file_type === 'video' ? 'mp4' : 'jpg';
+              const fileName = `photo_${String(index + 1).padStart(3, '0')}.${ext}`;
+              folder.file(fileName, blob);
+              fetched++;
+            }
+          } catch (e) {
+            console.warn("Failed fetching file for zip:", file.file_url, e);
+          }
+        })
+      );
+
+      if (fetched === 0) {
+        throw new Error("Could not download any images from storage");
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${(currentDelivery.client_name || 'delivery_gallery').replace(/\s+/g, '_')}.zip`);
+      toast.success("ZIP download started!");
+    } catch (err: any) {
+      console.error("ZIP error:", err);
+      toast.error("Failed to generate ZIP: " + (err.message || 'Error'));
+    } finally {
+      setIsZipping(false);
+    }
+  };
+
+  const handleSaveDeliverySettings = async () => {
+    if (!currentDelivery) return;
+    setIsSavingSettings(true);
+    try {
+      const updates: any = {};
+      if (editableDeliveryTitle.trim()) updates.client_name = editableDeliveryTitle.trim();
+      if (editCategory.trim()) updates.category = editCategory.trim();
+      if (editAgreedBalance !== '') updates.agreed_balance = Number(editAgreedBalance) || 0;
+      if (editAmountPaid !== '') updates.amount_paid = Number(editAmountPaid) || 0;
+      
+      const { error } = await supabase
+        .from('galleries')
+        .update(updates)
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success("Gallery settings saved successfully");
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to save settings: " + (err.message || 'Error'));
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
 
   const availableCategories = React.useMemo(() => {
       const cats = new Set<string>();
@@ -2164,6 +2406,24 @@ export const Dashboard: React.FC = () => {
 
 {currentView === 'delivery' && (
           <div className="p-6 sm:p-8 lg:p-10 max-w-[1360px] mx-auto w-full">
+            {/* Hidden native file inputs for direct in-page upload */}
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              ref={fileInputRef}
+              onChange={(e) => handleUploadMedia(e, false)}
+              className="hidden"
+            />
+            <input
+              type="file"
+              multiple
+              accept="video/*"
+              ref={videoInputRef}
+              onChange={(e) => handleUploadMedia(e, true)}
+              className="hidden"
+            />
+
             {/* Top Bar: Breadcrumbs, Search, Notifications, Avatar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
               <div className="flex items-center gap-2 text-xs">
@@ -2175,7 +2435,7 @@ export const Dashboard: React.FC = () => {
                 >
                   <span>Deliveries</span>
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#EADFD0] text-[#4A3B32] font-bold">
-                    {deliveryGalleries.length || 7}
+                    {deliveryGalleries.length}
                   </span>
                 </button>
                 <ChevronRight className="w-3.5 h-3.5 text-[#B58B5C]" />
@@ -2282,7 +2542,7 @@ export const Dashboard: React.FC = () => {
 
             {/* Expired Notification Alert Banner (Preserved) */}
             {expiredDeliveryCount > 0 && (
-              <div className="mt-4 mb-2 p-4 rounded-2xl border border-rose-200 bg-rose-50/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="mt-3 mb-4 p-4 rounded-2xl border border-rose-200 bg-rose-50/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
                     <Clock className="w-5 h-5" />
@@ -2311,9 +2571,130 @@ export const Dashboard: React.FC = () => {
               </div>
             )}
 
+            {/* ALL DELIVERY GALLERIES CAROUSEL STRIP (Solves "I can't see the other galleries here") */}
+            <div className="mb-6 bg-white rounded-2xl border border-[#E8E2D2] p-4 shadow-xs">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#B58B5C]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#1F1714]">
+                    Client Delivery Portals ({deliveryGalleries.length})
+                  </span>
+                  <span className="text-[11px] text-[#7A6F69] hidden md:inline">
+                    · Click any portal card below to manage it right here
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDeliveryViewMode(deliveryViewMode === 'detail' ? 'all' : 'detail')}
+                    className="text-[11px] font-semibold text-[#8C6432] hover:text-[#5B3E1F] hover:bg-[#FAF4E8] px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {deliveryViewMode === 'detail' ? (
+                      <>
+                        <List className="w-3.5 h-3.5" />
+                        <span>All Portals Table</span>
+                      </>
+                    ) : (
+                      <>
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span>Studio Editor</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                    className="text-[11px] font-semibold bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>New Portal</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Horizontal Scrollable Gallery Cards */}
+              <div className="flex items-stretch gap-3 overflow-x-auto pb-1 pt-0.5 scrollbar-none">
+                {deliveryGalleries.map((g) => {
+                  const isSelected = currentDelivery?.id === g.id && deliveryViewMode === 'detail';
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => {
+                        setSelectedDeliveryId(g.id);
+                        setEditableDeliveryTitle(g.client_name);
+                        setDeliveryViewMode('detail');
+                      }}
+                      className={`shrink-0 w-56 text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
+                        isSelected
+                          ? 'border-[#B58B5C] bg-[#FAF4E8] shadow-sm ring-2 ring-[#B58B5C]/35'
+                          : 'border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F4EFE6] hover:border-[#D6CCA6]'
+                      }`}
+                    >
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-[#E8E2D2]">
+                        {g.coverUrl || g.files?.[0]?.file_url ? (
+                          <img
+                            src={getOptimizedImageUrl(g.coverUrl || g.files![0].file_url, 120, 120)}
+                            alt={g.client_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#B58B5C]">
+                            <ImageIcon className="w-5 h-5 opacity-40" />
+                          </div>
+                        )}
+                        <span
+                          className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${
+                            g.isExpired ? 'bg-rose-500' : g.link_enabled ? 'bg-emerald-500' : 'bg-slate-400'
+                          }`}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`text-xs truncate ${isSelected ? 'font-bold text-[#1F1714]' : 'font-semibold text-[#3B2E28]'}`}>
+                          {g.client_name}
+                        </h4>
+                        <div className="text-[10px] text-[#7A6F69] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>{g.itemCount || g.files?.length || 0} photos</span>
+                          {g.isExpired ? (
+                            <span className="text-rose-600 font-semibold">· Expired</span>
+                          ) : g.timeRemainingText ? (
+                            <span className="text-amber-800 font-medium">· {g.timeRemainingText.split(' ')[0]}</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* + Create New Portal Card */}
+                <button
+                  onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                  className="shrink-0 w-36 border-2 border-dashed border-[#D6CCA6] hover:border-[#B58B5C] bg-[#FAF7F2] hover:bg-[#F3EFE8] rounded-xl p-2.5 flex flex-col items-center justify-center text-center text-[#7A6F69] hover:text-[#1F1714] transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#B58B5C] mb-1" />
+                  <span className="text-[11px] font-bold">New Delivery</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Active File Upload Progress Banner */}
+            {uploading && activeGalleryId === currentDelivery?.id && (
+              <div className="mb-4 p-4 rounded-2xl bg-[#FAF4E8] border border-[#EEDFCA] flex items-center justify-between gap-4 shadow-xs animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#8C6432]/10 flex items-center justify-center text-[#8C6432]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#1F1714]">Uploading media to {currentDelivery?.client_name}...</p>
+                    <p className="text-[11px] text-[#7A6F69]">Optimizing and watermarking files on Cloudflare R2 ({progress}%)</p>
+                  </div>
+                </div>
+                <div className="w-36 bg-[#EAE2D5] rounded-full h-2.5 overflow-hidden">
+                  <div className="bg-[#8C6432] h-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            )}
+
             {/* Main Delivery Workspace (Detail View matching Warm_Wedding_Gallery_Studio_Dashboard_a6cde6e1.png) */}
             {deliveryViewMode === 'detail' ? (
-              <div className="mt-4 space-y-6">
+              <div className="space-y-6">
                 {/* Title & Action Buttons Row */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
@@ -2460,7 +2841,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tabs Row */}
+                {/* Sub-Tabs under Title (Gallery, Settings, Access, Download, Store, SEO, Analytics) */}
                 <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1 border-b border-[#E8E2D2]/70 scrollbar-none">
                   {[
                     { id: 'gallery', label: 'Gallery', icon: LayoutGrid },
@@ -2490,366 +2871,957 @@ export const Dashboard: React.FC = () => {
                   })}
                 </div>
 
-                {/* Two-Column Grid: Left (Hero, Toolbar, Photos) & Right (Overview, Access, Features, SEO) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Left Column (8 cols) */}
-                  <div className="lg:col-span-8 space-y-6">
-                    {/* Hero Cover Banner */}
-                    <div className="relative rounded-3xl overflow-hidden min-h-[340px] sm:min-h-[380px] flex items-center justify-center text-center shadow-xs border border-[#E8E2D2] group">
-                      <img
-                        src={currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1600&q=80'}
-                        alt={currentDelivery?.client_name || 'Delivery Banner'}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
+                {/* TAB CONTENT: GALLERY TAB */}
+                {deliveryTab === 'gallery' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left Column (8 cols): Hero Banner, Toolbar, Sections, Photo Grid */}
+                    <div className="lg:col-span-8 space-y-6">
+                      {/* Hero Cover Banner */}
+                      <div className="relative rounded-3xl overflow-hidden min-h-[340px] sm:min-h-[380px] flex items-center justify-center text-center shadow-xs border border-[#E8E2D2] group">
+                        <img
+                          src={currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1600&q=80'}
+                          alt={currentDelivery?.client_name || 'Delivery Banner'}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
 
-                      {/* Top-Right Translucent Icon Badge */}
-                      <div className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 shadow-sm">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
-
-                      {/* Center Overlay Text & Button */}
-                      <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
-                        <div className="text-[11px] sm:text-xs tracking-[0.25em] font-semibold uppercase text-white/90 drop-shadow-sm">
-                          {currentDelivery?.client_name ? currentDelivery.client_name.toUpperCase() : 'MWABONJE STUDIO'}
-                        </div>
-                        <h2 
-                          className="text-4xl sm:text-5xl font-normal tracking-tight text-white mt-1.5 drop-shadow-md"
-                          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
-                        >
-                          {currentDelivery?.title ? getCleanGalleryTitle(currentDelivery.title) : currentDelivery?.client_name || 'Our Gallery'}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-white/85 mt-2 font-normal drop-shadow-sm max-w-sm mx-auto">
-                          Private client delivery collection · East African Coast
-                        </p>
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
-                          }}
-                          className="mt-5 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white hover:bg-[#FAF7F0] text-[#231A16] text-xs font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-[#231A16] text-[#231A16]" />
-                          <span>View Photos</span>
-                        </button>
-                      </div>
-
-                      {/* Bottom-Right Change Cover Button */}
-                      <button
-                        onClick={() => {
-                          if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                        }}
-                        className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-[11px] font-medium border border-white/20 transition-all cursor-pointer shadow-sm"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5" />
-                        <span>Change Cover</span>
-                      </button>
-                    </div>
-
-                    {/* Media Action Toolbar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* Grid / List View Toggle */}
-                        <div className="flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3]">
-                          <button
-                            onClick={() => setDeliveryGridMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              deliveryGridMode === 'grid' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                            }`}
-                            title="Grid View"
-                          >
-                            <LayoutGrid className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeliveryGridMode('list')}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              deliveryGridMode === 'list' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                            }`}
-                            title="List View"
-                          >
-                            <GalleryHorizontalEnd className="w-4 h-4" />
-                          </button>
+                        {/* Top-Right Translucent Icon Badge */}
+                        <div className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 shadow-sm">
+                          <ImageIcon className="w-4 h-4" />
                         </div>
 
-                        {/* + Add Photos */}
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                          }}
-                          className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add Photos</span>
-                        </button>
-
-                        {/* + Add Videos */}
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                          }}
-                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <Camera className="w-4 h-4 text-[#8E827B]" />
-                          <span>Add Videos</span>
-                        </button>
-
-                        {/* Create Section */}
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                          }}
-                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <FolderPlus className="w-4 h-4 text-[#8E827B]" />
-                          <span>Create Section</span>
-                        </button>
-                      </div>
-
-                      {/* Right Toolbar Controls: Sort & Filter */}
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
-                        <div className="relative">
-                          <button
-                            onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                        {/* Center Overlay Text & Button */}
+                        <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
+                          <div className="text-[11px] sm:text-xs tracking-[0.25em] font-semibold uppercase text-white/90 drop-shadow-sm">
+                            {currentDelivery?.client_name ? currentDelivery.client_name.toUpperCase() : 'MWABONJE STUDIO'}
+                          </div>
+                          <h2 
+                            className="text-4xl sm:text-5xl font-normal tracking-tight text-white mt-1.5 drop-shadow-md"
+                            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
                           >
-                            <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
-                            <span>Sort</span>
-                          </button>
-
-                          {isSortDropdownOpen && (
-                            <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
-                              <button
-                                onClick={() => { setSortBy('recent'); setIsSortDropdownOpen(false); }}
-                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                              >
-                                Capture Time (Oldest first)
-                              </button>
-                              <button
-                                onClick={() => { setSortBy('recent'); setIsSortDropdownOpen(false); }}
-                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                              >
-                                Capture Time (Newest first)
-                              </button>
-                              <button
-                                onClick={() => { setSortBy('viewed'); setIsSortDropdownOpen(false); }}
-                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                              >
-                                File Name (A to Z)
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() => toast.info("Filter active: Showing all gallery files")}
-                          className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] p-2 rounded-xl shadow-xs transition-colors cursor-pointer"
-                          title="Filter Options"
-                        >
-                          <SlidersHorizontal className="w-4 h-4 text-[#8E827B]" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Photo Grid (2 rows x 4 columns) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                      {currentDelivery?.files && currentDelivery.files.length > 0 ? (
-                        <>
-                          {currentDelivery.files.slice(0, 7).map((file, idx) => (
-                            <div
-                              key={file.id || idx}
-                              onClick={() => {
-                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                              }}
-                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all cursor-pointer"
-                            >
-                              <img
-                                src={getOptimizedImageUrl(file.file_url, 600, 450)}
-                                alt={`Photo ${idx + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                            </div>
-                          ))}
-                          {currentDelivery.files.length > 7 ? (
-                            <div
-                              onClick={() => {
-                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                              }}
-                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#3B2E28] hover:bg-[#4A3B34] text-white flex flex-col items-center justify-center p-3 cursor-pointer shadow-xs border border-[#2D221D] transition-colors"
-                            >
-                              <Plus className="w-6 h-6 text-white/80 group-hover:scale-110 transition-transform mb-0.5" />
-                              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">
-                                {currentDelivery.files.length - 7}
-                              </span>
-                              <span className="text-[11px] text-[#CBBDB8] mt-1 font-medium">
-                                more photos
-                              </span>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => {
-                                if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                              }}
-                              className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#FAF7F2] hover:bg-[#F3EFE8] border-2 border-dashed border-[#D6CCA6] text-[#7A6F69] flex flex-col items-center justify-center p-3 cursor-pointer transition-colors"
-                            >
-                              <Plus className="w-5 h-5 text-[#B58B5C] mb-1" />
-                              <span className="text-xs font-semibold text-[#1F1714]">Add Photos</span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="col-span-full py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
-                          <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
-                          <h3 className="text-base font-semibold text-[#1F1714]">No Photos Uploaded Yet</h3>
-                          <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
-                            Upload photos to "{currentDelivery?.client_name}" to activate client download and viewing.
+                            {currentDelivery?.title ? getCleanGalleryTitle(currentDelivery.title) : currentDelivery?.client_name || 'Our Gallery'}
+                          </h2>
+                          <p className="text-xs sm:text-sm text-white/85 mt-2 font-normal drop-shadow-sm max-w-sm mx-auto">
+                            Private client delivery collection · East African Coast
                           </p>
                           <button
                             onClick={() => {
-                              if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
+                              if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
                             }}
-                            className="mt-4 px-4 py-2 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="mt-5 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white hover:bg-[#FAF7F0] text-[#231A16] text-xs font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer"
                           >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Upload Photos to Gallery</span>
+                            <Play className="w-3.5 h-3.5 fill-[#231A16] text-[#231A16]" />
+                            <span>View Photos</span>
+                          </button>
+                        </div>
+
+                        {/* Bottom-Right Change Cover Button (Opens in-dashboard cover picker) */}
+                        <button
+                          onClick={() => setIsChangeCoverModalOpen(true)}
+                          className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-[11px] font-medium border border-white/20 transition-all cursor-pointer shadow-sm"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Change Cover</span>
+                        </button>
+                      </div>
+
+                      {/* Sections Pills (Sub-galleries) */}
+                      {currentDelivery?.subGalleries && currentDelivery.subGalleries.length > 0 && (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                          <button
+                            onClick={() => setActiveSectionFilter('all')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
+                              activeSectionFilter === 'all'
+                                ? 'bg-[#3B2E28] text-white shadow-xs'
+                                : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                            }`}
+                          >
+                            All Photos ({currentDelivery.files?.length || 0})
+                          </button>
+                          {currentDelivery.subGalleries.map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => setActiveSectionFilter(sub.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
+                                activeSectionFilter === sub.id
+                                  ? 'bg-[#3B2E28] text-white shadow-xs'
+                                  : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                            >
+                              {sub.client_name.replace(currentDelivery.client_name, '').replace(/^[–\-]\s*/, '')}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setIsCreateSectionModalOpen(true)}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#8C6432] bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Section</span>
                           </button>
                         </div>
                       )}
+
+                      {/* Media Action Toolbar (All actions handled in-place!) */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Grid / List View Toggle */}
+                          <div className="flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3]">
+                            <button
+                              onClick={() => setDeliveryGridMode('grid')}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                deliveryGridMode === 'grid' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                              title="Grid View"
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeliveryGridMode('list')}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                deliveryGridMode === 'list' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                              title="List View"
+                            >
+                              <GalleryHorizontalEnd className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* + Add Photos (Direct File Dialog right here) */}
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Photos</span>
+                          </button>
+
+                          {/* + Add Videos (Direct File Dialog right here) */}
+                          <button
+                            onClick={() => videoInputRef.current?.click()}
+                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Camera className="w-4 h-4 text-[#8E827B]" />
+                            <span>Add Videos</span>
+                          </button>
+
+                          {/* Create Section (In-dashboard modal) */}
+                          <button
+                            onClick={() => setIsCreateSectionModalOpen(true)}
+                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <FolderPlus className="w-4 h-4 text-[#8E827B]" />
+                            <span>Create Section</span>
+                          </button>
+                        </div>
+
+                        {/* Right Toolbar Controls: Sort & Filter */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          {/* Filter Pills (All / Client Picks / Notes) */}
+                          <div className="flex items-center bg-white border border-[#E6DFC6] rounded-xl p-0.5 shadow-xs text-xs">
+                            <button
+                              onClick={() => setPhotosFilter('all')}
+                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                                photosFilter === 'all' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                            >
+                              All ({currentDelivery?.files?.length || 0})
+                            </button>
+                            <button
+                              onClick={() => setPhotosFilter('picks')}
+                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                photosFilter === 'picks' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                            >
+                              <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+                              <span>Picks</span>
+                            </button>
+                            <button
+                              onClick={() => setPhotosFilter('notes')}
+                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                photosFilter === 'notes' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                              }`}
+                            >
+                              <MessageSquare className="w-3 h-3 text-amber-600" />
+                              <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
+                            </button>
+                          </div>
+
+                          <div className="relative">
+                            <button
+                              onClick={() => setIsSortDropdownOpen(prev => !prev)}
+                              className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            >
+                              <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
+                              <span>Sort</span>
+                            </button>
+
+                            {isSortDropdownOpen && (
+                              <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
+                                <button
+                                  onClick={() => { setPhotosSort('newest'); setIsSortDropdownOpen(false); }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                                >
+                                  Newest First
+                                </button>
+                                <button
+                                  onClick={() => { setPhotosSort('oldest'); setIsSortDropdownOpen(false); }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                                >
+                                  Oldest First
+                                </button>
+                                <button
+                                  onClick={() => { setPhotosSort('downloads'); setIsSortDropdownOpen(false); }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
+                                >
+                                  Most Downloaded
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photo Grid / List Container (Drag & Drop Supported) */}
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                        onDragLeave={() => setIsDraggingOver(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingOver(false);
+                          if (e.dataTransfer.files?.length) {
+                            uploadFiles(currentDelivery!.id, Array.from(e.dataTransfer.files), 876000).then(() => fetchData());
+                          }
+                        }}
+                        className={`transition-colors rounded-3xl p-1 ${
+                          isDraggingOver ? 'bg-emerald-50/50 ring-2 ring-emerald-500 ring-dashed' : ''
+                        }`}
+                      >
+                        {(() => {
+                          let displayFiles = currentDelivery?.files || [];
+                          if (photosFilter === 'picks') {
+                            displayFiles = displayFiles.filter(f => f.is_selected);
+                          } else if (photosFilter === 'notes') {
+                            displayFiles = displayFiles.filter(f => f.client_note && f.client_note.trim());
+                          }
+
+                          if (photosSort === 'oldest') {
+                            displayFiles = [...displayFiles].reverse();
+                          } else if (photosSort === 'downloads') {
+                            displayFiles = [...displayFiles].sort((a, b) => (b.download_count || 0) - (a.download_count || 0));
+                          }
+
+                          if (displayFiles.length === 0) {
+                            return (
+                              <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
+                                <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
+                                <h3 className="text-base font-semibold text-[#1F1714]">
+                                  {photosFilter !== 'all' ? 'No photos match this filter' : 'No Photos in this Gallery'}
+                                </h3>
+                                <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                                  {photosFilter !== 'all' ? 'Try switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
+                                </p>
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="mt-4 px-4 py-2 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Upload Photos Directly</span>
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          // LIST VIEW MODE
+                          if (deliveryGridMode === 'list') {
+                            return (
+                              <div className="bg-white rounded-2xl border border-[#E8E2D2] overflow-hidden shadow-xs">
+                                <div className="divide-y divide-[#F0EBE0]">
+                                  {displayFiles.map((file, idx) => (
+                                    <div
+                                      key={file.id || idx}
+                                      onClick={() => setSelectedPhotoForDetail(file)}
+                                      className="p-3 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-4 cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <img
+                                          src={getOptimizedImageUrl(file.file_url, 100, 100)}
+                                          alt={`Photo ${idx + 1}`}
+                                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#EDE5D8]"
+                                        />
+                                        <div className="min-w-0">
+                                          <div className="text-xs font-semibold text-[#1F1714] truncate flex items-center gap-2">
+                                            <span>Photo #{idx + 1}</span>
+                                            {file.is_selected && (
+                                              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-rose-200">
+                                                <Heart className="w-2.5 h-2.5 fill-rose-500" /> Client Pick
+                                              </span>
+                                            )}
+                                          </div>
+                                          {file.client_note && (
+                                            <p className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 mt-1 truncate max-w-md">
+                                              💬 Note: {file.client_note}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file.file_url); }}
+                                          className="p-2 text-[#7A6F69] hover:text-[#B58B5C] hover:bg-[#FAF4E8] rounded-lg transition-colors cursor-pointer"
+                                          title="Set as Cover"
+                                        >
+                                          <Star className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(rewriteUrlToR2(file.file_url), '_blank');
+                                          }}
+                                          className="p-2 text-[#7A6F69] hover:text-[#1F1714] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                          title="Download Original"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
+                                          className="p-2 text-[#7A6F69] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                          title="Delete Photo"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // GRID VIEW MODE
+                          const visibleFiles = showAllPhotosInGrid ? displayFiles : displayFiles.slice(0, 7);
+                          const remainingCount = displayFiles.length - 7;
+
+                          return (
+                            <div>
+                              {showAllPhotosInGrid && (
+                                <div className="mb-3 flex items-center justify-between text-xs text-[#7A6F69]">
+                                  <span>Showing all {displayFiles.length} photos</span>
+                                  <button
+                                    onClick={() => setShowAllPhotosInGrid(false)}
+                                    className="text-xs font-semibold text-[#8C6432] hover:underline cursor-pointer"
+                                  >
+                                    Collapse to preview (7 photos)
+                                  </button>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                                {visibleFiles.map((file, idx) => (
+                                  <div
+                                    key={file.id || idx}
+                                    onClick={() => setSelectedPhotoForDetail(file)}
+                                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all cursor-pointer"
+                                  >
+                                    <img
+                                      src={getOptimizedImageUrl(file.file_url, 600, 450)}
+                                      alt={`Photo ${idx + 1}`}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors" />
+
+                                    {/* Badges: Client Pick / Notes */}
+                                    <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none">
+                                      {file.is_selected && (
+                                        <span className="w-6 h-6 rounded-full bg-rose-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs">
+                                          <Heart className="w-3.5 h-3.5 fill-white" />
+                                        </span>
+                                      )}
+                                      {file.client_note && (
+                                        <span className="w-6 h-6 rounded-full bg-amber-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs" title={file.client_note}>
+                                          <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Hover Quick Action Buttons */}
+                                    <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file.file_url); }}
+                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                        title="Set as Cover"
+                                      >
+                                        <Star className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(rewriteUrlToR2(file.file_url), '_blank');
+                                        }}
+                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                        title="Download"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
+                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-rose-600 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Dark Card: + N more photos (Toggles full grid right here!) */}
+                                {!showAllPhotosInGrid && remainingCount > 0 && (
+                                  <div
+                                    onClick={() => setShowAllPhotosInGrid(true)}
+                                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#3B2E28] hover:bg-[#4A3B34] text-white flex flex-col items-center justify-center p-3 cursor-pointer shadow-xs border border-[#2D221D] transition-colors"
+                                  >
+                                    <Plus className="w-6 h-6 text-white/80 group-hover:scale-110 transition-transform mb-0.5" />
+                                    <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">
+                                      {remainingCount}
+                                    </span>
+                                    <span className="text-[11px] text-[#CBBDB8] mt-1 font-medium">
+                                      more photos
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Right Column (4 cols): 4 Luxury Information & Controls Cards */}
+                    <div className="lg:col-span-4 space-y-5">
+                      {/* Card 1: Gallery Overview */}
+                      <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <BarChart2 className="w-4 h-4 text-[#B58B5C]" />
+                            <h3 className="text-sm font-bold text-[#1F1714]">Gallery Overview</h3>
+                          </div>
+                          {/* Cover Thumbnail */}
+                          {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
+                            <img
+                              src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
+                              alt="Gallery thumbnail"
+                              className="w-12 h-12 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] border border-[#EDE5D8] flex items-center justify-center text-[#B58B5C]">
+                              <ImageIcon className="w-5 h-5 opacity-50" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2.5 text-xs">
+                          <div className="flex items-center justify-between text-[#6D635D]">
+                            <div className="flex items-center gap-2">
+                              <Eye className="w-4 h-4 text-[#8E827B]" />
+                              <span>Views</span>
+                            </div>
+                            <span className="font-semibold text-[#1F1714]">{currentDelivery?.analytics?.views || 0}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[#6D635D]">
+                            <div className="flex items-center gap-2">
+                              <Download className="w-4 h-4 text-[#8E827B]" />
+                              <span>Downloads</span>
+                            </div>
+                            <span className="font-semibold text-[#1F1714]">{currentDelivery?.downloadCount || 0}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[#6D635D]">
+                            <div className="flex items-center gap-2">
+                              <Heart className="w-4 h-4 text-[#8E827B]" />
+                              <span>Favorites</span>
+                            </div>
+                            <span className="font-semibold text-[#1F1714]">
+                              {currentDelivery?.files?.filter(f => f.is_selected).length || 0}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[#6D635D]">
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="w-4 h-4 text-[#8E827B]" />
+                              <span>Client Notes</span>
+                            </div>
+                            <span className="font-semibold text-[#1F1714]">{currentDelivery?.selectionNotesCount || 0}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[#6D635D]">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-[#8E827B]" />
+                              <span>Created</span>
+                            </div>
+                            <span className="font-semibold text-[#1F1714]">{currentDelivery?.created_at ? formatDate(currentDelivery.created_at) : '—'}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[#6D635D] pt-1 border-t border-[#F4EFE6]">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-[#8E827B]" />
+                              <span>Expires</span>
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-lg font-semibold text-[11px] border ${
+                              currentDelivery?.isExpired
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-[#FAF4E8] text-[#8C6432] border-[#EEDFCA]'
+                            }`}>
+                              {currentDelivery?.timeRemainingText || (currentDelivery?.expires_at ? formatDate(currentDelivery.expires_at) : 'Active · No Expiry')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Client Access */}
+                      <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-[#B58B5C]" />
+                          <h3 className="text-sm font-bold text-[#1F1714]">Client Access</h3>
+                        </div>
+
+                        {/* Password Protected Toggle */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-[#8E827B]" />
+                            <span className="text-xs font-medium text-[#1F1714]">Private (Password Protected)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
+                            className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div
+                              className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                deliveryIsPrivate ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Password Input Box */}
+                        {deliveryIsPrivate && (
+                          <div className="relative">
+                            <input
+                              type={deliveryShowPassword ? 'text' : 'password'}
+                              value={deliveryPassword}
+                              onChange={(e) => setDeliveryPassword(e.target.value)}
+                              onBlur={() => handleSaveDeliveryPassword(deliveryPassword)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
+                              placeholder="Set gallery password"
+                              className="w-full pl-3.5 pr-10 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
+                            >
+                              {deliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* 4 Access Permission Checklist Toggles */}
+                        <div className="space-y-3 pt-2 border-t border-[#F4EFE6] text-xs">
+                          {/* 1. Allow Downloads */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[#1F1714]">
+                              <Download className="w-4 h-4 text-[#8E827B]" />
+                              <span>Allow downloads</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryAllowDownloads(!deliveryAllowDownloads)}
+                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                                deliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                              }`}
+                            >
+                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                                deliveryAllowDownloads ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                          </div>
+
+                          {/* 2. Allow Favorites */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[#1F1714]">
+                              <Heart className="w-4 h-4 text-[#8E827B]" />
+                              <span>Allow favorites (heart)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryAllowFavorites(!deliveryAllowFavorites)}
+                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                                deliveryAllowFavorites ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                              }`}
+                            >
+                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                                deliveryAllowFavorites ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                          </div>
+
+                          {/* 3. Allow Comments */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[#1F1714]">
+                              <MessageSquare className="w-4 h-4 text-[#8E827B]" />
+                              <span>Allow comments</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryAllowComments(!deliveryAllowComments)}
+                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                                deliveryAllowComments ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                              }`}
+                            >
+                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                                deliveryAllowComments ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                          </div>
+
+                          {/* 4. Require Client Email */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[#1F1714]">
+                              <Mail className="w-4 h-4 text-[#8E827B]" />
+                              <span>Require client email to access</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryRequireEmail(!deliveryRequireEmail)}
+                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                                deliveryRequireEmail ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                              }`}
+                            >
+                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                                deliveryRequireEmail ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Delivery Features (6 Interactive Tiles) */}
+                      <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-[#B58B5C]" />
+                          <h3 className="text-sm font-bold text-[#1F1714]">Delivery Features</h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {/* 1. Photo Selection */}
+                          <button
+                            onClick={() => {
+                              setPhotosFilter('picks');
+                              setShowAllPhotosInGrid(true);
+                              toast.info(`Showing ${currentDelivery?.files?.filter(f => f.is_selected).length || 0} client selections`);
+                            }}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          >
+                            <ImageIcon className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Photo Selection</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                                {currentDelivery?.selection_status === 'submitted' ? '(Submitted)' : '(Client Picks)'}
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* 2. Print Store */}
+                          <button
+                            onClick={() => setDeliveryTab('store')}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          >
+                            <ShoppingBag className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Print Store</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">(Sell Prints &amp; Products)</div>
+                            </div>
+                          </button>
+
+                          {/* 3. Client Notes */}
+                          <button
+                            onClick={() => {
+                              setPhotosFilter('notes');
+                              setShowAllPhotosInGrid(true);
+                              toast.info(`Showing ${currentDelivery?.selectionNotesCount || 0} photos with client notes`);
+                            }}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          >
+                            <MessageSquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Client Notes</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                                ({currentDelivery?.selectionNotesCount || 0} Private Comments)
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* 4. Slideshow */}
+                          <button
+                            onClick={() => {
+                              if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
+                            }}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          >
+                            <PlaySquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Slideshow</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">(Auto-Play)</div>
+                            </div>
+                          </button>
+
+                          {/* 5. Mobile App */}
+                          <button
+                            onClick={() => toast.info("Mobile PWA access ready: clients can install icon on home screen")}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                          >
+                            <Smartphone className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Mobile App</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">(Branded Access)</div>
+                            </div>
+                          </button>
+
+                          {/* 6. Expiring Gallery */}
+                          <button
+                            onClick={(e) => {
+                              if (currentDelivery?.id) {
+                                handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name);
+                              }
+                            }}
+                            className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
+                            title="Click to extend expiry (+7 days)"
+                          >
+                            <Clock className="w-4 h-4 text-[#B58B5C] mb-1.5" />
+                            <div>
+                              <div className="text-xs font-bold text-[#1F1714]">Expiring Gallery</div>
+                              <div className="text-[10px] text-[#7A6F69] mt-0.5">
+                                {currentDelivery?.timeRemainingText ? `(${currentDelivery.timeRemainingText})` : '(Set Auto Expiry)'}
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Card 4: SEO & Sharing */}
+                      <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Share2 className="w-4 h-4 text-[#B58B5C]" />
+                          <h3 className="text-sm font-bold text-[#1F1714]">SEO &amp; Sharing</h3>
+                        </div>
+
+                        {/* Search Engine Indexing Toggle */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-[#6D635D] max-w-[220px]">
+                            Allow search engine indexing (Public galleries only)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryAllowSeo(!deliveryAllowSeo)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryAllowSeo ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                              deliveryAllowSeo ? 'translate-x-4' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+
+                        {/* Social Sharing Preview Heading with Badge */}
+                        <div className="pt-2 border-t border-[#F4EFE6]">
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className="text-xs font-medium text-[#1F1714]">Social sharing preview (Open Graph)</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+                              Configured
+                            </span>
+                          </div>
+
+                          {/* Open Graph Card Preview */}
+                          <div className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] flex items-center gap-3">
+                            {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
+                              <img
+                                src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
+                                alt="Open Graph preview"
+                                className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[#E6DFC6]"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-[#FAF7F0] border border-[#E6DFC6] flex items-center justify-center text-[#B58B5C] shrink-0">
+                                <ImageIcon className="w-5 h-5 opacity-50" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-xs font-bold text-[#1F1714] truncate">
+                                {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
+                              </h4>
+                              <p className="text-[11px] text-[#7A6F69] truncate mt-0.5">
+                                Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toast.info("Open Graph preview options: update tags, image, or site title")}
+                              className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded cursor-pointer"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Right Column (4 cols): 4 Luxury Information & Controls Cards */}
-                  <div className="lg:col-span-4 space-y-5">
-                    {/* Card 1: Gallery Overview */}
-                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <BarChart2 className="w-4 h-4 text-[#B58B5C]" />
-                          <h3 className="text-sm font-bold text-[#1F1714]">Gallery Overview</h3>
-                        </div>
-                        {/* Cover Thumbnail */}
-                        {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
-                          <img
-                            src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
-                            alt="Gallery thumbnail"
-                            className="w-12 h-12 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
+                {/* TAB CONTENT: SETTINGS TAB */}
+                {deliveryTab === 'settings' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">Portal &amp; Client Settings</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Manage delivery details, shoot metadata, payments, and expiration.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Gallery / Client Name</label>
+                        <input
+                          type="text"
+                          value={editableDeliveryTitle}
+                          onChange={(e) => setEditableDeliveryTitle(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                          placeholder="e.g. Leah's Family Gallery"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Agreed Balance (KES)</label>
+                          <input
+                            type="number"
+                            value={editAgreedBalance}
+                            onChange={(e) => setEditAgreedBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder={String(currentDelivery?.agreed_balance || 0)}
+                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
                           />
-                        ) : (
-                          <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] border border-[#EDE5D8] flex items-center justify-center text-[#B58B5C]">
-                            <ImageIcon className="w-5 h-5 opacity-50" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Amount Paid (KES)</label>
+                          <input
+                            type="number"
+                            value={editAmountPaid}
+                            onChange={(e) => setEditAmountPaid(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder={String(currentDelivery?.amount_paid || 0)}
+                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Expiration Controls */}
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#1F1714]">Portal Expiration</span>
+                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                            currentDelivery?.isExpired ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {currentDelivery?.timeRemainingText || 'Active'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => handleQuickExtend(e, currentDelivery!.id, currentDelivery!.client_name)}
+                            className="px-3.5 py-2 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#1F1714] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Quick Extend (+7 Days)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-[#F0EBE0] flex justify-end">
+                      <button
+                        onClick={handleSaveDeliverySettings}
+                        disabled={isSavingSettings}
+                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        <span>Save Gallery Settings</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: ACCESS TAB */}
+                {deliveryTab === 'access' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">Client Access &amp; Permissions</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Control password protection, public visibility, and client privileges.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Password Protection */}
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-[#1F1714] block">Password Protection</span>
+                            <span className="text-[11px] text-[#7A6F69]">Require clients to enter a password to open this gallery.</span>
+                          </div>
+                          <button
+                            onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
+                            className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                              deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            }`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                              deliveryIsPrivate ? 'translate-x-5' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
+
+                        {deliveryIsPrivate && (
+                          <div className="pt-2">
+                            <label className="block text-[11px] font-semibold text-[#1F1714] mb-1">Access Password</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type={deliveryShowPassword ? 'text' : 'password'}
+                                value={deliveryPassword}
+                                onChange={(e) => setDeliveryPassword(e.target.value)}
+                                placeholder="Set password"
+                                className="flex-1 px-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
+                                className="p-2 border border-[#E6DFC6] bg-white rounded-xl text-[#7A6F69] hover:text-[#1F1714] cursor-pointer"
+                              >
+                                {deliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveDeliveryPassword(deliveryPassword)}
+                                className="px-3 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold cursor-pointer"
+                              >
+                                Save Password
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      <div className="space-y-2.5 text-xs">
-                        <div className="flex items-center justify-between text-[#6D635D]">
-                          <div className="flex items-center gap-2">
-                            <Eye className="w-4 h-4 text-[#8E827B]" />
-                            <span>Views</span>
-                          </div>
-                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.analytics?.views || 0}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[#6D635D]">
-                          <div className="flex items-center gap-2">
-                            <Download className="w-4 h-4 text-[#8E827B]" />
-                            <span>Downloads</span>
-                          </div>
-                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.downloadCount || 0}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[#6D635D]">
-                          <div className="flex items-center gap-2">
-                            <Heart className="w-4 h-4 text-[#8E827B]" />
-                            <span>Favorites</span>
-                          </div>
-                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.selectionNotesCount || 0}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[#6D635D]">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-[#8E827B]" />
-                            <span>Created</span>
-                          </div>
-                          <span className="font-semibold text-[#1F1714]">{currentDelivery?.created_at ? formatDate(currentDelivery.created_at) : '—'}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[#6D635D] pt-1 border-t border-[#F4EFE6]">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[#8E827B]" />
-                            <span>Expires</span>
-                          </div>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg font-semibold text-[11px] border ${
-                            currentDelivery?.isExpired
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-[#FAF4E8] text-[#8C6432] border-[#EEDFCA]'
-                          }`}>
-                            {currentDelivery?.timeRemainingText || (currentDelivery?.expires_at ? formatDate(currentDelivery.expires_at) : 'Active · No Expiry')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 2: Client Access */}
-                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-[#B58B5C]" />
-                        <h3 className="text-sm font-bold text-[#1F1714]">Client Access</h3>
-                      </div>
-
-                      {/* Password Protected Toggle */}
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-[#8E827B]" />
-                          <span className="text-xs font-medium text-[#1F1714]">Private (Password Protected)</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
-                          className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                            deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                          }`}
-                        >
-                          <div
-                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                              deliveryIsPrivate ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Password Input Box */}
-                      {deliveryIsPrivate && (
-                        <div className="relative">
-                          <input
-                            type={deliveryShowPassword ? 'text' : 'password'}
-                            value={deliveryPassword}
-                            onChange={(e) => setDeliveryPassword(e.target.value)}
-                            onBlur={() => handleSaveDeliveryPassword(deliveryPassword)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
-                            placeholder="Set gallery password"
-                            className="w-full pl-3.5 pr-10 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
-                          >
-                            {deliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* 4 Access Permission Checklist Toggles */}
-                      <div className="space-y-3 pt-2 border-t border-[#F4EFE6] text-xs">
-                        {/* 1. Allow Downloads */}
+                      {/* Permissions List */}
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3 text-xs">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-[#1F1714]">
-                            <Download className="w-4 h-4 text-[#8E827B]" />
-                            <span>Allow downloads</span>
-                          </div>
+                          <span className="font-semibold text-[#1F1714]">Allow High-Resolution Downloads</span>
                           <button
-                            type="button"
                             onClick={() => setDeliveryAllowDownloads(!deliveryAllowDownloads)}
                             className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
                               deliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
@@ -2860,15 +3832,9 @@ export const Dashboard: React.FC = () => {
                             }`} />
                           </button>
                         </div>
-
-                        {/* 2. Allow Favorites */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-[#1F1714]">
-                            <Heart className="w-4 h-4 text-[#8E827B]" />
-                            <span>Allow favorites (heart)</span>
-                          </div>
+                          <span className="font-semibold text-[#1F1714]">Allow Client Favorites &amp; Selections</span>
                           <button
-                            type="button"
                             onClick={() => setDeliveryAllowFavorites(!deliveryAllowFavorites)}
                             className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
                               deliveryAllowFavorites ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
@@ -2879,15 +3845,9 @@ export const Dashboard: React.FC = () => {
                             }`} />
                           </button>
                         </div>
-
-                        {/* 3. Allow Comments */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-[#1F1714]">
-                            <MessageSquare className="w-4 h-4 text-[#8E827B]" />
-                            <span>Allow comments</span>
-                          </div>
+                          <span className="font-semibold text-[#1F1714]">Allow Client Notes &amp; Revision Comments</span>
                           <button
-                            type="button"
                             onClick={() => setDeliveryAllowComments(!deliveryAllowComments)}
                             className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
                               deliveryAllowComments ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
@@ -2898,197 +3858,178 @@ export const Dashboard: React.FC = () => {
                             }`} />
                           </button>
                         </div>
-
-                        {/* 4. Require Client Email */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-[#1F1714]">
-                            <Mail className="w-4 h-4 text-[#8E827B]" />
-                            <span>Require client email to access</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setDeliveryRequireEmail(!deliveryRequireEmail)}
-                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                              deliveryRequireEmail ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                            }`}
-                          >
-                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                              deliveryRequireEmail ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Delivery Features (6 Interactive Tiles) */}
-                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-[#B58B5C]" />
-                        <h3 className="text-sm font-bold text-[#1F1714]">Delivery Features</h3>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {/* 1. Photo Selection */}
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) navigate(`/gallery/${currentDelivery.id}`);
-                          }}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                        >
-                          <ImageIcon className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Photo Selection</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
-                              {currentDelivery?.selection_status === 'submitted' ? '(Submitted)' : '(Client Picks)'}
-                            </div>
-                          </div>
-                        </button>
-
-                        {/* 2. Print Store */}
-                        <button
-                          onClick={() => toast.info("Print store active: Coastal linen frames and canvas available")}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                        >
-                          <ShoppingBag className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Print Store</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Sell Prints &amp; Products)</div>
-                          </div>
-                        </button>
-
-                        {/* 3. Client Notes */}
-                        <button
-                          onClick={() => toast.info(`Client notes: ${currentDelivery?.selectionNotesCount || 0} notes registered`)}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                        >
-                          <MessageSquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Client Notes</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
-                              ({currentDelivery?.selectionNotesCount || 0} Private Comments)
-                            </div>
-                          </div>
-                        </button>
-
-                        {/* 4. Slideshow */}
-                        <button
-                          onClick={() => {
-                            if (currentDelivery?.id) window.open(`/g/${currentDelivery.id}`, '_blank');
-                          }}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                        >
-                          <PlaySquare className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Slideshow</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Auto-Play)</div>
-                          </div>
-                        </button>
-
-                        {/* 5. Mobile App */}
-                        <button
-                          onClick={() => toast.info("Mobile PWA access ready: clients can install icon on home screen")}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                        >
-                          <Smartphone className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Mobile App</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">(Branded Access)</div>
-                          </div>
-                        </button>
-
-                        {/* 6. Expiring Gallery */}
-                        <button
-                          onClick={(e) => {
-                            if (currentDelivery?.id) {
-                              handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name);
-                            }
-                          }}
-                          className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F3EFE8] text-left transition-colors cursor-pointer flex flex-col justify-between"
-                          title="Click to extend expiry (+7 days)"
-                        >
-                          <Clock className="w-4 h-4 text-[#B58B5C] mb-1.5" />
-                          <div>
-                            <div className="text-xs font-bold text-[#1F1714]">Expiring Gallery</div>
-                            <div className="text-[10px] text-[#7A6F69] mt-0.5">
-                              {currentDelivery?.timeRemainingText ? `(${currentDelivery.timeRemainingText})` : '(Set Auto Expiry)'}
-                            </div>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card 4: SEO & Sharing */}
-                    <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Share2 className="w-4 h-4 text-[#B58B5C]" />
-                        <h3 className="text-sm font-bold text-[#1F1714]">SEO &amp; Sharing</h3>
-                      </div>
-
-                      {/* Search Engine Indexing Toggle */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#6D635D] max-w-[220px]">
-                          Allow search engine indexing (Public galleries only)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setDeliveryAllowSeo(!deliveryAllowSeo)}
-                          className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                            deliveryAllowSeo ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                          }`}
-                        >
-                          <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                            deliveryAllowSeo ? 'translate-x-4' : 'translate-x-0'
-                          }`} />
-                        </button>
-                      </div>
-
-                      {/* Social Sharing Preview Heading with Badge */}
-                      <div className="pt-2 border-t border-[#F4EFE6]">
-                        <div className="flex items-center justify-between mb-2.5">
-                          <span className="text-xs font-medium text-[#1F1714]">Social sharing preview (Open Graph)</span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                            Configured
-                          </span>
-                        </div>
-
-                        {/* Open Graph Card Preview */}
-                        <div className="p-3 rounded-xl border border-[#EDE5D8] bg-[#FAF7F2] flex items-center gap-3">
-                          {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
-                            <img
-                              src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 120, 120)}
-                              alt="Open Graph preview"
-                              className="w-12 h-12 rounded-lg object-cover shrink-0 border border-[#E6DFC6]"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-[#FAF7F0] border border-[#E6DFC6] flex items-center justify-center text-[#B58B5C] shrink-0">
-                              <ImageIcon className="w-5 h-5 opacity-50" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-xs font-bold text-[#1F1714] truncate">
-                              {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
-                            </h4>
-                            <p className="text-[11px] text-[#7A6F69] truncate mt-0.5">
-                              Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => toast.info("Open Graph preview options: update tags, image, or site title")}
-                            className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded cursor-pointer"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* TAB CONTENT: DOWNLOAD TAB */}
+                {deliveryTab === 'download' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">Direct Download &amp; Archive Export</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Download full gallery archives as ZIP or monitor client download activity.</p>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1F1714]">Download All Photos as ZIP</h4>
+                        <p className="text-xs text-[#7A6F69] mt-1">
+                          Creates a compressed ZIP bundle of all {currentDelivery?.files?.length || 0} full-resolution photos directly in your browser.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleDownloadAllZip}
+                        disabled={isZipping || !currentDelivery?.files?.length}
+                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50"
+                      >
+                        {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        <span>{isZipping ? 'Archiving ZIP...' : 'Download ZIP Bundle'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.downloadCount || 0}</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Total Client Downloads</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.files?.length || 0}</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Deliverable Files</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
+                        <span className="text-2xl font-bold text-emerald-600">Active</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">R2 CDN Status</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: STORE TAB */}
+                {deliveryTab === 'store' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">Client Print Store</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Enable print orders, custom coastal framing, and canvas products for this delivery.</p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">✓</div>
+                        <div>
+                          <p className="text-xs font-bold text-emerald-950">Print Store Enabled for Clients</p>
+                          <p className="text-[11px] text-emerald-800">Clients viewing this delivery can order fine art prints, linen frames, and canvas wraps.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-2xl border border-[#EDE5D8] bg-[#FAF7F2]">
+                        <h4 className="text-xs font-bold text-[#1F1714]">Fine Art Prints</h4>
+                        <p className="text-[11px] text-[#7A6F69] mt-1">Hahnemühle Photo Rag 308gsm with archival pigment ink.</p>
+                        <span className="inline-block mt-3 text-xs font-mono font-bold text-[#8C6432]">From KES 1,500</span>
+                      </div>
+                      <div className="p-4 rounded-2xl border border-[#EDE5D8] bg-[#FAF7F2]">
+                        <h4 className="text-xs font-bold text-[#1F1714]">Coastal Linen Frame</h4>
+                        <p className="text-[11px] text-[#7A6F69] mt-1">Handcrafted teak and washed natural linen framing.</p>
+                        <span className="inline-block mt-3 text-xs font-mono font-bold text-[#8C6432]">From KES 6,500</span>
+                      </div>
+                      <div className="p-4 rounded-2xl border border-[#EDE5D8] bg-[#FAF7F2]">
+                        <h4 className="text-xs font-bold text-[#1F1714]">Gallery Canvas</h4>
+                        <p className="text-[11px] text-[#7A6F69] mt-1">Stretched gallery-wrap canvas with UV seal coating.</p>
+                        <span className="inline-block mt-3 text-xs font-mono font-bold text-[#8C6432]">From KES 8,000</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: SEO & SHARING TAB */}
+                {deliveryTab === 'seo' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">SEO, WhatsApp &amp; Social Sharing</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Customize how this portal appears when shared on WhatsApp, Facebook, and search engines.</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border border-[#EDE5D8] bg-[#FAF7F2] flex items-center gap-4">
+                      {currentDelivery?.coverUrl || currentDelivery?.files?.[0]?.file_url ? (
+                        <img
+                          src={getOptimizedImageUrl(currentDelivery.coverUrl || currentDelivery.files![0].file_url, 160, 160)}
+                          alt="Open Graph preview"
+                          className="w-16 h-16 rounded-xl object-cover shrink-0 border border-[#E6DFC6]"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-[#FAF7F0] border border-[#E6DFC6] flex items-center justify-center text-[#B58B5C] shrink-0">
+                          <ImageIcon className="w-6 h-6 opacity-50" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-[#1F1714] truncate">
+                          {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
+                        </h4>
+                        <p className="text-[11px] text-[#7A6F69] mt-1">
+                          Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedWhatsAppGallery(currentDelivery!)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Send via WhatsApp</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/g/${currentDelivery?.id}`;
+                          navigator.clipboard.writeText(url);
+                          toast.success("Client link copied to clipboard!");
+                        }}
+                        className="px-4 py-2 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
+                      >
+                        <Copy className="w-4 h-4 text-[#B58B5C]" />
+                        <span>Copy Share Link</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: ANALYTICS TAB */}
+                {deliveryTab === 'analytics' && (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1F1714]">Portal Traffic &amp; Client Engagement</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Real-time engagement telemetry for {currentDelivery?.client_name}.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.analytics?.views || 0}</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Total Views</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.downloadCount || 0}</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Downloads</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">
+                          {currentDelivery?.files?.filter(f => f.is_selected).length || 0}
+                        </span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Client Favorites</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] text-center">
+                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.selectionNotesCount || 0}</span>
+                        <p className="text-[11px] text-[#7A6F69] mt-0.5">Client Notes</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* All Deliveries Table View (Preserving all existing delivery ledger functionality) */
-              <div className="mt-6 space-y-6">
+              <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <h2 
@@ -3108,7 +4049,7 @@ export const Dashboard: React.FC = () => {
                       className="bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                     >
                       <LayoutGrid className="w-4 h-4 text-[#B58B5C]" />
-                      <span>Back to Gallery View</span>
+                      <span>Back to Studio View</span>
                     </button>
                     <button
                       onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
@@ -3278,8 +4219,8 @@ export const Dashboard: React.FC = () => {
                               )}
                               <button 
                                 onClick={(e) => { e.stopPropagation(); window.open(`/g/${gallery.id}`, '_blank'); }}
-                                className="p-1.5 text-[#8E827B] hover:text-[#B58B5C] hover:bg-[#FAF7F0] rounded-lg transition-colors cursor-pointer"
-                                title="View Gallery"
+                                className="p-1.5 text-[#8E827B] hover:text-[#1F1714] hover:bg-[#FAF7F0] rounded-lg transition-colors cursor-pointer"
+                                title="View Client Portal"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
@@ -3294,6 +4235,212 @@ export const Dashboard: React.FC = () => {
                           </div>
                         );
                       })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 1: CREATE SECTION / SUB-GALLERY */}
+            {isCreateSectionModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-in fade-in">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-[#E8E2D2] shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F0EBE0]">
+                    <div className="flex items-center gap-2">
+                      <FolderPlus className="w-5 h-5 text-[#B58B5C]" />
+                      <h3 className="text-base font-bold text-[#1F1714]">Create Gallery Section</h3>
+                    </div>
+                    <button
+                      onClick={() => setIsCreateSectionModalOpen(false)}
+                      className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleCreateSection} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1F1714] mb-1">Section Title</label>
+                      <input
+                        type="text"
+                        value={newSectionName}
+                        onChange={(e) => setNewSectionName(e.target.value)}
+                        placeholder="e.g. Ceremony, Sunset Portraits, Reception"
+                        autoFocus
+                        required
+                        className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#1F1714] mb-1">Description (Optional)</label>
+                      <textarea
+                        value={newSectionDescription}
+                        onChange={(e) => setNewSectionDescription(e.target.value)}
+                        rows={2}
+                        placeholder="e.g. Intimate family moments on the Watamu shoreline"
+                        className="w-full px-3.5 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C] resize-none"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsCreateSectionModalOpen(false)}
+                        className="px-4 py-2 border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0]"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isCreatingSection}
+                        className="px-5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        {isCreatingSection && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>Create Section</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 2: CHANGE COVER PHOTO */}
+            {isChangeCoverModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-in fade-in">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full border border-[#E8E2D2] shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F0EBE0] shrink-0">
+                    <div>
+                      <h3 className="text-base font-bold text-[#1F1714]">Choose Gallery Cover</h3>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Click any photo in this gallery to set it as the primary cover banner.</p>
+                    </div>
+                    <button
+                      onClick={() => setIsChangeCoverModalOpen(false)}
+                      className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 pr-1 grid grid-cols-3 sm:grid-cols-4 gap-3 py-2">
+                    {currentDelivery?.files && currentDelivery.files.length > 0 ? (
+                      currentDelivery.files.map((file, idx) => {
+                        const isCurrentCover = (currentDelivery.coverUrl === file.file_url);
+                        return (
+                          <div
+                            key={file.id || idx}
+                            onClick={() => handleSetCoverPhoto(file.file_url)}
+                            className={`group relative rounded-xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] border-2 transition-all cursor-pointer ${
+                              isCurrentCover ? 'border-[#B58B5C] ring-2 ring-[#B58B5C]/35' : 'border-transparent hover:border-[#B58B5C]'
+                            }`}
+                          >
+                            <img
+                              src={getOptimizedImageUrl(file.file_url, 300, 225)}
+                              alt={`Select cover ${idx + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            {isCurrentCover && (
+                              <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-[#3B2E28] text-white text-[9px] font-bold">
+                                Current
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="col-span-full py-8 text-center text-xs text-[#7A6F69]">No photos in gallery to choose from.</p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-[#F0EBE0] shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChangeCoverModalOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-xs font-semibold text-[#8C6432] hover:underline cursor-pointer"
+                    >
+                      + Upload New Photo to Use as Cover
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsChangeCoverModalOpen(false)}
+                      className="px-4 py-2 border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0] cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 3: PHOTO DETAIL & LIGHTBOX (Manage single photo without leaving!) */}
+            {selectedPhotoForDetail && (
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-in fade-in">
+                <div className="relative bg-[#1F1714] text-white rounded-3xl max-w-4xl w-full border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+                  {/* Top Bar */}
+                  <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-bold text-white/90">Photo Details</span>
+                      {selectedPhotoForDetail.is_selected && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/40">
+                          <Heart className="w-2.5 h-2.5 fill-rose-400" /> Client Pick
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setSelectedPhotoForDetail(null)}
+                      className="text-white/60 hover:text-white p-1 rounded-lg cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Photo Preview Body */}
+                  <div className="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-black/40">
+                    <img
+                      src={rewriteUrlToR2(selectedPhotoForDetail.file_url)}
+                      alt="Full Preview"
+                      className="max-h-[60vh] max-w-full object-contain rounded-xl shadow-lg"
+                    />
+
+                    {/* Client Note Display */}
+                    {selectedPhotoForDetail.client_note && (
+                      <div className="mt-4 p-3.5 bg-amber-500/20 border border-amber-500/30 rounded-2xl text-amber-200 text-xs max-w-xl w-full">
+                        <span className="font-bold flex items-center gap-1.5 mb-1 text-amber-300">
+                          <MessageSquare className="w-3.5 h-3.5 fill-amber-300" /> Client Note:
+                        </span>
+                        <p className="leading-relaxed">{selectedPhotoForDetail.client_note}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons Footer */}
+                  <div className="px-5 py-3.5 border-t border-white/10 flex items-center justify-between gap-3 shrink-0 bg-[#2A201B]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          handleSetCoverPhoto(selectedPhotoForDetail.file_url);
+                          setSelectedPhotoForDetail(null);
+                        }}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Star className="w-3.5 h-3.5 text-[#B58B5C]" />
+                        <span>Set as Gallery Cover</span>
+                      </button>
+                      <button
+                        onClick={() => window.open(rewriteUrlToR2(selectedPhotoForDetail.file_url), '_blank')}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-white/80" />
+                        <span>Download Original</span>
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeletePhoto(selectedPhotoForDetail)}
+                      className="px-3.5 py-2 bg-rose-600/80 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Photo</span>
+                    </button>
                   </div>
                 </div>
               </div>
