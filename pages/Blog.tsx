@@ -162,14 +162,14 @@ export const Blog: React.FC = () => {
 
       {/* Category navigation */}
       <nav aria-label="Filter journal stories" className="border-b border-[#e8ded1] dark:border-slate-800 bg-[#fbf7f0] dark:bg-[#111722]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-stretch gap-2 sm:gap-6 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-wrap items-stretch justify-center gap-x-3 sm:gap-x-5 lg:gap-x-8">
           {availableCategories.map(category => {
             const Icon = category === 'All' ? Grid2X2 : categoryIcon(category);
             const active = selectedCategory === category;
             return (
               <button key={category} type="button" onClick={() => setSelectedCategory(category)}
                 aria-pressed={active}
-                className={`shrink-0 min-w-[86px] sm:min-w-[112px] py-4 sm:py-5 flex flex-col items-center gap-1.5 border-b-2 transition-colors ${active ? 'border-[#56311e] text-[#56311e] dark:border-amber-300 dark:text-amber-200' : 'border-transparent text-[#725b4b] hover:text-[#321d12] dark:text-slate-400 dark:hover:text-white'}`}>
+                className={`shrink-0 min-w-[82px] sm:min-w-[104px] px-1 py-4 sm:py-5 flex flex-col items-center justify-center gap-1.5 border-b-2 transition-colors ${active ? 'border-[#56311e] text-[#56311e] dark:border-amber-300 dark:text-amber-200' : 'border-transparent text-[#725b4b] hover:text-[#321d12] dark:text-slate-400 dark:hover:text-white'}`}>
                 <Icon size={19} strokeWidth={1.6} />
                 <span className="text-[10px] sm:text-xs whitespace-nowrap">{category === 'All' ? 'All Stories' : category}</span>
               </button>
