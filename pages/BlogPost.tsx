@@ -54,28 +54,44 @@ export const BlogPost: React.FC = () => {
       return;
     }
 
-    const container = document.getElementById('article-rich-content');
-    if (!container) return;
-
-    let intersectionObserver: IntersectionObserver | null = null;
+    let cancelled = false;
     let animationFrame = 0;
+    let attempts = 0;
+    let intersectionObserver: IntersectionObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
 
     const buildTableOfContents = () => {
-      // Support older posts whose section titles were saved as bold paragraphs.
+      if (cancelled) return;
+      const container = document.getElementById('article-rich-content');
+      if (!container) {
+        if (attempts++ < 30) animationFrame = requestAnimationFrame(buildTableOfContents);
+        return;
+      }
+
+      // The published article HTML is rendered inside BlogContentWithPinterest.
+      // Query the rendered DOM so the TOC reflects the exact headings readers see.
       const candidates = Array.from(container.querySelectorAll('h1, h2, h3, p')) as HTMLElement[];
       const headings = candidates.filter((element) => {
         if (/^H[1-3]$/.test(element.tagName)) return true;
-        const text = element.textContent?.replace(/\s+/g, ' ').trim() || '';
+        const text = element.textContent?.replace(/\\s+/g, ' ').trim() || '';
         if (!text || text.length > 120) return false;
         const boldText = Array.from(element.querySelectorAll('strong, b'))
-          .map(node => node.textContent || '').join(' ').replace(/\s+/g, ' ').trim();
+          .map(node => node.textContent || '').join(' ').replace(/\\s+/g, ' ').trim();
         return Boolean(boldText && boldText === text);
       });
+
+      if (!headings.length && attempts++ < 30) {
+        animationFrame = requestAnimationFrame(buildTableOfContents);
+        return;
+      }
+
       const usedIds = new Set<string>();
       const items = headings.reduce<TocItem[]>((result, heading, index) => {
-        const text = heading.textContent?.replace(/\s+/g, ' ').trim();
+        const text = heading.textContent?.replace(/\\s+/g, ' ').trim();
         if (!text) return result;
-        const baseId = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `section-${index + 1}`;
+        const baseId = text.toLowerCase().normalize('NFD')
+          .replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || `section-${index + 1}`;
         let id = heading.id || `article-${baseId}`;
         let suffix = 2;
         while (usedIds.has(id)) id = `article-${baseId}-${suffix++}`;
@@ -85,29 +101,30 @@ export const BlogPost: React.FC = () => {
         result.push({ id, text, level: heading.tagName === 'H3' ? 3 : heading.tagName === 'H1' ? 1 : 2 });
         return result;
       }, []);
+
       setTocItems(items);
-      if (intersectionObserver) intersectionObserver.disconnect();
+      intersectionObserver?.disconnect();
       intersectionObserver = new IntersectionObserver((entries) => {
-        const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const visible = entries.filter(entry => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setActiveHeading(visible[0].target.id);
       }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
-      headings.forEach(heading => { if (heading.textContent?.trim()) intersectionObserver?.observe(heading); });
+      headings.forEach(heading => intersectionObserver?.observe(heading));
+
+      if (!mutationObserver) {
+        mutationObserver = new MutationObserver(() => {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = requestAnimationFrame(buildTableOfContents);
+        });
+        mutationObserver.observe(container, { childList: true, subtree: true, characterData: true });
+      }
     };
 
-    const scheduleBuild = () => {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = requestAnimationFrame(buildTableOfContents);
-    };
-
-    // Build after the sanitized article HTML has mounted, then keep the TOC
-    // in sync if article content is inserted or updated after the initial render.
-    scheduleBuild();
-    const mutationObserver = new MutationObserver(scheduleBuild);
-    mutationObserver.observe(container, { childList: true, subtree: true, characterData: true });
-
+    animationFrame = requestAnimationFrame(buildTableOfContents);
     return () => {
+      cancelled = true;
       cancelAnimationFrame(animationFrame);
-      mutationObserver.disconnect();
+      mutationObserver?.disconnect();
       intersectionObserver?.disconnect();
     };
   }, [post?.id, post?.content]);
