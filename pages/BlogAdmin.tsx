@@ -1004,7 +1004,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               <label className="font-semibold text-xs text-[#1F1714]">Content</label>
               <RichTextEditor
                 content={editingPost.content || ''}
-                onChange={content => setEditingPost({ ...editingPost, content })}
+                onChange={content => setEditingPost(prev => prev ? { ...prev, content } : prev)}
                 lastSavedText={lastSavedText}
               />
             </div>
