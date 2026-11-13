@@ -3,6 +3,113 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Obsidian & Alabaster Atelier — public-facing visual foundation */
+:root {
+  --atelier-canvas: #f9f6f0;
+  --atelier-paper: #fcf9f3;
+  --atelier-ink: #121110;
+  --atelier-ink-soft: #29241f;
+  --atelier-bronze: #c5a880;
+  --atelier-taupe: #8a8177;
+  --atelier-hairline: rgba(138, 129, 119, 0.28);
+  --atelier-scrim: rgba(18, 17, 16, 0.42);
+  --font-atelier-display: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  --font-atelier-body: "Manrope", "Plus Jakarta Sans", sans-serif;
+}
+
+body {
+  background: var(--atelier-canvas);
+  color: var(--atelier-ink);
+  font-family: var(--font-atelier-body);
+}
+
+html.dark body {
+  background: #171512;
+  color: #f4efe7;
+}
+
+.font-atelier-display {
+  font-family: var(--font-atelier-display);
+}
+
+.atelier-eyebrow {
+  font-family: var(--font-atelier-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.atelier-hairline {
+  border-color: var(--atelier-hairline);
+}
+
+.atelier-image-ribbon {
+  position: relative;
+  overflow: hidden;
+  background: var(--atelier-ink);
+}
+
+.atelier-image-ribbon img {
+  transition: transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.atelier-image-ribbon:hover img {
+  transform: scale(1.03);
+}
+
+.atelier-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.atelier-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--atelier-ink);
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  color: var(--atelier-ink);
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: color 300ms cubic-bezier(0.16, 1, 0.3, 1), background 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.atelier-button:hover {
+  color: var(--atelier-paper);
+  background: var(--atelier-ink);
+}
+
+html.dark .atelier-button {
+  border-color: var(--atelier-paper);
+  color: var(--atelier-paper);
+}
+
+html.dark .atelier-button:hover {
+  color: var(--atelier-ink);
+  background: var(--atelier-paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atelier-image-ribbon img,
+  .atelier-button {
+    transition: none;
+  }
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
