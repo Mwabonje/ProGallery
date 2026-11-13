@@ -23,6 +23,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  Calendar,
+  MoreHorizontal,
+  LayoutGrid,
+  List,
+  PlayCircle,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "../services/supabase";
 import { Gallery, GalleryFile } from "../types";
@@ -129,8 +135,12 @@ export const ClientGallery: React.FC = () => {
   const [unlockError, setUnlockError] = useState('');
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
   const [viewFilter, setViewFilter] = useState<
-    "all" | "selected" | "main" | "extras"
+    "all" | "selected" | "main" | "extras" | "videos"
   >("all");
+  const [deliveryLayoutMode, setDeliveryLayoutMode] = useState<"grid" | "masonry">("grid");
+  const [deliverySortOrder, setDeliverySortOrder] = useState<"newest" | "oldest" | "edited">("newest");
+  const [showDeliveryMoreMenu, setShowDeliveryMoreMenu] = useState(false);
+  const [localFavouriteIds, setLocalFavouriteIds] = useState<Set<string>>(new Set());
   const [failedFileIds, setFailedFileIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{
     message: string;
@@ -192,8 +202,37 @@ export const ClientGallery: React.FC = () => {
           console.error('Failed to parse stored downloads', e);
         }
       }
+      const storedFavourites = localStorage.getItem(`gallery_favourites_${galleryId}`);
+      if (storedFavourites) {
+        try {
+          setLocalFavouriteIds(new Set(JSON.parse(storedFavourites)));
+        } catch (e) {
+          console.error('Failed to parse stored favourites', e);
+        }
+      }
     }
   }, [galleryId]);
+
+  const toggleLocalFavourite = (file: GalleryFile) => {
+    setLocalFavouriteIds((prev) => {
+      const next = new Set(prev);
+      const isNowFav = !next.has(file.id);
+      if (isNowFav) {
+        next.add(file.id);
+        setToast({ message: "Saved to Favourites", type: "success" });
+      } else {
+        next.delete(file.id);
+        setToast({ message: "Removed from Favourites", type: "info" });
+      }
+      setTimeout(() => setToast(null), 2000);
+      if (galleryId) {
+        try {
+          localStorage.setItem(`gallery_favourites_${galleryId}`, JSON.stringify(Array.from(next)));
+        } catch {}
+      }
+      return next;
+    });
+  };
 
 
 
@@ -1441,13 +1480,47 @@ export const ClientGallery: React.FC = () => {
   const extraSelections = limit > 0 ? selectedArray.slice(limit) : [];
 
   const activeFilesSource = activeSubGallery ? activeSubFiles : files;
-  let displayedFiles = activeFilesSource.filter((f) => !failedFileIds.has(f.id));
-  if (viewFilter === "selected")
-    displayedFiles = displayedFiles.filter((f) => selectedFileIds.has(f.id));
+  const nonFailedFiles = activeFilesSource.filter((f) => !failedFileIds.has(f.id));
+  const deliveryPhotoCount = nonFailedFiles.length;
+  const deliveryVideoCount = nonFailedFiles.filter(
+    (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
+  ).length;
+  const deliveryFavouriteCount = isSelectionMode ? selectedFileIds.size : localFavouriteIds.size;
+  const heroCoverFile =
+    !isPortfolio && !isSelectionLockedOut
+      ? nonFailedFiles.find(
+          (f) => f.file_type === "image" && !f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i),
+        ) || nonFailedFiles[0] || null
+      : null;
+
+  let displayedFiles = [...nonFailedFiles];
+  if (viewFilter === "selected") {
+    displayedFiles = isSelectionMode
+      ? displayedFiles.filter((f) => selectedFileIds.has(f.id))
+      : displayedFiles.filter((f) => localFavouriteIds.has(f.id));
+  }
   if (viewFilter === "main")
     displayedFiles = displayedFiles.filter((f) => mainSelections.includes(f.id));
   if (viewFilter === "extras")
     displayedFiles = displayedFiles.filter((f) => extraSelections.includes(f.id));
+  if (viewFilter === "videos")
+    displayedFiles = displayedFiles.filter(
+      (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
+    );
+
+  if (!isPortfolio) {
+    if (deliverySortOrder === "oldest") {
+      displayedFiles.sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+    } else if (deliverySortOrder === "edited") {
+      displayedFiles.sort((a, b) => Number(Boolean(b.is_edited)) - Number(Boolean(a.is_edited)));
+    } else {
+      displayedFiles.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    }
+  }
 
   const setLightboxFileWithTracking = (file: GalleryFile | null) => {
     setLightboxFile(file);
@@ -1764,7 +1837,7 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-white dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : ""}`}
+      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-[#FAF7F2] dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : "pb-16"}`}
     >
       {/* Scroll Progress Bar for Client Galleries */}
       {!isPortfolio && (
@@ -1801,250 +1874,348 @@ export const ClientGallery: React.FC = () => {
           scrollProgress={scrollProgress * 100}
         />
       ) : (
-        /* Standard Client Delivery Header */
-        <header className="sticky top-0 z-20 shadow-sm transition-all duration-300 bg-white/95 dark:bg-[#0b0f17]/95 border-b border-slate-100 dark:border-slate-800">
-          <div className="max-w-[1600px] mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-4">
-            <div>
-              <h1 className="text-lg md:text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                {viewFilter !== "all" ? (
-                  <button
-                    onClick={() => setViewFilter("all")}
-                    className="md:hidden mr-1 p-2 -ml-2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  >
-                    <ArrowLeft className="w-6 h-6" />
-                  </button>
-                ) : null}
-                {viewFilter === "selected"
-                  ? "My Selection"
-                  : viewFilter === "main"
-                    ? "Main Photos"
-                    : viewFilter === "extras"
-                      ? "Extra Photos"
-                      : gallery?.client_name}
-              </h1>
-              <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                {isSelectionLockedOut
-                  ? `${selectedFileIds.size} selected`
-                  : `${displayedFiles.length} items`}
-              </p>
+        /* Editorial Client Delivery Hero Banner + Overlay Top Navigation */
+        <header className="relative w-full min-h-[410px] sm:min-h-[470px] lg:min-h-[520px] flex flex-col justify-between overflow-hidden bg-[#241D18] text-white">
+          {/* Background Cover Photography (hidden completely when selection is submitted) */}
+          {heroCoverFile && !isSelectionLockedOut ? (
+            <div
+              className="absolute inset-0 z-0"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setShowScreenshotWarning(true);
+              }}
+            >
+              {heroCoverFile.file_type === "video" ||
+              heroCoverFile.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+                <video
+                  src={`${rewriteUrlToR2(heroCoverFile.file_url)}#t=0.001`}
+                  className="w-full h-full object-cover object-center pointer-events-none"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={getOptimizedImageUrl(getDisplayUrl(heroCoverFile), 2200, undefined, 82)}
+                  alt={displayGalleryTitle || "Client gallery cover"}
+                  className="w-full h-full object-cover object-center pointer-events-none select-none"
+                  loading="eager"
+                  // @ts-ignore
+                  fetchPriority="high"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "true";
+                      target.src = rewriteUrlToR2(heroCoverFile.file_url) || "";
+                    }
+                  }}
+                />
+              )}
+              {isFileLocked(heroCoverFile.id) && <WatermarkOverlay />}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1A1410]/85 via-[#1A1410]/45 to-[#1A1410]/10" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/55" />
+            </div>
+          ) : (
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#2C241E] via-[#201915] to-[#14100E]" />
+          )}
+
+          {/* Top Navigation Bar Overlay */}
+          <div className="relative z-30 max-w-[1440px] w-full mx-auto px-5 sm:px-8 lg:px-12 pt-5 sm:pt-6 pb-4 flex items-center justify-between gap-4">
+            {/* Left Brand + Client Gallery Label */}
+            <div className="flex items-center gap-4 min-w-0">
+              <button
+                type="button"
+                onClick={() => navigate(`/`)}
+                className="flex flex-col items-center text-white hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
+              >
+                <span className="font-editorial text-2xl sm:text-[26px] font-semibold tracking-tight leading-none">
+                  Mwabonje
+                </span>
+                <span className="text-[7px] sm:text-[8px] uppercase tracking-[0.38em] text-white/75 mt-1 leading-none">
+                  PHOTOGRAPHY
+                </span>
+              </button>
+              <span className="hidden sm:inline-block h-6 w-px bg-white/30 shrink-0" aria-hidden="true" />
+              <span className="hidden sm:inline-block text-xs sm:text-sm font-medium text-white/90 whitespace-nowrap">
+                Client Gallery
+              </span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 text-sm">
-              {gallery?.photographer_id && (
+            {/* Right Navigation Links & Actions */}
+            <div className="flex items-center gap-4 sm:gap-7 text-xs sm:text-sm font-medium text-white/95 shrink-0">
+              {!isSelectionLockedOut && (
                 <button
-                  onClick={() => navigate(`/`)}
-                  className="flex items-center gap-1.5 px-4 h-10 bg-[#161616] text-white/90 rounded-md font-bold tracking-[0.15em] text-[10px] md:text-[11px] hover:bg-black hover:text-white transition-all shadow-sm group active:scale-[0.98]"
+                  type="button"
+                  onClick={() => {
+                    setViewFilter((prev) => (prev === "selected" ? "all" : "selected"));
+                    document.getElementById("delivery-gallery-grid")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-opacity hover:opacity-80 cursor-pointer ${
+                    viewFilter === "selected" ? "underline underline-offset-4" : ""
+                  }`}
                 >
-                  PORTFOLIO{" "}
-                  <ArrowUpRight className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
+                  <Heart className={`w-4 h-4 ${viewFilter === "selected" ? "fill-white" : ""}`} />
+                  <span>Favourites</span>
                 </button>
               )}
-              {isSelectionMode ? (
-                // Selection Mode Header Content
-                <div className="flex items-center gap-3">
-                  {isSelectionLockedOut ? (
-                    <div className="flex items-center gap-2 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 shadow-sm text-xs md:text-sm animate-in fade-in">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Selection Submitted</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
-                      <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
-                      <span>Selection Mode Active</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Standard Mode Header Content
-                <>
-                  {/* Download All Button */}
-                  <button
-                    onClick={handleDownloadAll}
-                    disabled={downloadingAll || files.length === 0}
-                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium transition-all text-sm shadow-sm ${
-                      !canDownloadAll
-                        ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed"
-                        : downloadingAll
-                          ? "bg-[#0f1423] border border-white/5 text-slate-400 cursor-wait opacity-80"
-                          : "bg-[#0f1423] border border-white/5 text-white hover:bg-[#161d30] hover:shadow-md active:scale-[0.98]"
-                    }`}
-                  >
-                    {downloadingAll ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Preparing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FolderDown className="w-4 h-4 text-slate-200" />
-                        <span>Download All</span>
-                      </>
-                    )}
-                  </button>
 
-                  {isBalancePending ? (
-                    <div className="flex items-center gap-2 bg-slate-50 px-4 h-10 rounded-lg border border-slate-200 shadow-sm">
-                      <div className="flex flex-col text-right justify-center">
-                        <span className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold leading-none mb-0.5">
-                          {downloadLimit > 0 ? `${Math.max(0, downloadLimit - downloadedImageIds.length)} Free Downloads` : "Balance Due"}
-                        </span>
-                        <span className="font-bold text-slate-800 text-sm leading-none">
-                          {formatCurrency(balanceDue)}
-                        </span>
-                      </div>
-                      <Lock className="w-4 h-4 text-slate-500" />
-                    </div>
-                  ) : agreedAmount === 0 ? (
-                    <div className="flex items-center gap-2.5 px-4 h-10 bg-[#f4f6ff] text-indigo-700 rounded-full font-medium border border-indigo-100 shadow-sm text-sm">
-                      <Heart className="w-4 h-4 text-indigo-600" />
-                      <span>Collaboration</span>
-                    </div>
+              {!isSelectionMode && !isSelectionLockedOut && (
+                <button
+                  type="button"
+                  onClick={handleDownloadAll}
+                  disabled={downloadingAll || files.length === 0}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-opacity hover:opacity-80 disabled:opacity-50 cursor-pointer"
+                >
+                  {downloadingAll ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : !canDownloadAll ? (
+                    <Lock className="w-4 h-4" />
                   ) : (
-                    <div className="flex items-center gap-2.5 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-100 shadow-sm text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Paid in Full</span>
-                    </div>
+                    <Download className="w-4 h-4" />
                   )}
-                </>
+                  <span className="hidden xs:inline sm:inline">
+                    {downloadingAll ? "Preparing..." : "Download"}
+                  </span>
+                </button>
               )}
+
+              {gallery?.photographer_id && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/`)}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-opacity hover:opacity-80 cursor-pointer"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Portfolio</span>
+                </button>
+              )}
+
+              {/* Overflow / Gallery Info Menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowDeliveryMoreMenu((prev) => !prev)}
+                  aria-label="Gallery details"
+                  className="p-1.5 rounded-full hover:bg-white/15 transition-colors cursor-pointer"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+
+                {showDeliveryMoreMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowDeliveryMoreMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#151c28] text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-[#E6DDD1] dark:border-slate-800 p-4 z-50 text-left space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Gallery Status
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeliveryMoreMenu(false)}
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {timeLeft && (
+                        <div className="text-xs space-y-1">
+                          <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{timeLeft.expired ? "Gallery Expired" : "Gallery Expires In"}</span>
+                          </div>
+                          {!timeLeft.expired && (
+                            <p className="font-mono font-semibold text-slate-900 dark:text-white tabular-nums">
+                              {timeLeft.days.toString().padStart(2, "0")}d :{" "}
+                              {timeLeft.hours.toString().padStart(2, "0")}h :{" "}
+                              {timeLeft.minutes.toString().padStart(2, "0")}m :{" "}
+                              {timeLeft.seconds.toString().padStart(2, "0")}s
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!isSelectionMode && (
+                        <div className="pt-1 border-t border-slate-100 dark:border-slate-800 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Payment</span>
+                            {isBalancePending ? (
+                              <span className="font-semibold text-amber-700 dark:text-amber-400">
+                                Balance {formatCurrency(balanceDue)}
+                              </span>
+                            ) : agreedAmount === 0 ? (
+                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                Collaboration
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                Paid in Full
+                              </span>
+                            )}
+                          </div>
+                          {isBalancePending && (
+                            <>
+                              {downloadLimit > 0 && (
+                                <p className="text-[11px] text-slate-500">
+                                  {Math.max(0, downloadLimit - downloadedImageIds.length)} of {downloadLimit} free downloads remaining.
+                                </p>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowDeliveryMoreMenu(false);
+                                  setShowPayModal(true);
+                                }}
+                                className="w-full py-2 px-3 rounded-lg bg-[#2C241E] text-white font-medium text-xs hover:bg-[#1E1813] transition-colors"
+                              >
+                                View Payment Details
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {isSelectionMode && (
+                        <div className="pt-1 border-t border-slate-100 dark:border-slate-800 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Selection</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {isSelectionLockedOut ? "Submitted" : "Active"}
+                            </span>
+                          </div>
+                          {isSelectionLockedOut && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowDeliveryMoreMenu(false);
+                                handleUnlockRequest();
+                              }}
+                              className="w-full py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              Edit Selection (PIN)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Visual Countdown Banner */}
-          {timeLeft && (
-            <div
-              className={`w-full py-1.5 px-4 text-center text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase transition-colors duration-500 flex justify-center items-center gap-2 md:gap-3 ${
-                timeLeft.expired
-                  ? "bg-slate-100 text-slate-500 border-b border-slate-200"
-                  : timeLeft.days === 0 && timeLeft.hours < 24
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-50 text-slate-500 border-b border-slate-200"
-              }`}
-            >
-              {timeLeft.expired ? (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4" /> GALLERY
-                  EXPIRED
-                </>
-              ) : (
-                <>
-                  <Clock
-                    className={`w-3.5 h-3.5 md:w-4 md:h-4 ${timeLeft.days === 0 && timeLeft.hours < 24 ? "text-slate-400" : "text-slate-400"}`}
-                  />
-                  <span
-                    className={
-                      timeLeft.days === 0 && timeLeft.hours < 24
-                        ? "text-slate-300"
-                        : "text-slate-500"
-                    }
-                  >
-                    Expires In:
+          {/* Editorial Hero Title & Metadata Block (Bottom-Left) */}
+          <div className="relative z-20 max-w-[1440px] w-full mx-auto px-5 sm:px-8 lg:px-12 pb-10 sm:pb-12 pt-8 sm:pt-14">
+            <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-white/85 mb-2">
+              {gallery?.client_name &&
+              displayGalleryTitle &&
+              gallery.client_name.toLowerCase() !== displayGalleryTitle.toLowerCase()
+                ? gallery.client_name
+                : isSelectionMode
+                  ? "CLIENT SELECTION GALLERY"
+                  : "PRIVATE CLIENT GALLERY"}
+            </p>
+
+            <h1 className="font-editorial text-4xl sm:text-5xl md:text-[56px] font-normal text-white leading-[1.06] tracking-tight text-balance max-w-2xl">
+              {displayGalleryTitle || gallery?.client_name || "Client Gallery"}
+            </h1>
+
+            <p className="text-sm sm:text-base text-white/90 mt-2.5 max-w-xl font-normal">
+              {isSelectionLockedOut
+                ? "Your photo selection has been sent to the photographer"
+                : isSelectionMode
+                  ? "Select your favourite photographs for final editing & delivery"
+                  : isBalancePending
+                    ? "Private gallery preview · Clear remaining balance for full downloads"
+                    : "A curated collection of your captured moments"}
+            </p>
+
+            {/* Clean Inline Metadata Row with Hairline Bottom Rule */}
+            <div className="mt-5 inline-flex flex-wrap items-center gap-x-5 gap-y-2 pb-2.5 border-b border-white/25 text-xs sm:text-sm text-white/90 tabular-nums">
+              {gallery?.created_at && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-white/80" />
+                  <span>
+                    {new Date(gallery.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
                   </span>
-                  <div className="flex items-center gap-1 md:gap-1.5 ml-1 font-mono text-[11px] md:text-[13px] tracking-wider">
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "bg-white/10 px-1.5 py-0.5 rounded"
-                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                      }
-                    >
-                      {timeLeft.days.toString().padStart(2, "0")}
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-400 text-[9px] mr-1"
-                          : "text-slate-400 text-[9px] mr-1"
-                      }
-                    >
-                      D
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-600"
-                          : "text-slate-300"
-                      }
-                    >
-                      :
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "bg-white/10 px-1.5 py-0.5 rounded"
-                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                      }
-                    >
-                      {timeLeft.hours.toString().padStart(2, "0")}
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-400 text-[9px] mr-1"
-                          : "text-slate-400 text-[9px] mr-1"
-                      }
-                    >
-                      H
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-600"
-                          : "text-slate-300"
-                      }
-                    >
-                      :
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "bg-white/10 px-1.5 py-0.5 rounded"
-                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                      }
-                    >
-                      {timeLeft.minutes.toString().padStart(2, "0")}
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-400 text-[9px] mr-1"
-                          : "text-slate-400 text-[9px] mr-1"
-                      }
-                    >
-                      M
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-600"
-                          : "text-slate-300"
-                      }
-                    >
-                      :
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "bg-white/10 px-1.5 py-0.5 rounded"
-                          : "bg-slate-200/50 px-1.5 py-0.5 rounded"
-                      }
-                    >
-                      {timeLeft.seconds.toString().padStart(2, "0")}
-                    </span>
-                    <span
-                      className={
-                        timeLeft.days === 0 && timeLeft.hours < 24
-                          ? "text-slate-400 text-[9px]"
-                          : "text-slate-400 text-[9px]"
-                      }
-                    >
-                      S
-                    </span>
-                  </div>
-                </>
+                </span>
               )}
+
+              <span className="inline-flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-white/80" />
+                <span>
+                  {isSelectionLockedOut
+                    ? `${selectedFileIds.size} selected`
+                    : `${deliveryPhotoCount} ${deliveryPhotoCount === 1 ? "photo" : "photos"}`}
+                </span>
+              </span>
+
+              {timeLeft && (
+                <span className="inline-flex items-center gap-1.5 text-white/85">
+                  <Clock className="w-4 h-4 text-white/75" />
+                  <span>
+                    {timeLeft.expired
+                      ? "Expired"
+                      : `Expires ${timeLeft.days > 0 ? `${timeLeft.days}d ${timeLeft.hours}h` : `${timeLeft.hours}h ${timeLeft.minutes}m`}`}
+                  </span>
+                </span>
+              )}
+
+              {isSelectionMode ? (
+                <span className="inline-flex items-center gap-1.5">
+                  {isSelectionLockedOut ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  ) : (
+                    <Heart className="w-4 h-4 text-rose-300" />
+                  )}
+                  <span>
+                    {isSelectionLockedOut
+                      ? "Selection Submitted"
+                      : limit > 0
+                        ? `${selectedFileIds.size} of ${limit} selected`
+                        : `${selectedFileIds.size} selected`}
+                  </span>
+                </span>
+              ) : isBalancePending ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPayModal(true)}
+                  className="inline-flex items-center gap-1.5 text-amber-200 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>
+                    {downloadLimit > 0
+                      ? `${Math.max(0, downloadLimit - downloadedImageIds.length)} free · Balance ${formatCurrency(balanceDue)}`
+                      : `Balance ${formatCurrency(balanceDue)}`}
+                  </span>
+                </button>
+              ) : agreedAmount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-emerald-200">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Paid in Full</span>
+                </span>
+              ) : null}
             </div>
-          )}
+
+            <p className="mt-3.5 max-w-md text-xs sm:text-sm text-white/85 leading-relaxed">
+              {displayGalleryDescription &&
+              displayGalleryDescription.toLowerCase() !== (displayGalleryTitle || "").toLowerCase()
+                ? displayGalleryDescription
+                : isSelectionLockedOut
+                  ? "Thank you for completing your selection. Your photographer is preparing your final edited photographs."
+                  : isSelectionMode
+                    ? "Welcome to your selection gallery. Click the heart on your favourite moments, leave optional notes, and submit when ready."
+                    : "Welcome to your private gallery. Thank you for letting us capture these moments — browse your favourites and download high-resolution files below."}
+            </p>
+          </div>
         </header>
       )}
 
@@ -2267,106 +2438,258 @@ export const ClientGallery: React.FC = () => {
           )}
         </main>
       ) : (
-        /* Grid (Private Delivery Flow) */
-        <main
-          className={
-            isHorizontalLayout
-              ? "w-full overflow-hidden"
-              : "max-w-[1600px] mx-auto px-2 md:px-4 py-4 md:py-8"
-          }
-        >
-          {isSelectionLockedOut ? (
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-300">
-              <div className="bg-white dark:bg-[#151c28] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-8 md:p-10 max-w-md w-full">
-                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900 rounded-full flex items-center justify-center mx-auto mb-5">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                  Selection Submitted
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-                  Thank you! Your selection of{" "}
-                  <strong className="text-slate-900 dark:text-white">
-                    {selectedFileIds.size} photo{selectedFileIds.size === 1 ? "" : "s"}
-                  </strong>{" "}
-                  has been sent to your photographer. The gallery previews are now hidden while your selection is being prepared.
-                </p>
-                {limit > 0 && selectedFileIds.size > limit && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-2 mb-6">
-                    Includes {limit} main photos and {selectedFileIds.size - limit} extra photo{selectedFileIds.size - limit === 1 ? "" : "s"}.
-                  </p>
-                )}
-                <button
-                  onClick={handleUnlockRequest}
-                  disabled={submittingSelection}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm transition-colors disabled:opacity-50"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>Edit Selection (PIN Required)</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {isSelectionMode && viewFilter === "all" && (
-                <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
-                  <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-                  <p className="text-sm text-rose-800">
-                    <strong>Selection Mode:</strong> Tap the heart icon to select your
-                    favorites. Downloads are disabled until selection is complete.
-                  </p>
-                </div>
-              )}
+        /* Editorial Client Delivery Toolbar + Photo Grid */
+        <>
+          {!isSelectionLockedOut && (
+            <div className="sticky top-0 z-20 bg-[#FAF7F2]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-[#E6DDD1] dark:border-slate-800">
+              <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-wrap items-center justify-between gap-3">
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-6 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setViewFilter("all")}
+                    className={`inline-flex items-center gap-2 py-3.5 text-xs sm:text-sm whitespace-nowrap shrink-0 border-b-2 transition-colors cursor-pointer ${
+                      viewFilter === "all"
+                        ? "border-[#3C2F26] dark:border-white text-[#2A211B] dark:text-white font-semibold"
+                        : "border-transparent text-[#6E6359] dark:text-slate-400 hover:text-[#2A211B] dark:hover:text-white font-medium"
+                    }`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>All Photos ({deliveryPhotoCount})</span>
+                  </button>
 
-              {displayedFiles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                  {viewFilter !== "all" ? (
+                  <button
+                    type="button"
+                    onClick={() => setViewFilter("selected")}
+                    className={`inline-flex items-center gap-2 py-3.5 text-xs sm:text-sm whitespace-nowrap shrink-0 border-b-2 transition-colors cursor-pointer ${
+                      viewFilter === "selected"
+                        ? "border-[#3C2F26] dark:border-white text-[#2A211B] dark:text-white font-semibold"
+                        : "border-transparent text-[#6E6359] dark:text-slate-400 hover:text-[#2A211B] dark:hover:text-white font-medium"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${viewFilter === "selected" ? "fill-current" : ""}`} />
+                    <span>Favourites ({deliveryFavouriteCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewFilter("videos")}
+                    className={`inline-flex items-center gap-2 py-3.5 text-xs sm:text-sm whitespace-nowrap shrink-0 border-b-2 transition-colors cursor-pointer ${
+                      viewFilter === "videos"
+                        ? "border-[#3C2F26] dark:border-white text-[#2A211B] dark:text-white font-semibold"
+                        : "border-transparent text-[#6E6359] dark:text-slate-400 hover:text-[#2A211B] dark:hover:text-white font-medium"
+                    }`}
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    <span>Videos ({deliveryVideoCount})</span>
+                  </button>
+
+                  {isSelectionMode && limit > 0 && selectedFileIds.size > 0 && (
                     <>
-                      <Heart className="w-16 h-16 text-slate-200 mb-4" />
-                      <h3 className="text-lg font-semibold text-slate-600">
-                        No Photos Selected Yet
-                      </h3>
-                      <p className="text-sm mb-6 max-w-xs text-center">
-                        Tap the heart icon on photos to add them to your selection.
-                      </p>
                       <button
-                        onClick={() => setViewFilter("all")}
-                        className="text-rose-600 font-medium hover:underline"
+                        type="button"
+                        onClick={() => setViewFilter("main")}
+                        className={`inline-flex items-center gap-1.5 py-3.5 text-xs sm:text-sm whitespace-nowrap shrink-0 border-b-2 transition-colors cursor-pointer ${
+                          viewFilter === "main"
+                            ? "border-[#3C2F26] dark:border-white text-[#2A211B] dark:text-white font-semibold"
+                            : "border-transparent text-[#6E6359] dark:text-slate-400 hover:text-[#2A211B] dark:hover:text-white font-medium"
+                        }`}
                       >
-                        Browse All Photos
+                        <span>Main ({mainSelections.length})</span>
                       </button>
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
-                      <p>No photos available.</p>
+                      <button
+                        type="button"
+                        onClick={() => setViewFilter("extras")}
+                        className={`inline-flex items-center gap-1.5 py-3.5 text-xs sm:text-sm whitespace-nowrap shrink-0 border-b-2 transition-colors cursor-pointer ${
+                          viewFilter === "extras"
+                            ? "border-[#3C2F26] dark:border-white text-[#2A211B] dark:text-white font-semibold"
+                            : "border-transparent text-[#6E6359] dark:text-slate-400 hover:text-[#2A211B] dark:hover:text-white font-medium"
+                        }`}
+                      >
+                        <span>Extras ({extraSelections.length})</span>
+                      </button>
                     </>
                   )}
                 </div>
-              ) : (
-            <div
-              ref={isHorizontalLayout ? horizontalRef : undefined}
-              className={
-                isHorizontalLayout
-                  ? `flex overflow-x-auto snap-x snap-mandatory md:snap-proximity gap-2 md:gap-4 pb-8 pt-4 sm:pt-8 w-full items-center h-[calc(100vh-140px)] min-h-[500px] px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${displayedFiles.length === 1 ? "justify-center" : ""}`
-                  : isInstagramGrid 
-                    ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
-                    : "columns-2 md:columns-3 lg:columns-4 gap-2 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
-              }
-            >
-              {(() => {
-                const selectedArray = Array.from(selectedFileIds);
-                return displayedFiles.map((file, index) => {
-                  const isSelected = selectedFileIds.has(file.id);
-                  let isExtra = false;
-                  if (
-                    isSelected &&
-                    gallery?.selection_limit &&
-                    gallery.selection_limit > 0
-                  ) {
-                    const selIndex = selectedArray.indexOf(file.id);
-                    if (selIndex >= gallery.selection_limit) isExtra = true;
-                  }
+
+                {/* Layout Switcher & Sort Controls */}
+                <div className="flex items-center gap-3 py-2 shrink-0 ml-auto">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryLayoutMode("grid")}
+                      title="Grid view"
+                      className={`p-2 rounded-md transition-colors cursor-pointer ${
+                        deliveryLayoutMode === "grid"
+                          ? "bg-[#E5D5BE] text-[#2A211B] dark:bg-amber-200 dark:text-slate-900"
+                          : "text-[#6E6359] dark:text-slate-400 hover:bg-[#EFEAE2] dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryLayoutMode("masonry")}
+                      title="Natural masonry view"
+                      className={`p-2 rounded-md transition-colors cursor-pointer ${
+                        deliveryLayoutMode === "masonry"
+                          ? "bg-[#E5D5BE] text-[#2A211B] dark:bg-amber-200 dark:text-slate-900"
+                          : "text-[#6E6359] dark:text-slate-400 hover:bg-[#EFEAE2] dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <span className="h-5 w-px bg-[#DFD5C7] dark:bg-slate-800" aria-hidden="true" />
+
+                  <div className="relative flex items-center">
+                    <span className="text-xs sm:text-sm text-[#6E6359] dark:text-slate-400 mr-1.5">
+                      Sort:
+                    </span>
+                    <select
+                      value={deliverySortOrder}
+                      onChange={(e) =>
+                        setDeliverySortOrder(e.target.value as "newest" | "oldest" | "edited")
+                      }
+                      aria-label="Sort gallery photos"
+                      className="appearance-none bg-transparent pr-5 text-xs sm:text-sm font-medium text-[#2A211B] dark:text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="newest" className="bg-white text-slate-900">Newest</option>
+                      <option value="oldest" className="bg-white text-slate-900">Oldest</option>
+                      <option value="edited" className="bg-white text-slate-900">Edited First</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#6E6359] dark:text-slate-400 pointer-events-none -ml-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <main
+            id="delivery-gallery-grid"
+            className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8"
+          >
+            {isSelectionLockedOut ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in duration-300">
+                <div className="bg-white dark:bg-[#151c28] border border-[#E6DDD1] dark:border-slate-800 rounded-2xl shadow-sm p-8 md:p-10 max-w-md w-full">
+                  <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                  </div>
+                  <h2 className="font-editorial text-2xl font-semibold text-slate-900 dark:text-white mb-2">
+                    Selection Submitted
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+                    Thank you! Your selection of{" "}
+                    <strong className="text-slate-900 dark:text-white">
+                      {selectedFileIds.size} photo{selectedFileIds.size === 1 ? "" : "s"}
+                    </strong>{" "}
+                    has been sent to your photographer. The gallery previews are now hidden while your selection is being prepared.
+                  </p>
+                  {limit > 0 && selectedFileIds.size > limit && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 bg-[#FAF7F2] dark:bg-slate-900/60 border border-[#E6DDD1] dark:border-slate-800 rounded-lg px-3 py-2 mb-6">
+                      Includes {limit} main photos and {selectedFileIds.size - limit} extra photo{selectedFileIds.size - limit === 1 ? "" : "s"}.
+                    </p>
+                  )}
+                  <button
+                    onClick={handleUnlockRequest}
+                    disabled={submittingSelection}
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#D8CCBC] dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-[#FAF7F2] dark:hover:bg-slate-800 font-medium text-sm transition-colors disabled:opacity-50"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>Edit Selection (PIN Required)</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {isSelectionMode && viewFilter === "all" && (
+                  <div className="mb-6 p-4 bg-white/80 dark:bg-slate-900/60 border border-[#E6DDD1] dark:border-slate-800 rounded-xl flex items-start gap-3">
+                    <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-[#4A3F37] dark:text-slate-300">
+                      <strong>Selection Mode:</strong> Tap the heart icon on any photograph to add it to your favourites. Downloads stay paused until your selection is complete.
+                    </p>
+                  </div>
+                )}
+
+                {displayedFiles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-[#8A7E72] dark:text-slate-400">
+                    {viewFilter === "selected" ? (
+                      <>
+                        <Heart className="w-14 h-14 text-[#D5C9B8] mb-4" />
+                        <h3 className="text-lg font-semibold text-[#2A211B] dark:text-white">
+                          No Favourites Yet
+                        </h3>
+                        <p className="text-sm mb-6 max-w-xs text-center mt-1">
+                          Tap the heart icon on photos to save them to your favourites.
+                        </p>
+                        <button
+                          onClick={() => setViewFilter("all")}
+                          className="text-[#3C2F26] dark:text-white font-medium underline underline-offset-4 cursor-pointer"
+                        >
+                          Browse All Photos
+                        </button>
+                      </>
+                    ) : viewFilter === "videos" ? (
+                      <>
+                        <PlayCircle className="w-14 h-14 text-[#D5C9B8] mb-4" />
+                        <h3 className="text-lg font-semibold text-[#2A211B] dark:text-white">
+                          No Videos in This Gallery
+                        </h3>
+                        <button
+                          onClick={() => setViewFilter("all")}
+                          className="mt-4 text-[#3C2F26] dark:text-white font-medium underline underline-offset-4 cursor-pointer"
+                        >
+                          View All Photos
+                        </button>
+                      </>
+                    ) : viewFilter !== "all" ? (
+                      <>
+                        <Heart className="w-14 h-14 text-[#D5C9B8] mb-4" />
+                        <h3 className="text-lg font-semibold text-[#2A211B] dark:text-white">
+                          No Photos Selected Yet
+                        </h3>
+                        <p className="text-sm mb-6 max-w-xs text-center mt-1">
+                          Tap the heart icon on photos to add them to your selection.
+                        </p>
+                        <button
+                          onClick={() => setViewFilter("all")}
+                          className="text-[#3C2F26] dark:text-white font-medium underline underline-offset-4 cursor-pointer"
+                        >
+                          Browse All Photos
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-14 h-14 text-[#D5C9B8] mb-4" />
+                        <p>No photos available.</p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className={
+                      deliveryLayoutMode === "grid"
+                        ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5 animate-in fade-in duration-300"
+                        : "columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 animate-in fade-in duration-300"
+                    }
+                  >
+                    {(() => {
+                      const selectedArray = Array.from(selectedFileIds);
+                      return displayedFiles.map((file, index) => {
+                        const isSelected = isSelectionMode
+                          ? selectedFileIds.has(file.id)
+                          : localFavouriteIds.has(file.id);
+                        let isExtra = false;
+                        if (
+                          isSelectionMode &&
+                          isSelected &&
+                          gallery?.selection_limit &&
+                          gallery.selection_limit > 0
+                        ) {
+                          const selIndex = selectedArray.indexOf(file.id);
+                          if (selIndex >= gallery.selection_limit) isExtra = true;
+                        }
                   return (
                     <div
                       key={file.id}
@@ -2391,7 +2714,13 @@ export const ClientGallery: React.FC = () => {
                       onMouseDown={handleLongPressStart}
                       onMouseUp={handleLongPressEnd}
                       onMouseLeave={handleLongPressEnd}
-                      className={`group relative ${isHorizontalLayout ? "flex flex-col flex-none h-full aspect-[4/5] snap-center bg-slate-50" : isPrintsGallery ? "aspect-auto w-full block bg-white border border-slate-100 p-2 shadow-sm rounded-none" : isInstagramGrid ? "aspect-[4/6] w-full bg-slate-50 relative flex flex-col" : "aspect-auto w-full inline-block bg-slate-100 relative mb-2 md:mb-4 min-h-[160px]"} overflow-hidden break-inside-avoid [break-inside:avoid] shadow-sm hover:shadow-md transition-all ${isSelectionMode && isSelected ? "ring-4 ring-rose-500" : ""} max-w-full ${isPortfolio ? "cursor-default" : "cursor-pointer"}`}
+                      className={`group relative rounded-lg ${
+                        deliveryLayoutMode === "grid"
+                          ? "aspect-[4/3] w-full bg-[#EFEAE2] dark:bg-slate-900"
+                          : "aspect-auto w-full inline-block bg-[#EFEAE2] dark:bg-slate-900 mb-3 sm:mb-4 min-h-[160px]"
+                      } overflow-hidden break-inside-avoid [break-inside:avoid] transition-all duration-200 hover:shadow-md ${
+                        isSelectionMode && isSelected ? "ring-3 ring-rose-500 ring-offset-2 ring-offset-[#FAF7F2] dark:ring-offset-[#0b0f17]" : ""
+                      } max-w-full cursor-pointer`}
                       style={{
                         WebkitTouchCallout: "none",
                         userSelect: "none",
@@ -2515,44 +2844,61 @@ export const ClientGallery: React.FC = () => {
                           </button>
                         ) : (
                           !isPortfolio && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (downloadingId === file.id) {
-                                  cancelSingleDownload();
-                                } else {
-                                  handleDownload(file);
-                                }
-                              }}
-                              disabled={
-                                downloadingId !== null &&
-                                downloadingId !== file.id
-                              }
-                              className="pointer-events-auto bg-white/95 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-medium flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg text-sm disabled:opacity-75 disabled:cursor-wait"
-                            >
-                              {downloadingId === file.id ? (
-                                <X className="w-4 h-4 text-red-500" />
-                              ) : isFileLocked(file.id) ? (
-                                <Lock className="w-4 h-4" />
-                              ) : (
-                                <Download className="w-4 h-4" />
-                              )}
-                              <span
-                                className={
-                                  downloadingId === file.id ? "text-red-600" : ""
-                                }
+                            <div className="flex items-center gap-2 pointer-events-auto">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleLocalFavourite(file);
+                                }}
+                                title={isSelected ? "Remove from Favourites" : "Save to Favourites"}
+                                className={`p-2.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all ${
+                                  isSelected
+                                    ? "bg-rose-500 text-white"
+                                    : "bg-white/95 hover:bg-white text-slate-600 hover:text-rose-500"
+                                }`}
                               >
-                                {downloadingId === file.id
-                                  ? singleDownloadStats
-                                    ? singleDownloadStats.total
-                                      ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
-                                      : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
-                                    : "Cancel"
-                                  : isFileLocked(file.id)
-                                    ? "Locked"
-                                    : "Download"}
-                              </span>
-                            </button>
+                                <Heart className={`w-4 h-4 ${isSelected ? "fill-current" : ""}`} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (downloadingId === file.id) {
+                                    cancelSingleDownload();
+                                  } else {
+                                    handleDownload(file);
+                                  }
+                                }}
+                                disabled={
+                                  downloadingId !== null &&
+                                  downloadingId !== file.id
+                                }
+                                className="bg-white/95 hover:bg-white text-slate-900 px-3.5 py-2 rounded-full font-medium flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-all shadow-lg text-xs disabled:opacity-75 disabled:cursor-wait"
+                              >
+                                {downloadingId === file.id ? (
+                                  <X className="w-3.5 h-3.5 text-red-500" />
+                                ) : isFileLocked(file.id) ? (
+                                  <Lock className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Download className="w-3.5 h-3.5" />
+                                )}
+                                <span
+                                  className={
+                                    downloadingId === file.id ? "text-red-600" : ""
+                                  }
+                                >
+                                  {downloadingId === file.id
+                                    ? singleDownloadStats
+                                      ? singleDownloadStats.total
+                                        ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
+                                        : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
+                                      : "Cancel"
+                                    : isFileLocked(file.id)
+                                      ? "Locked"
+                                      : "Download"}
+                                </span>
+                              </button>
+                            </div>
                           )
                         )}
                       </div>
@@ -2574,42 +2920,57 @@ export const ClientGallery: React.FC = () => {
                           </button>
                         )}
                         {!isSelectionMode && !isPortfolio && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (downloadingId === file.id) {
-                                cancelSingleDownload();
-                              } else {
-                                handleDownload(file);
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleLocalFavourite(file);
+                              }}
+                              aria-label={isSelected ? "Remove from Favourites" : "Save to Favourites"}
+                              className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${
+                                isSelected ? "bg-rose-500 text-white" : "bg-white/90 text-slate-600"
+                              }`}
+                            >
+                              <Heart className={`w-4 h-4 ${isSelected ? "fill-current" : ""}`} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (downloadingId === file.id) {
+                                  cancelSingleDownload();
+                                } else {
+                                  handleDownload(file);
+                                }
+                              }}
+                              disabled={
+                                downloadingId !== null && downloadingId !== file.id
                               }
-                            }}
-                            disabled={
-                              downloadingId !== null && downloadingId !== file.id
-                            }
-                            className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-3"} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
-                                  ${
-                                    isFileLocked(file.id)
-                                      ? "bg-slate-100/90 text-slate-800"
-                                      : "bg-white/90 text-slate-900"
-                                  }
-                                  ${downloadingId === file.id ? "!bg-red-50 !text-red-600 !border-red-200" : ""}
-                                  `}
-                          >
-                            {downloadingId === file.id ? (
-                              <X className="w-5 h-5 shrink-0" />
-                            ) : isFileLocked(file.id) ? (
-                              <Lock className="w-5 h-5" />
-                            ) : (
-                              <Download className="w-5 h-5" />
-                            )}
-                            {downloadingId === file.id && singleDownloadStats && (
-                              <span className="font-semibold truncate">
-                                {singleDownloadStats.total
-                                  ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%`
-                                  : `${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}M`}
-                              </span>
-                            )}
-                          </button>
+                              className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-2.5"} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                                    ${
+                                      isFileLocked(file.id)
+                                        ? "bg-slate-100/90 text-slate-800"
+                                        : "bg-white/90 text-slate-900"
+                                    }
+                                    ${downloadingId === file.id ? "!bg-red-50 !text-red-600 !border-red-200" : ""}
+                                    `}
+                            >
+                              {downloadingId === file.id ? (
+                                <X className="w-4 h-4 shrink-0" />
+                              ) : isFileLocked(file.id) ? (
+                                <Lock className="w-4 h-4" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                              {downloadingId === file.id && singleDownloadStats && (
+                                <span className="font-semibold truncate">
+                                  {singleDownloadStats.total
+                                    ? `${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%`
+                                    : `${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}M`}
+                                </span>
+                              )}
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -2662,6 +3023,7 @@ export const ClientGallery: React.FC = () => {
             </>
           )}
         </main>
+        </>
       )}
 
       {/* Selection Mode Bottom Bar */}
@@ -3365,45 +3727,62 @@ export const ClientGallery: React.FC = () => {
               </>
             ) : (
               !isPortfolio && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (downloadingId === lightboxFile.id) {
-                      cancelSingleDownload();
-                    } else {
-                      handleDownload(lightboxFile);
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLocalFavourite(lightboxFile);
+                    }}
+                    className={`p-3 rounded-full shadow-2xl flex items-center justify-center transition-all border border-white/20 ${
+                      localFavouriteIds.has(lightboxFile.id)
+                        ? "bg-rose-500 text-white hover:bg-rose-600"
+                        : "bg-white text-slate-800 hover:bg-slate-100"
+                    }`}
+                    title={localFavouriteIds.has(lightboxFile.id) ? "Remove from Favourites" : "Save to Favourites"}
+                  >
+                    <Heart className={`w-5 h-5 ${localFavouriteIds.has(lightboxFile.id) ? "fill-current" : ""}`} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (downloadingId === lightboxFile.id) {
+                        cancelSingleDownload();
+                      } else {
+                        handleDownload(lightboxFile);
+                      }
+                    }}
+                    disabled={
+                      downloadingId !== null && downloadingId !== lightboxFile.id
                     }
-                  }}
-                  disabled={
-                    downloadingId !== null && downloadingId !== lightboxFile.id
-                  }
-                  className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
-                    isFileLocked(lightboxFile ? lightboxFile.id : "")
-                      ? "bg-slate-100 text-slate-800"
-                      : downloadingId === lightboxFile.id
-                        ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                        : "bg-white text-slate-900 hover:bg-slate-100"
-                  }`}
-                >
-                  {downloadingId === lightboxFile.id ? (
-                    <X className="w-5 h-5" />
-                  ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
-                    <Lock className="w-5 h-5" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  <span>
-                    {downloadingId === lightboxFile.id
-                      ? singleDownloadStats
-                        ? singleDownloadStats.total
-                          ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
-                          : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
-                        : "Cancel"
-                      : isFileLocked(lightboxFile ? lightboxFile.id : "")
-                        ? "Locked"
-                        : lightboxFile?.file_type === "video" || lightboxFile?.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? "Download Video" : "Download Photo"}
-                  </span>
-                </button>
+                    className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
+                      isFileLocked(lightboxFile ? lightboxFile.id : "")
+                        ? "bg-slate-100 text-slate-800"
+                        : downloadingId === lightboxFile.id
+                          ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                          : "bg-white text-slate-900 hover:bg-slate-100"
+                    }`}
+                  >
+                    {downloadingId === lightboxFile.id ? (
+                      <X className="w-5 h-5" />
+                    ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
+                      <Lock className="w-5 h-5" />
+                    ) : (
+                      <Download className="w-5 h-5" />
+                    )}
+                    <span>
+                      {downloadingId === lightboxFile.id
+                        ? singleDownloadStats
+                          ? singleDownloadStats.total
+                            ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
+                            : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
+                          : "Cancel"
+                        : isFileLocked(lightboxFile ? lightboxFile.id : "")
+                          ? "Locked"
+                          : lightboxFile?.file_type === "video" || lightboxFile?.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? "Download Video" : "Download Photo"}
+                    </span>
+                  </button>
+                </div>
               )
             )}
           </div>
@@ -3418,7 +3797,7 @@ export const ClientGallery: React.FC = () => {
               className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               onWheel={handleWheel}
             >
-              {displayedFiles.map((file) => (
+              {displayedFiles.map((file, index) => (
                 <button
                   key={file.id}
                   id={`thumbnail-${file.id}`}
