@@ -59,3 +59,61 @@ html.dark ::selection {
   background-color: #fbbf24;
   color: #0f172a;
 }
+
+/* Keep Magazine Grid layouts arranged on mobile exactly as they appear on desktop */
+.editorial-photo-grid[data-layout="2-col"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="3-col"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:first-child {
+  grid-column: span 7 / span 7;
+  display: flex;
+  flex-direction: column;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:nth-child(2) {
+  grid-column: span 5 / span 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:first-child {
+  grid-column: span 7 / span 7;
+  grid-row: span 2 / span 2;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:nth-child(2),
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:nth-child(3) {
+  grid-column: span 5 / span 5;
+}
+
+@media (max-width: 639px) {
+  .editorial-photo-grid[data-layout="2-col"] > div:first-child,
+  .editorial-photo-grid[data-layout="mosaic"] > div:first-child {
+    gap: 0.625rem;
+  }
+
+  .editorial-photo-grid[data-layout="3-col"] > div:first-child {
+    gap: 0.5rem;
+  }
+
+  .editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:nth-child(2) {
+    gap: 0.625rem;
+  }
+
+  .editorial-photo-grid[data-layout="mosaic"] figure > div:first-child {
+    min-height: 160px;
+  }
+}

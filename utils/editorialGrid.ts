@@ -62,7 +62,7 @@ export function generateEditorialGridHtml(data: EditorialGridData): string {
 
     return `
 <div class="editorial-photo-grid not-prose my-10" data-editorial-grid="true" data-layout="2-col" data-images="${jsonImages}" data-caption="${safeCaption}">
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-stretch">
+  <div class="grid grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 items-stretch">
     <figure class="group/pin relative overflow-hidden bg-slate-100 dark:bg-slate-800 rounded-sm m-0 flex flex-col">
       <div class="relative w-full aspect-[3/4] sm:aspect-[4/5] overflow-hidden">
         <img src="${img1.url}" alt="${img1.alt || 'Editorial portrait'}" class="w-full h-full object-cover transition-transform duration-700 group-hover/pin:scale-[1.02]" loading="lazy" />
@@ -91,7 +91,7 @@ export function generateEditorialGridHtml(data: EditorialGridData): string {
 
     return `
 <div class="editorial-photo-grid not-prose my-10" data-editorial-grid="true" data-layout="3-col" data-images="${jsonImages}" data-caption="${safeCaption}">
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-stretch">
+  <div class="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 items-stretch">
     ${itemsHtml}
   </div>
   ${caption ? `<p class="mt-3 text-center text-xs tracking-widest uppercase text-slate-400 dark:text-slate-500 font-sans">${caption}</p>` : ''}
@@ -105,16 +105,16 @@ export function generateEditorialGridHtml(data: EditorialGridData): string {
 
     return `
 <div class="editorial-photo-grid not-prose my-12" data-editorial-grid="true" data-layout="mosaic" data-images="${jsonImages}" data-caption="${safeCaption}">
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-    <div class="md:col-span-7 flex flex-col">
+  <div class="grid grid-cols-12 gap-2.5 sm:gap-4 md:gap-5 items-stretch">
+    <div class="col-span-7 flex flex-col">
       <figure class="group/pin relative overflow-hidden bg-slate-100 dark:bg-slate-800 rounded-sm h-full m-0 flex flex-col">
-        <div class="relative w-full h-full min-h-[300px] md:min-h-[440px] overflow-hidden">
+        <div class="relative w-full flex-1 min-h-[180px] sm:min-h-[280px] md:min-h-[420px] overflow-hidden">
           <img src="${heroImg.url}" alt="${heroImg.alt || 'Featured editorial shot'}" class="w-full h-full object-cover transition-transform duration-700 group-hover/pin:scale-[1.02]" loading="lazy" />
         </div>
         ${heroImg.caption ? `<figcaption class="mt-2 text-xs text-slate-500 dark:text-slate-400 italic text-center font-serif">${heroImg.caption}</figcaption>` : ''}
       </figure>
     </div>
-    <div class="md:col-span-5 flex flex-col gap-4 sm:gap-5 justify-between">
+    <div class="col-span-5 flex flex-col gap-2.5 sm:gap-4 md:gap-5 justify-between">
       <figure class="group/pin relative overflow-hidden bg-slate-100 dark:bg-slate-800 rounded-sm flex-1 m-0 flex flex-col">
         <div class="relative w-full aspect-[4/3] overflow-hidden">
           <img src="${stack1.url}" alt="${stack1.alt || 'Detail shot'}" class="w-full h-full object-cover transition-transform duration-700 group-hover/pin:scale-[1.02]" loading="lazy" />

@@ -92,15 +92,15 @@ export const EditorialGridNode = Node.create({
       const stackImgs = images.slice(1, 3);
       gridContent = [
         'div',
-        { class: 'grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch' },
+        { class: 'grid grid-cols-12 gap-2.5 sm:gap-4 md:gap-5 items-stretch' },
         [
           'div',
-          { class: 'md:col-span-7 flex flex-col' },
-          buildFigure(heroImg, 'h-full min-h-[300px] md:min-h-[440px]', 'h-full')
+          { class: 'col-span-7 flex flex-col' },
+          buildFigure(heroImg, 'flex-1 min-h-[180px] sm:min-h-[280px] md:min-h-[420px]', 'h-full')
         ],
         [
           'div',
-          { class: 'md:col-span-5 flex flex-col gap-4 sm:gap-5 justify-between' },
+          { class: 'col-span-5 flex flex-col gap-2.5 sm:gap-4 md:gap-5 justify-between' },
           ...stackImgs.map(img => buildFigure(img, 'aspect-[4/3]', 'flex-1'))
         ]
       ];
@@ -113,8 +113,8 @@ export const EditorialGridNode = Node.create({
       ];
     } else {
       const gridClass = layout === '3-col'
-        ? 'grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-stretch'
-        : 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-stretch';
+        ? 'grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 items-stretch'
+        : 'grid grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 items-stretch';
       const aspectClass = layout === '3-col' ? 'aspect-[4/5] sm:aspect-[3/4]' : 'aspect-[3/4] sm:aspect-[4/5]';
       gridContent = ['div', { class: gridClass }, ...images.map(img => buildFigure(img, aspectClass))];
     }

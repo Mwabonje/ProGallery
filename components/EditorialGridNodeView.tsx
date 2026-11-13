@@ -40,7 +40,7 @@ export const EditorialGridNodeView: React.FC<any> = ({ node, deleteNode }) => {
 
       {/* Grid Layout Render */}
       {layout === '2-col' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 items-stretch">
           {images.map((img, idx) => (
             <div key={idx} className="bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex flex-col">
               <div className="aspect-[3/4] relative overflow-hidden bg-slate-200 dark:bg-slate-700">
@@ -63,7 +63,7 @@ export const EditorialGridNodeView: React.FC<any> = ({ node, deleteNode }) => {
       )}
 
       {layout === '3-col' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 items-stretch">
           {images.map((img, idx) => (
             <div key={idx} className="bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex flex-col">
               <div className="aspect-[4/5] relative overflow-hidden bg-slate-200 dark:bg-slate-700">
@@ -86,9 +86,9 @@ export const EditorialGridNodeView: React.FC<any> = ({ node, deleteNode }) => {
       )}
 
       {layout === 'mosaic' && (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
-          <div className="md:col-span-7 bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex flex-col">
-            <div className="h-full min-h-[260px] relative overflow-hidden bg-slate-200 dark:bg-slate-700">
+        <div className="grid grid-cols-12 gap-2.5 sm:gap-4 items-stretch">
+          <div className="col-span-7 bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex flex-col">
+            <div className="h-full flex-1 min-h-[160px] sm:min-h-[260px] relative overflow-hidden bg-slate-200 dark:bg-slate-700">
               {images[0]?.url ? (
                 <img src={images[0].url} alt={images[0].alt || ''} className="w-full h-full object-cover" />
               ) : (
@@ -103,7 +103,7 @@ export const EditorialGridNodeView: React.FC<any> = ({ node, deleteNode }) => {
               </div>
             )}
           </div>
-          <div className="md:col-span-5 flex flex-col gap-3 justify-between">
+          <div className="col-span-5 flex flex-col gap-2.5 sm:gap-3 justify-between">
             {images.slice(1, 3).map((img, idx) => (
               <div key={idx} className="bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex-1 flex flex-col">
                 <div className="aspect-[4/3] relative overflow-hidden bg-slate-200 dark:bg-slate-700">
