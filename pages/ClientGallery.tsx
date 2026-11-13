@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   Download,
@@ -55,14 +55,14 @@ import saveAs from "file-saver";
 
 const WatermarkOverlay = () => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
-        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="36" fill="rgba(255,255,255,0.25)" transform="rotate(-45 150 150)" letter-spacing="6">
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="36" fill="rgba(255,255,255,0.32)" transform="rotate(-45 150 150)" letter-spacing="6">
             MWABONJE
         </text>
     </svg>`;
   const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   return (
     <div
-      className="absolute inset-0 pointer-events-none z-[8] select-none mix-blend-overlay drop-shadow-md"
+      className="absolute inset-0 pointer-events-none z-[8] select-none"
       style={{
         backgroundImage: `url("${dataUrl}")`,
         backgroundRepeat: "repeat",
@@ -101,20 +101,38 @@ export const ClientGallery: React.FC = () => {
   } | null>(null);
   const [showScreenshotWarning, setShowScreenshotWarning] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const deliveryProgressRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let rafId: number | null = null;
+    const isPortfolioMode = Boolean(
+      gallery?.category &&
+      gallery.category.trim() !== "" &&
+      gallery.category.toLowerCase().trim() !== "delivery",
+    );
+
     const handleScroll = () => {
-      const totalScroll = document.documentElement.scrollTop || document.body.scrollTop;
-      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      if (windowHeight > 0) {
-        setScrollProgress(totalScroll / windowHeight);
-      } else {
-        setScrollProgress(0);
-      }
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const totalScroll = document.documentElement.scrollTop || document.body.scrollTop;
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const progress = windowHeight > 0 ? Math.min(1, Math.max(0, totalScroll / windowHeight)) : 0;
+        if (deliveryProgressRef.current) {
+          deliveryProgressRef.current.style.transform = `scaleX(${progress})`;
+        }
+        if (isPortfolioMode) {
+          setScrollProgress(progress);
+        }
+      });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+    };
+  }, [gallery?.category]);
 
   const [galleryPassword, setGalleryPassword] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -1480,47 +1498,74 @@ export const ClientGallery: React.FC = () => {
   const extraSelections = limit > 0 ? selectedArray.slice(limit) : [];
 
   const activeFilesSource = activeSubGallery ? activeSubFiles : files;
-  const nonFailedFiles = activeFilesSource.filter((f) => !failedFileIds.has(f.id));
+  const nonFailedFiles = useMemo(
+    () => activeFilesSource.filter((f) => !failedFileIds.has(f.id)),
+    [activeFilesSource, failedFileIds],
+  );
   const deliveryPhotoCount = nonFailedFiles.length;
-  const deliveryVideoCount = nonFailedFiles.filter(
-    (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
-  ).length;
+  const deliveryVideoCount = useMemo(
+    () =>
+      nonFailedFiles.filter(
+        (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
+      ).length,
+    [nonFailedFiles],
+  );
   const deliveryFavouriteCount = isSelectionMode ? selectedFileIds.size : localFavouriteIds.size;
-  const heroCoverFile =
-    !isPortfolio && !isSelectionLockedOut
-      ? nonFailedFiles.find(
-          (f) => f.file_type === "image" && !f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i),
-        ) || nonFailedFiles[0] || null
-      : null;
+  const heroCoverFile = useMemo(
+    () =>
+      !isPortfolio && !isSelectionLockedOut
+        ? nonFailedFiles.find(
+            (f) => f.file_type === "image" && !f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i),
+          ) ||
+          nonFailedFiles[0] ||
+          null
+        : null,
+    [isPortfolio, isSelectionLockedOut, nonFailedFiles],
+  );
 
-  let displayedFiles = [...nonFailedFiles];
-  if (viewFilter === "selected") {
-    displayedFiles = isSelectionMode
-      ? displayedFiles.filter((f) => selectedFileIds.has(f.id))
-      : displayedFiles.filter((f) => localFavouriteIds.has(f.id));
-  }
-  if (viewFilter === "main")
-    displayedFiles = displayedFiles.filter((f) => mainSelections.includes(f.id));
-  if (viewFilter === "extras")
-    displayedFiles = displayedFiles.filter((f) => extraSelections.includes(f.id));
-  if (viewFilter === "videos")
-    displayedFiles = displayedFiles.filter(
-      (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
-    );
-
-  if (!isPortfolio) {
-    if (deliverySortOrder === "oldest") {
-      displayedFiles.sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  const displayedFiles = useMemo(() => {
+    let list = nonFailedFiles;
+    if (viewFilter === "selected") {
+      list = isSelectionMode
+        ? list.filter((f) => selectedFileIds.has(f.id))
+        : list.filter((f) => localFavouriteIds.has(f.id));
+    } else if (viewFilter === "main") {
+      list = list.filter((f) => mainSelections.includes(f.id));
+    } else if (viewFilter === "extras") {
+      list = list.filter((f) => extraSelections.includes(f.id));
+    } else if (viewFilter === "videos") {
+      list = list.filter(
+        (f) => f.file_type === "video" || Boolean(f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)),
       );
-    } else if (deliverySortOrder === "edited") {
-      displayedFiles.sort((a, b) => Number(Boolean(b.is_edited)) - Number(Boolean(a.is_edited)));
     } else {
-      displayedFiles.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
+      list = [...list];
     }
-  }
+
+    if (!isPortfolio) {
+      if (deliverySortOrder === "oldest") {
+        list.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+      } else if (deliverySortOrder === "edited") {
+        list.sort((a, b) => Number(Boolean(b.is_edited)) - Number(Boolean(a.is_edited)));
+      } else {
+        list.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+      }
+    }
+    return list;
+  }, [
+    nonFailedFiles,
+    viewFilter,
+    isSelectionMode,
+    selectedFileIds,
+    localFavouriteIds,
+    mainSelections,
+    extraSelections,
+    isPortfolio,
+    deliverySortOrder,
+  ]);
 
   const setLightboxFileWithTracking = (file: GalleryFile | null) => {
     setLightboxFile(file);
@@ -1837,12 +1882,16 @@ export const ClientGallery: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-[#FAF7F2] dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none ${isSelectionMode ? "pb-24" : "pb-16"}`}
+      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-[#FAF7F2] dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 select-none ${isSelectionMode ? "pb-24" : "pb-16"}`}
     >
-      {/* Scroll Progress Bar for Client Galleries */}
+      {/* Scroll Progress Bar for Client Galleries (GPU compositor transform, zero re-renders) */}
       {!isPortfolio && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[100] pointer-events-none">
-          <div className="h-full bg-emerald-500 transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }} />
+          <div
+            ref={deliveryProgressRef}
+            className="h-full w-full bg-emerald-500 origin-left"
+            style={{ transform: "scaleX(0)" }}
+          />
         </div>
       )}
       <Helmet>
@@ -2441,7 +2490,7 @@ export const ClientGallery: React.FC = () => {
         /* Editorial Client Delivery Toolbar + Photo Grid */
         <>
           {!isSelectionLockedOut && (
-            <div className="sticky top-0 z-20 bg-[#FAF7F2]/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-[#E6DDD1] dark:border-slate-800">
+            <div className="sticky top-0 z-20 bg-[#FAF7F2] dark:bg-[#0b0f17] border-b border-[#E6DDD1] dark:border-slate-800">
               <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-wrap items-center justify-between gap-3">
                 {/* Filter Tabs */}
                 <div className="flex items-center gap-6 overflow-x-auto [&::-webkit-scrollbar]:hidden">
@@ -2714,11 +2763,11 @@ export const ClientGallery: React.FC = () => {
                       onMouseDown={handleLongPressStart}
                       onMouseUp={handleLongPressEnd}
                       onMouseLeave={handleLongPressEnd}
-                      className={`group relative rounded-lg ${
+                      className={`group relative rounded-lg touch-pan-y ${
                         deliveryLayoutMode === "grid"
-                          ? "aspect-[4/3] w-full bg-[#EFEAE2] dark:bg-slate-900"
-                          : "aspect-auto w-full inline-block bg-[#EFEAE2] dark:bg-slate-900 mb-3 sm:mb-4 min-h-[160px]"
-                      } overflow-hidden break-inside-avoid [break-inside:avoid] transition-all duration-200 hover:shadow-md ${
+                          ? "delivery-grid-card aspect-[4/3] w-full bg-[#EAE3D8] dark:bg-slate-900"
+                          : "aspect-auto w-full inline-block bg-[#EAE3D8] dark:bg-slate-900 mb-3 sm:mb-4 min-h-[160px]"
+                      } overflow-hidden break-inside-avoid [break-inside:avoid] transition-shadow duration-150 hover:shadow-md ${
                         isSelectionMode && isSelected ? "ring-3 ring-rose-500 ring-offset-2 ring-offset-[#FAF7F2] dark:ring-offset-[#0b0f17]" : ""
                       } max-w-full cursor-pointer`}
                       style={{
@@ -2754,12 +2803,7 @@ export const ClientGallery: React.FC = () => {
                       {file.file_type === "image" &&
                       !file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
                         <>
-                          <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
                           <img
-                            onLoad={(e) => {
-                              const skeleton = document.getElementById(`skeleton-${file.id}`);
-                              if (skeleton) skeleton.style.display = 'none';
-                            }}
                             src={getOptimizedImageUrl(
                               getDisplayUrl(file),
                               400,
@@ -2772,10 +2816,10 @@ export const ClientGallery: React.FC = () => {
                                     ${getOptimizedImageUrl(getDisplayUrl(file), 600, 600, 40)} 600w,
                                     ${getOptimizedImageUrl(getDisplayUrl(file), 900, 900, 50)} 900w
                                 `}
-                            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 24vw"
+                            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 32vw, 18vw"
                             alt="Gallery item"
-                            className="w-full h-full block object-cover transition-transform duration-500 md:group-hover:scale-105 pointer-events-none will-change-transform"
-                            loading={index < 8 ? "eager" : "lazy"}
+                            className="w-full h-full block object-cover transition-transform duration-200 md:group-hover:scale-[1.03] pointer-events-none"
+                            loading={index < 12 ? "eager" : "lazy"}
                             decoding="async"
                             // @ts-ignore
                             fetchPriority={index < 8 ? "high" : "auto"}
@@ -2912,7 +2956,7 @@ export const ClientGallery: React.FC = () => {
                               toggleSelection(file);
                             }}
                             disabled={selectionSubmitted}
-                            className={`p-3 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${isSelected ? "bg-rose-500 text-white" : "bg-white/90 text-slate-400"}`}
+                            className={`p-3 rounded-full shadow-md transition-transform active:scale-95 border border-white/20 ${isSelected ? "bg-rose-500 text-white" : "bg-white/95 text-slate-400"}`}
                           >
                             <Heart
                               className={`w-5 h-5 ${isSelected ? "fill-current" : ""}`}
@@ -2928,8 +2972,8 @@ export const ClientGallery: React.FC = () => {
                                 toggleLocalFavourite(file);
                               }}
                               aria-label={isSelected ? "Remove from Favourites" : "Save to Favourites"}
-                              className={`p-2.5 rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20 ${
-                                isSelected ? "bg-rose-500 text-white" : "bg-white/90 text-slate-600"
+                              className={`p-2.5 rounded-full shadow-md transition-transform active:scale-95 border border-white/20 ${
+                                isSelected ? "bg-rose-500 text-white" : "bg-white/95 text-slate-600"
                               }`}
                             >
                               <Heart className={`w-4 h-4 ${isSelected ? "fill-current" : ""}`} />
@@ -2946,11 +2990,11 @@ export const ClientGallery: React.FC = () => {
                               disabled={
                                 downloadingId !== null && downloadingId !== file.id
                               }
-                              className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-2.5"} rounded-full shadow-md backdrop-blur-sm transition-all active:scale-95 border border-white/20
+                              className={`flex items-center justify-center gap-1.5 ${downloadingId === file.id && singleDownloadStats ? "px-3 py-2 text-sm max-w-[120px]" : "p-2.5"} rounded-full shadow-md transition-transform active:scale-95 border border-white/20
                                     ${
                                       isFileLocked(file.id)
-                                        ? "bg-slate-100/90 text-slate-800"
-                                        : "bg-white/90 text-slate-900"
+                                        ? "bg-slate-100 text-slate-800"
+                                        : "bg-white/95 text-slate-900"
                                     }
                                     ${downloadingId === file.id ? "!bg-red-50 !text-red-600 !border-red-200" : ""}
                                     `}
