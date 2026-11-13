@@ -547,7 +547,7 @@ const pageDesc =
       />
 
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
+      <section className="atelier-hero relative min-h-[92svh] md:min-h-screen flex items-end justify-start bg-slate-950 text-white overflow-hidden">
         {/* Hero Background Image */}
         <img 
           src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)} 
@@ -571,7 +571,7 @@ const pageDesc =
         {/* Dark Vignette Overlay for Text Legibility */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-950/60 to-slate-950/80 pointer-events-none" />
         
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center flex flex-col items-center">
+        <div className="atelier-hero__content relative z-10 w-full max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 pt-36 pb-16 md:pb-24 text-left flex flex-col items-start">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] md:text-xs tracking-widest uppercase font-semibold text-white/90 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>{settings.heroLocation}</span>
@@ -662,7 +662,7 @@ const pageDesc =
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="atelier-work-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredGalleries.map((gallery) => {
               const displayCategory = gallery.baseCategory || 'PHOTOGRAPHY';
               const slug = generateSlug(gallery.client_name);
