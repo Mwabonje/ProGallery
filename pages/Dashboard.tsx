@@ -213,6 +213,8 @@ export const Dashboard: React.FC = () => {
   const [editDownloadsBeforeClearing, setEditDownloadsBeforeClearing] = useState<number | ''>('');
   const [isUpdatingPayment, setIsUpdatingPayment] = useState<boolean>(false);
   const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
+  const [galleryToDelete, setGalleryToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deletingGalleryId, setDeletingGalleryId] = useState<string | null>(null);
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -1479,55 +1481,126 @@ export const Dashboard: React.FC = () => {
   }, [activities, galleries, searchQuery]);
 
   
-  const handleDeleteGallery = async (e: React.MouseEvent, id: string, name: string) => {
+  const handleDeleteGallery = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete the gallery "${name}"?\nThis action cannot be undone and will permanently delete all associated photos, high-res originals, and watermark files from Cloudflare R2.`)) {
-      return;
-    }
+    setGalleryToDelete({ id, name });
+  };
+
+  const confirmDeleteGallery = async () => {
+    if (!galleryToDelete) return;
+    const { id, name } = galleryToDelete;
+    setDeletingGalleryId(id);
 
     try {
-      // 1. Query all files belonging to this gallery from database
+      // Collect main gallery + any child section/sub-galleries
+      const childIds = galleries
+        .filter((g) => getParentGalleryId(g) === id)
+        .map((g) => g.id);
+      const targetGalleryIds = [id, ...childIds];
+
+      // 1. Query all files belonging to this gallery (and its sections) from database
       const { data: filesData } = await supabase
         .from('files')
-        .select('file_path')
-        .eq('gallery_id', id);
+        .select('file_path, thumbnail_path, file_url, thumbnail_url')
+        .in('gallery_id', targetGalleryIds);
 
+      const extractR2Key = (url?: string | null): string | null => {
+        if (!url || !url.startsWith('http')) return null;
+        try {
+          const parsed = new URL(url);
+          if (parsed.hostname.includes('r2.') || parsed.hostname.includes('mwabonje')) {
+            return parsed.pathname.replace(/^\/+/, '') || null;
+          }
+        } catch {
+          // ignore invalid URLs
+        }
+        return null;
+      };
+
+      const r2Paths = new Set<string>();
       if (filesData && filesData.length > 0) {
-        const paths = filesData.map(f => f.file_path).filter(Boolean);
-        if (paths.length > 0) {
-          // Deletes the high-res files AND automatically cleans up their watermark copies in R2
-          await fetch(getApiUrl('/api/delete-file'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filePaths: paths })
-          });
+        filesData.forEach((f: any) => {
+          if (f.file_path && f.file_path !== 'GALLERY_PASSWORD') r2Paths.add(f.file_path);
+          if (f.thumbnail_path) r2Paths.add(f.thumbnail_path);
+          const urlKey = extractR2Key(f.file_url);
+          if (urlKey) r2Paths.add(urlKey);
+          const thumbKey = extractR2Key(f.thumbnail_url);
+          if (thumbKey) r2Paths.add(thumbKey);
+        });
+      }
+
+      if (r2Paths.size > 0) {
+        // Deletes the high-res files AND automatically cleans up their watermark copies in Cloudflare R2
+        const delFileRes = await fetch(getApiUrl('/api/delete-file'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePaths: Array.from(r2Paths) }),
+        });
+        if (!delFileRes.ok) {
+          console.warn('Cloudflare R2 delete-file warning:', await delFileRes.text().catch(() => ''));
         }
       }
 
-      // 2. Delete any remaining folder contents in Cloudflare R2 (e.g. galleries/[id] or [id])
-      await fetch(getApiUrl('/api/delete-folder'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath: `galleries/${id}` })
-      });
-      await fetch(getApiUrl('/api/delete-folder'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath: id })
-      });
+      // 2. Delete all remaining folder objects in Cloudflare R2 (e.g. galleries/[id] or [id])
+      for (const targetId of targetGalleryIds) {
+        const res1 = await fetch(getApiUrl('/api/delete-folder'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderPath: `galleries/${targetId}` }),
+        });
+        if (!res1.ok) {
+          console.warn('Cloudflare R2 delete-folder (galleries/) warning:', await res1.text().catch(() => ''));
+        }
 
-      // 3. Clean up database record (cascade deletes selections and files in Supabase DB)
-      const { error } = await supabase.from('galleries').delete().eq('id', id);
+        const res2 = await fetch(getApiUrl('/api/delete-folder'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderPath: targetId }),
+        });
+        if (!res2.ok) {
+          console.warn('Cloudflare R2 delete-folder warning:', await res2.text().catch(() => ''));
+        }
+      }
+
+      // 3. Clean up legacy Supabase storage folder if any
+      try {
+        for (const targetId of targetGalleryIds) {
+          const { data: legacyFiles } = await supabase.storage.from('gallery-files').list(targetId, { limit: 100 });
+          if (legacyFiles && legacyFiles.length > 0) {
+            await supabase.storage.from('gallery-files').remove(legacyFiles.map((f) => `${targetId}/${f.name}`));
+          }
+        }
+      } catch {
+        // ignore legacy cleanup errors
+      }
+
+      // 4. Clean up database records in Supabase
+      await supabase.from('selections').delete().in('gallery_id', targetGalleryIds);
+      await supabase.from('files').delete().in('gallery_id', targetGalleryIds);
+      await supabase.from('activity_logs').delete().in('gallery_id', targetGalleryIds);
+
+      const { error } = await supabase.from('galleries').delete().in('id', targetGalleryIds);
       if (error) throw error;
 
-      toast.success(`Gallery "${name}" and all associated files deleted successfully`);
-      setGalleries(prev => prev.filter(g => g.id !== id));
-      
+      const remainingGalleries = galleries.filter((g) => !targetGalleryIds.includes(g.id));
+      setGalleries(remainingGalleries);
+
+      if (selectedDeliveryId && targetGalleryIds.includes(selectedDeliveryId)) {
+        const nextDelivery = remainingGalleries.find((g) => !getParentGalleryId(g) && (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery'));
+        setSelectedDeliveryId(nextDelivery?.id || '');
+        setEditableDeliveryTitle(nextDelivery?.client_name || '');
+      }
+
+      setGalleryToDelete(null);
+      toast.success(`Gallery "${name}" deleted from database and Cloudflare R2`);
+
       // Refresh dashboard data to recalculate real storage stats and recent activities
       fetchData();
     } catch (err: any) {
       console.error('Failed to delete gallery:', err);
       toast.error(`Failed to delete gallery: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setDeletingGalleryId(null);
     }
   };
 
@@ -2676,15 +2749,26 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-stretch gap-3 overflow-x-auto pb-1 pt-0.5 scrollbar-none">
                 {deliveryGalleries.map((g) => {
                   const isSelected = currentDelivery?.id === g.id && deliveryViewMode === 'detail';
+                  const isDeletingThis = deletingGalleryId === g.id;
                   return (
-                    <button
+                    <div
                       key={g.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         setSelectedDeliveryId(g.id);
                         setEditableDeliveryTitle(g.client_name);
                         setDeliveryViewMode('detail');
                       }}
-                      className={`shrink-0 w-56 text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedDeliveryId(g.id);
+                          setEditableDeliveryTitle(g.client_name);
+                          setDeliveryViewMode('detail');
+                        }
+                      }}
+                      className={`group relative shrink-0 w-60 text-left p-2.5 pr-9 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
                         isSelected
                           ? 'border-[#B58B5C] bg-[#FAF4E8] shadow-sm ring-2 ring-[#B58B5C]/35'
                           : 'border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F4EFE6] hover:border-[#D6CCA6]'
@@ -2721,7 +2805,23 @@ export const Dashboard: React.FC = () => {
                           ) : null}
                         </div>
                       </div>
-                    </button>
+
+                      {/* Delete Gallery Button directly on portal card */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteGallery(e, g.id, g.client_name)}
+                        disabled={isDeletingThis}
+                        title={`Delete "${g.client_name}" from database & Cloudflare R2`}
+                        aria-label={`Delete ${g.client_name}`}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center text-[#8E827B] hover:text-rose-600 hover:bg-rose-50 opacity-75 sm:opacity-60 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isDeletingThis ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
 
@@ -2755,7 +2855,22 @@ export const Dashboard: React.FC = () => {
             )}
 
             {/* Main Delivery Workspace (Detail View matching Warm_Wedding_Gallery_Studio_Dashboard_a6cde6e1.png) */}
-            {deliveryViewMode === 'detail' ? (
+            {deliveryViewMode === 'detail' && !currentDelivery ? (
+              <div className="bg-white rounded-3xl border border-[#E8E2D2] p-12 text-center shadow-xs">
+                <Package className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-70" />
+                <h3 className="text-lg font-bold text-[#1F1714]">No Client Delivery Portals Yet</h3>
+                <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                  Create a new client delivery portal to upload photos, set access passwords, and share links.
+                </p>
+                <button
+                  onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                  className="mt-5 px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Delivery Portal</span>
+                </button>
+              </div>
+            ) : deliveryViewMode === 'detail' ? (
               <div className="space-y-6">
                 {/* Title & Action Buttons Row */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2812,7 +2927,7 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   {/* Header Action Buttons */}
-                  <div className="flex items-center gap-2.5 self-start md:self-auto">
+                  <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
                     {/* Preview Button */}
                     <button
                       onClick={() => {
@@ -2838,6 +2953,24 @@ export const Dashboard: React.FC = () => {
                       <Share2 className="w-4 h-4 text-[#8E827B]" />
                       <span>Share</span>
                     </button>
+
+                    {/* Delete Gallery Button */}
+                    {currentDelivery && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteGallery(e, currentDelivery.id, currentDelivery.client_name)}
+                        disabled={deletingGalleryId === currentDelivery.id}
+                        className="bg-white hover:bg-rose-50 text-rose-600 border border-[#E6DFC6] hover:border-rose-200 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Delete this gallery from database & Cloudflare R2"
+                      >
+                        {deletingGalleryId === currentDelivery.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                        <span>Delete</span>
+                      </button>
+                    )}
 
                     {/* Client Link ⌄ Dropdown */}
                     <div className="relative">
@@ -4010,11 +4143,21 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-[#F0EBE0] flex justify-end">
+                    <div className="pt-4 border-t border-[#F0EBE0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => currentDelivery && handleDeleteGallery(e, currentDelivery.id, currentDelivery.client_name)}
+                        disabled={!currentDelivery || deletingGalleryId === currentDelivery?.id}
+                        className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Gallery &amp; Cloudflare R2 Files</span>
+                      </button>
+
                       <button
                         onClick={handleSaveDeliverySettings}
                         disabled={isSavingSettings}
-                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                         <span>Save Gallery Settings</span>
@@ -4787,6 +4930,63 @@ export const Dashboard: React.FC = () => {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Photo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 4: DELETE GALLERY CONFIRMATION (Deletes DB + Cloudflare R2) */}
+            {galleryToDelete && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[110] animate-in fade-in">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-[#E8E2D2] shadow-2xl space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-[#1F1714]">Delete Gallery Permanently?</h3>
+                      <p className="text-xs text-[#7A6F69] mt-1 leading-relaxed">
+                        Are you sure you want to delete <strong className="text-[#1F1714]">"{galleryToDelete.name}"</strong>?
+                        This action cannot be undone and will permanently delete all associated photos, high-res originals, watermarks, and folders from <strong className="text-[#1F1714]">Cloudflare R2</strong> and your database.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={() => setGalleryToDelete(null)}
+                      className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg cursor-pointer disabled:opacity-40"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#F0EBE0]">
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={() => setGalleryToDelete(null)}
+                      className="px-4 py-2 border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0] cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={confirmDeleteGallery}
+                      className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-60"
+                    >
+                      {deletingGalleryId ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Deleting from Cloudflare...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Gallery</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

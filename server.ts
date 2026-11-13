@@ -403,7 +403,7 @@ async function startServer() {
     }
   });
 
-  // Delete an entire folder using a prefix
+  // Delete an entire folder using a prefix (paginated so >1000 objects are completely purged)
   app.post("/api/delete-folder", async (req, res) => {
     if (!s3 || !isR2Configured) {
       return res.status(500).json({ error: "R2 is not configured" });
@@ -411,34 +411,47 @@ async function startServer() {
 
     try {
       const { folderPath } = req.body;
-      if (!folderPath || folderPath === "uploads" || folderPath === "uploads/") {
+      if (!folderPath || folderPath === "uploads" || folderPath === "uploads/" || folderPath === "galleries" || folderPath === "galleries/") {
         return res.status(400).json({ error: "Cannot delete the root folder" });
       }
 
-      const listCommand = new ListObjectsV2Command({
-        Bucket: R2_BUCKET_NAME!,
-        Prefix: folderPath.endsWith("/") ? folderPath : folderPath + "/",
-      });
+      const cleanPrefix = folderPath.replace(/^\/+/, "");
+      const prefixWithSlash = cleanPrefix.endsWith("/") ? cleanPrefix : cleanPrefix + "/";
+      let deletedCount = 0;
+      let isTruncated = true;
+      let continuationToken: string | undefined = undefined;
 
-      const listResult = (await s3.send(listCommand)) as any;
+      while (isTruncated) {
+        const listCommand = new ListObjectsV2Command({
+          Bucket: R2_BUCKET_NAME!,
+          Prefix: prefixWithSlash,
+          ContinuationToken: continuationToken,
+        });
 
-      if (listResult.Contents && listResult.Contents.length > 0) {
-        const pathsToDelete = listResult.Contents.map((obj: any) => obj.Key);
+        const listResult = (await s3.send(listCommand)) as any;
 
-        for (let i = 0; i < pathsToDelete.length; i += 1000) {
-          const chunk = pathsToDelete.slice(i, i + 1000);
-          const command = new DeleteObjectsCommand({
-            Bucket: R2_BUCKET_NAME!,
-            Delete: {
-              Objects: chunk.map((Key: string) => ({ Key })),
-              Quiet: true,
-            },
-          });
-          await s3.send(command);
+        if (listResult.Contents && listResult.Contents.length > 0) {
+          const pathsToDelete = listResult.Contents.map((obj: any) => obj.Key).filter(Boolean);
+
+          for (let i = 0; i < pathsToDelete.length; i += 1000) {
+            const chunk = pathsToDelete.slice(i, i + 1000);
+            const command = new DeleteObjectsCommand({
+              Bucket: R2_BUCKET_NAME!,
+              Delete: {
+                Objects: chunk.map((Key: string) => ({ Key })),
+                Quiet: true,
+              },
+            });
+            await s3.send(command);
+            deletedCount += chunk.length;
+          }
         }
+
+        isTruncated = Boolean(listResult.IsTruncated);
+        continuationToken = listResult.NextContinuationToken;
       }
 
-      res.json({ success: true });
+      res.json({ success: true, deletedCount });
     } catch (e) {
       console.error("Delete folder error:", e);
       res.status(500).json({ error: "Failed to delete folder from R2." });

@@ -30,11 +30,27 @@ export const handler: Handler = async (event) => {
 
     const body = JSON.parse(event.body || "{}");
     const { filePath, filePaths } = body;
-    const pathsToDelete = filePaths || (filePath ? [filePath] : []);
+    const rawPaths = filePaths || (filePath ? [filePath] : []);
 
-    if (pathsToDelete.length === 0) {
+    if (rawPaths.length === 0) {
       return { statusCode: 400, body: JSON.stringify({ error: "No files to delete" }) };
     }
+
+    const allPaths = new Set<string>();
+    for (const p of rawPaths) {
+      if (!p || typeof p !== "string") continue;
+      allPaths.add(p);
+      const dir = p.substring(0, p.lastIndexOf("/"));
+      const name = p.split("/").pop();
+      if (dir && name) {
+        allPaths.add(`${dir}/watermark_${name}`);
+        allPaths.add(`${dir}/watermark_${name}.jpg`);
+        const baseName = name.replace(/\.[^/.]+$/, "");
+        allPaths.add(`${dir}/watermark_${baseName}.jpg`);
+      }
+    }
+
+    const pathsToDelete = Array.from(allPaths);
 
     // Process in chunks of 1000 (S3 limit for DeleteObjectsCommand)
     for (let i = 0; i < pathsToDelete.length; i += 1000) {
@@ -51,7 +67,7 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ success: true, deletedCount: pathsToDelete.length }),
     };
   } catch (error) {
     console.error("Delete error:", error);
