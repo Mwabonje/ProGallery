@@ -400,3 +400,168 @@ body:has(#work) footer .font-serif {
     aspect-ratio: 4 / 5.2;
   }
 }
+
+
+/* Full-bleed coastal editorial homepage — presentation only */
+body:has(#work) {
+  background: var(--atelier-canvas);
+  color: var(--atelier-ink);
+}
+body:has(#work) > div > header {
+  position: absolute;
+  inset: 0 0 auto;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(12, 14, 13, .42), transparent) !important;
+  border: 0 !important;
+  backdrop-filter: none !important;
+}
+body:has(#work) > div > header a,
+body:has(#work) > div > header button,
+body:has(#work) > div > header span {
+  color: #fff !important;
+}
+body:has(#work) .atelier-hero {
+  min-height: 100svh;
+  isolation: isolate;
+}
+body:has(#work) .atelier-hero > img {
+  object-position: center 44%;
+  filter: saturate(.88);
+}
+body:has(#work) .atelier-hero > div.absolute.inset-0 {
+  background:
+    linear-gradient(90deg, rgba(12, 14, 13, .66) 0%, rgba(12, 14, 13, .25) 62%, rgba(12, 14, 13, .08) 100%),
+    linear-gradient(0deg, rgba(12, 14, 13, .58) 0%, transparent 65%) !important;
+}
+body:has(#work) .atelier-hero__content {
+  padding-bottom: clamp(5rem, 10vh, 9rem);
+}
+body:has(#work) .atelier-hero__content > div:first-child {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  color: #f1dfc6;
+  letter-spacing: .24em;
+  font-size: .65rem;
+}
+body:has(#work) .atelier-hero__content > div:first-child span:first-child {
+  background: var(--atelier-bronze);
+}
+body:has(#work) .atelier-hero h1 {
+  max-width: 980px;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-atelier-display);
+  font-size: clamp(3.6rem, 8.5vw, 8.4rem);
+  font-weight: 400;
+  letter-spacing: -.055em;
+  line-height: .91;
+  text-wrap: balance;
+}
+body:has(#work) .atelier-hero h1 em {
+  color: #e4c49d;
+}
+body:has(#work) .atelier-hero__content > p {
+  max-width: 540px;
+  color: rgba(255,255,255,.82);
+  font-size: clamp(.92rem, 1.2vw, 1.08rem);
+  line-height: 1.85;
+}
+body:has(#work) .atelier-hero__content button {
+  border-radius: 0;
+  letter-spacing: .16em;
+}
+body:has(#work) .atelier-hero__content button:last-child {
+  min-height: 50px;
+  padding: .9rem 1.4rem;
+  background: var(--atelier-paper);
+  border-color: var(--atelier-paper);
+  color: var(--atelier-ink);
+}
+body:has(#work) .atelier-hero__content button:last-child:hover {
+  background: var(--atelier-bronze);
+  border-color: var(--atelier-bronze);
+}
+body:has(#work) #work {
+  max-width: 1600px;
+  padding: clamp(5rem, 9vw, 9rem) clamp(1.25rem, 5vw, 5rem);
+}
+body:has(#work) #work h2 {
+  font-family: var(--font-atelier-display);
+  font-size: clamp(2.8rem, 5vw, 5rem);
+  font-weight: 400;
+  letter-spacing: -.045em;
+}
+body:has(#work) .atelier-work-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(1rem, 2.2vw, 2rem);
+}
+body:has(#work) .atelier-work-grid > a {
+  grid-column: span 4;
+  aspect-ratio: 4 / 5.2;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  background: #ded5c8;
+}
+body:has(#work) .atelier-work-grid > a:nth-child(5n + 1) {
+  grid-column: span 7;
+  aspect-ratio: 1.18 / 1;
+}
+body:has(#work) .atelier-work-grid > a:nth-child(5n + 2) {
+  grid-column: span 5;
+  aspect-ratio: .88 / 1;
+}
+body:has(#work) .atelier-work-grid > a:nth-child(5n + 3) {
+  grid-column: span 4;
+  aspect-ratio: 4 / 5;
+}
+body:has(#work) .atelier-work-grid > a:nth-child(5n + 4) {
+  grid-column: span 4;
+  aspect-ratio: 4 / 5;
+}
+body:has(#work) .atelier-work-grid > a:nth-child(5n + 5) {
+  grid-column: span 4;
+  aspect-ratio: 4 / 5;
+}
+body:has(#work) .atelier-work-grid > a h3 {
+  font-family: var(--font-atelier-display);
+  font-weight: 400;
+}
+body:has(#work) .atelier-work-grid > a img {
+  transition: transform .9s cubic-bezier(.2,.65,.25,1), filter .6s ease;
+  filter: saturate(.9);
+}
+body:has(#work) .atelier-work-grid > a:hover img {
+  transform: scale(1.035);
+}
+@media (max-width: 767px) {
+  body:has(#work) .atelier-hero {
+    min-height: 88svh;
+  }
+  body:has(#work) .atelier-hero__content {
+    padding: 9rem 1.25rem 4.5rem;
+  }
+  body:has(#work) .atelier-hero h1 {
+    font-size: clamp(3.1rem, 15vw, 5.2rem);
+  }
+  body:has(#work) .atelier-work-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .8rem;
+  }
+  body:has(#work) .atelier-work-grid > a,
+  body:has(#work) .atelier-work-grid > a:nth-child(n) {
+    grid-column: span 1;
+    aspect-ratio: 3 / 4;
+  }
+  body:has(#work) .atelier-work-grid > a:nth-child(3n + 1) {
+    grid-column: span 2;
+    aspect-ratio: 1.2 / 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:has(#work) .atelier-work-grid > a img {
+    transition: none;
+  }
+}
