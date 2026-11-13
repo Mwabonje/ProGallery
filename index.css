@@ -221,3 +221,182 @@ html.dark .blog-article-prose blockquote {
   }
 }
 
+
+
+/* Homepage editorial refinement — scoped to the public portfolio route */
+body:has(#work) {
+  background: var(--atelier-canvas);
+  color: var(--atelier-ink);
+}
+
+body:has(#work) section:has(+ #work) {
+  min-height: min(88vh, 920px);
+  background: #17130f;
+}
+
+body:has(#work) section:has(+ #work) > img {
+  filter: saturate(.82);
+  transform: scale(1.015);
+}
+
+body:has(#work) section:has(+ #work) > div.absolute.inset-0 {
+  background: linear-gradient(90deg, rgba(14, 12, 10, .64), rgba(14, 12, 10, .18) 55%, rgba(14, 12, 10, .36)),
+              linear-gradient(0deg, rgba(14, 12, 10, .48), transparent 58%);
+}
+
+body:has(#work) section:has(+ #work) h1 {
+  max-width: 900px;
+  font-family: var(--font-atelier-display);
+  font-size: clamp(3.2rem, 7.2vw, 7.4rem);
+  font-weight: 400;
+  letter-spacing: -.055em;
+  line-height: .98;
+  text-wrap: balance;
+}
+
+body:has(#work) section:has(+ #work) p {
+  max-width: 590px;
+  font-size: clamp(.9rem, 1.15vw, 1.05rem);
+  line-height: 1.85;
+  letter-spacing: .01em;
+}
+
+body:has(#work) section:has(+ #work) button:last-child {
+  border-radius: 0;
+  background: var(--atelier-paper);
+  border-color: var(--atelier-paper);
+  color: var(--atelier-ink);
+  min-height: 48px;
+  padding-inline: 1.5rem;
+  letter-spacing: .14em;
+}
+
+body:has(#work) section:has(+ #work) button:last-child:hover {
+  background: var(--atelier-bronze);
+  border-color: var(--atelier-bronze);
+}
+
+body:has(#work) #work {
+  max-width: 1500px;
+  padding: clamp(4rem, 7vw, 7.5rem) clamp(1.25rem, 5vw, 5rem);
+}
+
+body:has(#work) #work > div:first-child {
+  border-color: var(--atelier-hairline);
+  margin-bottom: 2.4rem;
+  padding-bottom: 1.6rem;
+}
+
+body:has(#work) #work h2,
+body:has(#work) section:has(+ #availability) h2 {
+  font-family: var(--font-atelier-display);
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+body:has(#work) #work > div:first-child p {
+  color: #756d63;
+  line-height: 1.8;
+}
+
+body:has(#work) #work button {
+  border-radius: 0;
+  letter-spacing: .12em;
+  font-size: .64rem;
+  padding: .7rem 1rem;
+}
+
+body:has(#work) #work > div:last-child > a,
+body:has(#work) #work a[data-gallery-id] {
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  background: #211d19;
+  aspect-ratio: 4 / 5;
+}
+
+body:has(#work) #work a[data-gallery-id] img {
+  filter: saturate(.88);
+}
+
+body:has(#work) #work a[data-gallery-id] > div:last-child {
+  padding: 1.5rem;
+}
+
+body:has(#work) #work a[data-gallery-id] h3 {
+  font-family: var(--font-atelier-display);
+  font-size: clamp(1.65rem, 2.5vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -.025em;
+}
+
+body:has(#work) #work a[data-gallery-id] p {
+  font-size: .62rem;
+  letter-spacing: .18em;
+}
+
+body:has(#work) #work a[data-gallery-id] > div:nth-last-child(2) span {
+  border-radius: 0;
+  font-size: .58rem;
+  letter-spacing: .12em;
+}
+
+body:has(#work) section:has(+ #availability) {
+  background: var(--atelier-paper);
+  border-top: 1px solid var(--atelier-hairline);
+  padding-block: clamp(4rem, 7vw, 7rem);
+}
+
+body:has(#work) section:has(+ #availability) > div {
+  max-width: 1240px;
+}
+
+body:has(#work) section:has(+ #availability) > div > div:nth-child(2) > div {
+  border-radius: 0;
+  border-color: var(--atelier-hairline);
+  background: #f7f2ea;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+body:has(#work) section:has(+ #availability) > div > div:nth-child(3) {
+  border-radius: 0;
+  background: var(--atelier-ink);
+}
+
+body:has(#work) #availability {
+  max-width: 100%;
+  background: var(--atelier-canvas);
+}
+
+body:has(#work) footer {
+  background: #171512;
+  border-top: 1px solid rgba(197, 168, 128, .3);
+}
+
+body:has(#work) footer .font-serif {
+  font-family: var(--font-atelier-display);
+  font-weight: 400;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 767px) {
+  body:has(#work) section:has(+ #work) {
+    min-height: 78svh;
+  }
+
+  body:has(#work) section:has(+ #work) h1 {
+    font-size: clamp(2.8rem, 13vw, 4.5rem);
+  }
+
+  body:has(#work) #work {
+    padding-inline: 1.1rem;
+  }
+
+  body:has(#work) #work > div:first-child {
+    align-items: flex-start;
+  }
+
+  body:has(#work) #work a[data-gallery-id] {
+    aspect-ratio: 4 / 5.2;
+  }
+}
