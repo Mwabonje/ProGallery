@@ -542,10 +542,10 @@ export const Dashboard: React.FC = () => {
               }
           });
 
-          // Get latest file for cover and calculate downloads
+          // Get all media files for this gallery (use * so optional columns never trigger PostgREST 42703 errors)
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('id, file_url, file_type, file_path, title, caption, download_count, created_at, expires_at, is_edited, thumbnail_url, thumbnail_path')
+            .select('*')
             .eq('gallery_id', gallery.id)
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false });
@@ -669,8 +669,20 @@ export const Dashboard: React.FC = () => {
             }
           }
 
+          let parsedSeoTitle = (gallery as any).seo_title || '';
+          let parsedSeoDesc = (gallery as any).seo_description || '';
+          if (gallery.title && gallery.title.trim().startsWith('{')) {
+            try {
+              const metaObj = JSON.parse(gallery.title);
+              if (!parsedSeoTitle && metaObj.seoTitle) parsedSeoTitle = metaObj.seoTitle;
+              if (!parsedSeoDesc && metaObj.seoDescription) parsedSeoDesc = metaObj.seoDescription;
+            } catch {}
+          }
+
           return {
             ...gallery,
+            seo_title: parsedSeoTitle,
+            seo_description: parsedSeoDesc,
             itemCount,
             downloadCount,
             gallerySizeBytes,
@@ -685,7 +697,7 @@ export const Dashboard: React.FC = () => {
             isExpired,
             timeRemainingText,
             selectionNotesCount,
-            files: (allFiles || []).map(f => ({
+            files: (allFiles || []).map((f: any) => ({
               id: f.id,
               file_url: f.file_url,
               file_type: f.file_type,
@@ -1032,11 +1044,19 @@ export const Dashboard: React.FC = () => {
   });
   const globalCtr = globalViews > 0 ? ((globalClicks / globalViews) * 100).toFixed(1) : '0.0';
 
-  const clientDeliveriesCount = galleries.filter(g => (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !getParentGalleryId(g)).length;
+  const clientDeliveriesCount = galleries.filter(g => {
+    const parentId = getParentGalleryId(g);
+    const hasExistingParent = Boolean(parentId && galleries.some(p => p.id === parentId));
+    return (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !hasExistingParent;
+  }).length;
   const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
   const deliveryGalleries = React.useMemo(() => {
-    return galleries.filter(g => (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !getParentGalleryId(g));
+    return galleries.filter(g => {
+      const parentId = getParentGalleryId(g);
+      const hasExistingParent = Boolean(parentId && galleries.some(p => p.id === parentId));
+      return (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !hasExistingParent;
+    });
   }, [galleries]);
 
   const expiredDeliveryCount = React.useMemo(() => {
@@ -1291,14 +1311,40 @@ export const Dashboard: React.FC = () => {
     if (!currentDelivery) return;
     setIsSavingSeo(true);
     try {
-      const { error } = await supabase
+      const seoTitleVal = editSeoTitle.trim();
+      const seoDescVal = editSeoDescription.trim();
+
+      // Try updating dedicated SEO columns first (if present in DB schema)
+      const { error: colErr } = await supabase
         .from('galleries')
         .update({
-          seo_title: editSeoTitle.trim(),
-          seo_description: editSeoDescription.trim(),
+          seo_title: seoTitleVal,
+          seo_description: seoDescVal,
         })
         .eq('id', currentDelivery.id);
-      if (error) throw error;
+
+      if (colErr) {
+        // Fallback: persist SEO metadata inside JSON `title` column without losing existing title/description
+        let meta: Record<string, any> = {
+          projectTitle: getCleanGalleryTitle(currentDelivery),
+          projectDescription: getCleanGalleryDescription(currentDelivery),
+          parentGalleryId: getParentGalleryId(currentDelivery) || null,
+        };
+        if (currentDelivery.title && currentDelivery.title.trim().startsWith('{')) {
+          try {
+            meta = { ...meta, ...JSON.parse(currentDelivery.title) };
+          } catch {}
+        }
+        meta.seoTitle = seoTitleVal;
+        meta.seoDescription = seoDescVal;
+
+        const { error: jsonErr } = await supabase
+          .from('galleries')
+          .update({ title: JSON.stringify(meta) })
+          .eq('id', currentDelivery.id);
+        if (jsonErr) throw jsonErr;
+      }
+
       toast.success('SEO & Open Graph metadata saved');
       await fetchData();
     } catch (err: any) {
@@ -1809,8 +1855,23 @@ export const Dashboard: React.FC = () => {
     setIsSavingSettings(true);
     try {
       const updates: any = {};
+      const nextName = editableDeliveryTitle.trim() || currentDelivery.client_name;
       if (editableDeliveryTitle.trim()) updates.client_name = editableDeliveryTitle.trim();
-      updates.title = editDeliverySubtitle.trim() || `${(editableDeliveryTitle.trim() || currentDelivery.client_name)}'s Gallery`;
+      const nextDesc = editDeliverySubtitle.trim();
+      if (currentDelivery.title && currentDelivery.title.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(currentDelivery.title);
+          updates.title = JSON.stringify({
+            ...parsed,
+            projectTitle: nextName,
+            projectDescription: nextDesc,
+          });
+        } catch {
+          updates.title = nextDesc || `${nextName}'s Gallery`;
+        }
+      } else {
+        updates.title = nextDesc || `${nextName}'s Gallery`;
+      }
       if (editAgreedBalance !== '') updates.agreed_balance = Number(editAgreedBalance) || 0;
       if (editAmountPaid !== '') updates.amount_paid = Number(editAmountPaid) || 0;
       if (editDownloadsBeforeClearing !== '') updates.downloads_before_clearing = Number(editDownloadsBeforeClearing) || 0;
@@ -2113,7 +2174,7 @@ export const Dashboard: React.FC = () => {
       // 1. Query all files belonging to this gallery (and its sections) from database
       const { data: filesData } = await supabase
         .from('files')
-        .select('file_path, thumbnail_path, file_url, thumbnail_url')
+        .select('file_path, file_url')
         .in('gallery_id', targetGalleryIds);
 
       const extractR2Key = (url?: string | null): string | null => {
