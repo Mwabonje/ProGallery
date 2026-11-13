@@ -923,15 +923,23 @@ export const ClientGallery: React.FC = () => {
         ...gallery,
         selection_status: "submitted"
       });
+      setLightboxFile(null);
+      setShowWelcomeModal(false);
+      setShowBalanceWarningModal(false);
 
-      alert(
-        "Selection submitted successfully! The photographer has been notified.",
-      );
+      setToast({
+        message: "Selection submitted! Your photographer has been notified.",
+        type: "success",
+      });
+      setTimeout(() => setToast(null), 5000);
     } catch (err: any) {
       console.error(err);
-      alert(
-        "Failed to submit selection: " + (err?.message || JSON.stringify(err)),
-      );
+      setToast({
+        message:
+          "Failed to submit selection: " + (err?.message || "Please try again."),
+        type: "info",
+      });
+      setTimeout(() => setToast(null), 5000);
     } finally {
       setSubmittingSelection(false);
     }
@@ -1419,6 +1427,12 @@ export const ClientGallery: React.FC = () => {
 
   // Selection mode is not relevant for portfolio collections
   const isSelectionMode = !isPortfolio && gallery?.selection_enabled;
+  const isSelectionLockedOut = Boolean(
+    isSelectionMode &&
+      (selectionSubmitted ||
+        gallery?.selection_status === "submitted" ||
+        gallery?.selection_status === "completed"),
+  );
 
   const limit = gallery?.selection_limit || 0;
   const selectedArray = Array.from(selectedFileIds);
@@ -1809,7 +1823,9 @@ export const ClientGallery: React.FC = () => {
                       : gallery?.client_name}
               </h1>
               <p className="text-xs md:text-sm flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                {displayedFiles.length} items
+                {isSelectionLockedOut
+                  ? `${selectedFileIds.size} selected`
+                  : `${displayedFiles.length} items`}
               </p>
             </div>
 
@@ -1826,10 +1842,17 @@ export const ClientGallery: React.FC = () => {
               {isSelectionMode ? (
                 // Selection Mode Header Content
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
-                    <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
-                    <span>Selection Mode Active</span>
-                  </div>
+                  {isSelectionLockedOut ? (
+                    <div className="flex items-center gap-2 px-4 h-10 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200 shadow-sm text-xs md:text-sm animate-in fade-in">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Selection Submitted</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 h-10 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-100 shadow-sm text-xs md:text-sm animate-in fade-in">
+                      <Heart className="w-4 h-4 text-rose-600 fill-rose-600" />
+                      <span>Selection Mode Active</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Standard Mode Header Content
@@ -2252,42 +2275,75 @@ export const ClientGallery: React.FC = () => {
               : "max-w-[1600px] mx-auto px-2 md:px-4 py-4 md:py-8"
           }
         >
-          {isSelectionMode && viewFilter === "all" && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
-              <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-              <p className="text-sm text-rose-800">
-                <strong>Selection Mode:</strong> Tap the heart icon to select your
-                favorites. Downloads are disabled until selection is complete.
-              </p>
-            </div>
-          )}
-
-          {displayedFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              {viewFilter !== "all" ? (
-                <>
-                  <Heart className="w-16 h-16 text-slate-200 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-600">
-                    No Photos Selected Yet
-                  </h3>
-                  <p className="text-sm mb-6 max-w-xs text-center">
-                    Tap the heart icon on photos to add them to your selection.
+          {isSelectionLockedOut ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-[#151c28] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-8 md:p-10 max-w-md w-full">
+                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                  Selection Submitted
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+                  Thank you! Your selection of{" "}
+                  <strong className="text-slate-900 dark:text-white">
+                    {selectedFileIds.size} photo{selectedFileIds.size === 1 ? "" : "s"}
+                  </strong>{" "}
+                  has been sent to your photographer. The gallery previews are now hidden while your selection is being prepared.
+                </p>
+                {limit > 0 && selectedFileIds.size > limit && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-2 mb-6">
+                    Includes {limit} main photos and {selectedFileIds.size - limit} extra photo{selectedFileIds.size - limit === 1 ? "" : "s"}.
                   </p>
-                  <button
-                    onClick={() => setViewFilter("all")}
-                    className="text-rose-600 font-medium hover:underline"
-                  >
-                    Browse All Photos
-                  </button>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
-                  <p>No photos available.</p>
-                </>
-              )}
+                )}
+                <button
+                  onClick={handleUnlockRequest}
+                  disabled={submittingSelection}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm transition-colors disabled:opacity-50"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>Edit Selection (PIN Required)</span>
+                </button>
+              </div>
             </div>
           ) : (
+            <>
+              {isSelectionMode && viewFilter === "all" && (
+                <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 md:hidden">
+                  <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-rose-800">
+                    <strong>Selection Mode:</strong> Tap the heart icon to select your
+                    favorites. Downloads are disabled until selection is complete.
+                  </p>
+                </div>
+              )}
+
+              {displayedFiles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  {viewFilter !== "all" ? (
+                    <>
+                      <Heart className="w-16 h-16 text-slate-200 mb-4" />
+                      <h3 className="text-lg font-semibold text-slate-600">
+                        No Photos Selected Yet
+                      </h3>
+                      <p className="text-sm mb-6 max-w-xs text-center">
+                        Tap the heart icon on photos to add them to your selection.
+                      </p>
+                      <button
+                        onClick={() => setViewFilter("all")}
+                        className="text-rose-600 font-medium hover:underline"
+                      >
+                        Browse All Photos
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
+                      <p>No photos available.</p>
+                    </>
+                  )}
+                </div>
+              ) : (
             <div
               ref={isHorizontalLayout ? horizontalRef : undefined}
               className={
@@ -2603,6 +2659,8 @@ export const ClientGallery: React.FC = () => {
               })()}
             </div>
           )}
+            </>
+          )}
         </main>
       )}
 
@@ -2612,20 +2670,26 @@ export const ClientGallery: React.FC = () => {
           <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div
-                className="flex items-center gap-2 cursor-pointer group"
-                onClick={() =>
-                  setViewFilter(viewFilter === "all" ? "selected" : "all")
-                }
+                className={`flex items-center gap-2 ${isSelectionLockedOut ? "" : "cursor-pointer group"}`}
+                onClick={() => {
+                  if (!isSelectionLockedOut) {
+                    setViewFilter(viewFilter === "all" ? "selected" : "all");
+                  }
+                }}
               >
                 <div
-                  className={`p-2 rounded-full transition-colors ${viewFilter !== "all" ? "bg-rose-500 text-white" : "bg-rose-100 text-rose-600"}`}
+                  className={`p-2 rounded-full transition-colors ${isSelectionLockedOut ? "bg-emerald-100 text-emerald-600" : viewFilter !== "all" ? "bg-rose-500 text-white" : "bg-rose-100 text-rose-600"}`}
                 >
-                  <Heart
-                    className={`w-5 h-5 ${viewFilter !== "all" ? "fill-current" : ""}`}
-                  />
+                  {isSelectionLockedOut ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <Heart
+                      className={`w-5 h-5 ${viewFilter !== "all" ? "fill-current" : ""}`}
+                    />
+                  )}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors flex items-center gap-2">
+                  <p className={`font-bold text-slate-900 flex items-center gap-2 ${isSelectionLockedOut ? "" : "group-hover:text-rose-600 transition-colors"}`}>
                     {limit > 0
                       ? `${selectedFileIds.size} of ${limit} Selected`
                       : `${selectedFileIds.size} Selected`}
@@ -2636,48 +2700,52 @@ export const ClientGallery: React.FC = () => {
                     )}
                   </p>
                   <p className="text-xs text-slate-500 hidden sm:inline-block">
-                    {viewFilter !== "all"
-                      ? "Showing favorites"
-                      : "Tap heart to select"}
+                    {isSelectionLockedOut
+                      ? "Selection sent to photographer"
+                      : viewFilter !== "all"
+                        ? "Showing favorites"
+                        : "Tap heart to select"}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap gap-3 sm:gap-2 w-full sm:w-auto items-center">
-              <div className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden bg-slate-100 p-1 rounded-lg text-xs font-medium w-full sm:w-auto">
-                <button
-                  onClick={() => setViewFilter("all")}
-                  className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setViewFilter("selected")}
-                  className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap flex items-center gap-1 ${viewFilter === "selected" ? "bg-white shadow-sm text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
-                >
-                  <Heart className="w-3 h-3" />
-                  Selected
-                </button>
-                {limit > 0 && selectedFileIds.size > 0 && (
-                  <>
-                    <button
-                      onClick={() => setViewFilter("main")}
-                      className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "main" ? "bg-white shadow-sm text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
-                    >
-                      Main ({mainSelections.length})
-                    </button>
-                    <button
-                      onClick={() => setViewFilter("extras")}
-                      className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "extras" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-800"}`}
-                    >
-                      Extras ({extraSelections.length})
-                    </button>
-                  </>
-                )}
-              </div>
+              {!isSelectionLockedOut && (
+                <div className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden bg-slate-100 p-1 rounded-lg text-xs font-medium w-full sm:w-auto">
+                  <button
+                    onClick={() => setViewFilter("all")}
+                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setViewFilter("selected")}
+                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap flex items-center gap-1 ${viewFilter === "selected" ? "bg-white shadow-sm text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
+                  >
+                    <Heart className="w-3 h-3" />
+                    Selected
+                  </button>
+                  {limit > 0 && selectedFileIds.size > 0 && (
+                    <>
+                      <button
+                        onClick={() => setViewFilter("main")}
+                        className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "main" ? "bg-white shadow-sm text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
+                      >
+                        Main ({mainSelections.length})
+                      </button>
+                      <button
+                        onClick={() => setViewFilter("extras")}
+                        className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${viewFilter === "extras" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-800"}`}
+                      >
+                        Extras ({extraSelections.length})
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
-              {selectionSubmitted ? (
+              {isSelectionLockedOut ? (
                 <div className="flex gap-2 w-full sm:w-auto">
                   <div className="flex-1 sm:flex-none bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-medium border border-emerald-200 flex items-center justify-center gap-2 text-sm">
                     <CheckCircle2 className="w-5 h-5" />
@@ -3030,7 +3098,7 @@ export const ClientGallery: React.FC = () => {
       )}
 
       {/* Lightbox Modal */}
-      {lightboxFile && !isPortfolio && (
+      {lightboxFile && !isPortfolio && !isSelectionLockedOut && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
           onClick={() => setLightboxFile(null)}
