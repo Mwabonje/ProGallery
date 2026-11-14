@@ -214,6 +214,7 @@ export const Dashboard: React.FC = () => {
   const [showAllPhotosInGrid, setShowAllPhotosInGrid] = useState<boolean>(false);
   const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'edited' | 'notes'>('all');
   const [photosSort, setPhotosSort] = useState<'newest' | 'oldest' | 'downloads' | 'name'>('newest');
+  const [galleryPhotoSearch, setGalleryPhotoSearch] = useState<string>('');
 
   // ZIP download state
   const [isZipping, setIsZipping] = useState<boolean>(false);
@@ -926,6 +927,7 @@ export const Dashboard: React.FC = () => {
         setEditAmountPaid(paidVal);
         setActiveSectionFilter('all');
         setShowAllPhotosInGrid(false);
+        setGalleryPhotoSearch('');
 
         await fetchData();
         if (currentView !== 'delivery') {
@@ -3958,9 +3960,9 @@ export const Dashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Media Action Toolbar — Single-line Horizontal Studio Row */}
-                      <div className="flex items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none min-w-0 py-0.5">
+                      {/* Media Action Toolbar — Full-width Single-line Studio Row */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
                           {/* Grid / List View Toggle */}
                           <div className="h-9 inline-flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3] shrink-0">
                             <button
@@ -3986,7 +3988,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Photos (Direct File Dialog right here) */}
                           <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Plus className="w-4 h-4" />
                             <span>Add Photos</span>
@@ -3995,7 +3997,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Videos (Direct File Dialog right here) */}
                           <button
                             onClick={() => videoInputRef.current?.click()}
-                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Camera className="w-4 h-4 text-[#8E827B]" />
                             <span>Add Videos</span>
@@ -4004,11 +4006,36 @@ export const Dashboard: React.FC = () => {
                           {/* Create Section (In-dashboard modal) */}
                           <button
                             onClick={() => setIsCreateSectionModalOpen(true)}
-                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <FolderPlus className="w-4 h-4 text-[#8E827B]" />
                             <span>Create Section</span>
                           </button>
+                        </div>
+
+                        {/* Inline Photo Search (Fills middle toolbar space naturally) */}
+                        <div className="relative flex-1 min-w-[140px]">
+                          <Search className="w-3.5 h-3.5 text-[#8E827B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={galleryPhotoSearch}
+                            onChange={(e) => {
+                              setGalleryPhotoSearch(e.target.value);
+                              if (e.target.value.trim()) setShowAllPhotosInGrid(true);
+                            }}
+                            placeholder="Filter by filename or note..."
+                            className="w-full h-9 pl-8 pr-7 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C] transition-colors"
+                          />
+                          {galleryPhotoSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setGalleryPhotoSearch('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] p-0.5 cursor-pointer"
+                              title="Clear photo filter"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
 
                         {/* Right Toolbar Control: Sort */}
@@ -4094,6 +4121,15 @@ export const Dashboard: React.FC = () => {
                             displayFiles = displayFiles.filter(f => f.client_note && f.client_note.trim());
                           }
 
+                          if (galleryPhotoSearch.trim()) {
+                            const q = galleryPhotoSearch.trim().toLowerCase();
+                            displayFiles = displayFiles.filter(f => {
+                              const fname = (f.title || f.file_path?.split('/').pop() || '').toLowerCase();
+                              const note = (f.client_note || '').toLowerCase();
+                              return fname.includes(q) || note.includes(q);
+                            });
+                          }
+
                           if (photosSort === 'oldest') {
                             displayFiles = [...displayFiles].reverse();
                           } else if (photosSort === 'downloads') {
@@ -4114,11 +4150,11 @@ export const Dashboard: React.FC = () => {
                           const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
 
                           const filterTabsBar = (
-                            <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-1 gap-0.5 overflow-x-auto scrollbar-none max-w-full">
+                            <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-0.5 gap-0.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => setPhotosFilter('all')}
-                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'all' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4127,7 +4163,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'picks' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4137,7 +4173,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'edited' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4147,7 +4183,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'notes' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4160,16 +4196,25 @@ export const Dashboard: React.FC = () => {
                           if (displayFiles.length === 0) {
                             return (
                               <div className="space-y-3">
-                                <div className="bg-white px-3 py-2 rounded-2xl border border-[#E8E2D2] shadow-2xs flex items-center justify-between gap-2">
+                                <div className="bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
                                   {filterTabsBar}
+                                  {(photosFilter !== 'all' || galleryPhotoSearch) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setPhotosFilter('all'); setGalleryPhotoSearch(''); }}
+                                      className="h-7 px-2.5 rounded-lg text-[11px] font-semibold text-[#8C6432] hover:bg-[#FAF4E8] cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Reset Filters
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
                                   <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
                                   <h3 className="text-base font-semibold text-[#1F1714]">
-                                    {photosFilter !== 'all' ? 'No photos match this filter' : 'No Photos in this Gallery'}
+                                    {photosFilter !== 'all' || galleryPhotoSearch ? 'No photos match this filter' : 'No Photos in this Gallery'}
                                   </h3>
                                   <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
-                                    {photosFilter !== 'all' ? 'Try switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
+                                    {photosFilter !== 'all' || galleryPhotoSearch ? 'Try clearing search or switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
                                   </p>
                                   <button
                                     onClick={() => fileInputRef.current?.click()}
@@ -4193,11 +4238,11 @@ export const Dashboard: React.FC = () => {
                           const uneditedPickedIds = clientPickedFiles.filter(f => !f.is_edited).map(f => f.id);
                           const editedPicksCount = clientPickedFiles.filter(f => f.is_edited).length;
                           const bulkActionBar = (
-                            <div className="mb-3 bg-white px-3 py-2 rounded-2xl border border-[#E8E2D2] shadow-2xs space-y-2">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="mb-3 bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs space-y-2">
+                              <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
                                 {filterTabsBar}
 
-                                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+                                <div className="flex items-center gap-1.5 shrink-0">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -4207,12 +4252,12 @@ export const Dashboard: React.FC = () => {
                                         setSelectedPhotoIds(displayFiles.map(f => f.id));
                                       }
                                     }}
-                                    className="h-8 px-2 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                    className="h-7 px-2 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
                                   >
                                     {allVisibleSelected ? (
-                                      <CheckSquare className="w-4 h-4 text-[#B58B5C]" />
+                                      <CheckSquare className="w-3.5 h-3.5 text-[#B58B5C]" />
                                     ) : (
-                                      <Square className="w-4 h-4 text-[#8E827B]" />
+                                      <Square className="w-3.5 h-3.5 text-[#8E827B]" />
                                     )}
                                     <span>
                                       {selectedPhotoIds.length > 0
@@ -4225,7 +4270,7 @@ export const Dashboard: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
-                                      className="h-8 inline-flex items-center gap-1 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                      className="h-7 inline-flex items-center gap-1 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
                                     >
                                       <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
                                       <span>Select Picks ({clientPickedFiles.length})</span>
@@ -4233,7 +4278,7 @@ export const Dashboard: React.FC = () => {
                                   )}
 
                                   {clientPickedFiles.length > 0 && (
-                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-1.5">
+                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-1">
                                       {editedPicksCount}/{clientPickedFiles.length} edited
                                     </span>
                                   )}
@@ -4242,10 +4287,10 @@ export const Dashboard: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
-                                      className="h-8 inline-flex items-center gap-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
+                                      className="h-7 inline-flex items-center gap-1 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
                                     >
                                       <Check className="w-3 h-3" />
-                                      <span>Mark {uneditedPickedIds.length} Pick{uneditedPickedIds.length === 1 ? '' : 's'} Edited</span>
+                                      <span>Mark {uneditedPickedIds.length} Edited</span>
                                     </button>
                                   )}
 
@@ -4253,7 +4298,7 @@ export const Dashboard: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => setSelectedPhotoIds([])}
-                                      className="h-8 px-2 rounded-lg text-[11px] font-semibold text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer whitespace-nowrap shrink-0"
+                                      className="h-7 px-2 rounded-lg text-[11px] font-semibold text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer whitespace-nowrap shrink-0"
                                     >
                                       Clear
                                     </button>
@@ -4262,47 +4307,52 @@ export const Dashboard: React.FC = () => {
                               </div>
 
                               {selectedPhotoIds.length > 0 && (
-                                <div className="pt-2 border-t border-[#F0EBE0] flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-                                  <button
-                                    type="button"
-                                    onClick={handleBulkDownloadZip}
-                                    disabled={isZipping}
-                                    className="h-8 px-3 rounded-lg bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
-                                  >
-                                    <Download className="w-3 h-3" />
-                                    <span>ZIP</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenRenameModal()}
-                                    className="h-8 px-3 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#1F1714] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
-                                  >
-                                    <Edit2 className="w-3 h-3 text-[#B58B5C]" />
-                                    <span>Rename</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBulkToggleEdited(true)}
-                                    className="h-8 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
-                                  >
-                                    <Check className="w-3 h-3" />
-                                    <span>Set Edited</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBulkToggleEdited(false)}
-                                    className="h-8 px-3 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
-                                  >
-                                    Unset Edited
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={handleBulkDeletePhotos}
-                                    className="h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    <span>Delete</span>
-                                  </button>
+                                <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                  <span className="text-[11px] font-medium text-[#7A6F69] whitespace-nowrap shrink-0 tabular-nums pl-1">
+                                    Bulk actions for {selectedPhotoIds.length} photo{selectedPhotoIds.length === 1 ? '' : 's'}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={handleBulkDownloadZip}
+                                      disabled={isZipping}
+                                      className="h-7 px-2.5 rounded-lg bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                      <span>ZIP</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenRenameModal()}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#1F1714] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Edit2 className="w-3 h-3 text-[#B58B5C]" />
+                                      <span>Rename</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleEdited(true)}
+                                      className="h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      <span>Set Edited</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleEdited(false)}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Unset Edited
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleBulkDeletePhotos}
+                                      className="h-7 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>Delete</span>
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </div>
