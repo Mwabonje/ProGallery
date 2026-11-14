@@ -212,7 +212,7 @@ export const Dashboard: React.FC = () => {
   // In-Dashboard Photo Lightbox & Management Modal
   const [selectedPhotoForDetail, setSelectedPhotoForDetail] = useState<DeliveryFileItem | null>(null);
   const [showAllPhotosInGrid, setShowAllPhotosInGrid] = useState<boolean>(false);
-  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'notes'>('all');
+  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'edited' | 'notes'>('all');
   const [photosSort, setPhotosSort] = useState<'newest' | 'oldest' | 'downloads' | 'name'>('newest');
 
   // ZIP download state
@@ -1566,40 +1566,65 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const applyLocalEditedState = (targetIds: string[], markAsEdited: boolean) => {
+    const idSet = new Set(targetIds);
+    setGalleries(prev =>
+      prev.map(g => ({
+        ...g,
+        files: g.files?.map(f => (idSet.has(f.id) ? { ...f, is_edited: markAsEdited } : f)),
+        subGalleries: g.subGalleries?.map(sub => ({
+          ...sub,
+          files: sub.files?.map(f => (idSet.has(f.id) ? { ...f, is_edited: markAsEdited } : f)),
+        })),
+      })),
+    );
+  };
+
   const handleToggleSingleEdited = async (file: DeliveryFileItem) => {
+    const nextEdited = !file.is_edited;
+    applyLocalEditedState([file.id], nextEdited);
+    if (selectedPhotoForDetail?.id === file.id) {
+      setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_edited: nextEdited });
+    }
     try {
-      const nextEdited = !file.is_edited;
       const { error } = await supabase
         .from('files')
         .update({ is_edited: nextEdited })
         .eq('id', file.id);
       if (error) throw error;
       toast.success(nextEdited ? 'Marked as Edited' : 'Unmarked Edited status');
-      if (selectedPhotoForDetail?.id === file.id) {
-        setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_edited: nextEdited });
-      }
       await fetchData();
     } catch (err: any) {
       console.error('Toggle edited failed:', err);
+      applyLocalEditedState([file.id], !nextEdited);
+      if (selectedPhotoForDetail?.id === file.id) {
+        setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_edited: !nextEdited });
+      }
       toast.error('Failed to update edited status');
     }
   };
 
-  const handleBulkToggleEdited = async (markAsEdited: boolean) => {
-    if (selectedPhotoIds.length === 0) return;
+  const handleMarkFilesEdited = async (targetIds: string[], markAsEdited: boolean) => {
+    if (targetIds.length === 0) return;
+    applyLocalEditedState(targetIds, markAsEdited);
     try {
       const { error } = await supabase
         .from('files')
         .update({ is_edited: markAsEdited })
-        .in('id', selectedPhotoIds);
+        .in('id', targetIds);
       if (error) throw error;
-      toast.success(`${selectedPhotoIds.length} photo(s) ${markAsEdited ? 'marked as Edited' : 'unmarked'}`);
+      toast.success(`${targetIds.length} photo(s) ${markAsEdited ? 'marked as Edited' : 'unmarked'}`);
       setSelectedPhotoIds([]);
       await fetchData();
     } catch (err: any) {
       console.error('Bulk edit failed:', err);
       toast.error('Failed to update edited status');
+      await fetchData();
     }
+  };
+
+  const handleBulkToggleEdited = async (markAsEdited: boolean) => {
+    await handleMarkFilesEdited(selectedPhotoIds, markAsEdited);
   };
 
   const handleOpenRenameModal = (singleFile?: DeliveryFileItem) => {
@@ -3993,35 +4018,54 @@ export const Dashboard: React.FC = () => {
 
                         {/* Right Toolbar Controls: Sort & Filter */}
                         <div className="flex items-center gap-2 self-end sm:self-auto">
-                          {/* Filter Pills (All / Client Picks / Notes) */}
-                          <div className="flex items-center bg-white border border-[#E6DFC6] rounded-xl p-0.5 shadow-xs text-xs">
-                            <button
-                              onClick={() => setPhotosFilter('all')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                                photosFilter === 'all' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
-                            >
-                              All ({(currentDelivery?.files?.length || 0) + ((currentDelivery?.subGalleries || []).reduce((acc, s) => acc + (s.files?.length || 0), 0))})
-                            </button>
-                            <button
-                              onClick={() => setPhotosFilter('picks')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                photosFilter === 'picks' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
-                            >
-                              <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                              <span>Picks</span>
-                            </button>
-                            <button
-                              onClick={() => setPhotosFilter('notes')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                photosFilter === 'notes' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
-                            >
-                              <MessageSquare className="w-3 h-3 text-amber-600" />
-                              <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
-                            </button>
-                          </div>
+                          {/* Filter Pills (All / Client Picks / Edited / Notes) */}
+                          {(() => {
+                            const allDeliveryFilesList = [
+                              ...(currentDelivery?.files || []),
+                              ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || [])),
+                            ];
+                            const picksTotalCount = allDeliveryFilesList.filter(f => f.is_selected).length;
+                            const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
+                            return (
+                              <div className="flex items-center bg-white border border-[#E6DFC6] rounded-xl p-0.5 shadow-xs text-xs flex-wrap">
+                                <button
+                                  onClick={() => setPhotosFilter('all')}
+                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                                    photosFilter === 'all' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                  }`}
+                                >
+                                  All ({allDeliveryFilesList.length})
+                                </button>
+                                <button
+                                  onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
+                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                    photosFilter === 'picks' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                  }`}
+                                >
+                                  <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+                                  <span>Picks ({picksTotalCount})</span>
+                                </button>
+                                <button
+                                  onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
+                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                    photosFilter === 'edited' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                  }`}
+                                >
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span>Edited ({editedTotalCount})</span>
+                                </button>
+                                <button
+                                  onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
+                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                    photosFilter === 'notes' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                  }`}
+                                >
+                                  <MessageSquare className="w-3 h-3 text-amber-600" />
+                                  <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
+                                </button>
+                              </div>
+                            );
+                          })()}
 
                           <div className="relative">
                             <button
@@ -4100,6 +4144,8 @@ export const Dashboard: React.FC = () => {
 
                           if (photosFilter === 'picks') {
                             displayFiles = displayFiles.filter(f => f.is_selected);
+                          } else if (photosFilter === 'edited') {
+                            displayFiles = displayFiles.filter(f => f.is_edited);
                           } else if (photosFilter === 'notes') {
                             displayFiles = displayFiles.filter(f => f.client_note && f.client_note.trim());
                           }
@@ -4143,9 +4189,12 @@ export const Dashboard: React.FC = () => {
                             );
                           };
                           const allVisibleSelected = displayFiles.length > 0 && displayFiles.every(f => selectedPhotoIds.includes(f.id));
+                          const clientPickedFiles = displayFiles.filter(f => f.is_selected);
+                          const uneditedPickedIds = clientPickedFiles.filter(f => !f.is_edited).map(f => f.id);
+                          const editedPicksCount = clientPickedFiles.filter(f => f.is_edited).length;
                           const bulkActionBar = (
                             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-2xl border border-[#E8E2D2] shadow-2xs">
-                              <div className="flex items-center gap-2.5">
+                              <div className="flex items-center gap-2.5 flex-wrap">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -4168,6 +4217,31 @@ export const Dashboard: React.FC = () => {
                                       : `Select all (${displayFiles.length})`}
                                   </span>
                                 </button>
+                                {clientPickedFiles.length > 0 && photosFilter !== 'picks' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer"
+                                  >
+                                    <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                    <span>Select Client Picks ({clientPickedFiles.length})</span>
+                                  </button>
+                                )}
+                                {clientPickedFiles.length > 0 && (
+                                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                                    {editedPicksCount}/{clientPickedFiles.length} picks edited
+                                  </span>
+                                )}
+                                {uneditedPickedIds.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    <span>Mark {uneditedPickedIds.length} Pick{uneditedPickedIds.length === 1 ? '' : 's'} Edited</span>
+                                  </button>
+                                )}
                                 {selectedPhotoIds.length > 0 && (
                                   <button
                                     type="button"
@@ -4285,6 +4359,22 @@ export const Dashboard: React.FC = () => {
                                           </div>
 
                                           <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSingleEdited(file);
+                                              }}
+                                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 border transition-colors cursor-pointer ${
+                                                file.is_edited
+                                                  ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                                                  : 'bg-[#FAF7F0] text-[#5C5049] border-[#E6DFC6] hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                                              }`}
+                                              title={file.is_edited ? 'Unmark Edited' : 'Mark as Edited'}
+                                            >
+                                              <Check className="w-3 h-3" />
+                                              <span className="hidden sm:inline">{file.is_edited ? 'Edited' : 'Mark Edited'}</span>
+                                            </button>
                                             <button
                                               onClick={(e) => { e.stopPropagation(); handleOpenRenameModal(file); }}
                                               className="p-2 text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF4E8] rounded-lg transition-colors cursor-pointer"
@@ -4406,6 +4496,18 @@ export const Dashboard: React.FC = () => {
 
                                       {/* Hover Quick Action Buttons */}
                                       <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); handleToggleSingleEdited(file); }}
+                                          className={`w-7 h-7 rounded-lg backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs transition-colors ${
+                                            file.is_edited
+                                              ? 'bg-emerald-600 hover:bg-emerald-700'
+                                              : 'bg-black/60 hover:bg-emerald-600'
+                                          }`}
+                                          title={file.is_edited ? 'Unmark Edited' : 'Mark as Edited'}
+                                        >
+                                          <Check className="w-3.5 h-3.5" />
+                                        </button>
                                         <button
                                           onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file); }}
                                           className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
