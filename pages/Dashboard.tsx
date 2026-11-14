@@ -3594,7 +3594,7 @@ export const Dashboard: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-nowrap">
                       <button
                         type="button"
                         onClick={() => {
@@ -3602,14 +3602,14 @@ export const Dashboard: React.FC = () => {
                           setPhotosFilter('picks');
                           setShowAllPhotosInGrid(true);
                         }}
-                        className="px-3.5 py-2 bg-white hover:bg-emerald-100/60 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                        className="h-9 px-3.5 bg-white hover:bg-emerald-100/60 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
                       >
                         View Selection
                       </button>
                       <button
                         type="button"
                         onClick={handleReopenSelection}
-                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                        className="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
                       >
                         Reopen Selection
                       </button>
@@ -3690,7 +3690,7 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   {/* Header Action Buttons */}
-                  <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+                  <div className="flex items-center gap-2 self-start md:self-auto flex-wrap sm:flex-nowrap">
                     {/* Preview Button */}
                     <button
                       onClick={() => {
@@ -3698,7 +3698,7 @@ export const Dashboard: React.FC = () => {
                           window.open(`/g/${currentDelivery.id}`, '_blank');
                         }
                       }}
-                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Eye className="w-4 h-4 text-[#8E827B]" />
                       <span>Preview</span>
@@ -3711,7 +3711,7 @@ export const Dashboard: React.FC = () => {
                           setSelectedWhatsAppGallery(currentDelivery);
                         }
                       }}
-                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Share2 className="w-4 h-4 text-[#8E827B]" />
                       <span>Share</span>
@@ -3723,7 +3723,7 @@ export const Dashboard: React.FC = () => {
                         type="button"
                         onClick={(e) => handleDeleteGallery(e, currentDelivery.id, currentDelivery.client_name)}
                         disabled={deletingGalleryId === currentDelivery.id}
-                        className="bg-white hover:bg-rose-50 text-rose-600 border border-[#E6DFC6] hover:border-rose-200 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                        className="h-9 bg-white hover:bg-rose-50 text-rose-600 border border-[#E6DFC6] hover:border-rose-200 px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
                         title="Delete this gallery from database & Cloudflare R2"
                       >
                         {deletingGalleryId === currentDelivery.id ? (
@@ -3736,10 +3736,10 @@ export const Dashboard: React.FC = () => {
                     )}
 
                     {/* Client Link ⌄ Dropdown */}
-                    <div className="relative">
+                    <div className="relative shrink-0">
                       <button
                         onClick={() => setIsClientLinkDropdownOpen(prev => !prev)}
-                        className="bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                        className="h-9 bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
                       >
                         <Link2 className="w-4 h-4 text-[#CBBDB8]" />
                         <span>Client Link</span>
@@ -3849,7 +3849,7 @@ export const Dashboard: React.FC = () => {
                       <button
                         key={tab.id}
                         onClick={() => setDeliveryTab(tab.id as any)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                        className={`h-9 px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                           isActive
                             ? 'bg-[#3B2E28] text-white shadow-xs'
                             : 'text-[#7A6F69] hover:text-[#1F1714] hover:bg-white/60'
@@ -3875,11 +3875,6 @@ export const Dashboard: React.FC = () => {
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
-
-                        {/* Top-Right Translucent Icon Badge */}
-                        <div className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 shadow-sm">
-                          <ImageIcon className="w-4 h-4" />
-                        </div>
 
                         {/* Center Overlay Text & Button */}
                         <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
@@ -3922,7 +3917,7 @@ export const Dashboard: React.FC = () => {
                           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                             <button
                               onClick={() => { setActiveSectionFilter('all'); setSelectedPhotoIds([]); }}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
+                              className={`h-8 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                                 activeSectionFilter === 'all'
                                   ? 'bg-[#3B2E28] text-white shadow-xs'
                                   : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -3934,7 +3929,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 key={sub.id}
                                 onClick={() => { setActiveSectionFilter(sub.id); setSelectedPhotoIds([]); }}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
+                                className={`h-8 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                                   activeSectionFilter === sub.id
                                     ? 'bg-[#3B2E28] text-white shadow-xs'
                                     : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -3945,7 +3940,7 @@ export const Dashboard: React.FC = () => {
                             ))}
                             <button
                               onClick={() => setIsCreateSectionModalOpen(true)}
-                              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#8C6432] bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                              className="h-8 px-2.5 rounded-xl text-xs font-semibold text-[#8C6432] bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1 whitespace-nowrap"
                             >
                               <Plus className="w-3 h-3" />
                               <span>Add Section</span>
@@ -3963,14 +3958,14 @@ export const Dashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Media Action Toolbar (All actions handled in-place!) */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      {/* Media Action Toolbar — Single-line Horizontal Studio Row */}
+                      <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none min-w-0 py-0.5">
                           {/* Grid / List View Toggle */}
-                          <div className="flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3]">
+                          <div className="h-9 inline-flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3] shrink-0">
                             <button
                               onClick={() => setDeliveryGridMode('grid')}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 deliveryGridMode === 'grid' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                               }`}
                               title="Grid View"
@@ -3979,7 +3974,7 @@ export const Dashboard: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setDeliveryGridMode('list')}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 deliveryGridMode === 'list' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                               }`}
                               title="List View"
@@ -3991,7 +3986,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Photos (Direct File Dialog right here) */}
                           <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Plus className="w-4 h-4" />
                             <span>Add Photos</span>
@@ -4000,7 +3995,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Videos (Direct File Dialog right here) */}
                           <button
                             onClick={() => videoInputRef.current?.click()}
-                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Camera className="w-4 h-4 text-[#8E827B]" />
                             <span>Add Videos</span>
@@ -4009,102 +4004,51 @@ export const Dashboard: React.FC = () => {
                           {/* Create Section (In-dashboard modal) */}
                           <button
                             onClick={() => setIsCreateSectionModalOpen(true)}
-                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <FolderPlus className="w-4 h-4 text-[#8E827B]" />
                             <span>Create Section</span>
                           </button>
                         </div>
 
-                        {/* Right Toolbar Controls: Sort & Filter */}
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          {/* Filter Pills (All / Client Picks / Edited / Notes) */}
-                          {(() => {
-                            const allDeliveryFilesList = [
-                              ...(currentDelivery?.files || []),
-                              ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || [])),
-                            ];
-                            const picksTotalCount = allDeliveryFilesList.filter(f => f.is_selected).length;
-                            const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
-                            return (
-                              <div className="flex items-center bg-white border border-[#E6DFC6] rounded-xl p-0.5 shadow-xs text-xs flex-wrap">
-                                <button
-                                  onClick={() => setPhotosFilter('all')}
-                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                                    photosFilter === 'all' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                                  }`}
-                                >
-                                  All ({allDeliveryFilesList.length})
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
-                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                    photosFilter === 'picks' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                                  }`}
-                                >
-                                  <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                                  <span>Picks ({picksTotalCount})</span>
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
-                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                    photosFilter === 'edited' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                                  }`}
-                                >
-                                  <Check className="w-3 h-3 text-emerald-600" />
-                                  <span>Edited ({editedTotalCount})</span>
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
-                                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                    photosFilter === 'notes' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                                  }`}
-                                >
-                                  <MessageSquare className="w-3 h-3 text-amber-600" />
-                                  <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
-                                </button>
-                              </div>
-                            );
-                          })()}
+                        {/* Right Toolbar Control: Sort */}
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={() => setIsSortDropdownOpen(prev => !prev)}
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
+                            <span>Sort</span>
+                          </button>
 
-                          <div className="relative">
-                            <button
-                              onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                              className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                            >
-                              <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
-                              <span>Sort</span>
-                            </button>
-
-                            {isSortDropdownOpen && (
-                              <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
-                                <button
-                                  onClick={() => { setPhotosSort('newest'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
-                                >
-                                  Newest First
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosSort('oldest'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
-                                >
-                                  Oldest First
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosSort('name'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
-                                >
-                                  File Name (A–Z)
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosSort('downloads'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
-                                >
-                                  Most Downloaded
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          {isSortDropdownOpen && (
+                            <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
+                              <button
+                                onClick={() => { setPhotosSort('newest'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Newest First
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('oldest'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Oldest First
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('name'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                File Name (A–Z)
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('downloads'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Most Downloaded
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -4162,23 +4106,79 @@ export const Dashboard: React.FC = () => {
                             });
                           }
 
+                          const allDeliveryFilesList = [
+                            ...(currentDelivery?.files || []),
+                            ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || [])),
+                          ];
+                          const picksTotalCount = allDeliveryFilesList.filter(f => f.is_selected).length;
+                          const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
+
+                          const filterTabsBar = (
+                            <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-1 gap-0.5 overflow-x-auto scrollbar-none max-w-full">
+                              <button
+                                type="button"
+                                onClick={() => setPhotosFilter('all')}
+                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'all' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                All ({allDeliveryFilesList.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'picks' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+                                <span>Picks ({picksTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'edited' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span>Edited ({editedTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'notes' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <MessageSquare className="w-3 h-3 text-amber-600" />
+                                <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
+                              </button>
+                            </div>
+                          );
+
                           if (displayFiles.length === 0) {
                             return (
-                              <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
-                                <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
-                                <h3 className="text-base font-semibold text-[#1F1714]">
-                                  {photosFilter !== 'all' ? 'No photos match this filter' : 'No Photos in this Gallery'}
-                                </h3>
-                                <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
-                                  {photosFilter !== 'all' ? 'Try switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
-                                </p>
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="mt-4 px-4 py-2 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>Upload Photos Directly</span>
-                                </button>
+                              <div className="space-y-3">
+                                <div className="bg-white px-3 py-2 rounded-2xl border border-[#E8E2D2] shadow-2xs flex items-center justify-between gap-2">
+                                  {filterTabsBar}
+                                </div>
+                                <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
+                                  <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
+                                  <h3 className="text-base font-semibold text-[#1F1714]">
+                                    {photosFilter !== 'all' ? 'No photos match this filter' : 'No Photos in this Gallery'}
+                                  </h3>
+                                  <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                                    {photosFilter !== 'all' ? 'Try switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
+                                  </p>
+                                  <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="mt-4 h-9 px-4 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Upload Photos Directly</span>
+                                  </button>
+                                </div>
                               </div>
                             );
                           }
@@ -4193,73 +4193,81 @@ export const Dashboard: React.FC = () => {
                           const uneditedPickedIds = clientPickedFiles.filter(f => !f.is_edited).map(f => f.id);
                           const editedPicksCount = clientPickedFiles.filter(f => f.is_edited).length;
                           const bulkActionBar = (
-                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-2xl border border-[#E8E2D2] shadow-2xs">
-                              <div className="flex items-center gap-2.5 flex-wrap">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (allVisibleSelected) {
-                                      setSelectedPhotoIds([]);
-                                    } else {
-                                      setSelectedPhotoIds(displayFiles.map(f => f.id));
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer"
-                                >
-                                  {allVisibleSelected ? (
-                                    <CheckSquare className="w-4 h-4 text-[#B58B5C]" />
-                                  ) : (
-                                    <Square className="w-4 h-4 text-[#8E827B]" />
+                            <div className="mb-3 bg-white px-3 py-2 rounded-2xl border border-[#E8E2D2] shadow-2xs space-y-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                {filterTabsBar}
+
+                                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (allVisibleSelected) {
+                                        setSelectedPhotoIds([]);
+                                      } else {
+                                        setSelectedPhotoIds(displayFiles.map(f => f.id));
+                                      }
+                                    }}
+                                    className="h-8 px-2 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                  >
+                                    {allVisibleSelected ? (
+                                      <CheckSquare className="w-4 h-4 text-[#B58B5C]" />
+                                    ) : (
+                                      <Square className="w-4 h-4 text-[#8E827B]" />
+                                    )}
+                                    <span>
+                                      {selectedPhotoIds.length > 0
+                                        ? `${selectedPhotoIds.length} selected`
+                                        : `Select all (${displayFiles.length})`}
+                                    </span>
+                                  </button>
+
+                                  {clientPickedFiles.length > 0 && photosFilter !== 'picks' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
+                                      className="h-8 inline-flex items-center gap-1 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                    >
+                                      <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                      <span>Select Picks ({clientPickedFiles.length})</span>
+                                    </button>
                                   )}
-                                  <span>
-                                    {selectedPhotoIds.length > 0
-                                      ? `${selectedPhotoIds.length} selected`
-                                      : `Select all (${displayFiles.length})`}
-                                  </span>
-                                </button>
-                                {clientPickedFiles.length > 0 && photosFilter !== 'picks' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer"
-                                  >
-                                    <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                                    <span>Select Client Picks ({clientPickedFiles.length})</span>
-                                  </button>
-                                )}
-                                {clientPickedFiles.length > 0 && (
-                                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
-                                    {editedPicksCount}/{clientPickedFiles.length} picks edited
-                                  </span>
-                                )}
-                                {uneditedPickedIds.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs"
-                                  >
-                                    <Check className="w-3 h-3" />
-                                    <span>Mark {uneditedPickedIds.length} Pick{uneditedPickedIds.length === 1 ? '' : 's'} Edited</span>
-                                  </button>
-                                )}
-                                {selectedPhotoIds.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPhotoIds([])}
-                                    className="text-[11px] font-medium text-[#7A6F69] hover:text-[#1F1714] cursor-pointer"
-                                  >
-                                    Clear
-                                  </button>
-                                )}
+
+                                  {clientPickedFiles.length > 0 && (
+                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-1.5">
+                                      {editedPicksCount}/{clientPickedFiles.length} edited
+                                    </span>
+                                  )}
+
+                                  {uneditedPickedIds.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
+                                      className="h-8 inline-flex items-center gap-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      <span>Mark {uneditedPickedIds.length} Pick{uneditedPickedIds.length === 1 ? '' : 's'} Edited</span>
+                                    </button>
+                                  )}
+
+                                  {selectedPhotoIds.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPhotoIds([])}
+                                      className="h-8 px-2 rounded-lg text-[11px] font-semibold text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Clear
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {selectedPhotoIds.length > 0 && (
-                                <div className="flex items-center gap-1.5 flex-wrap">
+                                <div className="pt-2 border-t border-[#F0EBE0] flex items-center gap-1.5 overflow-x-auto scrollbar-none">
                                   <button
                                     type="button"
                                     onClick={handleBulkDownloadZip}
                                     disabled={isZipping}
-                                    className="px-2.5 py-1.5 rounded-lg bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                    className="h-8 px-3 rounded-lg bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
                                   >
                                     <Download className="w-3 h-3" />
                                     <span>ZIP</span>
@@ -4267,7 +4275,7 @@ export const Dashboard: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenRenameModal()}
-                                    className="px-2.5 py-1.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#1F1714] text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                                    className="h-8 px-3 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#1F1714] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                                   >
                                     <Edit2 className="w-3 h-3 text-[#B58B5C]" />
                                     <span>Rename</span>
@@ -4275,7 +4283,7 @@ export const Dashboard: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleBulkToggleEdited(true)}
-                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                                    className="h-8 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                                   >
                                     <Check className="w-3 h-3" />
                                     <span>Set Edited</span>
@@ -4283,14 +4291,14 @@ export const Dashboard: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleBulkToggleEdited(false)}
-                                    className="px-2.5 py-1.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold cursor-pointer"
+                                    className="h-8 px-3 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
                                   >
                                     Unset Edited
                                   </button>
                                   <button
                                     type="button"
                                     onClick={handleBulkDeletePhotos}
-                                    className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                                    className="h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                     <span>Delete</span>
@@ -4365,7 +4373,7 @@ export const Dashboard: React.FC = () => {
                                                 e.stopPropagation();
                                                 handleToggleSingleEdited(file);
                                               }}
-                                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 border transition-colors cursor-pointer ${
+                                              className={`h-8 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                                                 file.is_edited
                                                   ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
                                                   : 'bg-[#FAF7F0] text-[#5C5049] border-[#E6DFC6] hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
@@ -4643,7 +4651,7 @@ export const Dashboard: React.FC = () => {
                               <select
                                 value={deliveryExpiryHours}
                                 onChange={(e) => handleExpiryHoursChange(Number(e.target.value))}
-                                className="flex-1 px-2.5 py-1.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-[11px] font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                                className="min-w-0 flex-1 h-8 px-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-[11px] font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
                               >
                                 <option value={24}>24 Hours</option>
                                 <option value={48}>48 Hours</option>
@@ -4655,14 +4663,14 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleApplyCustomExpiration(deliveryExpiryHours)}
-                                className="px-2.5 py-1.5 bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] rounded-xl text-[11px] font-semibold text-[#1F1714] cursor-pointer"
+                                className="h-8 px-2.5 bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] rounded-xl text-[11px] font-semibold text-[#1F1714] cursor-pointer whitespace-nowrap shrink-0"
                               >
                                 Apply
                               </button>
                               <button
                                 type="button"
                                 onClick={(e) => currentDelivery && handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name)}
-                                className="px-2.5 py-1.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-[11px] font-semibold cursor-pointer"
+                                className="h-8 px-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
                                 title="Quick Extend +7 Days"
                               >
                                 +7d
@@ -4789,7 +4797,7 @@ export const Dashboard: React.FC = () => {
                             <button
                               onClick={() => handleUpdatePayment()}
                               disabled={isUpdatingPayment}
-                              className="flex-1 bg-[#3B2E28] hover:bg-[#4E3D35] text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              className="flex-1 h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
                             >
                               {isUpdatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                               <span>Save Payment</span>
@@ -4799,7 +4807,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 onClick={handleMarkPaidInFull}
                                 disabled={isUpdatingPayment}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1 whitespace-nowrap"
                                 title="Sets amount paid equal to agreed balance and unlocks high-res downloads"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -5811,17 +5819,17 @@ export const Dashboard: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 shrink-0 flex-nowrap">
                     <button
                       onClick={() => setDeliveryViewMode('detail')}
-                      className="bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <LayoutGrid className="w-4 h-4 text-[#B58B5C]" />
                       <span>Back to Studio View</span>
                     </button>
                     <button
                       onClick={() => handleOpenCreateModal('delivery')}
-                      className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Plus className="w-4 h-4" />
                       <span>New Delivery</span>
@@ -5830,10 +5838,10 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
                   <button
                     onClick={() => setDeliveryFilter('all')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'all'
                         ? 'bg-[#3B2E28] text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -5843,7 +5851,7 @@ export const Dashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDeliveryFilter('live')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'live'
                         ? 'bg-[#059669] text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -5853,7 +5861,7 @@ export const Dashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDeliveryFilter('expired')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'expired'
                         ? 'bg-rose-600 text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
