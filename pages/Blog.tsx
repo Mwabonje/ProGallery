@@ -7,6 +7,38 @@ import { supabase } from '../services/supabase';
 import { ArrowLeft, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import { PublicHeader } from '../components/PublicHeader';
 
+
+
+// Keep the Journal list warm while visitors move between article categories.
+let blogPostsCache: { posts: BlogPost[]; fetchedAt: number } | null = null;
+let blogPostsRequest: Promise<BlogPost[]> | null = null;
+
+const loadPublishedBlogPosts = async (): Promise<BlogPost[]> => {
+  const cacheIsFresh = blogPostsCache && Date.now() - blogPostsCache.fetchedAt < 60_000;
+  if (cacheIsFresh) return blogPostsCache!.posts;
+  if (blogPostsRequest) return blogPostsRequest;
+
+  blogPostsRequest = (async () => {
+    const { data, error } = await supabase.from('blogs').select('*').order('date', { ascending: false });
+    if (error) throw error;
+    const now = new Date();
+    const publishedPosts = (data || []).filter((post: BlogPost) => {
+      const status = post.status || 'published';
+      if (status === 'draft') return false;
+      if (status === 'scheduled') return new Date(post.date) <= now;
+      return true;
+    });
+    blogPostsCache = { posts: publishedPosts, fetchedAt: Date.now() };
+    return publishedPosts;
+  })();
+
+  try {
+    return await blogPostsRequest;
+  } finally {
+    blogPostsRequest = null;
+  }
+};
+
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +56,7 @@ export const Blog: React.FC = () => {
   }, [posts]);
 
   const requestedCategory = searchParams.get('category') || 'All';
-  const selectedCategory = availableCategories.includes(requestedCategory) ? requestedCategory : 'All';
+  const selectedCategory = requestedCategory;
 
   const filteredPosts = useMemo(() => {
     if (selectedCategory === 'All') return posts;
@@ -59,15 +91,7 @@ export const Blog: React.FC = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase.from('blogs').select('*').order('date', { ascending: false });
-      if (error) throw error;
-      const now = new Date();
-      const publishedPosts = (data || []).filter((post: BlogPost) => {
-        const status = post.status || 'published';
-        if (status === 'draft') return false;
-        if (status === 'scheduled') return new Date(post.date) <= now;
-        return true;
-      });
+      const publishedPosts = await loadPublishedBlogPosts();
       setPosts(publishedPosts);
     } catch (err) {
       console.error('Error fetching blogs from DB:', err);
