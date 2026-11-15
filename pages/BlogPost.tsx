@@ -297,9 +297,9 @@ export const BlogPost: React.FC = () => {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 px-5 pb-20 pt-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_285px] lg:gap-10 lg:px-10 lg:pt-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 items-start gap-10 px-5 pb-20 pt-6 sm:px-8 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_285px] lg:gap-12 lg:px-10 lg:pt-8 xl:grid-cols-[minmax(0,1fr)_300px]">
         <main className="min-w-0">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 text-sm font-semibold text-[#0f172b]">
                 {(post.author || 'M').slice(0, 1).toUpperCase()}
@@ -325,7 +325,7 @@ export const BlogPost: React.FC = () => {
           {post.tags?.length > 0 && (
             <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-[#0f172b]/15 pt-6 dark:border-[#faf8f5]/15">
               <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#0f172b]/65">Filed under</span>
-              {post.tags.map(tag => <span key={tag} className="rounded-full border border-[#0f172b]/20 px-3 py-1 text-[11px] text-[#0f172b] dark:border-slate-700 dark:text-[#faf8f5]/80">{tag}</span>)}
+              {post.tags.map(tag => <span key={tag} className="rounded-full border border-[#0f172b]/20 px-3 py-1 text-[11px] text-[#0f172b] dark:border-[#faf8f5]/20 dark:text-[#faf8f5]/80">{tag}</span>)}
             </div>
           )}
 
@@ -337,16 +337,16 @@ export const BlogPost: React.FC = () => {
             <section className="mt-14 border-t border-[#0f172b]/15 pt-9 dark:border-[#faf8f5]/15">
               <div className="mb-6 flex items-end justify-between gap-4">
                 <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f172b]">Continue exploring</p><h2 className="font-editorial text-3xl font-semibold text-[#050505] dark:text-[#faf8f5]">Related Stories</h2></div>
-                <Link to="/blog" className="text-xs font-semibold text-[#0f172b] hover:text-[#050505] dark:text-[#0f172b]">All stories <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+                <Link to="/blog" className="text-xs font-semibold text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]">All stories <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {relatedPosts.map(item => (
-                  <article key={item.id} className="group min-w-0">
-                    <Link to={`/blog/${item.slug}`} className="mb-3 block aspect-[5/3] overflow-hidden rounded-xl bg-[#0f172b]/[0.06]">
-                      {item.cover_image && <img src={item.cover_image} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                  <article key={item.id} className="group min-w-0 overflow-hidden rounded-xl border border-[#0f172b]/10 bg-[#faf8f5] p-2.5 transition-shadow duration-300 hover:shadow-[0_10px_30px_rgba(15,23,43,0.08)] dark:border-[#faf8f5]/10 dark:bg-[#faf8f5]/[0.03]">
+                    <Link to={`/blog/${item.slug}`} className="mb-3 block aspect-[5/3] overflow-hidden rounded-lg bg-[#0f172b]/[0.06]">
+                      {item.cover_image && <img src={item.cover_image} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />}
                     </Link>
                     <p className="mb-1 text-[10px] uppercase tracking-[0.12em] text-[#0f172b]/70">{calculateReadingTime(item.content)} min read</p>
-                    <Link to={`/blog/${item.slug}`}><h3 className="font-editorial text-xl font-semibold leading-tight text-[#050505] group-hover:text-[#0f172b] dark:text-[#faf8f5]">{item.title}</h3></Link>
+                    <Link to={`/blog/${item.slug}`}><h3 className="font-editorial text-xl font-semibold leading-[1.25] text-[#050505] transition-colors group-hover:text-[#0f172b] dark:text-[#faf8f5]">{item.title}</h3></Link>
                   </article>
                 ))}
               </div>
@@ -355,12 +355,12 @@ export const BlogPost: React.FC = () => {
         </main>
 
         <aside className="space-y-5 lg:pt-0">
-          <section className="rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(61,39,22,0.035)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
+          <section className="rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:sticky lg:top-24 lg:self-start">
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#0f172b]" /><h2 className="font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Table of Contents</h2></div>
             {tocItems.length ? (
-              <nav aria-label="Table of contents" className="space-y-1">
+              <nav aria-label="Table of contents" className="max-h-[min(62vh,520px)] space-y-1 overflow-y-auto overscroll-contain pr-1">
                 {tocItems.map((item, index) => (
-                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block rounded-lg px-3 py-2 text-xs leading-5 transition-colors ${activeHeading === item.id ? 'border-l-[3px] border-[#0f172b] bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:text-[#faf8f5]/80 dark:hover:bg-slate-800'}`}>
+                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block break-words rounded-lg px-3 py-2.5 text-xs leading-[1.65] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:focus-visible:ring-[#faf8f5] ${activeHeading === item.id ? 'border-l-[3px] border-[#0f172b] bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.08]'}`}>
                     <span className="mr-2">{index + 1}.</span>{item.text.replace(/^\s*\d+[.)]\s*/, '')}
                   </a>
                 ))}
@@ -375,7 +375,7 @@ export const BlogPost: React.FC = () => {
               <div><p className="text-sm font-bold text-[#050505] dark:text-[#faf8f5]">{post.author || 'Mwabonje'}</p><p className="mt-1 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/65">Photographer &amp; Visual Storyteller</p></div>
             </div>
             <p className="text-xs leading-5 text-[#0f172b] dark:text-[#faf8f5]/80">A photographer and visual storyteller based on Kenya's coast, creating people-centred imagery for weddings, travel, hospitality and lifestyle brands.</p>
-            <Link to="/about" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#0f172b] hover:text-[#050505] dark:text-[#0f172b]">More about Mwabonje <ArrowRight className="h-3.5 w-3.5" /></Link>
+            <Link to="/about" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]">More about Mwabonje <ArrowRight className="h-3.5 w-3.5" /></Link>
           </section>
 
           {relatedPosts.length > 0 && (
@@ -401,7 +401,7 @@ export const BlogPost: React.FC = () => {
           {categories.length > 0 && (
             <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
               <h2 className="mb-3 font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Categories</h2>
-              <div className="space-y-1">{categories.map(category => <Link key={category} to="/blog" className="flex items-center justify-between border-b border-[#0f172b]/15 py-2 text-xs text-[#0f172b] last:border-0 hover:text-[#9b6337] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80"><span>{category}</span><ChevronRight className="h-3.5 w-3.5" /></Link>)}</div>
+              <div className="space-y-1">{categories.map(category => <Link key={category} to="/blog" className="flex items-center justify-between border-b border-[#0f172b]/15 py-2 text-xs text-[#0f172b] last:border-0 hover:text-[#050505] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80"><span>{category}</span><ChevronRight className="h-3.5 w-3.5" /></Link>)}</div>
             </section>
           )}
         </aside>
