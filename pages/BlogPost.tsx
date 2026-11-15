@@ -248,7 +248,7 @@ export const BlogPost: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link to="/blog" aria-label="Search journal" className="hidden text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85 sm:inline-flex"><Search className="h-[17px] w-[17px]" /></Link>
             <ThemeToggle className="text-[#0f172b] dark:text-[#faf8f5]" />
-            <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md bg-[#0f172b] px-4 text-[10px] font-semibold text-[#faf8f5] transition hover:bg-[#050505] sm:px-5">Book a Shoot <ArrowUpRight className="h-3.5 w-3.5" /></a>
+            <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#0f172b] px-5 text-[10px] font-semibold uppercase tracking-wider text-[#faf8f5] transition hover:bg-[#050505] sm:px-6">ENQUIRE <ArrowUpRight className="h-3.5 w-3.5" /></a>
           </div>
         </div>
         <div className="flex items-center justify-center gap-5 border-t border-[#0f172b]/15 px-3 py-2 lg:hidden dark:border-[#faf8f5]/15">
