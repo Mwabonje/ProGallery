@@ -167,7 +167,7 @@ export const Blog: React.FC = () => {
                       <p className="mt-1 text-[#0f172b] dark:text-slate-400">{formatDate(featuredPost.date)} <span className="mx-1.5">·</span> {calculateReadingTime(featuredPost.content)} min read</p>
                     </div>
                   </div>
-                  {storyLink(featuredPost, "mt-5 inline-flex items-center gap-3 rounded-md bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] px-5 py-3 text-xs font-semibold transition-colors dark:bg-[#faf8f5] dark:text-[#2b1a10] dark:hover:bg-white", <>Read Story <ArrowRight size={15} /></>)}
+                  {storyLink(featuredPost, "mt-5 inline-flex items-center gap-3 rounded-md bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] px-5 py-3 text-xs font-semibold transition-colors dark:bg-[#faf8f5] dark:text-[#050505] dark:hover:bg-white", <>Read Story <ArrowRight size={15} /></>)}
                 </div>
               </section>
             )}
@@ -199,7 +199,7 @@ export const Blog: React.FC = () => {
 
             {/* Popular stories feature band */}
             {popularPosts.length > 0 && (
-              <section className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.95fr] rounded-xl overflow-hidden bg-[#faf8f5] dark:bg-[#151d29] mb-8 sm:mb-12">
+              <section className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.95fr] rounded-xl overflow-hidden bg-[#faf8f5] dark:bg-[#0f172b] mb-8 sm:mb-12">
                 <div className="relative h-[230px] sm:h-[280px] lg:h-[300px] overflow-hidden bg-[#faf8f5]">
                   {popularPosts[0].cover_image && (
                     <img
@@ -256,7 +256,7 @@ export const Blog: React.FC = () => {
               <nav aria-label="Journal pagination" className="flex justify-center items-center gap-2 sm:gap-4 pt-10">
                 <button type="button" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === 1} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Previous page"><ArrowLeft size={18} /></button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button key={page} type="button" onClick={() => { setCurrentPage(page); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} aria-current={currentPage === page ? 'page' : undefined} className={`w-9 h-9 rounded-md text-sm transition-colors ${currentPage === page ? 'bg-[#0f172b] text-[#faf8f5] dark:bg-[#faf8f5] dark:text-[#2b1a10]' : 'text-[#0f172b] hover:bg-[#faf8f5] dark:text-slate-300 dark:hover:bg-slate-800'}`}>{page}</button>
+                  <button key={page} type="button" onClick={() => { setCurrentPage(page); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} aria-current={currentPage === page ? 'page' : undefined} className={`w-9 h-9 rounded-md text-sm transition-colors ${currentPage === page ? 'bg-[#0f172b] text-[#faf8f5] dark:bg-[#faf8f5] dark:text-[#050505]' : 'text-[#0f172b] hover:bg-[#faf8f5] dark:text-slate-300 dark:hover:bg-slate-800'}`}>{page}</button>
                 ))}
                 <button type="button" onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === totalPages} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
               </nav>
