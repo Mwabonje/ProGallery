@@ -242,7 +242,7 @@ export const BlogPost: React.FC = () => {
             <Link to="/" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Home</Link>
             <Link to="/#work" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Portfolio</Link>
             <Link to="/?category=FILMS#work" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Films</Link>
-            <Link to="/blog" className="border-b border-[#0f172b] pb-1 text-[11px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Blog</Link>
+            <Link to="/blog" className="border-b border-[#0f172b] pb-1 text-[11px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
             <Link to="/about" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">About</Link>
             <Link to="/faq" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">FAQ</Link>
           </nav>
@@ -256,7 +256,7 @@ export const BlogPost: React.FC = () => {
           <Link to="/" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Home</Link>
           <Link to="/#work" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Portfolio</Link>
           <Link to="/?category=FILMS#work" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Films</Link>
-          <Link to="/blog" className="text-[10px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Blog</Link>
+          <Link to="/blog" className="text-[10px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
           <Link to="/about" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">About</Link>
           <Link to="/faq" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">FAQ</Link>
         </div>
@@ -282,7 +282,7 @@ export const BlogPost: React.FC = () => {
           <div className="max-w-3xl text-white">
             <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
               <Link to="/" className="hover:text-white">Home</Link><ChevronRight className="h-3 w-3" />
-              <Link to="/blog" className="hover:text-white">Blog</Link><ChevronRight className="h-3 w-3" />
+              <Link to="/blog" className="hover:text-white">Journal</Link><ChevronRight className="h-3 w-3" />
               <span>{categories[0] || 'Stories'}</span>
             </nav>
             {categories.length > 0 && (
