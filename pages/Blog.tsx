@@ -4,29 +4,19 @@ import { Link } from 'react-router-dom';
 import { calculateReadingTime, parseCategories } from '../utils/blogData';
 import { BlogPost } from '../types';
 import { supabase } from '../services/supabase';
-import { ArrowLeft, ArrowRight, BookOpen, Camera, Clapperboard, Grid2X2, Heart, MapPin, Sprout, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import { PublicHeader } from '../components/PublicHeader';
 
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageTitle = "Journal & Stories | Mwabonje Photography — Malindi & Kenyan Coast";
   const pageDescription = "Explore photography guides, coastal location stories, wedding tips, and documentary visual storytelling from Malindi, Watamu, and Lamu by Mwabonje Photography.";
   const pageUrl = "https://mwabonje.co.ke/blog";
   const pageSize = 6;
 
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    posts.forEach(post => parseCategories(post.category).forEach(c => cats.add(c)));
-    return ['All', ...Array.from(cats)];
-  }, [posts]);
-
-  const filteredPosts = useMemo(() => {
-    if (selectedCategory === 'All') return posts;
-    return posts.filter(post => parseCategories(post.category).includes(selectedCategory));
-  }, [posts, selectedCategory]);
+  const filteredPosts = posts;
 
   const totalPages = Math.max(1, Math.ceil(Math.max(0, filteredPosts.length - 4) / pageSize));
   const paginatedPosts = filteredPosts.slice(4 + (currentPage - 1) * pageSize, 4 + currentPage * pageSize);
@@ -38,7 +28,6 @@ export const Blog: React.FC = () => {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedCategory]);
 
   const handlePostClick = (slug: string) => {
     supabase.rpc('update_blog_c', { blog_slug: slug }).then(({ error }) => {
@@ -68,17 +57,6 @@ export const Blog: React.FC = () => {
   const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric'
   });
-
-  const categoryIcon = (category: string) => {
-    const value = category.toLowerCase();
-    if (value.includes('wedding')) return Heart;
-    if (value.includes('engagement') || value.includes('couple')) return Heart;
-    if (value.includes('destination') || value.includes('travel') || value.includes('place')) return MapPin;
-    if (value.includes('tip') || value.includes('portrait') || value.includes('photography')) return Camera;
-    if (value.includes('behind') || value.includes('film')) return Clapperboard;
-    if (value.includes('studio') || value.includes('personal')) return Sprout;
-    return BookOpen;
-  };
 
   const storyLink = (post: BlogPost, className: string, children: React.ReactNode) => (
     <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className={className}>
@@ -160,24 +138,6 @@ export const Blog: React.FC = () => {
         </div>
       </section>
 
-      {/* Category navigation */}
-      <nav aria-label="Filter journal stories" className="border-b border-[#e8ded1] dark:border-slate-800 bg-[#fbf7f0] dark:bg-[#111722]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-wrap items-stretch justify-center gap-x-3 sm:gap-x-5 lg:gap-x-8">
-          {availableCategories.map(category => {
-            const Icon = category === 'All' ? Grid2X2 : categoryIcon(category);
-            const active = selectedCategory === category;
-            return (
-              <button key={category} type="button" onClick={() => setSelectedCategory(category)}
-                aria-pressed={active}
-                className={`shrink-0 min-w-[82px] sm:min-w-[104px] px-1 py-4 sm:py-5 flex flex-col items-center justify-center gap-1.5 border-b-2 transition-colors ${active ? 'border-[#56311e] text-[#56311e] dark:border-amber-300 dark:text-amber-200' : 'border-transparent text-[#725b4b] hover:text-[#321d12] dark:text-slate-400 dark:hover:text-white'}`}>
-                <Icon size={19} strokeWidth={1.6} />
-                <span className="text-[10px] sm:text-xs whitespace-nowrap">{category === 'All' ? 'All Stories' : category}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
       <main className="max-w-7xl mx-auto w-full px-5 sm:px-8 lg:px-10 py-8 sm:py-10 lg:py-12">
         {loading ? (
           <div className="h-72 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#8b6b51]" /></div>
@@ -185,7 +145,6 @@ export const Blog: React.FC = () => {
           <div className="py-24 text-center text-[#725b4b] dark:text-slate-400">
             <BookOpen className="mx-auto mb-4" size={30} />
             <p>No journal stories found{selectedCategory !== 'All' ? ` in “${selectedCategory}”` : ''}.</p>
-            {selectedCategory !== 'All' && <button onClick={() => setSelectedCategory('All')} className="mt-3 underline underline-offset-4">View all stories</button>}
           </div>
         ) : (
           <>
