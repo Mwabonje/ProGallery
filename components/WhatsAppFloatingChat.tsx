@@ -132,7 +132,7 @@ export const WhatsAppFloatingChat: React.FC = () => {
   return (
     <div 
       ref={chatRef}
-      className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-50 flex flex-col items-end pointer-events-auto"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-50 flex flex-col items-end pointer-events-auto sm:bottom-7 sm:right-7"
     >
       {/* Floating Popover Card */}
       {isOpen && (
@@ -282,7 +282,7 @@ export const WhatsAppFloatingChat: React.FC = () => {
             setIsOpen(!isOpen);
             setHasInteracted(true);
           }}
-          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 cursor-pointer relative group ${
+          className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 cursor-pointer relative group ${
             isOpen 
               ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 rotate-90 scale-95' 
               : 'bg-[#25D366] hover:bg-[#20bd5a] text-white hover:scale-110 active:scale-95 shadow-[#25D366]/30'
@@ -291,7 +291,7 @@ export const WhatsAppFloatingChat: React.FC = () => {
           title={isOpen ? "Close chat" : "Chat with Mwabonje on WhatsApp"}
         >
           {isOpen ? (
-            <X className="w-6 h-6 transform -rotate-90" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6 transform -rotate-90" />
           ) : (
             <>
               {/* Pulsing subtle beacon */}
@@ -303,7 +303,7 @@ export const WhatsAppFloatingChat: React.FC = () => {
               {/* Official WhatsApp SVG Logo */}
               <svg 
                 viewBox="0 0 24 24" 
-                className="w-7 h-7 fill-current drop-shadow-xs"
+                className="h-6 w-6 sm:h-7 sm:w-7 fill-current drop-shadow-xs"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path d="M12.004 2C6.479 2 2 6.48 2 12.006c0 1.91.536 3.738 1.554 5.32L2.09 22.09l4.908-1.42a9.96 9.96 0 0 0 5.006 1.34h.004c5.524 0 10.003-4.48 10.003-10.005 0-2.67-1.04-5.18-2.93-7.07A9.94 9.94 0 0 0 12.004 2zm5.834 14.195c-.244.686-1.417 1.31-1.954 1.393-.505.077-1.157.11-1.874-.12-.435-.14-1-.326-1.72-.638-3.04-1.315-5.02-4.385-5.17-4.587-.15-.202-1.233-1.64-1.233-3.13 0-1.49.78-2.222 1.057-2.525.277-.302.604-.378.805-.378.2 0 .403.002.58.01.187.01.436-.07.68.518.252.605.856 2.094.932 2.245.076.15.126.328.025.53-.1.201-.151.327-.302.503-.15.177-.318.394-.453.529-.151.15-.31.313-.134.614.177.302.784 1.293 1.68 2.092 1.152 1.026 2.122 1.344 2.424 1.494.302.152.479.127.655-.075.177-.202.756-.88 1.008-1.182.251-.303.503-.252.855-.126.353.126 2.238 1.057 2.62 1.25.38.192.633.287.726.448.093.161.093.931-.151 1.617z"/>
