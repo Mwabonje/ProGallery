@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, LayoutGrid, Check, Sparkles, Image as ImageIcon, Eye, 
@@ -12,6 +12,7 @@ interface EditorialGridModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (data: EditorialGridData) => void;
+  targetSectionLabel?: string;
 }
 
 const SAMPLE_COASTAL_IMAGES = [
@@ -36,6 +37,7 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
   isOpen,
   onClose,
   onInsert,
+  targetSectionLabel,
 }) => {
   const [selectedLayout, setSelectedLayout] = useState<EditorialGridLayout>('2-col');
   const [images, setImages] = useState<EditorialGridImage[]>([
@@ -47,13 +49,23 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [inputTab, setInputTab] = useState<Record<number, 'upload' | 'url'>>({
-    0: 'upload',
-    1: 'upload',
-    2: 'upload',
-  });
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedLayout('2-col');
+      setImages([
+        { url: '', caption: '', alt: '' },
+        { url: '', caption: '', alt: '' },
+        { url: '', caption: '', alt: '' },
+      ]);
+      setMainCaption('');
+      setErrorMessage('');
+      setUploadingSlot(null);
+      setUploadProgress(0);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -92,10 +104,17 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
         setUploadProgress(percent);
       });
 
-      handleUpdateImage(index, 'url', result.url);
-      if (!images[index]?.alt) {
-        handleUpdateImage(index, 'alt', file.name.replace(/\.[^/.]+$/, ''));
-      }
+      const fallbackAlt = file.name.replace(/\.[^/.]+$/, '');
+      setImages(prev => {
+        const copy = [...prev];
+        const current = copy[index] || { url: '', caption: '', alt: '' };
+        copy[index] = {
+          ...current,
+          url: result.url,
+          alt: current.alt || fallbackAlt,
+        };
+        return copy;
+      });
 
       toast.success(`Photo #${index + 1} uploaded successfully!`);
     } catch (err: any) {
@@ -181,7 +200,9 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Upload photos from your computer or paste links for Kinfolk &amp; Vogue style pairings.
+                {targetSectionLabel
+                  ? `Attaching to section: ${targetSectionLabel}`
+                  : 'Upload photos from your computer or paste links for Kinfolk & Vogue style pairings.'}
               </p>
             </div>
           </div>
@@ -263,7 +284,6 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
               {Array.from({ length: countNeeded }).map((_, idx) => {
                 const img = images[idx] || { url: '', caption: '', alt: '' };
                 const isUploading = uploadingSlot === idx;
-                const tab = inputTab[idx] || 'upload';
 
                 return (
                   <div 
@@ -274,7 +294,7 @@ export const EditorialGridModal: React.FC<EditorialGridModalProps> = ({
                     <input 
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      ref={el => fileInputRefs.current[idx] = el}
+                      ref={el => { fileInputRefs.current[idx] = el; }}
                       onChange={e => {
                         if (e.target.files && e.target.files[0]) {
                           handleFileUpload(idx, e.target.files[0]);

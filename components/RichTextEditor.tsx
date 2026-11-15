@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -10,7 +10,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
 import { Extension } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
+import { Fragment } from '@tiptap/pm/model';
+import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { 
   Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, 
   List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, 
@@ -716,6 +717,7 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
       </button>
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={onOpenGridModal}
         className="px-2.5 py-1 rounded-md bg-white hover:bg-[#FAF8F5] text-[#3B2E28] border border-[#E6DFC6] font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
         title="Insert Editorial Photo Grid (Magazine Spread / Diptych / Triptych)"
@@ -737,9 +739,92 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
   );
 };
 
+interface SavedGridInsertTarget {
+  from: number;
+  to: number;
+  label?: string;
+}
+
+function computeGridInsertTarget(editor: any): SavedGridInsertTarget {
+  const { state } = editor;
+  const { selection, doc } = state;
+
+  if (selection instanceof NodeSelection) {
+    return { from: selection.to, to: selection.to };
+  }
+
+  const { $from } = selection;
+  const depth = $from.depth;
+
+  if (depth === 0) {
+    const clamped = Math.max(0, Math.min(selection.to, doc.content.size));
+    return { from: clamped, to: clamped };
+  }
+
+  const topIndex = $from.index(0);
+  const topNode = doc.child(topIndex);
+  const topStart = $from.before(1);
+  const topEnd = $from.after(1);
+  const parent = $from.parent;
+  const isEmptyTextblock = parent.isTextblock && parent.textContent.trim().length === 0;
+
+  const formatHeadingLabel = (node: any): string | undefined => {
+    if (!node || node.type.name !== 'heading') return undefined;
+    const text = node.textContent.trim();
+    if (!text) return undefined;
+    const truncated = text.length > 52 ? `${text.slice(0, 52)}...` : text;
+    return `H${node.attrs.level || 2} "${truncated}"`;
+  };
+
+  if (parent.type.name === 'heading') {
+    const isHeadingEmpty = parent.content.size === 0 || parent.textContent.trim().length === 0;
+    if (isHeadingEmpty) {
+      const prevNode = topIndex > 0 ? doc.child(topIndex - 1) : null;
+      return {
+        from: topStart,
+        to: topEnd,
+        label: formatHeadingLabel(prevNode) || `Empty H${parent.attrs.level || 2} section`,
+      };
+    }
+    return {
+      from: topEnd,
+      to: topEnd,
+      label: formatHeadingLabel(parent),
+    };
+  }
+
+  if (depth === 1 && isEmptyTextblock) {
+    const prevNode = topIndex > 0 ? doc.child(topIndex - 1) : null;
+    return {
+      from: topStart,
+      to: topEnd,
+      label: formatHeadingLabel(prevNode),
+    };
+  }
+
+  if (depth === 1 && $from.parentOffset === 0) {
+    const prevNode = topIndex > 0 ? doc.child(topIndex - 1) : null;
+    return {
+      from: topStart,
+      to: topStart,
+      label: formatHeadingLabel(prevNode),
+    };
+  }
+
+  return {
+    from: topEnd,
+    to: topEnd,
+    label: formatHeadingLabel(topNode),
+  };
+}
+
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, lastSavedText }) => {
   const [, setSelectionTick] = useState(0);
   const [isGridModalOpen, setIsGridModalOpen] = useState(false);
+  const [gridTargetLabel, setGridTargetLabel] = useState<string | undefined>(undefined);
+  const savedInsertTargetRef = useRef<SavedGridInsertTarget | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const editor = useEditor({
     extensions: [
@@ -779,7 +864,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChangeRef.current(editor.getHTML());
     },
   });
 
@@ -812,21 +897,72 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
+  const handleOpenGridModal = () => {
+    if (editor) {
+      const target = computeGridInsertTarget(editor);
+      savedInsertTargetRef.current = target;
+      setGridTargetLabel(target.label);
+    } else {
+      savedInsertTargetRef.current = null;
+      setGridTargetLabel(undefined);
+    }
+    setIsGridModalOpen(true);
+  };
+
   const handleInsertEditorialGrid = (data: EditorialGridData) => {
     if (!editor) return;
     try {
-      editor.chain().focus().insertContent({
-        type: 'editorialPhotoGrid',
-        attrs: {
-          layout: data.layout,
-          images: data.images,
-          caption: data.caption,
-        },
-      }).insertContent({
-        type: 'paragraph',
-        content: [],
-      }).run();
-      toast.success('Editorial grid inserted!');
+      const target = savedInsertTargetRef.current || computeGridInsertTarget(editor);
+      let insertedCursorPos: number | null = null;
+
+      const success = editor
+        .chain()
+        .command(({ state, tr, dispatch }) => {
+          const gridType = state.schema.nodes.editorialPhotoGrid;
+          const paragraphType = state.schema.nodes.paragraph;
+          if (!gridType || !paragraphType) return false;
+
+          const gridNode = gridType.create({
+            layout: data.layout,
+            images: data.images,
+            caption: data.caption,
+          });
+          const paragraphNode = paragraphType.create();
+          const fragment = Fragment.fromArray([gridNode, paragraphNode]);
+
+          const docSize = state.doc.content.size;
+          const insertFrom = Math.max(0, Math.min(target.from, docSize));
+          const insertTo = Math.max(insertFrom, Math.min(target.to, docSize));
+
+          insertedCursorPos = insertFrom + gridNode.nodeSize + 1;
+
+          if (dispatch) {
+            tr.replaceWith(insertFrom, insertTo, fragment);
+            const safeCursor = Math.max(0, Math.min(insertedCursorPos, tr.doc.content.size));
+            try {
+              tr.setSelection(TextSelection.create(tr.doc, safeCursor));
+            } catch {
+              tr.setSelection(TextSelection.near(tr.doc.resolve(safeCursor)));
+            }
+            tr.scrollIntoView();
+          }
+          return true;
+        })
+        .run();
+
+      if (success) {
+        savedInsertTargetRef.current = null;
+        setGridTargetLabel(undefined);
+        onChangeRef.current(editor.getHTML());
+        requestAnimationFrame(() => {
+          if (!editor.isDestroyed) {
+            editor.commands.focus(insertedCursorPos ?? undefined);
+          }
+        });
+        toast.success('Editorial grid inserted!');
+      } else {
+        toast.error('Failed to insert grid');
+      }
     } catch (err) {
       console.error('Failed to insert editorial grid:', err);
       toast.error('Failed to insert grid');
@@ -840,7 +976,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
 
   return (
     <div className="border border-[#E6DFC6] rounded-xl bg-white overflow-hidden flex flex-col focus-within:border-[#B58B5C] transition-shadow shadow-xs">
-      <MenuBar editor={editor} onOpenGridModal={() => setIsGridModalOpen(true)} />
+      <MenuBar editor={editor} onOpenGridModal={handleOpenGridModal} />
       <div className="flex-1 overflow-y-auto max-h-[600px] relative">
         {editor && (
           <BubbleMenu 
@@ -1017,8 +1153,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       {/* Editorial Photo Grid Modal */}
       <EditorialGridModal 
         isOpen={isGridModalOpen} 
-        onClose={() => setIsGridModalOpen(false)} 
-        onInsert={handleInsertEditorialGrid} 
+        onClose={() => {
+          setIsGridModalOpen(false);
+          savedInsertTargetRef.current = null;
+          setGridTargetLabel(undefined);
+        }} 
+        onInsert={handleInsertEditorialGrid}
+        targetSectionLabel={gridTargetLabel}
       />
     </div>
   );

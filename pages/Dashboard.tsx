@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square, CreditCard } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Unlock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square, CreditCard } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle } from '../utils/formatters';
+import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle, getCleanGalleryDescription, getLockedExtraFileIds, buildUpdatedGalleryTitleJson } from '../utils/formatters';
+import { generateSlug } from '../utils/slug';
 import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
 import { useUpload } from '../contexts/UploadContext';
@@ -26,11 +27,16 @@ export interface DeliveryFileItem {
   file_url: string;
   file_type?: string;
   file_path?: string;
+  title?: string;
   caption?: string;
   download_count?: number;
   created_at?: string;
   expires_at?: string;
   is_selected?: boolean;
+  is_edited?: boolean;
+  is_extra_locked?: boolean;
+  thumbnail_url?: string;
+  thumbnail_path?: string;
   client_note?: string;
 }
 
@@ -48,7 +54,7 @@ interface DashboardGallery extends Gallery {
   analytics: { views: number; clicks: number; viewToday: number; clickToday: number; view7d: number; click7d: number; view30d: number; click30d: number; };
   files?: DeliveryFileItem[];
   password?: string;
-  subGalleries?: Gallery[];
+  subGalleries?: DashboardGallery[];
 }
 
 interface EnrichedActivityLog extends ActivityLog {
@@ -141,6 +147,14 @@ export const Dashboard: React.FC = () => {
   const [newCategory, setNewCategory] = useState('Wedding');
   const [newLayout, setNewLayout] = useState<'grid' | 'swipe'>('grid');
   const [newParentGalleryId, setNewParentGalleryId] = useState<string>('');
+  const [createModalType, setCreateModalType] = useState<'delivery' | 'portfolio'>('delivery');
+  const [newAgreedAmount, setNewAgreedAmount] = useState<string>('');
+  const [newPaidAmount, setNewPaidAmount] = useState<string>('');
+  const [newDeliveryPassword, setNewDeliveryPassword] = useState<string>('');
+  const [newDeliveryShowPassword, setNewDeliveryShowPassword] = useState<boolean>(false);
+  const [newDeliveryAllowDownloads, setNewDeliveryAllowDownloads] = useState<boolean>(true);
+  const [newDeliveryExpiryHours, setNewDeliveryExpiryHours] = useState<number>(168);
+  const [newDeliverySelectionLimit, setNewDeliverySelectionLimit] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -199,8 +213,9 @@ export const Dashboard: React.FC = () => {
   // In-Dashboard Photo Lightbox & Management Modal
   const [selectedPhotoForDetail, setSelectedPhotoForDetail] = useState<DeliveryFileItem | null>(null);
   const [showAllPhotosInGrid, setShowAllPhotosInGrid] = useState<boolean>(false);
-  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'notes'>('all');
+  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'edited' | 'locked' | 'notes'>('all');
   const [photosSort, setPhotosSort] = useState<'newest' | 'oldest' | 'downloads' | 'name'>('newest');
+  const [galleryPhotoSearch, setGalleryPhotoSearch] = useState<string>('');
 
   // ZIP download state
   const [isZipping, setIsZipping] = useState<boolean>(false);
@@ -208,11 +223,24 @@ export const Dashboard: React.FC = () => {
   // Settings & Payment tab editing states
   const [editShootDate, setEditShootDate] = useState<string>('');
   const [editCategory, setEditCategory] = useState<string>('');
+  const [editDeliverySubtitle, setEditDeliverySubtitle] = useState<string>('');
   const [editAgreedBalance, setEditAgreedBalance] = useState<number | ''>('');
   const [editAmountPaid, setEditAmountPaid] = useState<number | ''>('');
   const [editDownloadsBeforeClearing, setEditDownloadsBeforeClearing] = useState<number | ''>('');
+  const [editSelectionLimit, setEditSelectionLimit] = useState<number | ''>('');
+  const [deliveryExpiryHours, setDeliveryExpiryHours] = useState<number>(168);
+  const [editSeoTitle, setEditSeoTitle] = useState<string>('');
+  const [editSeoDescription, setEditSeoDescription] = useState<string>('');
+  const [isSavingSeo, setIsSavingSeo] = useState<boolean>(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState<boolean>(false);
+  const [renameTargetFile, setRenameTargetFile] = useState<DeliveryFileItem | null>(null);
+  const [renameBaseName, setRenameBaseName] = useState<string>('');
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState<boolean>(false);
   const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
+  const [galleryToDelete, setGalleryToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deletingGalleryId, setDeletingGalleryId] = useState<string | null>(null);
 
   const handlePurgeExpired = async () => {
     if (!window.confirm("Clean up expired delivery files?\nThis will permanently delete expired client delivery photos and their watermarks from Cloudflare R2 to reclaim storage space.")) return;
@@ -516,10 +544,10 @@ export const Dashboard: React.FC = () => {
               }
           });
 
-          // Get latest file for cover and calculate downloads
+          // Get all media files for this gallery (use * so optional columns never trigger PostgREST 42703 errors)
           const { data: allFiles, error: filesError } = await supabase
             .from('files')
-            .select('id, file_url, file_type, file_path, caption, download_count, created_at, expires_at')
+            .select('*')
             .eq('gallery_id', gallery.id)
             .neq('file_path', 'GALLERY_PASSWORD')
             .order('created_at', { ascending: false });
@@ -643,10 +671,22 @@ export const Dashboard: React.FC = () => {
             }
           }
 
-          const subGalleries = (galleriesData || []).filter(g => getParentGalleryId(g) === gallery.id);
+          let parsedSeoTitle = (gallery as any).seo_title || '';
+          let parsedSeoDesc = (gallery as any).seo_description || '';
+          if (gallery.title && gallery.title.trim().startsWith('{')) {
+            try {
+              const metaObj = JSON.parse(gallery.title);
+              if (!parsedSeoTitle && metaObj.seoTitle) parsedSeoTitle = metaObj.seoTitle;
+              if (!parsedSeoDesc && metaObj.seoDescription) parsedSeoDesc = metaObj.seoDescription;
+            } catch {}
+          }
+
+          const galleryLockedExtrasSet = new Set(getLockedExtraFileIds(gallery));
 
           return {
             ...gallery,
+            seo_title: parsedSeoTitle,
+            seo_description: parsedSeoDesc,
             itemCount,
             downloadCount,
             gallerySizeBytes,
@@ -661,26 +701,47 @@ export const Dashboard: React.FC = () => {
             isExpired,
             timeRemainingText,
             selectionNotesCount,
-            files: (allFiles || []).map(f => ({
+            files: (allFiles || []).map((f: any) => ({
               id: f.id,
               file_url: f.file_url,
               file_type: f.file_type,
               file_path: f.file_path,
+              title: f.title,
               caption: f.caption,
               download_count: f.download_count,
               created_at: f.created_at,
               expires_at: f.expires_at,
               is_selected: Boolean(selectionsMap[f.id]),
+              is_edited: Boolean(f.is_edited),
+              is_extra_locked: galleryLockedExtrasSet.has(f.id),
+              thumbnail_url: f.thumbnail_url,
+              thumbnail_path: f.thumbnail_path,
               client_note: selectionsMap[f.id]?.client_note,
             })),
             password: galleryPassword,
-            subGalleries,
+            subGalleries: [] as DashboardGallery[],
           };
         })
       );
+
+      const withSubGalleries: DashboardGallery[] = enrichedGalleries.map((gal) => {
+        const parentLockedSet = new Set(getLockedExtraFileIds(gal));
+        return {
+          ...gal,
+          subGalleries: enrichedGalleries
+            .filter((child) => getParentGalleryId(child) === gal.id)
+            .map((child) => ({
+              ...child,
+              files: child.files?.map((f) => ({
+                ...f,
+                is_extra_locked: Boolean(f.is_extra_locked || parentLockedSet.has(f.id)),
+              })),
+            })),
+        };
+      });
       
       // Sort galleries
-      const sortedGalleries = enrichedGalleries.sort((a, b) => {
+      const sortedGalleries = withSubGalleries.sort((a, b) => {
           if (a.selection_status === 'submitted' && b.selection_status !== 'submitted') return -1;
           if (a.selection_status !== 'submitted' && b.selection_status === 'submitted') return 1;
           return 0;
@@ -708,12 +769,28 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (mode?: 'delivery' | 'portfolio') => {
+    const resolvedMode: 'delivery' | 'portfolio' =
+      userEmail !== 'ringa.michael@gmail.com'
+        ? 'delivery'
+        : mode || (currentView === 'galleries' ? 'portfolio' : 'delivery');
+
+    setCreateModalType(resolvedMode);
     setNewClientName('');
     setNewDescription('');
     setNewParentGalleryId('');
-    if (userEmail !== 'ringa.michael@gmail.com') {
-      setNewCategory(''); // Force empty so they can only create client deliveries
+    setNewAgreedAmount('');
+    setNewPaidAmount('');
+    setNewDeliveryPassword('');
+    setNewDeliveryShowPassword(false);
+    setNewDeliveryAllowDownloads(true);
+    setNewDeliveryExpiryHours(168);
+    setNewDeliverySelectionLimit('');
+
+    if (resolvedMode === 'delivery') {
+      setNewCategory('');
+    } else if (!newCategory || newCategory.trim() === '') {
+      setNewCategory('Wedding');
     }
     setIsCreateModalOpen(true);
   };
@@ -722,14 +799,17 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!newClientName.trim()) return;
 
-    let matchedCategory = newCategory;
-    const existingMatch = galleries.find(g => g.category && g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase() === newCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase());
-    if (existingMatch && existingMatch.category) {
+    const isDeliveryMode = createModalType === 'delivery' || userEmail !== 'ringa.michael@gmail.com';
+    let matchedCategory = isDeliveryMode ? '' : newCategory;
+    if (!isDeliveryMode) {
+      const existingMatch = galleries.find(g => g.category && g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase() === newCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim().toLowerCase());
+      if (existingMatch && existingMatch.category) {
         matchedCategory = existingMatch.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
+      }
     }
     const baseCategory = matchedCategory.replace(/\s*\[(swipe|grid)\]/gi, '').trim();
-    const isPortfolio = Boolean(baseCategory !== '' && baseCategory.toLowerCase() !== 'delivery') || Boolean(newParentGalleryId);
-    const deliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
+    const isPortfolio = !isDeliveryMode && (Boolean(baseCategory !== '' && baseCategory.toLowerCase() !== 'delivery') || Boolean(newParentGalleryId));
+    const deliveriesCount = galleries.filter(g => (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !getParentGalleryId(g)).length;
     const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
     if (!isPortfolio && deliveriesCount >= 50) {
@@ -747,11 +827,12 @@ export const Dashboard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const cleanClient = newClientName.trim();
       const cleanDesc = newDescription.trim();
-      let payloadTitle = `${newClientName}'s Gallery`;
+      let payloadTitle = `${cleanClient}'s Gallery`;
       if (isPortfolio) {
         payloadTitle = JSON.stringify({
-          projectTitle: newClientName,
+          projectTitle: cleanClient,
           projectDescription: cleanDesc,
           parentGalleryId: newParentGalleryId || null,
         });
@@ -760,32 +841,116 @@ export const Dashboard: React.FC = () => {
       }
 
       // If user selected a parent gallery, inherit parent category if blank
-      let resolvedCategory = isPortfolio ? `${baseCategory || 'Editorial'} [${newLayout}]` : newCategory;
-      if (newParentGalleryId) {
+      let resolvedCategory = isPortfolio ? `${baseCategory || 'Editorial'} [${newLayout}]` : '';
+      if (isPortfolio && newParentGalleryId) {
         const parentGal = galleries.find(g => g.id === newParentGalleryId);
         if (parentGal?.category) {
           resolvedCategory = parentGal.category;
         }
       }
 
+      const agreedVal = !isPortfolio && newAgreedAmount.trim() !== '' ? Math.max(0, Number(newAgreedAmount) || 0) : 0;
+      const paidVal = !isPortfolio && newPaidAmount.trim() !== '' ? Math.max(0, Number(newPaidAmount) || 0) : 0;
+      const selectionModeEnabled = !isPortfolio && !newDeliveryAllowDownloads;
+      const selectionLimitVal = !isPortfolio && newDeliverySelectionLimit.trim() !== '' ? Math.max(0, Number(newDeliverySelectionLimit) || 0) : 0;
+
       const { data, error } = await supabase
         .from('galleries')
         .insert([{
           photographer_id: user.id,
-          client_name: newClientName,
+          client_name: cleanClient,
           title: payloadTitle,
           category: resolvedCategory,
-          agreed_balance: 0,
-          amount_paid: 0,
+          agreed_balance: agreedVal,
+          amount_paid: paidVal,
+          downloads_before_clearing: 0,
+          selection_enabled: selectionModeEnabled,
+          selection_limit: selectionLimitVal,
           link_enabled: true
         }])
         .select()
         .single();
 
       if (error) throw error;
-      toast.success(`Gallery "${newClientName}" created successfully!`);
+
+      // Persist chosen expiration hours preference for this gallery
+      if (!isPortfolio) {
+        try {
+          localStorage.setItem(`gallery_expiry_${data.id}`, String(newDeliveryExpiryHours));
+        } catch {}
+      }
+
+      // Save optional access password immediately for new delivery portals (Supabase + backend API)
+      const cleanPass = !isPortfolio ? newDeliveryPassword.trim() : '';
+      if (!isPortfolio && cleanPass) {
+        try {
+          await fetch(`/api/gallery/${data.id}/password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: cleanPass })
+          });
+        } catch (apiPwErr) {
+          console.warn('Backend password endpoint warning:', apiPwErr);
+        }
+        try {
+          await supabase.from('files').insert([{
+            gallery_id: data.id,
+            file_url: 'PASSWORD_SETTING',
+            file_path: 'GALLERY_PASSWORD',
+            file_type: 'image',
+            caption: cleanPass,
+            expires_at: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString()
+          }]);
+        } catch (pwErr) {
+          console.warn('Password row insert warning:', pwErr);
+        }
+      }
+
+      // Log gallery creation in activity logs (non-blocking)
+      try {
+        await supabase.from('activity_logs').insert({
+          gallery_id: data.id,
+          action: isPortfolio
+            ? `Published portfolio collection "${cleanClient}"`
+            : `Created delivery portal "${cleanClient}"`
+        });
+      } catch {
+        // Ignore logging errors
+      }
+
+      toast.success(
+        isPortfolio
+          ? `Portfolio gallery "${cleanClient}" created successfully!`
+          : `Delivery portal "${cleanClient}" is ready! Upload photos or share the link below.`
+      );
       setIsCreateModalOpen(false);
-      navigate(`/gallery/${data.id}`);
+
+      if (!isPortfolio) {
+        // Stay right inside the new Deliveries UI and open the newly created portal!
+        setSelectedDeliveryId(data.id);
+        setEditableDeliveryTitle(data.client_name);
+        setEditDeliverySubtitle(cleanDesc);
+        setDeliveryViewMode('detail');
+        setDeliveryTab('gallery');
+        setDeliveryPassword(cleanPass);
+        setDeliveryIsPrivate(Boolean(cleanPass));
+        setDeliveryAllowDownloads(!selectionModeEnabled);
+        setDeliveryAllowFavorites(selectionModeEnabled);
+        setDeliveryExpiryHours(newDeliveryExpiryHours);
+        setEditSelectionLimit(selectionLimitVal || '');
+        setEditAgreedBalance(agreedVal);
+        setEditAmountPaid(paidVal);
+        setActiveSectionFilter('all');
+        setShowAllPhotosInGrid(false);
+        setGalleryPhotoSearch('');
+
+        await fetchData();
+        if (currentView !== 'delivery') {
+          navigate(`/dashboard?view=delivery&galleryId=${data.id}`);
+        }
+      } else {
+        navigate(`/gallery/${data.id}`);
+      }
     } catch (error: any) {
       alert(`Database Error: ${error.message || 'Error creating gallery'}. Did you add the 'category' column?`);
       console.error(error);
@@ -896,11 +1061,19 @@ export const Dashboard: React.FC = () => {
   });
   const globalCtr = globalViews > 0 ? ((globalClicks / globalViews) * 100).toFixed(1) : '0.0';
 
-  const clientDeliveriesCount = galleries.filter(g => !g.category || g.category.trim() === '').length;
+  const clientDeliveriesCount = galleries.filter(g => {
+    const parentId = getParentGalleryId(g);
+    const hasExistingParent = Boolean(parentId && galleries.some(p => p.id === parentId));
+    return (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !hasExistingParent;
+  }).length;
   const portfolioCount = galleries.filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT').length;
 
   const deliveryGalleries = React.useMemo(() => {
-    return galleries.filter(g => !g.category || g.category.trim() === '');
+    return galleries.filter(g => {
+      const parentId = getParentGalleryId(g);
+      const hasExistingParent = Boolean(parentId && galleries.some(p => p.id === parentId));
+      return (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery') && !hasExistingParent;
+    });
   }, [galleries]);
 
   const expiredDeliveryCount = React.useMemo(() => {
@@ -921,19 +1094,52 @@ export const Dashboard: React.FC = () => {
     return deliveryGalleries[0];
   }, [deliveryGalleries, selectedDeliveryId]);
 
+  const galleryIdParam = searchParams.get('galleryId');
+
+  useEffect(() => {
+    if (galleryIdParam && deliveryGalleries.some(g => g.id === galleryIdParam)) {
+      setSelectedDeliveryId(galleryIdParam);
+      setDeliveryViewMode('detail');
+    }
+  }, [galleryIdParam, deliveryGalleries]);
+
   useEffect(() => {
     if (currentDelivery) {
       if (!selectedDeliveryId) {
         setSelectedDeliveryId(currentDelivery.id);
       }
       setDeliveryPassword(currentDelivery.password || '');
-      setDeliveryIsPrivate(Boolean(currentDelivery.password || currentDelivery.link_enabled));
+      setDeliveryIsPrivate(Boolean(currentDelivery.password));
+      setDeliveryAllowDownloads(!currentDelivery.selection_enabled);
+      setDeliveryAllowFavorites(Boolean(currentDelivery.selection_enabled));
       setEditableDeliveryTitle(currentDelivery.client_name);
+      setEditDeliverySubtitle(getCleanGalleryDescription(currentDelivery));
       setEditAgreedBalance(currentDelivery.agreed_balance ?? 0);
       setEditAmountPaid(currentDelivery.amount_paid ?? 0);
       setEditDownloadsBeforeClearing(currentDelivery.downloads_before_clearing ?? 0);
+      setEditSelectionLimit(currentDelivery.selection_limit || '');
+      setEditSeoTitle(currentDelivery.seo_title || '');
+      setEditSeoDescription(currentDelivery.seo_description || '');
+      setSelectedPhotoIds([]);
+      setActiveSectionFilter('all');
+
+      try {
+        const savedExp = localStorage.getItem(`gallery_expiry_${currentDelivery.id}`);
+        setDeliveryExpiryHours(savedExp ? parseFloat(savedExp) : 168);
+      } catch {
+        setDeliveryExpiryHours(168);
+      }
     }
   }, [currentDelivery?.id]);
+
+  const handleExpiryHoursChange = (hours: number) => {
+    setDeliveryExpiryHours(hours);
+    if (currentDelivery?.id) {
+      try {
+        localStorage.setItem(`gallery_expiry_${currentDelivery.id}`, String(hours));
+      } catch {}
+    }
+  };
 
   const handleSaveDeliveryTitle = async () => {
     setDeliveryTitleEditing(false);
@@ -956,6 +1162,18 @@ export const Dashboard: React.FC = () => {
     if (!currentDelivery) return;
     try {
       const cleanPass = newPass.trim();
+
+      // Sync with backend password store first
+      try {
+        await fetch(`/api/gallery/${currentDelivery.id}/password`, {
+          method: cleanPass ? 'POST' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: cleanPass ? JSON.stringify({ password: cleanPass }) : undefined
+        });
+      } catch (apiErr) {
+        console.warn("Backend password endpoint warning:", apiErr);
+      }
+
       if (!cleanPass) {
         await supabase
           .from('files')
@@ -963,9 +1181,12 @@ export const Dashboard: React.FC = () => {
           .eq('gallery_id', currentDelivery.id)
           .eq('file_path', 'GALLERY_PASSWORD');
         setDeliveryPassword('');
-        toast.success("Password protection removed");
+        setDeliveryIsPrivate(false);
+        toast.success("Password protection removed (portal is open via link)");
+        await fetchData();
         return;
       }
+
       const { data: existing } = await supabase
         .from('files')
         .select('id')
@@ -991,20 +1212,304 @@ export const Dashboard: React.FC = () => {
           }]);
       }
       setDeliveryPassword(cleanPass);
+      setDeliveryIsPrivate(true);
       toast.success("Access password saved");
+      await fetchData();
     } catch (err) {
       console.error("Error saving password:", err);
       toast.error("Failed to update password");
     }
   };
 
+  const handleToggleDeliveryPrivacy = async () => {
+    if (!currentDelivery) return;
+    if (deliveryIsPrivate) {
+      // Turning OFF password protection: clear stored password immediately if one was set
+      if (currentDelivery.password || deliveryPassword.trim()) {
+        await handleSaveDeliveryPassword('');
+      } else {
+        setDeliveryIsPrivate(false);
+      }
+    } else {
+      setDeliveryIsPrivate(true);
+    }
+  };
+
+  const handleGenerateDeliveryPassword = async () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    let pass = '';
+    for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    setDeliveryPassword(pass);
+    setDeliveryIsPrivate(true);
+    await handleSaveDeliveryPassword(pass);
+  };
+
+  const handleToggleLinkEnabled = async () => {
+    if (!currentDelivery) return;
+    try {
+      const nextStatus = !currentDelivery.link_enabled;
+      const updatePayload: any = { link_enabled: nextStatus };
+
+      if (nextStatus && currentDelivery.selection_status === 'submitted') {
+        if (window.confirm("The client has already submitted their selection. Do you also want to reopen the selection allowing them to edit/add their selections?")) {
+          updatePayload.selection_status = 'pending';
+        }
+      }
+
+      const { error } = await supabase
+        .from('galleries')
+        .update(updatePayload)
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+
+      toast.success(nextStatus ? 'Client portal link is now Live' : 'Client portal link is now Hidden');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error toggling portal link:', err);
+      toast.error('Failed to update portal status: ' + (err?.message || 'Error'));
+    }
+  };
+
+  const handleReopenSelection = async () => {
+    if (!currentDelivery) return;
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ selection_status: 'pending', link_enabled: true })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success('Client selection reopened — client can now update their picks');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error reopening selection:', err);
+      toast.error('Failed to reopen selection');
+    }
+  };
+
+  const handleToggleSelectionMode = async (enableSelection: boolean) => {
+    if (!currentDelivery) return;
+    setDeliveryAllowFavorites(enableSelection);
+    setDeliveryAllowDownloads(!enableSelection);
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ selection_enabled: enableSelection })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success(
+        enableSelection
+          ? 'Client Selection Mode enabled (clients can heart/pick photos)'
+          : 'Direct Download Mode enabled (clients can download unlocked photos)'
+      );
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error toggling selection mode:', err);
+      toast.error('Failed to update selection mode');
+    }
+  };
+
+  const handleUpdateSelectionLimit = async (limitVal: number) => {
+    if (!currentDelivery) return;
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ selection_limit: limitVal })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+      toast.success(limitVal > 0 ? `Agreed photo limit set to ${limitVal}` : 'Photo limit set to Unlimited');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error updating selection limit:', err);
+      toast.error('Failed to update agreed photo limit');
+    }
+  };
+
+  const handleSaveSeoInfo = async () => {
+    if (!currentDelivery) return;
+    setIsSavingSeo(true);
+    try {
+      const seoTitleVal = editSeoTitle.trim();
+      const seoDescVal = editSeoDescription.trim();
+
+      // Try updating dedicated SEO columns first (if present in DB schema)
+      const { error: colErr } = await supabase
+        .from('galleries')
+        .update({
+          seo_title: seoTitleVal,
+          seo_description: seoDescVal,
+        })
+        .eq('id', currentDelivery.id);
+
+      if (colErr) {
+        // Fallback: persist SEO metadata inside JSON `title` column without losing existing title/description
+        let meta: Record<string, any> = {
+          projectTitle: getCleanGalleryTitle(currentDelivery),
+          projectDescription: getCleanGalleryDescription(currentDelivery),
+          parentGalleryId: getParentGalleryId(currentDelivery) || null,
+        };
+        if (currentDelivery.title && currentDelivery.title.trim().startsWith('{')) {
+          try {
+            meta = { ...meta, ...JSON.parse(currentDelivery.title) };
+          } catch {}
+        }
+        meta.seoTitle = seoTitleVal;
+        meta.seoDescription = seoDescVal;
+
+        const { error: jsonErr } = await supabase
+          .from('galleries')
+          .update({ title: JSON.stringify(meta) })
+          .eq('id', currentDelivery.id);
+        if (jsonErr) throw jsonErr;
+      }
+
+      toast.success('SEO & Open Graph metadata saved');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Failed to save SEO info:', err);
+      toast.error('Failed to save SEO settings');
+    } finally {
+      setIsSavingSeo(false);
+    }
+  };
+
+  const handleApplyCustomExpiration = async (hoursToApply = deliveryExpiryHours) => {
+    if (!currentDelivery) return;
+    const allDeliveryFiles = [
+      ...(currentDelivery.files || []),
+      ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))
+    ];
+    if (allDeliveryFiles.length === 0) {
+      toast.info('Upload files first — new uploads will automatically use this expiration');
+      return;
+    }
+
+    const targetIds = [currentDelivery.id, ...(currentDelivery.subGalleries || []).map(s => s.id)];
+    const newExpiry = new Date();
+    newExpiry.setTime(newExpiry.getTime() + hoursToApply * 60 * 60 * 1000);
+    const formattedTime = newExpiry.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+    if (!window.confirm(`Update expiration for all ${allDeliveryFiles.length} files?\n\nThey will expire ${hoursToApply >= 87600 ? 'never (archive)' : `in ${hoursToApply} hours (approx ${formattedTime})`}.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ expires_at: newExpiry.toISOString() })
+        .in('gallery_id', targetIds)
+        .neq('file_path', 'GALLERY_PASSWORD');
+      if (error) throw error;
+
+      await supabase
+        .from('galleries')
+        .update({ link_enabled: true })
+        .in('id', targetIds);
+
+      try {
+        await supabase.from('activity_logs').insert({
+          gallery_id: currentDelivery.id,
+          action: `Extended expiration for ${allDeliveryFiles.length} files by ${hoursToApply} hours`
+        });
+      } catch {}
+
+      toast.success(`Updated expiration for ${allDeliveryFiles.length} files!`);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error applying expiration:', err);
+      toast.error('Failed to update expiration');
+    }
+  };
+
+  const handleExportSelectionsCSV = () => {
+    if (!currentDelivery) return;
+    const allFiles = [
+      ...(currentDelivery.files || []),
+      ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))
+    ];
+    if (allFiles.length === 0) {
+      toast.error('No files in this gallery to export');
+      return;
+    }
+
+    const selectedList = allFiles.filter(f => f.is_selected);
+    const limit = currentDelivery.selection_limit || 0;
+    const rows = [
+      ['File Name', 'Client Selected', 'Main Selection', 'Extra Selection', 'Client Note', 'Edited', 'Downloads'],
+      ...allFiles.map((f) => {
+        const selIdx = selectedList.findIndex(sf => sf.id === f.id);
+        const isSel = selIdx !== -1;
+        const isExtra = isSel && limit > 0 && selIdx >= limit;
+        const isMain = isSel && !isExtra;
+        return [
+          f.title || f.file_path?.split('/').pop() || f.file_url.split('/').pop() || 'file',
+          isSel ? 'Yes' : 'No',
+          isMain ? 'Yes' : 'No',
+          isExtra ? 'Yes' : 'No',
+          f.client_note || '',
+          f.is_edited ? 'Yes' : 'No',
+          f.download_count || 0
+        ];
+      })
+    ];
+
+    const csvContent = rows
+      .map(row => row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${(currentDelivery.client_name || 'gallery').replace(/\s+/g, '_')}_selections.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Selections CSV exported!');
+  };
+
+  const filterDuplicateDeliveryFiles = (filesList: File[], existingFiles: DeliveryFileItem[]) => {
+    const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9.\_-]/g, '_');
+    const unique: File[] = [];
+    let skipped = 0;
+
+    filesList.forEach((f) => {
+      const sanitized = sanitizeName(f.name);
+      const dup = existingFiles.some((ef) => {
+        const efName = ef.title || ef.file_path?.split('/').pop();
+        return efName === sanitized;
+      });
+      if (dup) skipped++;
+      else unique.push(f);
+    });
+
+    if (skipped > 0) {
+      if (unique.length === 0) {
+        toast.error('All selected files have already been uploaded.');
+      } else {
+        toast.info(`${skipped} duplicate file(s) skipped.`);
+      }
+    }
+    return unique;
+  };
+
   const handleUploadMedia = async (e: React.ChangeEvent<HTMLInputElement>, isVideo = false) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0 || !currentDelivery) return;
-    const filesArray = Array.from(fileList);
+    const targetGalleryId = activeSectionFilter !== 'all' ? activeSectionFilter : currentDelivery.id;
+    const targetSection = currentDelivery.subGalleries?.find(s => s.id === activeSectionFilter);
+    const existingFiles = targetSection ? (targetSection.files || []) : (currentDelivery.files || []);
+    const filesArray = filterDuplicateDeliveryFiles(Array.from(fileList), existingFiles);
+    if (filesArray.length === 0) {
+      if (e.target) e.target.value = '';
+      return;
+    }
     try {
-      toast.info(`Uploading ${filesArray.length} ${isVideo ? 'video(s)' : 'photo(s)'} to ${currentDelivery.client_name}...`);
-      await uploadFiles(currentDelivery.id, filesArray, 876000);
+      const targetName = targetSection
+        ? `${currentDelivery.client_name} · ${getCleanGalleryTitle(targetSection)}`
+        : currentDelivery.client_name;
+      toast.info(`Uploading ${filesArray.length} ${isVideo ? 'video(s)' : 'photo(s)'} to ${targetName}...`);
+      await uploadFiles(targetGalleryId, filesArray, deliveryExpiryHours || 168);
       toast.success(`${filesArray.length} file(s) uploaded successfully!`);
       await fetchData();
     } catch (err: any) {
@@ -1030,7 +1535,7 @@ export const Dashboard: React.FC = () => {
         projectDescription: newSectionDescription.trim(),
         parentGalleryId: currentDelivery.id,
       });
-      const { error } = await supabase
+      const { data: newSection, error } = await supabase
         .from('galleries')
         .insert([{
           photographer_id: user.id,
@@ -1040,13 +1545,18 @@ export const Dashboard: React.FC = () => {
           agreed_balance: 0,
           amount_paid: 0,
           link_enabled: true
-        }]);
+        }])
+        .select()
+        .single();
       if (error) throw error;
-      toast.success(`Section "${newSectionName}" created!`);
+      toast.success(`Section "${newSectionName}" created! Select it below to upload directly into it.`);
       setNewSectionName('');
       setNewSectionDescription('');
       setIsCreateSectionModalOpen(false);
       await fetchData();
+      if (newSection?.id) {
+        setActiveSectionFilter(newSection.id);
+      }
     } catch (err: any) {
       console.error("Error creating section:", err);
       toast.error("Failed to create section: " + (err.message || 'Error'));
@@ -1055,13 +1565,14 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleSetCoverPhoto = async (photoUrl: string) => {
-    if (!currentDelivery) return;
+  const handleSetCoverPhoto = async (file: DeliveryFileItem) => {
+    if (!currentDelivery || !file?.id) return;
     try {
+      const now = new Date().toISOString();
       const { error } = await supabase
-        .from('galleries')
-        .update({ coverUrl: photoUrl })
-        .eq('id', currentDelivery.id);
+        .from('files')
+        .update({ created_at: now })
+        .eq('id', file.id);
       if (error) throw error;
       toast.success("Gallery cover photo updated!");
       setIsChangeCoverModalOpen(false);
@@ -1069,6 +1580,277 @@ export const Dashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       toast.error("Failed to update cover photo");
+    }
+  };
+
+  const applyLocalEditedState = (targetIds: string[], markAsEdited: boolean) => {
+    const idSet = new Set(targetIds);
+    setGalleries(prev =>
+      prev.map(g => ({
+        ...g,
+        files: g.files?.map(f => (idSet.has(f.id) ? { ...f, is_edited: markAsEdited } : f)),
+        subGalleries: g.subGalleries?.map(sub => ({
+          ...sub,
+          files: sub.files?.map(f => (idSet.has(f.id) ? { ...f, is_edited: markAsEdited } : f)),
+        })),
+      })),
+    );
+  };
+
+  const handleToggleSingleEdited = async (file: DeliveryFileItem) => {
+    const nextEdited = !file.is_edited;
+    applyLocalEditedState([file.id], nextEdited);
+    if (selectedPhotoForDetail?.id === file.id) {
+      setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_edited: nextEdited });
+    }
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ is_edited: nextEdited })
+        .eq('id', file.id);
+      if (error) throw error;
+      toast.success(nextEdited ? 'Marked as Edited' : 'Unmarked Edited status');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Toggle edited failed:', err);
+      applyLocalEditedState([file.id], !nextEdited);
+      if (selectedPhotoForDetail?.id === file.id) {
+        setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_edited: !nextEdited });
+      }
+      toast.error('Failed to update edited status');
+    }
+  };
+
+  const handleMarkFilesEdited = async (targetIds: string[], markAsEdited: boolean) => {
+    if (targetIds.length === 0) return;
+    applyLocalEditedState(targetIds, markAsEdited);
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({ is_edited: markAsEdited })
+        .in('id', targetIds);
+      if (error) throw error;
+      toast.success(`${targetIds.length} photo(s) ${markAsEdited ? 'marked as Edited' : 'unmarked'}`);
+      setSelectedPhotoIds([]);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Bulk edit failed:', err);
+      toast.error('Failed to update edited status');
+      await fetchData();
+    }
+  };
+
+  const handleBulkToggleEdited = async (markAsEdited: boolean) => {
+    await handleMarkFilesEdited(selectedPhotoIds, markAsEdited);
+  };
+
+  const applyLocalExtraLockState = (galleryId: string, nextLockedIds: string[], updatedTitleJson: string) => {
+    const idSet = new Set(nextLockedIds);
+    setGalleries(prev =>
+      prev.map(g => {
+        if (g.id !== galleryId) return g;
+        return {
+          ...g,
+          title: updatedTitleJson,
+          files: g.files?.map(f => ({ ...f, is_extra_locked: idSet.has(f.id) })),
+          subGalleries: g.subGalleries?.map(sub => {
+            const subOwnSet = new Set(getLockedExtraFileIds(sub));
+            return {
+              ...sub,
+              files: sub.files?.map(f => ({ ...f, is_extra_locked: idSet.has(f.id) || subOwnSet.has(f.id) })),
+            };
+          }),
+        };
+      }),
+    );
+  };
+
+  const handleMarkFilesExtraLocked = async (targetIds: string[], lockAsExtra: boolean) => {
+    if (!currentDelivery || targetIds.length === 0) return;
+    const prevTitle = currentDelivery.title;
+    const existingLocked = new Set([
+      ...getLockedExtraFileIds(currentDelivery),
+      ...((currentDelivery.subGalleries || []).flatMap(s => getLockedExtraFileIds(s))),
+    ]);
+    targetIds.forEach(id => {
+      if (lockAsExtra) existingLocked.add(id);
+      else existingLocked.delete(id);
+    });
+    const nextLockedIds = Array.from(existingLocked);
+    const updatedTitleJson = buildUpdatedGalleryTitleJson(currentDelivery, {
+      lockedExtraFileIds: nextLockedIds,
+    });
+
+    applyLocalExtraLockState(currentDelivery.id, nextLockedIds, updatedTitleJson);
+    if (selectedPhotoForDetail && targetIds.includes(selectedPhotoForDetail.id)) {
+      setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_extra_locked: lockAsExtra });
+    }
+
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ title: updatedTitleJson })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+
+      // Also keep sub-galleries in sync if unlocking photos that were locked on a sub-gallery
+      if (!lockAsExtra && currentDelivery.subGalleries?.length) {
+        const targetSet = new Set(targetIds);
+        for (const sub of currentDelivery.subGalleries) {
+          const subIds = getLockedExtraFileIds(sub);
+          const filtered = subIds.filter(id => !targetSet.has(id));
+          if (filtered.length !== subIds.length) {
+            await supabase
+              .from('galleries')
+              .update({ title: buildUpdatedGalleryTitleJson(sub, { lockedExtraFileIds: filtered }) })
+              .eq('id', sub.id);
+          }
+        }
+      }
+
+      toast.success(
+        lockAsExtra
+          ? `${targetIds.length} extra image${targetIds.length === 1 ? '' : 's'} locked — client will be asked to pay to download high-res`
+          : `${targetIds.length} image${targetIds.length === 1 ? '' : 's'} unlocked for high-res download`
+      );
+      if (selectedPhotoIds.length > 0 && targetIds.length > 1) {
+        setSelectedPhotoIds([]);
+      }
+      await fetchData();
+    } catch (err: any) {
+      console.error('Extra lock update failed:', err);
+      const prevIds = getLockedExtraFileIds({ title: prevTitle, client_name: currentDelivery.client_name });
+      applyLocalExtraLockState(currentDelivery.id, prevIds, prevTitle || '');
+      if (selectedPhotoForDetail && targetIds.includes(selectedPhotoForDetail.id)) {
+        setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_extra_locked: !lockAsExtra });
+      }
+      toast.error('Failed to update extra image lock');
+    }
+  };
+
+  const handleToggleSingleExtraLock = async (file: DeliveryFileItem) => {
+    await handleMarkFilesExtraLocked([file.id], !file.is_extra_locked);
+  };
+
+  const handleBulkToggleExtraLock = async (lockAsExtra: boolean) => {
+    await handleMarkFilesExtraLocked(selectedPhotoIds, lockAsExtra);
+    setSelectedPhotoIds([]);
+  };
+
+  const handleOpenRenameModal = (singleFile?: DeliveryFileItem) => {
+    if (singleFile) {
+      setRenameTargetFile(singleFile);
+      const currentName = singleFile.title || singleFile.file_path?.split('/').pop() || singleFile.file_url.split('/').pop() || '';
+      const noExt = currentName.includes('.') ? currentName.substring(0, currentName.lastIndexOf('.')) : currentName;
+      setRenameBaseName(noExt);
+      setIsRenameModalOpen(true);
+      return;
+    }
+    if (selectedPhotoIds.length === 0 || !currentDelivery) return;
+    setRenameTargetFile(null);
+    if (selectedPhotoIds.length === 1) {
+      const allFiles = [...(currentDelivery.files || []), ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))];
+      const f = allFiles.find(x => x.id === selectedPhotoIds[0]);
+      const currentName = f?.title || f?.file_path?.split('/').pop() || f?.file_url.split('/').pop() || '';
+      const noExt = currentName.includes('.') ? currentName.substring(0, currentName.lastIndexOf('.')) : currentName;
+      setRenameBaseName(noExt);
+    } else {
+      setRenameBaseName(getCleanGalleryTitle(currentDelivery));
+    }
+    setIsRenameModalOpen(true);
+  };
+
+  const confirmRenamePhotos = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentDelivery || !renameBaseName.trim()) return;
+    const allFiles = [...(currentDelivery.files || []), ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))];
+    const targetFiles = renameTargetFile ? [renameTargetFile] : allFiles.filter(f => selectedPhotoIds.includes(f.id));
+    if (targetFiles.length === 0) return;
+
+    setIsRenaming(true);
+    try {
+      const updates = targetFiles.map((f, i) => {
+        const oldName = f.title || f.file_path?.split('/').pop() || f.file_url.split('/').pop() || '';
+        const ext = oldName.includes('.') ? oldName.substring(oldName.lastIndexOf('.')) : '';
+        let stripped = renameBaseName.trim();
+        if (stripped.includes('.')) stripped = stripped.substring(0, stripped.lastIndexOf('.'));
+        const seq = String(i + 1).padStart(3, '0');
+        const newName = targetFiles.length === 1 ? `${stripped}${ext}` : `${stripped}_${seq}${ext}`;
+        return { id: f.id, title: newName };
+      });
+
+      for (const upd of updates) {
+        const { error } = await supabase.from('files').update({ title: upd.title }).eq('id', upd.id);
+        if (error) throw error;
+      }
+
+      toast.success(`Renamed ${updates.length} ${updates.length === 1 ? 'file' : 'files'}`);
+      setSelectedPhotoIds([]);
+      setRenameTargetFile(null);
+      setIsRenameModalOpen(false);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Rename error:', err);
+      toast.error('Failed to rename files: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleBulkDeletePhotos = async () => {
+    if (selectedPhotoIds.length === 0 || !currentDelivery) return;
+    if (!window.confirm(`Permanently delete ${selectedPhotoIds.length} selected photo(s) from database & Cloudflare R2?`)) return;
+    const allFiles = [...(currentDelivery.files || []), ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))];
+    const filesToDelete = allFiles.filter(f => selectedPhotoIds.includes(f.id));
+    try {
+      const paths = filesToDelete.map(f => f.file_path).filter(Boolean) as string[];
+      if (paths.length > 0) {
+        await fetch(getApiUrl('/api/delete-file'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePaths: paths })
+        });
+      }
+      const { error } = await supabase.from('files').delete().in('id', selectedPhotoIds);
+      if (error) throw error;
+      toast.success(`Deleted ${selectedPhotoIds.length} photo(s)`);
+      setSelectedPhotoIds([]);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error('Failed to delete selected photos');
+    }
+  };
+
+  const handleBulkDownloadZip = async () => {
+    if (selectedPhotoIds.length === 0 || !currentDelivery) return;
+    const allFiles = [...(currentDelivery.files || []), ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))];
+    const validFiles = allFiles.filter(f => selectedPhotoIds.includes(f.id) && f.file_url);
+    if (validFiles.length === 0) return;
+    setIsZipping(true);
+    toast.info(`Preparing ZIP archive of ${validFiles.length} selected file(s)...`);
+    try {
+      const zip = new JSZip();
+      for (let i = 0; i < validFiles.length; i++) {
+        const f = validFiles[i];
+        try {
+          const resp = await fetch(rewriteUrlToR2(f.file_url));
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const ext = f.file_type === 'video' ? 'mp4' : 'jpg';
+            const fname = f.title || f.file_path?.split('/').pop() || `photo_${String(i + 1).padStart(3, '0')}.${ext}`;
+            zip.file(fname, blob);
+          }
+        } catch {}
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${(currentDelivery.client_name || 'gallery').replace(/\s+/g, '_')}_selected.zip`);
+      toast.success('Selected ZIP download started!');
+    } catch (err: any) {
+      console.error('Bulk zip error:', err);
+      toast.error('Failed to create ZIP file');
+    } finally {
+      setIsZipping(false);
     }
   };
 
@@ -1090,6 +1872,7 @@ export const Dashboard: React.FC = () => {
       if (error) throw error;
       toast.success("Photo deleted");
       setSelectedPhotoForDetail(null);
+      setSelectedPhotoIds(prev => prev.filter(id => id !== file.id));
       await fetchData();
     } catch (err: any) {
       console.error("Delete photo error:", err);
@@ -1098,7 +1881,11 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleDownloadAllZip = async () => {
-    if (!currentDelivery || !currentDelivery.files || currentDelivery.files.length === 0) {
+    const allFiles = [
+      ...(currentDelivery?.files || []),
+      ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || []))
+    ].filter(f => f.file_url && !f.file_url.includes('PASSWORD_SETTING'));
+    if (!currentDelivery || allFiles.length === 0) {
       toast.error("No photos available to download in this gallery");
       return;
     }
@@ -1108,17 +1895,16 @@ export const Dashboard: React.FC = () => {
       const zip = new JSZip();
       const folder = zip.folder((currentDelivery.client_name || 'gallery').replace(/[^\w\s-]/g, '')) || zip;
       let fetched = 0;
-      const validFiles = currentDelivery.files.filter(f => f.file_url && !f.file_url.includes('PASSWORD_SETTING'));
 
       await Promise.all(
-        validFiles.map(async (file, index) => {
+        allFiles.map(async (file, index) => {
           try {
             const directUrl = rewriteUrlToR2(file.file_url);
             const resp = await fetch(directUrl);
             if (resp.ok) {
               const blob = await resp.blob();
               const ext = file.file_type === 'video' ? 'mp4' : 'jpg';
-              const fileName = `photo_${String(index + 1).padStart(3, '0')}.${ext}`;
+              const fileName = file.title || file.file_path?.split('/').pop() || `photo_${String(index + 1).padStart(3, '0')}.${ext}`;
               folder.file(fileName, blob);
               fetched++;
             }
@@ -1204,17 +1990,41 @@ export const Dashboard: React.FC = () => {
     setIsSavingSettings(true);
     try {
       const updates: any = {};
+      const nextName = editableDeliveryTitle.trim() || currentDelivery.client_name;
       if (editableDeliveryTitle.trim()) updates.client_name = editableDeliveryTitle.trim();
-      if (editCategory.trim()) updates.category = editCategory.trim();
+      const nextDesc = editDeliverySubtitle.trim();
+      if (currentDelivery.title && currentDelivery.title.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(currentDelivery.title);
+          updates.title = JSON.stringify({
+            ...parsed,
+            projectTitle: nextName,
+            projectDescription: nextDesc,
+          });
+        } catch {
+          updates.title = nextDesc || `${nextName}'s Gallery`;
+        }
+      } else {
+        updates.title = nextDesc || `${nextName}'s Gallery`;
+      }
       if (editAgreedBalance !== '') updates.agreed_balance = Number(editAgreedBalance) || 0;
       if (editAmountPaid !== '') updates.amount_paid = Number(editAmountPaid) || 0;
       if (editDownloadsBeforeClearing !== '') updates.downloads_before_clearing = Number(editDownloadsBeforeClearing) || 0;
+      updates.selection_limit = editSelectionLimit === '' ? 0 : Math.max(0, Number(editSelectionLimit) || 0);
       
       const { error } = await supabase
         .from('galleries')
         .update(updates)
         .eq('id', currentDelivery.id);
       if (error) throw error;
+
+      try {
+        await supabase.from('activity_logs').insert({
+          gallery_id: currentDelivery.id,
+          action: `Updated gallery details`
+        });
+      } catch {}
+
       toast.success("Gallery settings saved successfully");
       fetchData();
     } catch (err: any) {
@@ -1294,7 +2104,7 @@ export const Dashboard: React.FC = () => {
         title: 'Client selection submitted',
         subtitle: `${g.client_name} finalized photo selections`,
         time: formatDate(g.created_at),
-        link: `/gallery/${g.id}`
+        link: `/dashboard?view=delivery&galleryId=${g.id}`
       });
     });
 
@@ -1309,7 +2119,7 @@ export const Dashboard: React.FC = () => {
           title: 'Delivery archive expiring soon',
           subtitle: `${g.client_name} · ${g.timeRemainingText || 'Expiring soon'}`,
           time: g.timeRemainingText || 'Soon',
-          link: `/gallery/${g.id}`
+          link: `/dashboard?view=delivery&galleryId=${g.id}`
         });
       }
     });
@@ -1322,7 +2132,7 @@ export const Dashboard: React.FC = () => {
         title: 'Client selection notes',
         subtitle: `${g.client_name} left notes for photo retouching`,
         time: 'Active',
-        link: `/gallery/${g.id}`
+        link: `/dashboard?view=delivery&galleryId=${g.id}`
       });
     });
 
@@ -1409,7 +2219,7 @@ export const Dashboard: React.FC = () => {
       subtitle: `${g.itemCount > 0 ? `${g.itemCount} photos` : 'Client delivery'} · Watamu`,
       coverUrl: g.coverUrl,
       badgeText: g.timeRemainingText || (g.isExpired ? 'Expired' : 'Active'),
-      link: `/gallery/${g.id}`
+      link: `/dashboard?view=delivery&galleryId=${g.id}`
     }));
 
     if (items.length < 3) {
@@ -1479,55 +2289,126 @@ export const Dashboard: React.FC = () => {
   }, [activities, galleries, searchQuery]);
 
   
-  const handleDeleteGallery = async (e: React.MouseEvent, id: string, name: string) => {
+  const handleDeleteGallery = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete the gallery "${name}"?\nThis action cannot be undone and will permanently delete all associated photos, high-res originals, and watermark files from Cloudflare R2.`)) {
-      return;
-    }
+    setGalleryToDelete({ id, name });
+  };
+
+  const confirmDeleteGallery = async () => {
+    if (!galleryToDelete) return;
+    const { id, name } = galleryToDelete;
+    setDeletingGalleryId(id);
 
     try {
-      // 1. Query all files belonging to this gallery from database
+      // Collect main gallery + any child section/sub-galleries
+      const childIds = galleries
+        .filter((g) => getParentGalleryId(g) === id)
+        .map((g) => g.id);
+      const targetGalleryIds = [id, ...childIds];
+
+      // 1. Query all files belonging to this gallery (and its sections) from database
       const { data: filesData } = await supabase
         .from('files')
-        .select('file_path')
-        .eq('gallery_id', id);
+        .select('file_path, file_url')
+        .in('gallery_id', targetGalleryIds);
 
+      const extractR2Key = (url?: string | null): string | null => {
+        if (!url || !url.startsWith('http')) return null;
+        try {
+          const parsed = new URL(url);
+          if (parsed.hostname.includes('r2.') || parsed.hostname.includes('mwabonje')) {
+            return parsed.pathname.replace(/^\/+/, '') || null;
+          }
+        } catch {
+          // ignore invalid URLs
+        }
+        return null;
+      };
+
+      const r2Paths = new Set<string>();
       if (filesData && filesData.length > 0) {
-        const paths = filesData.map(f => f.file_path).filter(Boolean);
-        if (paths.length > 0) {
-          // Deletes the high-res files AND automatically cleans up their watermark copies in R2
-          await fetch(getApiUrl('/api/delete-file'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filePaths: paths })
-          });
+        filesData.forEach((f: any) => {
+          if (f.file_path && f.file_path !== 'GALLERY_PASSWORD') r2Paths.add(f.file_path);
+          if (f.thumbnail_path) r2Paths.add(f.thumbnail_path);
+          const urlKey = extractR2Key(f.file_url);
+          if (urlKey) r2Paths.add(urlKey);
+          const thumbKey = extractR2Key(f.thumbnail_url);
+          if (thumbKey) r2Paths.add(thumbKey);
+        });
+      }
+
+      if (r2Paths.size > 0) {
+        // Deletes the high-res files AND automatically cleans up their watermark copies in Cloudflare R2
+        const delFileRes = await fetch(getApiUrl('/api/delete-file'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePaths: Array.from(r2Paths) }),
+        });
+        if (!delFileRes.ok) {
+          console.warn('Cloudflare R2 delete-file warning:', await delFileRes.text().catch(() => ''));
         }
       }
 
-      // 2. Delete any remaining folder contents in Cloudflare R2 (e.g. galleries/[id] or [id])
-      await fetch(getApiUrl('/api/delete-folder'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath: `galleries/${id}` })
-      });
-      await fetch(getApiUrl('/api/delete-folder'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath: id })
-      });
+      // 2. Delete all remaining folder objects in Cloudflare R2 (e.g. galleries/[id] or [id])
+      for (const targetId of targetGalleryIds) {
+        const res1 = await fetch(getApiUrl('/api/delete-folder'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderPath: `galleries/${targetId}` }),
+        });
+        if (!res1.ok) {
+          console.warn('Cloudflare R2 delete-folder (galleries/) warning:', await res1.text().catch(() => ''));
+        }
 
-      // 3. Clean up database record (cascade deletes selections and files in Supabase DB)
-      const { error } = await supabase.from('galleries').delete().eq('id', id);
+        const res2 = await fetch(getApiUrl('/api/delete-folder'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderPath: targetId }),
+        });
+        if (!res2.ok) {
+          console.warn('Cloudflare R2 delete-folder warning:', await res2.text().catch(() => ''));
+        }
+      }
+
+      // 3. Clean up legacy Supabase storage folder if any
+      try {
+        for (const targetId of targetGalleryIds) {
+          const { data: legacyFiles } = await supabase.storage.from('gallery-files').list(targetId, { limit: 100 });
+          if (legacyFiles && legacyFiles.length > 0) {
+            await supabase.storage.from('gallery-files').remove(legacyFiles.map((f) => `${targetId}/${f.name}`));
+          }
+        }
+      } catch {
+        // ignore legacy cleanup errors
+      }
+
+      // 4. Clean up database records in Supabase
+      await supabase.from('selections').delete().in('gallery_id', targetGalleryIds);
+      await supabase.from('files').delete().in('gallery_id', targetGalleryIds);
+      await supabase.from('activity_logs').delete().in('gallery_id', targetGalleryIds);
+
+      const { error } = await supabase.from('galleries').delete().in('id', targetGalleryIds);
       if (error) throw error;
 
-      toast.success(`Gallery "${name}" and all associated files deleted successfully`);
-      setGalleries(prev => prev.filter(g => g.id !== id));
-      
+      const remainingGalleries = galleries.filter((g) => !targetGalleryIds.includes(g.id));
+      setGalleries(remainingGalleries);
+
+      if (selectedDeliveryId && targetGalleryIds.includes(selectedDeliveryId)) {
+        const nextDelivery = remainingGalleries.find((g) => !getParentGalleryId(g) && (!g.category || g.category.trim() === '' || g.category.toLowerCase().trim() === 'delivery'));
+        setSelectedDeliveryId(nextDelivery?.id || '');
+        setEditableDeliveryTitle(nextDelivery?.client_name || '');
+      }
+
+      setGalleryToDelete(null);
+      toast.success(`Gallery "${name}" deleted from database and Cloudflare R2`);
+
       // Refresh dashboard data to recalculate real storage stats and recent activities
       fetchData();
     } catch (err: any) {
       console.error('Failed to delete gallery:', err);
       toast.error(`Failed to delete gallery: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setDeletingGalleryId(null);
     }
   };
 
@@ -1893,11 +2774,11 @@ export const Dashboard: React.FC = () => {
                 {/* Upload to Gallery CTA */}
                 <button
                   type="button"
-                  onClick={handleOpenCreateModal}
-                  className="h-10 px-5 bg-[#231A16] hover:bg-[#150F0D] text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                  onClick={() => handleOpenCreateModal('delivery')}
+                  className="h-10 px-5 bg-[#231A16] hover:bg-[#150F0D] text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Upload to Gallery</span>
+                  <span>New Delivery</span>
                 </button>
               </div>
             </div>
@@ -2193,7 +3074,14 @@ export const Dashboard: React.FC = () => {
                     realRecentActivities.map(event => (
                       <div 
                         key={event.id}
-                        onClick={() => navigate(`/gallery/${event.galleryId}`)}
+                        onClick={() => {
+                          const isDeliveryItem = deliveryGalleries.some(g => g.id === event.galleryId);
+                          if (isDeliveryItem) {
+                            navigate(`/dashboard?view=delivery&galleryId=${event.galleryId}`);
+                          } else {
+                            navigate(`/gallery/${event.galleryId}`);
+                          }
+                        }}
                         className="py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-[#FAF7F0] px-2 rounded-xl transition-colors"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
@@ -2308,7 +3196,7 @@ export const Dashboard: React.FC = () => {
                     {/* Action 1 */}
                     <button
                       type="button"
-                      onClick={handleOpenCreateModal}
+                      onClick={() => handleOpenCreateModal('delivery')}
                       className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E8E2D2] hover:border-[#B58B5C] hover:bg-[#FAF7F0] transition-all group cursor-pointer"
                     >
                       <ImageIcon className="w-5 h-5 text-[#4A3B32] group-hover:text-[#B58B5C] transition-colors" />
@@ -2377,7 +3265,7 @@ export const Dashboard: React.FC = () => {
                     className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-md text-[13px] focus:outline-none focus:border-slate-400 dark:focus:border-slate-500"
                   />
                 </div>
-                <button onClick={() => { setNewCategory('Hospitality'); handleOpenCreateModal(); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
+                <button onClick={() => { setNewCategory('Hospitality'); handleOpenCreateModal('portfolio'); }} className="bg-[#5845EE] text-white px-4 py-2 rounded-md text-[13px] font-medium flex items-center gap-2">
                   <Plus className="w-4 h-4" /> New Portfolio Gallery
                 </button>
               </div>
@@ -2561,8 +3449,7 @@ export const Dashboard: React.FC = () => {
                         <button
                           onClick={() => {
                             setIsDeliverySwitcherOpen(false);
-                            setNewCategory('');
-                            handleOpenCreateModal();
+                            handleOpenCreateModal('delivery');
                           }}
                           className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#3B2E28] hover:bg-[#FAF7F0] flex items-center gap-2 cursor-pointer mt-0.5"
                         >
@@ -2663,7 +3550,7 @@ export const Dashboard: React.FC = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                    onClick={() => handleOpenCreateModal('delivery')}
                     className="text-[11px] font-semibold bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" />
@@ -2676,15 +3563,26 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-stretch gap-3 overflow-x-auto pb-1 pt-0.5 scrollbar-none">
                 {deliveryGalleries.map((g) => {
                   const isSelected = currentDelivery?.id === g.id && deliveryViewMode === 'detail';
+                  const isDeletingThis = deletingGalleryId === g.id;
                   return (
-                    <button
+                    <div
                       key={g.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         setSelectedDeliveryId(g.id);
                         setEditableDeliveryTitle(g.client_name);
                         setDeliveryViewMode('detail');
                       }}
-                      className={`shrink-0 w-56 text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedDeliveryId(g.id);
+                          setEditableDeliveryTitle(g.client_name);
+                          setDeliveryViewMode('detail');
+                        }
+                      }}
+                      className={`group relative shrink-0 w-60 text-left p-2.5 pr-9 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
                         isSelected
                           ? 'border-[#B58B5C] bg-[#FAF4E8] shadow-sm ring-2 ring-[#B58B5C]/35'
                           : 'border-[#EDE5D8] bg-[#FAF7F2] hover:bg-[#F4EFE6] hover:border-[#D6CCA6]'
@@ -2721,13 +3619,29 @@ export const Dashboard: React.FC = () => {
                           ) : null}
                         </div>
                       </div>
-                    </button>
+
+                      {/* Delete Gallery Button directly on portal card */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteGallery(e, g.id, g.client_name)}
+                        disabled={isDeletingThis}
+                        title={`Delete "${g.client_name}" from database & Cloudflare R2`}
+                        aria-label={`Delete ${g.client_name}`}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center text-[#8E827B] hover:text-rose-600 hover:bg-rose-50 opacity-75 sm:opacity-60 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isDeletingThis ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
 
                 {/* + Create New Portal Card */}
                 <button
-                  onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
+                  onClick={() => handleOpenCreateModal('delivery')}
                   className="shrink-0 w-36 border-2 border-dashed border-[#D6CCA6] hover:border-[#B58B5C] bg-[#FAF7F2] hover:bg-[#F3EFE8] rounded-xl p-2.5 flex flex-col items-center justify-center text-center text-[#7A6F69] hover:text-[#1F1714] transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4 text-[#B58B5C] mb-1" />
@@ -2737,7 +3651,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Active File Upload Progress Banner */}
-            {uploading && activeGalleryId === currentDelivery?.id && (
+            {uploading && (activeGalleryId === currentDelivery?.id || currentDelivery?.subGalleries?.some(s => s.id === activeGalleryId)) && (
               <div className="mb-4 p-4 rounded-2xl bg-[#FAF4E8] border border-[#EEDFCA] flex items-center justify-between gap-4 shadow-xs animate-in fade-in">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-[#8C6432]/10 flex items-center justify-center text-[#8C6432]">
@@ -2755,8 +3669,64 @@ export const Dashboard: React.FC = () => {
             )}
 
             {/* Main Delivery Workspace (Detail View matching Warm_Wedding_Gallery_Studio_Dashboard_a6cde6e1.png) */}
-            {deliveryViewMode === 'detail' ? (
+            {deliveryViewMode === 'detail' && !currentDelivery ? (
+              <div className="bg-white rounded-3xl border border-[#E8E2D2] p-12 text-center shadow-xs">
+                <Package className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-70" />
+                <h3 className="text-lg font-bold text-[#1F1714]">No Client Delivery Portals Yet</h3>
+                <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                  Create a new client delivery portal to upload photos, set access passwords, and share links.
+                </p>
+                <button
+                  onClick={() => handleOpenCreateModal('delivery')}
+                  className="mt-5 px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Delivery Portal</span>
+                </button>
+              </div>
+            ) : deliveryViewMode === 'detail' ? (
               <div className="space-y-6">
+                {/* Submitted Selection Banner */}
+                {currentDelivery?.selection_status === 'submitted' && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-950">Client Selection Submitted</p>
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          The client finalized{' '}
+                          <strong>
+                            {([...(currentDelivery.files || []), ...((currentDelivery.subGalleries || []).flatMap(s => s.files || []))]).filter(f => f.is_selected).length}
+                          </strong>{' '}
+                          selected photo(s). Review picks or reopen selection if they need to make changes.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeliveryTab('gallery');
+                          setPhotosFilter('picks');
+                          setShowAllPhotosInGrid(true);
+                        }}
+                        className="h-9 px-3.5 bg-white hover:bg-emerald-100/60 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                      >
+                        View Selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleReopenSelection}
+                        className="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+                      >
+                        Reopen Selection
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Title & Action Buttons Row */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
@@ -2794,25 +3764,43 @@ export const Dashboard: React.FC = () => {
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
                           Expired
                         </span>
-                      ) : currentDelivery?.link_enabled ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                          Live
-                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                          Hidden
+                        <button
+                          type="button"
+                          onClick={handleToggleLinkEnabled}
+                          title="Click to toggle Live / Hidden portal visibility"
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+                            currentDelivery?.link_enabled
+                              ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0] hover:bg-emerald-100'
+                              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${currentDelivery?.link_enabled ? 'bg-[#059669]' : 'bg-slate-400'}`} />
+                          {currentDelivery?.link_enabled ? 'Live' : 'Hidden'}
+                        </button>
+                      )}
+                      {currentDelivery?.selection_status === 'submitted' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                          Selection Submitted
                         </span>
                       )}
-                      <span className="text-xs text-[#7A6F69]">
-                        Private Client Gallery · {currentDelivery?.itemCount || currentDelivery?.files?.length || 0} photos{(currentDelivery?.files?.filter(f => f.file_type === 'video').length || 0) > 0 ? ` · ${currentDelivery!.files!.filter(f => f.file_type === 'video').length} videos` : ''}
-                      </span>
+                      {(() => {
+                        const allDeliveryMedia = [
+                          ...(currentDelivery?.files || []),
+                          ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || []))
+                        ];
+                        const videoCount = allDeliveryMedia.filter(f => f.file_type === 'video').length;
+                        return (
+                          <span className="text-xs text-[#7A6F69]">
+                            Private Client Gallery · {allDeliveryMedia.length} photos{videoCount > 0 ? ` · ${videoCount} videos` : ''}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
 
                   {/* Header Action Buttons */}
-                  <div className="flex items-center gap-2.5 self-start md:self-auto">
+                  <div className="flex items-center gap-2 self-start md:self-auto flex-wrap sm:flex-nowrap">
                     {/* Preview Button */}
                     <button
                       onClick={() => {
@@ -2820,7 +3808,7 @@ export const Dashboard: React.FC = () => {
                           window.open(`/g/${currentDelivery.id}`, '_blank');
                         }
                       }}
-                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Eye className="w-4 h-4 text-[#8E827B]" />
                       <span>Preview</span>
@@ -2833,17 +3821,35 @@ export const Dashboard: React.FC = () => {
                           setSelectedWhatsAppGallery(currentDelivery);
                         }
                       }}
-                      className="bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] text-[#1F1714] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Share2 className="w-4 h-4 text-[#8E827B]" />
                       <span>Share</span>
                     </button>
 
+                    {/* Delete Gallery Button */}
+                    {currentDelivery && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteGallery(e, currentDelivery.id, currentDelivery.client_name)}
+                        disabled={deletingGalleryId === currentDelivery.id}
+                        className="h-9 bg-white hover:bg-rose-50 text-rose-600 border border-[#E6DFC6] hover:border-rose-200 px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+                        title="Delete this gallery from database & Cloudflare R2"
+                      >
+                        {deletingGalleryId === currentDelivery.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                        <span>Delete</span>
+                      </button>
+                    )}
+
                     {/* Client Link ⌄ Dropdown */}
-                    <div className="relative">
+                    <div className="relative shrink-0">
                       <button
                         onClick={() => setIsClientLinkDropdownOpen(prev => !prev)}
-                        className="bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                        className="h-9 bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
                       >
                         <Link2 className="w-4 h-4 text-[#CBBDB8]" />
                         <span>Client Link</span>
@@ -2851,7 +3857,7 @@ export const Dashboard: React.FC = () => {
                       </button>
 
                       {isClientLinkDropdownOpen && currentDelivery && (
-                        <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
+                        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
                           <button
                             onClick={() => {
                               const url = `${window.location.origin}/g/${currentDelivery.id}`;
@@ -2866,6 +3872,19 @@ export const Dashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
+                              const slug = generateSlug(currentDelivery.client_name);
+                              const url = `${window.location.origin}/${slug}`;
+                              navigator.clipboard.writeText(url);
+                              toast.success(`Vanity link /${slug} copied!`);
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <LinkIcon className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Copy Vanity Link (/{generateSlug(currentDelivery.client_name)})</span>
+                          </button>
+                          <button
+                            onClick={() => {
                               window.open(`/g/${currentDelivery.id}`, '_blank');
                               setIsClientLinkDropdownOpen(false);
                             }}
@@ -2876,15 +3895,35 @@ export const Dashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
+                              window.open(`/g/${currentDelivery.id}/display`, '_blank');
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <PlaySquare className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Open Live Display Mode</span>
+                          </button>
+                          <button
+                            onClick={() => {
                               const pw = deliveryPassword || currentDelivery.password || '';
                               navigator.clipboard.writeText(pw);
-                              toast.success("Client access password copied!");
+                              toast.success(pw ? "Client access password copied!" : "No password set on this portal");
                               setIsClientLinkDropdownOpen(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
                           >
                             <Lock className="w-3.5 h-3.5 text-[#B58B5C]" />
                             <span>Copy Access Password</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleExportSelectionsCSV();
+                              setIsClientLinkDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <FileDown className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Export Selections (CSV)</span>
                           </button>
                           <div className="border-t border-[#F0EBE0] my-1" />
                           <button
@@ -2920,7 +3959,7 @@ export const Dashboard: React.FC = () => {
                       <button
                         key={tab.id}
                         onClick={() => setDeliveryTab(tab.id as any)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                        className={`h-9 px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                           isActive
                             ? 'bg-[#3B2E28] text-white shadow-xs'
                             : 'text-[#7A6F69] hover:text-[#1F1714] hover:bg-white/60'
@@ -2947,11 +3986,6 @@ export const Dashboard: React.FC = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/30" />
 
-                        {/* Top-Right Translucent Icon Badge */}
-                        <div className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 shadow-sm">
-                          <ImageIcon className="w-4 h-4" />
-                        </div>
-
                         {/* Center Overlay Text & Button */}
                         <div className="relative z-10 px-6 py-10 max-w-lg mx-auto text-white">
                           <div className="text-[11px] sm:text-xs tracking-[0.25em] font-semibold uppercase text-white/90 drop-shadow-sm">
@@ -2961,10 +3995,10 @@ export const Dashboard: React.FC = () => {
                             className="text-4xl sm:text-5xl font-normal tracking-tight text-white mt-1.5 drop-shadow-md"
                             style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
                           >
-                            {currentDelivery?.title ? getCleanGalleryTitle(currentDelivery.title) : currentDelivery?.client_name || 'Our Gallery'}
+                            {currentDelivery ? getCleanGalleryTitle(currentDelivery) : 'Our Gallery'}
                           </h2>
                           <p className="text-xs sm:text-sm text-white/85 mt-2 font-normal drop-shadow-sm max-w-sm mx-auto">
-                            Private client delivery collection · East African Coast
+                            {(currentDelivery && getCleanGalleryDescription(currentDelivery)) || 'Private client delivery collection · East African Coast'}
                           </p>
                           <button
                             onClick={() => {
@@ -2989,48 +4023,59 @@ export const Dashboard: React.FC = () => {
 
                       {/* Sections Pills (Sub-galleries) */}
                       {currentDelivery?.subGalleries && currentDelivery.subGalleries.length > 0 && (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                          <button
-                            onClick={() => setActiveSectionFilter('all')}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
-                              activeSectionFilter === 'all'
-                                ? 'bg-[#3B2E28] text-white shadow-xs'
-                                : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
-                            }`}
-                          >
-                            All Photos ({currentDelivery.files?.length || 0})
-                          </button>
-                          {currentDelivery.subGalleries.map((sub) => (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                             <button
-                              key={sub.id}
-                              onClick={() => setActiveSectionFilter(sub.id)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
-                                activeSectionFilter === sub.id
+                              onClick={() => { setActiveSectionFilter('all'); setSelectedPhotoIds([]); }}
+                              className={`h-8 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+                                activeSectionFilter === 'all'
                                   ? 'bg-[#3B2E28] text-white shadow-xs'
                                   : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
                               }`}
                             >
-                              {sub.client_name.replace(currentDelivery.client_name, '').replace(/^[–\-]\s*/, '')}
+                              All Photos ({(currentDelivery.files?.length || 0) + currentDelivery.subGalleries.reduce((acc, s) => acc + (s.files?.length || 0), 0)})
                             </button>
-                          ))}
-                          <button
-                            onClick={() => setIsCreateSectionModalOpen(true)}
-                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#8C6432] bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] transition-colors cursor-pointer shrink-0 flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add Section</span>
-                          </button>
+                            {currentDelivery.subGalleries.map((sub) => (
+                              <button
+                                key={sub.id}
+                                onClick={() => { setActiveSectionFilter(sub.id); setSelectedPhotoIds([]); }}
+                                className={`h-8 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+                                  activeSectionFilter === sub.id
+                                    ? 'bg-[#3B2E28] text-white shadow-xs'
+                                    : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                {getCleanGalleryTitle(sub)} ({sub.files?.length || 0})
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => setIsCreateSectionModalOpen(true)}
+                              className="h-8 px-2.5 rounded-xl text-xs font-semibold text-[#8C6432] bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1 whitespace-nowrap"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add Section</span>
+                            </button>
+                          </div>
+                          {activeSectionFilter !== 'all' && (() => {
+                            const activeSub = currentDelivery.subGalleries.find(s => s.id === activeSectionFilter);
+                            if (!activeSub) return null;
+                            return (
+                              <p className="text-[11px] text-[#8C6432] font-medium">
+                                Uploads (+ Add Photos / Videos / Drag &amp; Drop) will be added directly to section <strong>"{getCleanGalleryTitle(activeSub)}"</strong>.
+                              </p>
+                            );
+                          })()}
                         </div>
                       )}
 
-                      {/* Media Action Toolbar (All actions handled in-place!) */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      {/* Media Action Toolbar — Full-width Single-line Studio Row */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
                           {/* Grid / List View Toggle */}
-                          <div className="flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3]">
+                          <div className="h-9 inline-flex items-center bg-[#EAE2D5]/70 p-1 rounded-xl border border-[#E0D5C3] shrink-0">
                             <button
                               onClick={() => setDeliveryGridMode('grid')}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 deliveryGridMode === 'grid' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                               }`}
                               title="Grid View"
@@ -3039,7 +4084,7 @@ export const Dashboard: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setDeliveryGridMode('list')}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`h-7 w-7 inline-flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 deliveryGridMode === 'list' ? 'bg-[#DBCBB8] text-[#2F241F] shadow-xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                               }`}
                               title="List View"
@@ -3051,7 +4096,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Photos (Direct File Dialog right here) */}
                           <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Plus className="w-4 h-4" />
                             <span>Add Photos</span>
@@ -3060,7 +4105,7 @@ export const Dashboard: React.FC = () => {
                           {/* + Add Videos (Direct File Dialog right here) */}
                           <button
                             onClick={() => videoInputRef.current?.click()}
-                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <Camera className="w-4 h-4 text-[#8E827B]" />
                             <span>Add Videos</span>
@@ -3069,77 +4114,76 @@ export const Dashboard: React.FC = () => {
                           {/* Create Section (In-dashboard modal) */}
                           <button
                             onClick={() => setIsCreateSectionModalOpen(true)}
-                            className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                           >
                             <FolderPlus className="w-4 h-4 text-[#8E827B]" />
                             <span>Create Section</span>
                           </button>
                         </div>
 
-                        {/* Right Toolbar Controls: Sort & Filter */}
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          {/* Filter Pills (All / Client Picks / Notes) */}
-                          <div className="flex items-center bg-white border border-[#E6DFC6] rounded-xl p-0.5 shadow-xs text-xs">
+                        {/* Inline Photo Search (Fills middle toolbar space naturally) */}
+                        <div className="relative flex-1 min-w-[140px]">
+                          <Search className="w-3.5 h-3.5 text-[#8E827B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={galleryPhotoSearch}
+                            onChange={(e) => {
+                              setGalleryPhotoSearch(e.target.value);
+                              if (e.target.value.trim()) setShowAllPhotosInGrid(true);
+                            }}
+                            placeholder="Filter by filename or note..."
+                            className="w-full h-9 pl-8 pr-7 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] placeholder-[#9E928B] shadow-xs focus:outline-none focus:border-[#B58B5C] transition-colors"
+                          />
+                          {galleryPhotoSearch && (
                             <button
-                              onClick={() => setPhotosFilter('all')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                                photosFilter === 'all' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
+                              type="button"
+                              onClick={() => setGalleryPhotoSearch('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] p-0.5 cursor-pointer"
+                              title="Clear photo filter"
                             >
-                              All ({currentDelivery?.files?.length || 0})
+                              <X className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => setPhotosFilter('picks')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                photosFilter === 'picks' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
-                            >
-                              <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                              <span>Picks</span>
-                            </button>
-                            <button
-                              onClick={() => setPhotosFilter('notes')}
-                              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                                photosFilter === 'notes' ? 'bg-[#FAF4E8] text-[#8C6432] font-bold' : 'text-[#7A6F69] hover:text-[#1F1714]'
-                              }`}
-                            >
-                              <MessageSquare className="w-3 h-3 text-amber-600" />
-                              <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
-                            </button>
-                          </div>
+                          )}
+                        </div>
 
-                          <div className="relative">
-                            <button
-                              onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                              className="bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                            >
-                              <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
-                              <span>Sort</span>
-                            </button>
+                        {/* Right Toolbar Control: Sort */}
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={() => setIsSortDropdownOpen(prev => !prev)}
+                            className="h-9 bg-white hover:bg-[#FAF7F0] text-[#2F241F] border border-[#E6DFC6] px-3.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5 text-[#8E827B]" />
+                            <span>Sort</span>
+                          </button>
 
-                            {isSortDropdownOpen && (
-                              <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
-                                <button
-                                  onClick={() => { setPhotosSort('newest'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                                >
-                                  Newest First
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosSort('oldest'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                                >
-                                  Oldest First
-                                </button>
-                                <button
-                                  onClick={() => { setPhotosSort('downloads'); setIsSortDropdownOpen(false); }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0]"
-                                >
-                                  Most Downloaded
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          {isSortDropdownOpen && (
+                            <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E8E2D2] p-1.5 z-40">
+                              <button
+                                onClick={() => { setPhotosSort('newest'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Newest First
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('oldest'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Oldest First
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('name'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                File Name (A–Z)
+                              </button>
+                              <button
+                                onClick={() => { setPhotosSort('downloads'); setIsSortDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer"
+                              >
+                                Most Downloaded
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -3147,11 +4191,19 @@ export const Dashboard: React.FC = () => {
                       <div
                         onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
                         onDragLeave={() => setIsDraggingOver(false)}
-                        onDrop={(e) => {
+                        onDrop={async (e) => {
                           e.preventDefault();
                           setIsDraggingOver(false);
-                          if (e.dataTransfer.files?.length) {
-                            uploadFiles(currentDelivery!.id, Array.from(e.dataTransfer.files), 876000).then(() => fetchData());
+                          if (e.dataTransfer.files?.length && currentDelivery) {
+                            const targetGalleryId = activeSectionFilter !== 'all' ? activeSectionFilter : currentDelivery.id;
+                            const targetSection = currentDelivery.subGalleries?.find(s => s.id === activeSectionFilter);
+                            const existingFiles = targetSection ? (targetSection.files || []) : (currentDelivery.files || []);
+                            const filtered = filterDuplicateDeliveryFiles(Array.from(e.dataTransfer.files), existingFiles);
+                            if (filtered.length > 0) {
+                              await uploadFiles(targetGalleryId, filtered, deliveryExpiryHours || 168);
+                              toast.success(`${filtered.length} file(s) uploaded!`);
+                              await fetchData();
+                            }
                           }
                         }}
                         className={`transition-colors rounded-3xl p-1 ${
@@ -3159,102 +4211,424 @@ export const Dashboard: React.FC = () => {
                         }`}
                       >
                         {(() => {
-                          let displayFiles = currentDelivery?.files || [];
+                          const subMatch = activeSectionFilter !== 'all'
+                            ? currentDelivery?.subGalleries?.find(s => s.id === activeSectionFilter)
+                            : null;
+                          let displayFiles: DeliveryFileItem[] = subMatch
+                            ? [...(subMatch.files || [])]
+                            : [
+                                ...(currentDelivery?.files || []),
+                                ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || []))
+                              ];
+
                           if (photosFilter === 'picks') {
                             displayFiles = displayFiles.filter(f => f.is_selected);
+                          } else if (photosFilter === 'edited') {
+                            displayFiles = displayFiles.filter(f => f.is_edited);
+                          } else if (photosFilter === 'locked') {
+                            displayFiles = displayFiles.filter(f => f.is_extra_locked);
                           } else if (photosFilter === 'notes') {
                             displayFiles = displayFiles.filter(f => f.client_note && f.client_note.trim());
+                          }
+
+                          if (galleryPhotoSearch.trim()) {
+                            const q = galleryPhotoSearch.trim().toLowerCase();
+                            displayFiles = displayFiles.filter(f => {
+                              const fname = (f.title || f.file_path?.split('/').pop() || '').toLowerCase();
+                              const note = (f.client_note || '').toLowerCase();
+                              return fname.includes(q) || note.includes(q);
+                            });
                           }
 
                           if (photosSort === 'oldest') {
                             displayFiles = [...displayFiles].reverse();
                           } else if (photosSort === 'downloads') {
                             displayFiles = [...displayFiles].sort((a, b) => (b.download_count || 0) - (a.download_count || 0));
+                          } else if (photosSort === 'name') {
+                            displayFiles = [...displayFiles].sort((a, b) => {
+                              const na = (a.title || a.file_path?.split('/').pop() || '').toLowerCase();
+                              const nb = (b.title || b.file_path?.split('/').pop() || '').toLowerCase();
+                              return na.localeCompare(nb);
+                            });
                           }
+
+                          const allDeliveryFilesList = [
+                            ...(currentDelivery?.files || []),
+                            ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || [])),
+                          ];
+                          const picksTotalCount = allDeliveryFilesList.filter(f => f.is_selected).length;
+                          const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
+                          const lockedTotalCount = allDeliveryFilesList.filter(f => f.is_extra_locked).length;
+
+                          const filterTabsBar = (
+                            <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-0.5 gap-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setPhotosFilter('all')}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'all' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                All ({allDeliveryFilesList.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'picks' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+                                <span>Picks ({picksTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'edited' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span>Edited ({editedTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('locked'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'locked' ? 'bg-white text-amber-800 font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Lock className="w-3 h-3 text-amber-600" />
+                                <span>Extras ({lockedTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'notes' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <MessageSquare className="w-3 h-3 text-amber-600" />
+                                <span>Notes ({currentDelivery?.selectionNotesCount || 0})</span>
+                              </button>
+                            </div>
+                          );
 
                           if (displayFiles.length === 0) {
                             return (
-                              <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
-                                <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
-                                <h3 className="text-base font-semibold text-[#1F1714]">
-                                  {photosFilter !== 'all' ? 'No photos match this filter' : 'No Photos in this Gallery'}
-                                </h3>
-                                <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
-                                  {photosFilter !== 'all' ? 'Try switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
-                                </p>
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="mt-4 px-4 py-2 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>Upload Photos Directly</span>
-                                </button>
+                              <div className="space-y-3">
+                                <div className="bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                  {filterTabsBar}
+                                  {(photosFilter !== 'all' || galleryPhotoSearch) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setPhotosFilter('all'); setGalleryPhotoSearch(''); }}
+                                      className="h-7 px-2.5 rounded-lg text-[11px] font-semibold text-[#8C6432] hover:bg-[#FAF4E8] cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Reset Filters
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="py-16 text-center bg-white rounded-2xl border-2 border-dashed border-[#E8E2D2] p-8">
+                                  <ImageIcon className="w-10 h-10 text-[#B58B5C] mx-auto mb-3 opacity-60" />
+                                  <h3 className="text-base font-semibold text-[#1F1714]">
+                                    {photosFilter !== 'all' || galleryPhotoSearch ? 'No photos match this filter' : 'No Photos in this Gallery'}
+                                  </h3>
+                                  <p className="text-xs text-[#7A6F69] mt-1 max-w-sm mx-auto">
+                                    {photosFilter !== 'all' || galleryPhotoSearch ? 'Try clearing search or switching back to "All" to view gallery photos.' : 'Drag and drop photos here or click below to upload.'}
+                                  </p>
+                                  <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="mt-4 h-9 px-4 rounded-xl bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Upload Photos Directly</span>
+                                  </button>
+                                </div>
                               </div>
                             );
                           }
 
+                          const toggleSelectFile = (id: string) => {
+                            setSelectedPhotoIds(prev =>
+                              prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                            );
+                          };
+                          const allVisibleSelected = displayFiles.length > 0 && displayFiles.every(f => selectedPhotoIds.includes(f.id));
+                          const clientPickedFiles = displayFiles.filter(f => f.is_selected);
+                          const uneditedPickedIds = clientPickedFiles.filter(f => !f.is_edited).map(f => f.id);
+                          const editedPicksCount = clientPickedFiles.filter(f => f.is_edited).length;
+                          const bulkActionBar = (
+                            <div className="mb-3 bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs space-y-2">
+                              <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                {filterTabsBar}
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (allVisibleSelected) {
+                                        setSelectedPhotoIds([]);
+                                      } else {
+                                        setSelectedPhotoIds(displayFiles.map(f => f.id));
+                                      }
+                                    }}
+                                    className="h-7 px-2 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                  >
+                                    {allVisibleSelected ? (
+                                      <CheckSquare className="w-3.5 h-3.5 text-[#B58B5C]" />
+                                    ) : (
+                                      <Square className="w-3.5 h-3.5 text-[#8E827B]" />
+                                    )}
+                                    <span>
+                                      {selectedPhotoIds.length > 0
+                                        ? `${selectedPhotoIds.length} selected`
+                                        : `Select all (${displayFiles.length})`}
+                                    </span>
+                                  </button>
+
+                                  {clientPickedFiles.length > 0 && photosFilter !== 'picks' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
+                                      className="h-7 inline-flex items-center gap-1 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                    >
+                                      <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                      <span>Select Picks ({clientPickedFiles.length})</span>
+                                    </button>
+                                  )}
+
+                                  {clientPickedFiles.length > 0 && (
+                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-1">
+                                      {editedPicksCount}/{clientPickedFiles.length} edited
+                                    </span>
+                                  )}
+
+                                  {uneditedPickedIds.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
+                                      className="h-7 inline-flex items-center gap-1 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      <span>Mark {uneditedPickedIds.length} Edited</span>
+                                    </button>
+                                  )}
+
+                                  {selectedPhotoIds.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPhotoIds([])}
+                                      className="h-7 px-2 rounded-lg text-[11px] font-semibold text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF7F0] cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Clear
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {selectedPhotoIds.length > 0 && (
+                                <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                  <span className="text-[11px] font-medium text-[#7A6F69] whitespace-nowrap shrink-0 tabular-nums pl-1">
+                                    Bulk actions for {selectedPhotoIds.length} photo{selectedPhotoIds.length === 1 ? '' : 's'}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={handleBulkDownloadZip}
+                                      disabled={isZipping}
+                                      className="h-7 px-2.5 rounded-lg bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                      <span>ZIP</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenRenameModal()}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#1F1714] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Edit2 className="w-3 h-3 text-[#B58B5C]" />
+                                      <span>Rename</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleEdited(true)}
+                                      className="h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      <span>Set Edited</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleEdited(false)}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      Unset Edited
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleExtraLock(true)}
+                                      className="h-7 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                      title="Lock selected photos as extra images (client pays to download high-res)"
+                                    >
+                                      <Lock className="w-3 h-3" />
+                                      <span>Lock Extra</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleExtraLock(false)}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                      title="Unlock selected extra photos for high-res download"
+                                    >
+                                      <Unlock className="w-3 h-3" />
+                                      <span>Unlock</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleBulkDeletePhotos}
+                                      className="h-7 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>Delete</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+
                           // LIST VIEW MODE
                           if (deliveryGridMode === 'list') {
                             return (
-                              <div className="bg-white rounded-2xl border border-[#E8E2D2] overflow-hidden shadow-xs">
-                                <div className="divide-y divide-[#F0EBE0]">
-                                  {displayFiles.map((file, idx) => (
-                                    <div
-                                      key={file.id || idx}
-                                      onClick={() => setSelectedPhotoForDetail(file)}
-                                      className="p-3 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-4 cursor-pointer"
-                                    >
-                                      <div className="flex items-center gap-3 min-w-0">
-                                        <img
-                                          src={getOptimizedImageUrl(file.file_url, 100, 100)}
-                                          alt={`Photo ${idx + 1}`}
-                                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#EDE5D8]"
-                                        />
-                                        <div className="min-w-0">
-                                          <div className="text-xs font-semibold text-[#1F1714] truncate flex items-center gap-2">
-                                            <span>Photo #{idx + 1}</span>
-                                            {file.is_selected && (
-                                              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-rose-200">
-                                                <Heart className="w-2.5 h-2.5 fill-rose-500" /> Client Pick
-                                              </span>
-                                            )}
+                              <div>
+                                {bulkActionBar}
+                                <div className="bg-white rounded-2xl border border-[#E8E2D2] overflow-hidden shadow-xs">
+                                  <div className="divide-y divide-[#F0EBE0]">
+                                    {displayFiles.map((file, idx) => {
+                                      const isSelectedForBulk = selectedPhotoIds.includes(file.id);
+                                      const displayName = file.title || file.file_path?.split('/').pop() || `Photo #${idx + 1}`;
+                                      return (
+                                        <div
+                                          key={file.id || idx}
+                                          onClick={() => setSelectedPhotoForDetail(file)}
+                                          className={`p-3 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-4 cursor-pointer ${
+                                            isSelectedForBulk ? 'bg-[#FAF4E8]/60' : ''
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => { e.stopPropagation(); toggleSelectFile(file.id); }}
+                                              className="text-[#8E827B] hover:text-[#1F1714] cursor-pointer shrink-0"
+                                              title="Select file"
+                                            >
+                                              {isSelectedForBulk ? (
+                                                <CheckSquare className="w-4 h-4 text-[#B58B5C]" />
+                                              ) : (
+                                                <Square className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                            <img
+                                              src={getOptimizedImageUrl(file.file_url, 100, 100)}
+                                              alt={displayName}
+                                              className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#EDE5D8]"
+                                            />
+                                            <div className="min-w-0">
+                                              <div className="text-xs font-semibold text-[#1F1714] truncate flex items-center gap-2">
+                                                <span className="truncate max-w-[200px] sm:max-w-xs">{displayName}</span>
+                                                {file.is_edited && (
+                                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                                                    Edited
+                                                  </span>
+                                                )}
+                                                {file.is_extra_locked && (
+                                                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-amber-200 shrink-0">
+                                                    <Lock className="w-2.5 h-2.5" /> Extra Locked
+                                                  </span>
+                                                )}
+                                                {file.is_selected && (
+                                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-rose-200 shrink-0">
+                                                    <Heart className="w-2.5 h-2.5 fill-rose-500" /> Client Pick
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {file.client_note && (
+                                                <p className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 mt-1 truncate max-w-md">
+                                                  💬 Note: {file.client_note}
+                                                </p>
+                                              )}
+                                            </div>
                                           </div>
-                                          {file.client_note && (
-                                            <p className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 mt-1 truncate max-w-md">
-                                              💬 Note: {file.client_note}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
 
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file.file_url); }}
-                                          className="p-2 text-[#7A6F69] hover:text-[#B58B5C] hover:bg-[#FAF4E8] rounded-lg transition-colors cursor-pointer"
-                                          title="Set as Cover"
-                                        >
-                                          <Star className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(rewriteUrlToR2(file.file_url), '_blank');
-                                          }}
-                                          className="p-2 text-[#7A6F69] hover:text-[#1F1714] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                                          title="Download Original"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
-                                          className="p-2 text-[#7A6F69] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                          title="Delete Photo"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSingleExtraLock(file);
+                                              }}
+                                              className={`h-8 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                                file.is_extra_locked
+                                                  ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
+                                                  : 'bg-[#FAF7F0] text-[#5C5049] border-[#E6DFC6] hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200'
+                                              }`}
+                                              title={file.is_extra_locked ? 'Unlock extra image for high-res download' : 'Lock as extra image (requires payment for high-res)'}
+                                            >
+                                              {file.is_extra_locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                                              <span className="hidden sm:inline">{file.is_extra_locked ? 'Locked' : 'Lock Extra'}</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSingleEdited(file);
+                                              }}
+                                              className={`h-8 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                                file.is_edited
+                                                  ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                                                  : 'bg-[#FAF7F0] text-[#5C5049] border-[#E6DFC6] hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                                              }`}
+                                              title={file.is_edited ? 'Unmark Edited' : 'Mark as Edited'}
+                                            >
+                                              <Check className="w-3 h-3" />
+                                              <span className="hidden sm:inline">{file.is_edited ? 'Edited' : 'Mark Edited'}</span>
+                                            </button>
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); handleOpenRenameModal(file); }}
+                                              className="p-2 text-[#7A6F69] hover:text-[#1F1714] hover:bg-[#FAF4E8] rounded-lg transition-colors cursor-pointer"
+                                              title="Rename File"
+                                            >
+                                              <Edit2 className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file); }}
+                                              className="p-2 text-[#7A6F69] hover:text-[#B58B5C] hover:bg-[#FAF4E8] rounded-lg transition-colors cursor-pointer"
+                                              title="Set as Cover"
+                                            >
+                                              <Star className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.open(rewriteUrlToR2(file.file_url), '_blank');
+                                              }}
+                                              className="p-2 text-[#7A6F69] hover:text-[#1F1714] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                              title="Download Original"
+                                            >
+                                              <Download className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
+                                              className="p-2 text-[#7A6F69] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                              title="Delete Photo"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -3266,6 +4640,7 @@ export const Dashboard: React.FC = () => {
 
                           return (
                             <div>
+                              {bulkActionBar}
                               {showAllPhotosInGrid && (
                                 <div className="mb-3 flex items-center justify-between text-xs text-[#7A6F69]">
                                   <span>Showing all {displayFiles.length} photos</span>
@@ -3278,63 +4653,124 @@ export const Dashboard: React.FC = () => {
                                 </div>
                               )}
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                                {visibleFiles.map((file, idx) => (
-                                  <div
-                                    key={file.id || idx}
-                                    onClick={() => setSelectedPhotoForDetail(file)}
-                                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border border-[#E8E2D2]/60 hover:shadow-md transition-all cursor-pointer"
-                                  >
-                                    <img
-                                      src={getOptimizedImageUrl(file.file_url, 600, 450)}
-                                      alt={`Photo ${idx + 1}`}
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                      loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors" />
+                                {visibleFiles.map((file, idx) => {
+                                  const isSelectedForBulk = selectedPhotoIds.includes(file.id);
+                                  const displayName = file.title || file.file_path?.split('/').pop() || `Photo ${idx + 1}`;
+                                  return (
+                                    <div
+                                      key={file.id || idx}
+                                      onClick={() => setSelectedPhotoForDetail(file)}
+                                      className={`group relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] shadow-xs border hover:shadow-md transition-all cursor-pointer ${
+                                        isSelectedForBulk ? 'border-[#B58B5C] ring-2 ring-[#B58B5C]' : 'border-[#E8E2D2]/60'
+                                      }`}
+                                    >
+                                      <img
+                                        src={getOptimizedImageUrl(file.file_url, 600, 450)}
+                                        alt={displayName}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                      />
+                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors" />
 
-                                    {/* Badges: Client Pick / Notes */}
-                                    <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none">
-                                      {file.is_selected && (
-                                        <span className="w-6 h-6 rounded-full bg-rose-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs">
-                                          <Heart className="w-3.5 h-3.5 fill-white" />
-                                        </span>
-                                      )}
-                                      {file.client_note && (
-                                        <span className="w-6 h-6 rounded-full bg-amber-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs" title={file.client_note}>
-                                          <MessageSquare className="w-3.5 h-3.5 fill-white" />
-                                        </span>
-                                      )}
-                                    </div>
+                                      {/* Badges: Client Pick / Notes / Edited / Extra Locked */}
+                                      <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap max-w-[78%] pointer-events-none">
+                                        {file.is_selected && (
+                                          <span className="w-6 h-6 rounded-full bg-rose-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs">
+                                            <Heart className="w-3.5 h-3.5 fill-white" />
+                                          </span>
+                                        )}
+                                        {file.client_note && (
+                                          <span className="w-6 h-6 rounded-full bg-amber-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs" title={file.client_note}>
+                                            <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                                          </span>
+                                        )}
+                                        {file.is_edited && (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-600/95 backdrop-blur-md text-white text-[9px] font-bold shadow-xs">
+                                            Edited
+                                          </span>
+                                        )}
+                                        {file.is_extra_locked && (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-amber-600/95 backdrop-blur-md text-white text-[9px] font-bold inline-flex items-center gap-0.5 shadow-xs">
+                                            <Lock className="w-2.5 h-2.5" /> Extra
+                                          </span>
+                                        )}
+                                      </div>
 
-                                    {/* Hover Quick Action Buttons */}
-                                    <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {/* Selection Checkbox Top-Right */}
                                       <button
-                                        onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file.file_url); }}
-                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
-                                        title="Set as Cover"
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); toggleSelectFile(file.id); }}
+                                        className={`absolute top-2 right-2 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                                          isSelectedForBulk
+                                            ? 'bg-[#B58B5C] text-white opacity-100'
+                                            : 'bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-black/75'
+                                        }`}
+                                        title="Select photo for bulk action"
                                       >
-                                        <Star className="w-3.5 h-3.5" />
+                                        {isSelectedForBulk ? <Check className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
                                       </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          window.open(rewriteUrlToR2(file.file_url), '_blank');
-                                        }}
-                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
-                                        title="Download"
-                                      >
-                                        <Download className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
-                                        className="w-7 h-7 rounded-lg bg-black/60 hover:bg-rose-600 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+
+                                      {/* Filename Overlay Bottom-Left on hover */}
+                                      <div className="absolute bottom-2 left-2 max-w-[45%] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                        <span className="block truncate text-[10px] font-medium text-white bg-black/55 backdrop-blur-xs px-2 py-0.5 rounded-md">
+                                          {displayName}
+                                        </span>
+                                      </div>
+
+                                      {/* Hover Quick Action Buttons */}
+                                      <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); handleToggleSingleExtraLock(file); }}
+                                          className={`w-7 h-7 rounded-lg backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs transition-colors ${
+                                            file.is_extra_locked
+                                              ? 'bg-amber-600 hover:bg-amber-700'
+                                              : 'bg-black/60 hover:bg-amber-600'
+                                          }`}
+                                          title={file.is_extra_locked ? 'Unlock Extra Image' : 'Lock Extra Image (Requires Payment)'}
+                                        >
+                                          {file.is_extra_locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); handleToggleSingleEdited(file); }}
+                                          className={`w-7 h-7 rounded-lg backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs transition-colors ${
+                                            file.is_edited
+                                              ? 'bg-emerald-600 hover:bg-emerald-700'
+                                              : 'bg-black/60 hover:bg-emerald-600'
+                                          }`}
+                                          title={file.is_edited ? 'Unmark Edited' : 'Mark as Edited'}
+                                        >
+                                          <Check className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleSetCoverPhoto(file); }}
+                                          className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                          title="Set as Cover"
+                                        >
+                                          <Star className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(rewriteUrlToR2(file.file_url), '_blank');
+                                          }}
+                                          className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                          title="Download"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleDeletePhoto(file); }}
+                                          className="w-7 h-7 rounded-lg bg-black/60 hover:bg-rose-600 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
 
                                 {/* Dark Card: + N more photos (Toggles full grid right here!) */}
                                 {!showAllPhotosInGrid && remainingCount > 0 && (
@@ -3424,18 +4860,49 @@ export const Dashboard: React.FC = () => {
                             <span className="font-semibold text-[#1F1714]">{currentDelivery?.created_at ? formatDate(currentDelivery.created_at) : '—'}</span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[#6D635D] pt-1 border-t border-[#F4EFE6]">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-[#8E827B]" />
-                              <span>Expires</span>
+                          <div className="pt-2 border-t border-[#F4EFE6] space-y-2">
+                            <div className="flex items-center justify-between text-[#6D635D]">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-[#8E827B]" />
+                                <span>Expires</span>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg font-semibold text-[11px] border ${
+                                currentDelivery?.isExpired
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-[#FAF4E8] text-[#8C6432] border-[#EEDFCA]'
+                              }`}>
+                                {currentDelivery?.timeRemainingText || (currentDelivery?.expires_at ? formatDate(currentDelivery.expires_at) : 'Active · No Expiry')}
+                              </span>
                             </div>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-lg font-semibold text-[11px] border ${
-                              currentDelivery?.isExpired
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : 'bg-[#FAF4E8] text-[#8C6432] border-[#EEDFCA]'
-                            }`}>
-                              {currentDelivery?.timeRemainingText || (currentDelivery?.expires_at ? formatDate(currentDelivery.expires_at) : 'Active · No Expiry')}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                value={deliveryExpiryHours}
+                                onChange={(e) => handleExpiryHoursChange(Number(e.target.value))}
+                                className="min-w-0 flex-1 h-8 px-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-[11px] font-medium text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                              >
+                                <option value={24}>24 Hours</option>
+                                <option value={48}>48 Hours</option>
+                                <option value={72}>72 Hours</option>
+                                <option value={168}>1 Week (7 Days)</option>
+                                <option value={720}>1 Month (30 Days)</option>
+                                <option value={876000}>Never Expire (Archive)</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => handleApplyCustomExpiration(deliveryExpiryHours)}
+                                className="h-8 px-2.5 bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] rounded-xl text-[11px] font-semibold text-[#1F1714] cursor-pointer whitespace-nowrap shrink-0"
+                              >
+                                Apply
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => currentDelivery && handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name)}
+                                className="h-8 px-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                                title="Quick Extend +7 Days"
+                              >
+                                +7d
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3557,7 +5024,7 @@ export const Dashboard: React.FC = () => {
                             <button
                               onClick={() => handleUpdatePayment()}
                               disabled={isUpdatingPayment}
-                              className="flex-1 bg-[#3B2E28] hover:bg-[#4E3D35] text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              className="flex-1 h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
                             >
                               {isUpdatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                               <span>Save Payment</span>
@@ -3567,7 +5034,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 onClick={handleMarkPaidInFull}
                                 disabled={isUpdatingPayment}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white px-3 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1 whitespace-nowrap"
                                 title="Sets amount paid equal to agreed balance and unlocks high-res downloads"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -3580,9 +5047,16 @@ export const Dashboard: React.FC = () => {
 
                       {/* Card 3: Client Access */}
                       <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Lock className="w-4 h-4 text-[#B58B5C]" />
-                          <h3 className="text-sm font-bold text-[#1F1714]">Client Access</h3>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-[#B58B5C]" />
+                            <h3 className="text-sm font-bold text-[#1F1714]">Client Access</h3>
+                          </div>
+                          {currentDelivery?.id && (
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#FAF7F0] border border-[#E6DFC6] text-[#8C6432]">
+                              PIN: {currentDelivery.id.split('-')[0].slice(0, 4).toUpperCase()}
+                            </span>
+                          )}
                         </div>
 
                         {/* Password Protected Toggle */}
@@ -3593,7 +5067,7 @@ export const Dashboard: React.FC = () => {
                           </div>
                           <button
                             type="button"
-                            onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
+                            onClick={handleToggleDeliveryPrivacy}
                             className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
                               deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                             }`}
@@ -3606,105 +5080,128 @@ export const Dashboard: React.FC = () => {
                           </button>
                         </div>
 
-                        {/* Password Input Box */}
+                        {/* Password Input Box + Generate */}
                         {deliveryIsPrivate && (
-                          <div className="relative">
-                            <input
-                              type={deliveryShowPassword ? 'text' : 'password'}
-                              value={deliveryPassword}
-                              onChange={(e) => setDeliveryPassword(e.target.value)}
-                              onBlur={() => handleSaveDeliveryPassword(deliveryPassword)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
-                              placeholder="Set gallery password"
-                              className="w-full pl-3.5 pr-10 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
-                            >
-                              {deliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <div className="relative flex-1">
+                                <input
+                                  type={deliveryShowPassword ? 'text' : 'password'}
+                                  value={deliveryPassword}
+                                  onChange={(e) => setDeliveryPassword(e.target.value)}
+                                  onBlur={() => handleSaveDeliveryPassword(deliveryPassword)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
+                                  placeholder="Set gallery password"
+                                  className="w-full pl-3.5 pr-9 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setDeliveryShowPassword(!deliveryShowPassword)}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
+                                >
+                                  {deliveryShowPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleGenerateDeliveryPassword}
+                                className="px-2.5 py-2 bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] text-[#8C6432] rounded-xl text-[11px] font-semibold cursor-pointer shrink-0"
+                                title="Generate random 8-character password"
+                              >
+                                Generate
+                              </button>
+                            </div>
                           </div>
                         )}
 
-                        {/* 4 Access Permission Checklist Toggles */}
+                        {/* Live / Hidden Portal Status & Mode Toggles */}
                         <div className="space-y-3 pt-2 border-t border-[#F4EFE6] text-xs">
-                          {/* 1. Allow Downloads */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[#1F1714]">
+                              <Globe className="w-4 h-4 text-[#8E827B]" />
+                              <span>Portal Link Active</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleToggleLinkEnabled}
+                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                                currentDelivery?.link_enabled ? 'bg-[#059669]' : 'bg-[#D6CCA6]'
+                              }`}
+                            >
+                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                                currentDelivery?.link_enabled ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                          </div>
+
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-[#1F1714]">
                               <Download className="w-4 h-4 text-[#8E827B]" />
-                              <span>Allow downloads</span>
+                              <span>Allow downloads (Direct Mode)</span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => setDeliveryAllowDownloads(!deliveryAllowDownloads)}
+                              onClick={() => handleToggleSelectionMode(false)}
                               className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                                deliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                                !currentDelivery?.selection_enabled ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                               }`}
                             >
                               <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                                deliveryAllowDownloads ? 'translate-x-4' : 'translate-x-0'
+                                !currentDelivery?.selection_enabled ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </button>
                           </div>
 
-                          {/* 2. Allow Favorites */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-[#1F1714]">
                               <Heart className="w-4 h-4 text-[#8E827B]" />
-                              <span>Allow favorites (heart)</span>
+                              <span>Client Selection Mode (Favorites)</span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => setDeliveryAllowFavorites(!deliveryAllowFavorites)}
+                              onClick={() => handleToggleSelectionMode(!currentDelivery?.selection_enabled)}
                               className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                                deliveryAllowFavorites ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                                currentDelivery?.selection_enabled ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                               }`}
                             >
                               <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                                deliveryAllowFavorites ? 'translate-x-4' : 'translate-x-0'
+                                currentDelivery?.selection_enabled ? 'translate-x-4' : 'translate-x-0'
                               }`} />
                             </button>
                           </div>
 
-                          {/* 3. Allow Comments */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-[#1F1714]">
-                              <MessageSquare className="w-4 h-4 text-[#8E827B]" />
-                              <span>Allow comments</span>
+                          {/* Agreed Photo Limit */}
+                          <div className="pt-2 border-t border-[#F4EFE6] space-y-1.5">
+                            <label className="block text-[11px] font-semibold text-[#6D635D]">
+                              Agreed Photo Selection Limit (0 = Unlimited)
+                            </label>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                value={editSelectionLimit}
+                                onChange={(e) => setEditSelectionLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                                placeholder="Unlimited"
+                                className="flex-1 px-3 py-1.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSelectionLimit(Number(editSelectionLimit) || 0)}
+                                className="px-3 py-1.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-[11px] font-semibold cursor-pointer"
+                              >
+                                Apply
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setDeliveryAllowComments(!deliveryAllowComments)}
-                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                                deliveryAllowComments ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                              }`}
-                            >
-                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                                deliveryAllowComments ? 'translate-x-4' : 'translate-x-0'
-                              }`} />
-                            </button>
                           </div>
 
-                          {/* 4. Require Client Email */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-[#1F1714]">
-                              <Mail className="w-4 h-4 text-[#8E827B]" />
-                              <span>Require client email to access</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setDeliveryRequireEmail(!deliveryRequireEmail)}
-                              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                                deliveryRequireEmail ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                              }`}
-                            >
-                              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                                deliveryRequireEmail ? 'translate-x-4' : 'translate-x-0'
-                              }`} />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={handleExportSelectionsCSV}
+                            className="w-full py-2 px-3 bg-[#FAF7F2] hover:bg-[#F3EFE8] border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#1F1714] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <FileDown className="w-3.5 h-3.5 text-[#B58B5C]" />
+                            <span>Export Selections (CSV)</span>
+                          </button>
                         </div>
                       </div>
 
@@ -3813,31 +5310,22 @@ export const Dashboard: React.FC = () => {
 
                       {/* Card 4: SEO & Sharing */}
                       <div className="bg-white rounded-2xl p-5 border border-[#E8E2D2] shadow-xs space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Share2 className="w-4 h-4 text-[#B58B5C]" />
-                          <h3 className="text-sm font-bold text-[#1F1714]">SEO &amp; Sharing</h3>
-                        </div>
-
-                        {/* Search Engine Indexing Toggle */}
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6D635D] max-w-[220px]">
-                            Allow search engine indexing (Public galleries only)
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <Share2 className="w-4 h-4 text-[#B58B5C]" />
+                            <h3 className="text-sm font-bold text-[#1F1714]">SEO &amp; Sharing</h3>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => setDeliveryAllowSeo(!deliveryAllowSeo)}
-                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                              deliveryAllowSeo ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
-                            }`}
+                            onClick={() => setDeliveryTab('seo')}
+                            className="text-[11px] font-semibold text-[#8C6432] hover:underline cursor-pointer"
                           >
-                            <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                              deliveryAllowSeo ? 'translate-x-4' : 'translate-x-0'
-                            }`} />
+                            Edit SEO
                           </button>
                         </div>
 
                         {/* Social Sharing Preview Heading with Badge */}
-                        <div className="pt-2 border-t border-[#F4EFE6]">
+                        <div>
                           <div className="flex items-center justify-between mb-2.5">
                             <span className="text-xs font-medium text-[#1F1714]">Social sharing preview (Open Graph)</span>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
@@ -3861,19 +5349,12 @@ export const Dashboard: React.FC = () => {
                             )}
                             <div className="min-w-0 flex-1">
                               <h4 className="text-xs font-bold text-[#1F1714] truncate">
-                                {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
+                                {currentDelivery?.seo_title || `${currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography`}
                               </h4>
                               <p className="text-[11px] text-[#7A6F69] truncate mt-0.5">
-                                Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
+                                {currentDelivery?.seo_description || `Private client photo delivery for ${currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.`}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => toast.info("Open Graph preview options: update tags, image, or site title")}
-                              className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded cursor-pointer"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -3886,18 +5367,42 @@ export const Dashboard: React.FC = () => {
                   <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
                     <div>
                       <h3 className="text-lg font-bold text-[#1F1714]">Portal &amp; Client Settings</h3>
-                      <p className="text-xs text-[#7A6F69] mt-0.5">Manage delivery details, shoot metadata, payments, and expiration.</p>
+                      <p className="text-xs text-[#7A6F69] mt-0.5">Manage delivery details, subtitle, selection limit, payments, and expiration.</p>
                     </div>
 
                     <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Gallery / Client Name</label>
+                          <input
+                            type="text"
+                            value={editableDeliveryTitle}
+                            onChange={(e) => setEditableDeliveryTitle(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            placeholder="e.g. Leah's Family Gallery"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Agreed Photo Limit (0 = Unlimited)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editSelectionLimit}
+                            onChange={(e) => setEditSelectionLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            placeholder="Unlimited"
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Gallery / Client Name</label>
-                        <input
-                          type="text"
-                          value={editableDeliveryTitle}
-                          onChange={(e) => setEditableDeliveryTitle(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
-                          placeholder="e.g. Leah's Family Gallery"
+                        <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Welcome Subtitle / Description</label>
+                        <textarea
+                          rows={2}
+                          value={editDeliverySubtitle}
+                          onChange={(e) => setEditDeliverySubtitle(e.target.value)}
+                          className="w-full px-3.5 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C] resize-none"
+                          placeholder="Private client delivery collection · East African Coast"
                         />
                       </div>
 
@@ -3991,16 +5496,36 @@ export const Dashboard: React.FC = () => {
                       {/* Expiration Controls */}
                       <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#1F1714]">Portal Expiration</span>
+                          <span className="text-xs font-bold text-[#1F1714]">Portal Expiration Duration</span>
                           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                             currentDelivery?.isExpired ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
                           }`}>
                             {currentDelivery?.timeRemainingText || 'Active'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={deliveryExpiryHours}
+                            onChange={(e) => handleExpiryHoursChange(Number(e.target.value))}
+                            className="flex-1 min-w-[180px] px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                          >
+                            <option value={24}>24 Hours</option>
+                            <option value={48}>48 Hours</option>
+                            <option value={72}>72 Hours</option>
+                            <option value={168}>1 Week (7 Days)</option>
+                            <option value={720}>1 Month (30 Days)</option>
+                            <option value={876000}>Never Expire (Archive)</option>
+                          </select>
                           <button
-                            onClick={(e) => handleQuickExtend(e, currentDelivery!.id, currentDelivery!.client_name)}
+                            type="button"
+                            onClick={() => handleApplyCustomExpiration(deliveryExpiryHours)}
+                            className="px-3.5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            Apply to Existing Files
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => currentDelivery && handleQuickExtend(e, currentDelivery.id, currentDelivery.client_name)}
                             className="px-3.5 py-2 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#1F1714] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
                           >
                             <Clock className="w-3.5 h-3.5 text-[#B58B5C]" />
@@ -4010,11 +5535,21 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-[#F0EBE0] flex justify-end">
+                    <div className="pt-4 border-t border-[#F0EBE0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => currentDelivery && handleDeleteGallery(e, currentDelivery.id, currentDelivery.client_name)}
+                        disabled={!currentDelivery || deletingGalleryId === currentDelivery?.id}
+                        className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Gallery &amp; Cloudflare R2 Files</span>
+                      </button>
+
                       <button
                         onClick={handleSaveDeliverySettings}
                         disabled={isSavingSettings}
-                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                         <span>Save Gallery Settings</span>
@@ -4026,9 +5561,16 @@ export const Dashboard: React.FC = () => {
                 {/* TAB CONTENT: ACCESS TAB */}
                 {deliveryTab === 'access' && (
                   <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D2] shadow-xs max-w-3xl space-y-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-[#1F1714]">Client Access &amp; Permissions</h3>
-                      <p className="text-xs text-[#7A6F69] mt-0.5">Control password protection, public visibility, and client privileges.</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#1F1714]">Client Access &amp; Permissions</h3>
+                        <p className="text-xs text-[#7A6F69] mt-0.5">Control password protection, portal visibility, PIN, and client selection mode.</p>
+                      </div>
+                      {currentDelivery?.id && (
+                        <span className="text-xs font-mono font-bold px-3 py-1 rounded-xl bg-[#FAF7F0] border border-[#E6DFC6] text-[#8C6432] self-start">
+                          Unlock PIN: {currentDelivery.id.split('-')[0].slice(0, 4).toUpperCase()}
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-4">
@@ -4040,7 +5582,8 @@ export const Dashboard: React.FC = () => {
                             <span className="text-[11px] text-[#7A6F69]">Require clients to enter a password to open this gallery.</span>
                           </div>
                           <button
-                            onClick={() => setDeliveryIsPrivate(!deliveryIsPrivate)}
+                            type="button"
+                            onClick={handleToggleDeliveryPrivacy}
                             className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
                               deliveryIsPrivate ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                             }`}
@@ -4054,13 +5597,14 @@ export const Dashboard: React.FC = () => {
                         {deliveryIsPrivate && (
                           <div className="pt-2">
                             <label className="block text-[11px] font-semibold text-[#1F1714] mb-1">Access Password</label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <input
                                 type={deliveryShowPassword ? 'text' : 'password'}
                                 value={deliveryPassword}
                                 onChange={(e) => setDeliveryPassword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSaveDeliveryPassword(deliveryPassword)}
                                 placeholder="Set password"
-                                className="flex-1 px-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                                className="flex-1 min-w-[160px] px-3.5 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
                               />
                               <button
                                 type="button"
@@ -4071,8 +5615,15 @@ export const Dashboard: React.FC = () => {
                               </button>
                               <button
                                 type="button"
+                                onClick={handleGenerateDeliveryPassword}
+                                className="px-3 py-2 bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] text-[#8C6432] rounded-xl text-xs font-semibold cursor-pointer"
+                              >
+                                Generate
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => handleSaveDeliveryPassword(deliveryPassword)}
-                                className="px-3 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold cursor-pointer"
+                                className="px-3.5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold cursor-pointer"
                               >
                                 Save Password
                               </button>
@@ -4082,46 +5633,97 @@ export const Dashboard: React.FC = () => {
                       </div>
 
                       {/* Permissions List */}
-                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3 text-xs">
+                      <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-[#1F1714]">Allow High-Resolution Downloads</span>
+                          <div>
+                            <span className="font-semibold text-[#1F1714] block">Portal Visibility (Live / Hidden)</span>
+                            <span className="text-[11px] text-[#7A6F69]">Turn off to temporarily hide this gallery from clients without deleting it.</span>
+                          </div>
                           <button
-                            onClick={() => setDeliveryAllowDownloads(!deliveryAllowDownloads)}
-                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                              deliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            type="button"
+                            onClick={handleToggleLinkEnabled}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                              currentDelivery?.link_enabled ? 'bg-[#059669]' : 'bg-[#D6CCA6]'
                             }`}
                           >
                             <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                              deliveryAllowDownloads ? 'translate-x-4' : 'translate-x-0'
+                              currentDelivery?.link_enabled ? 'translate-x-4' : 'translate-x-0'
                             }`} />
                           </button>
                         </div>
+
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-[#1F1714]">Allow Client Favorites &amp; Selections</span>
+                          <div>
+                            <span className="font-semibold text-[#1F1714] block">Allow High-Resolution Downloads</span>
+                            <span className="text-[11px] text-[#7A6F69]">Direct download experience (subject to cleared payment balance).</span>
+                          </div>
                           <button
-                            onClick={() => setDeliveryAllowFavorites(!deliveryAllowFavorites)}
-                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                              deliveryAllowFavorites ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            type="button"
+                            onClick={() => handleToggleSelectionMode(false)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                              !currentDelivery?.selection_enabled ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                             }`}
                           >
                             <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                              deliveryAllowFavorites ? 'translate-x-4' : 'translate-x-0'
+                              !currentDelivery?.selection_enabled ? 'translate-x-4' : 'translate-x-0'
                             }`} />
                           </button>
                         </div>
+
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-[#1F1714]">Allow Client Notes &amp; Revision Comments</span>
+                          <div>
+                            <span className="font-semibold text-[#1F1714] block">Client Selection Mode (Favorites &amp; Proofs)</span>
+                            <span className="text-[11px] text-[#7A6F69]">Clients pick favorites &amp; submit selection for retouching (disables bulk downloads).</span>
+                          </div>
                           <button
-                            onClick={() => setDeliveryAllowComments(!deliveryAllowComments)}
-                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                              deliveryAllowComments ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                            type="button"
+                            onClick={() => handleToggleSelectionMode(!currentDelivery?.selection_enabled)}
+                            className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                              currentDelivery?.selection_enabled ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
                             }`}
                           >
                             <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
-                              deliveryAllowComments ? 'translate-x-4' : 'translate-x-0'
+                              currentDelivery?.selection_enabled ? 'translate-x-4' : 'translate-x-0'
                             }`} />
                           </button>
                         </div>
+
+                        <div className="pt-2 border-t border-[#E8E2D2] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="font-semibold text-[#1F1714] block">Agreed Photo Selection Limit</span>
+                            <span className="text-[11px] text-[#7A6F69]">Set maximum included photos in package (0 = Unlimited).</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              value={editSelectionLimit}
+                              onChange={(e) => setEditSelectionLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                              placeholder="Unlimited"
+                              className="w-28 px-3 py-1.5 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateSelectionLimit(Number(editSelectionLimit) || 0)}
+                              className="px-3.5 py-1.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold cursor-pointer"
+                            >
+                              Save Limit
+                            </button>
+                          </div>
+                        </div>
+
+                        {currentDelivery?.selection_status === 'submitted' && (
+                          <div className="pt-2 border-t border-[#E8E2D2] flex items-center justify-between gap-3">
+                            <span className="text-emerald-800 font-semibold">Client selection is currently locked (Submitted).</span>
+                            <button
+                              type="button"
+                              onClick={handleReopenSelection}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+                            >
+                              Reopen Selection
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -4195,22 +5797,41 @@ export const Dashboard: React.FC = () => {
                       );
                     })()}
 
-                    <div className="p-6 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div>
-                        <h4 className="text-sm font-bold text-[#1F1714]">Download All Photos as ZIP</h4>
-                        <p className="text-xs text-[#7A6F69] mt-1">
-                          Creates a compressed ZIP bundle of all {currentDelivery?.files?.length || 0} full-resolution photos directly in your browser.
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleDownloadAllZip}
-                        disabled={isZipping || !currentDelivery?.files?.length}
-                        className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50"
-                      >
-                        {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        <span>{isZipping ? 'Archiving ZIP...' : 'Download ZIP Bundle'}</span>
-                      </button>
-                    </div>
+                    {(() => {
+                      const allBundleFiles = [
+                        ...(currentDelivery?.files || []),
+                        ...((currentDelivery?.subGalleries || []).flatMap(s => s.files || []))
+                      ];
+                      return (
+                        <div className="p-6 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div>
+                            <h4 className="text-sm font-bold text-[#1F1714]">Download All Photos &amp; Export Selections</h4>
+                            <p className="text-xs text-[#7A6F69] mt-1">
+                              Creates a compressed ZIP bundle of all {allBundleFiles.length} full-resolution files or exports client picks to CSV.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={handleExportSelectionsCSV}
+                              disabled={allBundleFiles.length === 0}
+                              className="px-4 py-2.5 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                            >
+                              <FileDown className="w-4 h-4 text-[#B58B5C]" />
+                              <span>Export CSV</span>
+                            </button>
+                            <button
+                              onClick={handleDownloadAllZip}
+                              disabled={isZipping || allBundleFiles.length === 0}
+                              className="px-5 py-2.5 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                            >
+                              {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                              <span>{isZipping ? 'Archiving ZIP...' : 'Download ZIP Bundle'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
@@ -4218,7 +5839,9 @@ export const Dashboard: React.FC = () => {
                         <p className="text-[11px] text-[#7A6F69] mt-0.5">Total Client Downloads</p>
                       </div>
                       <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
-                        <span className="text-2xl font-bold text-[#1F1714]">{currentDelivery?.files?.length || 0}</span>
+                        <span className="text-2xl font-bold text-[#1F1714]">
+                          {(currentDelivery?.files?.length || 0) + ((currentDelivery?.subGalleries || []).reduce((acc, s) => acc + (s.files?.length || 0), 0))}
+                        </span>
                         <p className="text-[11px] text-[#7A6F69] mt-0.5">Deliverable Files</p>
                       </div>
                       <div className="p-4 rounded-2xl bg-white border border-[#E8E2D2] text-center">
@@ -4289,15 +5912,49 @@ export const Dashboard: React.FC = () => {
                       )}
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-[#1F1714] truncate">
-                          {currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography
+                          {editSeoTitle.trim() || `${currentDelivery?.client_name || 'Client Delivery'} | Mwabonje Photography`}
                         </h4>
                         <p className="text-[11px] text-[#7A6F69] mt-1">
-                          Private client photo delivery for {currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.
+                          {editSeoDescription.trim() || `Private client photo delivery for ${currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast by Mwabonje Photography.`}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Custom SEO / Share Title</label>
+                        <input
+                          type="text"
+                          value={editSeoTitle}
+                          onChange={(e) => setEditSeoTitle(e.target.value)}
+                          placeholder={`${currentDelivery?.client_name || 'Client'} | Mwabonje Photography`}
+                          className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#1F1714] mb-1.5">Custom Meta / Share Description</label>
+                        <textarea
+                          rows={2}
+                          value={editSeoDescription}
+                          onChange={(e) => setEditSeoDescription(e.target.value)}
+                          placeholder={`Private client photo delivery for ${currentDelivery?.client_name || 'clients'}, captured on the Kenyan coast.`}
+                          className="w-full px-3.5 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C] resize-none"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleSaveSeoInfo}
+                          disabled={isSavingSeo}
+                          className="px-5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                        >
+                          {isSavingSeo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          <span>Save SEO Settings</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-[#F0EBE0]">
                       <button
                         onClick={() => setSelectedWhatsAppGallery(currentDelivery!)}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
@@ -4316,6 +5973,28 @@ export const Dashboard: React.FC = () => {
                         <Copy className="w-4 h-4 text-[#B58B5C]" />
                         <span>Copy Share Link</span>
                       </button>
+                      {currentDelivery && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const slug = generateSlug(currentDelivery.client_name);
+                              navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
+                              toast.success(`Vanity link /${slug} copied!`);
+                            }}
+                            className="px-4 py-2 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
+                          >
+                            <LinkIcon className="w-4 h-4 text-[#B58B5C]" />
+                            <span>Copy /{generateSlug(currentDelivery.client_name)}</span>
+                          </button>
+                          <button
+                            onClick={() => window.open(`/g/${currentDelivery.id}/display`, '_blank')}
+                            className="px-4 py-2 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
+                          >
+                            <PlaySquare className="w-4 h-4 text-[#B58B5C]" />
+                            <span>Open Live Display</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -4367,29 +6046,29 @@ export const Dashboard: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 shrink-0 flex-nowrap">
                     <button
                       onClick={() => setDeliveryViewMode('detail')}
-                      className="bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      className="h-9 bg-white hover:bg-[#FAF7F0] border border-[#E6DFC6] text-[#1F1714] px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <LayoutGrid className="w-4 h-4 text-[#B58B5C]" />
                       <span>Back to Studio View</span>
                     </button>
                     <button
-                      onClick={() => { setNewCategory(''); handleOpenCreateModal(); }}
-                      className="bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      onClick={() => handleOpenCreateModal('delivery')}
+                      className="h-9 bg-[#3B2E28] hover:bg-[#4E3D35] text-white px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>New Gallery</span>
+                      <span>New Delivery</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
                   <button
                     onClick={() => setDeliveryFilter('all')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'all'
                         ? 'bg-[#3B2E28] text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -4399,7 +6078,7 @@ export const Dashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDeliveryFilter('live')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'live'
                         ? 'bg-[#059669] text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -4409,7 +6088,7 @@ export const Dashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDeliveryFilter('expired')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'expired'
                         ? 'bg-rose-600 text-white shadow-xs'
                         : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
@@ -4672,7 +6351,7 @@ export const Dashboard: React.FC = () => {
                         return (
                           <div
                             key={file.id || idx}
-                            onClick={() => handleSetCoverPhoto(file.file_url)}
+                            onClick={() => handleSetCoverPhoto(file)}
                             className={`group relative rounded-xl overflow-hidden aspect-[4/3] bg-[#EAE2D5] border-2 transition-all cursor-pointer ${
                               isCurrentCover ? 'border-[#B58B5C] ring-2 ring-[#B58B5C]/35' : 'border-transparent hover:border-[#B58B5C]'
                             }`}
@@ -4760,17 +6439,46 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   {/* Action Buttons Footer */}
-                  <div className="px-5 py-3.5 border-t border-white/10 flex items-center justify-between gap-3 shrink-0 bg-[#2A201B]">
-                    <div className="flex items-center gap-2">
+                  <div className="px-5 py-3.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0 bg-[#2A201B]">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => {
-                          handleSetCoverPhoto(selectedPhotoForDetail.file_url);
+                          handleSetCoverPhoto(selectedPhotoForDetail);
                           setSelectedPhotoForDetail(null);
                         }}
                         className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Star className="w-3.5 h-3.5 text-[#B58B5C]" />
-                        <span>Set as Gallery Cover</span>
+                        <span>Set as Cover</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenRenameModal(selectedPhotoForDetail)}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-white/80" />
+                        <span>Rename</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleSingleEdited(selectedPhotoForDetail)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          selectedPhotoForDetail.is_edited
+                            ? 'bg-emerald-600/80 hover:bg-emerald-600 text-white'
+                            : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{selectedPhotoForDetail.is_edited ? 'Edited' : 'Mark Edited'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleSingleExtraLock(selectedPhotoForDetail)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          selectedPhotoForDetail.is_extra_locked
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                      >
+                        {selectedPhotoForDetail.is_extra_locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                        <span>{selectedPhotoForDetail.is_extra_locked ? 'Extra Locked (Unlock)' : 'Lock Extra'}</span>
                       </button>
                       <button
                         onClick={() => window.open(rewriteUrlToR2(selectedPhotoForDetail.file_url), '_blank')}
@@ -4787,6 +6495,124 @@ export const Dashboard: React.FC = () => {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Photo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 5: RENAME PHOTO(S) */}
+            {isRenameModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[110] animate-in fade-in">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-[#E8E2D2] shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F0EBE0]">
+                    <div className="flex items-center gap-2">
+                      <Edit2 className="w-5 h-5 text-[#B58B5C]" />
+                      <h3 className="text-base font-bold text-[#1F1714]">
+                        {renameTargetFile || selectedPhotoIds.length === 1 ? 'Rename Photo' : `Rename ${selectedPhotoIds.length} Selected Photos`}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setIsRenameModalOpen(false); setRenameTargetFile(null); }}
+                      className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <form onSubmit={confirmRenamePhotos} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1F1714] mb-1">
+                        {(renameTargetFile || selectedPhotoIds.length === 1) ? 'New File Name' : 'Base Sequence Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={renameBaseName}
+                        onChange={(e) => setRenameBaseName(e.target.value)}
+                        placeholder="e.g. Amina_Hassan_Wedding"
+                        autoFocus
+                        required
+                        className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                      />
+                      {!renameTargetFile && selectedPhotoIds.length > 1 && (
+                        <p className="text-[11px] text-[#7A6F69] mt-1.5">
+                          Files will be numbered sequentially: <span className="font-mono">{renameBaseName || 'name'}_001</span>, <span className="font-mono">_002</span>, etc.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setIsRenameModalOpen(false); setRenameTargetFile(null); }}
+                        className="px-4 py-2 border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0] cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isRenaming || !renameBaseName.trim()}
+                        className="px-5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        {isRenaming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>Save Name</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* IN-PAGE MODAL 4: DELETE GALLERY CONFIRMATION (Deletes DB + Cloudflare R2) */}
+            {galleryToDelete && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[110] animate-in fade-in">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-[#E8E2D2] shadow-2xl space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-[#1F1714]">Delete Gallery Permanently?</h3>
+                      <p className="text-xs text-[#7A6F69] mt-1 leading-relaxed">
+                        Are you sure you want to delete <strong className="text-[#1F1714]">"{galleryToDelete.name}"</strong>?
+                        This action cannot be undone and will permanently delete all associated photos, high-res originals, watermarks, and folders from <strong className="text-[#1F1714]">Cloudflare R2</strong> and your database.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={() => setGalleryToDelete(null)}
+                      className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg cursor-pointer disabled:opacity-40"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#F0EBE0]">
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={() => setGalleryToDelete(null)}
+                      className="px-4 py-2 border border-[#E6DFC6] rounded-xl text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0] cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingGalleryId)}
+                      onClick={confirmDeleteGallery}
+                      className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-60"
+                    >
+                      {deletingGalleryId ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Deleting from Cloudflare...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Gallery</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -4813,156 +6639,351 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200/60 dark:border-slate-800 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#0f172a]">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">New Gallery</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-[#E8E2D2] max-h-[92vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-[#F0EBE0] flex justify-between items-center bg-[#FAF7F2] shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#FAF4E8] border border-[#EEDFCA] flex items-center justify-center text-[#B58B5C]">
+                  {createModalType === 'delivery' ? <Package className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#1F1714]">
+                    {createModalType === 'delivery' ? 'New Client Delivery Portal' : 'New Portfolio Gallery'}
+                  </h2>
+                  <p className="text-[11px] text-[#7A6F69]">
+                    {createModalType === 'delivery'
+                      ? 'Creates and opens right inside your Deliveries studio workspace.'
+                      : 'Creates a public showcase collection for your portfolio.'}
+                  </p>
+                </div>
+              </div>
               <button 
+                type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                className="text-[#8E827B] hover:text-[#1F1714] p-1 rounded-lg transition-colors cursor-pointer"
                 disabled={isCreating}
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={createGallery} className="p-6">
-              <div className="mb-4">
-                <label htmlFor="clientName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Client Name or Event Title
+
+            <form onSubmit={createGallery} className="p-6 overflow-y-auto space-y-4">
+              {userEmail === 'ringa.michael@gmail.com' && (
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#FAF7F0] border border-[#E6DFC6]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreateModalType('delivery');
+                      setNewCategory('');
+                      setNewParentGalleryId('');
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      createModalType === 'delivery'
+                        ? 'bg-[#3B2E28] text-white shadow-xs'
+                        : 'text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    <span>Client Delivery Portal</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreateModalType('portfolio');
+                      if (!newCategory) setNewCategory('Wedding');
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      createModalType === 'portfolio'
+                        ? 'bg-[#3B2E28] text-white shadow-xs'
+                        : 'text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Portfolio Collection</span>
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="clientName" className="block text-xs font-bold text-[#1F1714] mb-1.5">
+                  Client Name or Event Title *
                 </label>
                 <input
                   id="clientName"
                   type="text"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
-                  placeholder="e.g. John & Jane Wedding"
+                  className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl focus:border-[#B58B5C] outline-none transition-all text-xs text-[#1F1714] placeholder-[#9E928B]"
+                  placeholder={createModalType === 'delivery' ? 'e.g. Amina & Hassan — Wedding' : 'e.g. Serena Beach Editorial'}
                   autoFocus
                   required
                   disabled={isCreating}
                 />
               </div>
 
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="galleryDescription" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Project Description
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="galleryDescription" className="block text-xs font-bold text-[#1F1714]">
+                    {createModalType === 'delivery' ? 'Welcome Subtitle / Note' : 'Project Description'}
                   </label>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">Optional</span>
+                  <span className="text-[11px] text-[#8E827B]">Optional</span>
                 </div>
                 <textarea
                   id="galleryDescription"
-                  rows={4}
+                  rows={createModalType === 'delivery' ? 2 : 4}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm leading-relaxed resize-y min-h-[90px]"
-                  placeholder="e.g. Social Campaign for Salvatore Ferragamo highlighting their F80 Skeleton watch. Press Enter twice for paragraph breaks."
+                  className="w-full px-3.5 py-2 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl focus:border-[#B58B5C] outline-none transition-all text-xs text-[#1F1714] placeholder-[#9E928B] leading-relaxed resize-y"
+                  placeholder={
+                    createModalType === 'delivery'
+                      ? 'e.g. A celebration of love on the Kenyan coast'
+                      : 'e.g. Social Campaign for Salvatore Ferragamo highlighting their F80 Skeleton watch.'
+                  }
                   disabled={isCreating}
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                  Displayed beneath the cover image on portfolio galleries. You can also edit this anytime later.
-                </p>
               </div>
 
-              {userEmail === 'ringa.michael@gmail.com' && (
-              <div className="mb-6">
-                <label htmlFor="category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Portfolio Category
-                </label>
-                <input
-                  id="category"
-                  type="text"
-                  list="category-options"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100"
-                  placeholder="e.g. Wedding, Sports, Real Estate..."
-                  disabled={isCreating}
-                />
-                <datalist id="category-options">
-                  {Array.from(new Set([
-                    "Wedding", 
-                    "Portraits", 
-                    "Couples",
-                    "Commercial", 
-                    "Events", 
-                    "Maternity", 
-                    "Boudoir", 
-                    "Fine Art",
-                    "NSSF",
-                    ...galleries.map(g => g.category ? g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim() : '').filter(c => Boolean(c) && c.toUpperCase() !== 'ABOUT')
-                  ])).map(cat => (
-                    <option key={cat as string} value={cat as string} />
-                  ))}
-                </datalist>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Pick from the list or type your own to creatively group your public portfolio.</p>
-              </div>
-              )}
-              {userEmail === 'ringa.michael@gmail.com' && newCategory.trim() !== '' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Display Layout
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setNewLayout('swipe')}
-                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'swipe' ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                    >
-                      <GalleryHorizontalEnd className="w-4 h-4" />
-                      Swipe (Carousel)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewLayout('grid')}
-                      className={`px-4 py-2 border rounded-lg flex items-center justify-center gap-2 transition-all ${newLayout === 'grid' ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                      Grid (4:6)
-                    </button>
+              {createModalType === 'delivery' ? (
+                <>
+                  {/* Payment & High-Res Download Lock during Creation */}
+                  <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#1F1714]">Payment &amp; High-Res Downloads</span>
+                      {Math.max(0, (Number(newAgreedAmount) || 0) - (Number(newPaidAmount) || 0)) === 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                          <Check className="w-3 h-3" /> Unlocked
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          <Lock className="w-3 h-3 text-amber-600" /> Balance Locked
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                          Total Agreed (KES)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newAgreedAmount}
+                          onChange={(e) => setNewAgreedAmount(e.target.value)}
+                          placeholder="0 (Free)"
+                          disabled={isCreating}
+                          className="w-full px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                          Amount Paid (KES)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newPaidAmount}
+                          onChange={(e) => setNewPaidAmount(e.target.value)}
+                          placeholder="0"
+                          disabled={isCreating}
+                          className="w-full px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-              {userEmail === 'ringa.michael@gmail.com' && (
-                <div className="mb-6">
-                  <label htmlFor="parentGallery" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Parent Collection (Optional — for Sub-Galleries)
-                  </label>
-                  <select
-                    id="parentGallery"
-                    value={newParentGalleryId}
-                    onChange={(e) => {
-                      setNewParentGalleryId(e.target.value);
-                      if (e.target.value) {
-                        const parent = galleries.find(g => g.id === e.target.value);
-                        if (parent?.category) {
-                          setNewCategory(parent.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim());
-                        }
-                      }
-                    }}
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:border-transparent outline-none transition-all text-slate-800 dark:text-slate-100 text-sm"
-                    disabled={isCreating}
-                  >
-                    <option value="">None (Top-Level Collection)</option>
-                    {galleries
-                      .filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT' && !getParentGalleryId(g))
-                      .map(g => (
-                        <option key={g.id} value={g.id}>
-                          Inside: {getCleanGalleryTitle(g)} ({g.category?.replace(/\s*\[(swipe|grid)\]/gi, '')})
-                        </option>
-                      ))}
-                  </select>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                    Select a parent collection (e.g. Editorial) to nest this as a sub-gallery (e.g. Client A, Client B).
-                  </p>
-                </div>
+
+                  {/* Access Password, Expiration, Selection Limit & Permissions */}
+                  <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EDE5D8] space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1F1714] mb-1">
+                        Client Access Password (Optional)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={newDeliveryShowPassword ? 'text' : 'password'}
+                            value={newDeliveryPassword}
+                            onChange={(e) => setNewDeliveryPassword(e.target.value)}
+                            placeholder="Leave empty for open link access"
+                            disabled={isCreating}
+                            className="w-full pl-3.5 pr-10 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setNewDeliveryShowPassword(prev => !prev)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E827B] hover:text-[#1F1714] cursor-pointer"
+                          >
+                            {newDeliveryShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                            let pass = '';
+                            for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                            setNewDeliveryPassword(pass);
+                            setNewDeliveryShowPassword(true);
+                          }}
+                          className="px-3 py-2 bg-[#FAF4E8] hover:bg-[#F3EFE8] border border-[#EEDFCA] text-[#8C6432] rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                          Default Link Expiration
+                        </label>
+                        <select
+                          value={newDeliveryExpiryHours}
+                          onChange={(e) => setNewDeliveryExpiryHours(Number(e.target.value))}
+                          disabled={isCreating}
+                          className="w-full px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                        >
+                          <option value={24}>24 Hours</option>
+                          <option value={48}>48 Hours</option>
+                          <option value={72}>72 Hours</option>
+                          <option value={168}>1 Week (7 Days)</option>
+                          <option value={720}>1 Month (30 Days)</option>
+                          <option value={876000}>Never Expire (Archive)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#6D635D] mb-1">
+                          Agreed Photo Limit (Optional)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newDeliverySelectionLimit}
+                          onChange={(e) => setNewDeliverySelectionLimit(e.target.value)}
+                          placeholder="0 = Unlimited"
+                          disabled={isCreating}
+                          className="w-full px-3 py-2 bg-white border border-[#E6DFC6] rounded-xl text-xs font-mono text-[#1F1714] focus:outline-none focus:border-[#B58B5C]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <span className="text-xs font-medium text-[#1F1714] block">Allow High-Res Downloads</span>
+                        <span className="text-[10px] text-[#7A6F69]">Turn off to open in Client Selection Mode (favorites only)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewDeliveryAllowDownloads(prev => !prev)}
+                        className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                          newDeliveryAllowDownloads ? 'bg-[#B58B5C]' : 'bg-[#D6CCA6]'
+                        }`}
+                      >
+                        <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${
+                          newDeliveryAllowDownloads ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {userEmail === 'ringa.michael@gmail.com' && (
+                    <div>
+                      <label htmlFor="category" className="block text-xs font-bold text-[#1F1714] mb-1.5">
+                        Portfolio Category
+                      </label>
+                      <input
+                        id="category"
+                        type="text"
+                        list="category-options"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl focus:border-[#B58B5C] outline-none transition-all text-xs text-[#1F1714]"
+                        placeholder="e.g. Wedding, Sports, Real Estate..."
+                        disabled={isCreating}
+                      />
+                      <datalist id="category-options">
+                        {Array.from(new Set([
+                          "Wedding", 
+                          "Portraits", 
+                          "Couples",
+                          "Commercial", 
+                          "Events", 
+                          "Maternity", 
+                          "Boudoir", 
+                          "Fine Art",
+                          "NSSF",
+                          ...galleries.map(g => g.category ? g.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim() : '').filter(c => Boolean(c) && c.toUpperCase() !== 'ABOUT')
+                        ])).map(cat => (
+                          <option key={cat as string} value={cat as string} />
+                        ))}
+                      </datalist>
+                    </div>
+                  )}
+                  {userEmail === 'ringa.michael@gmail.com' && newCategory.trim() !== '' && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#1F1714] mb-1.5">
+                        Display Layout
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNewLayout('swipe')}
+                          className={`px-4 py-2 border rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${newLayout === 'swipe' ? 'border-[#B58B5C] bg-[#FAF4E8] text-[#1F1714]' : 'border-[#E6DFC6] text-[#7A6F69] hover:bg-[#FAF7F0]'}`}
+                        >
+                          <GalleryHorizontalEnd className="w-4 h-4" />
+                          Swipe (Carousel)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewLayout('grid')}
+                          className={`px-4 py-2 border rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${newLayout === 'grid' ? 'border-[#B58B5C] bg-[#FAF4E8] text-[#1F1714]' : 'border-[#E6DFC6] text-[#7A6F69] hover:bg-[#FAF7F0]'}`}
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                          Grid (4:6)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {userEmail === 'ringa.michael@gmail.com' && (
+                    <div>
+                      <label htmlFor="parentGallery" className="block text-xs font-bold text-[#1F1714] mb-1.5">
+                        Parent Collection (Optional — for Sub-Galleries)
+                      </label>
+                      <select
+                        id="parentGallery"
+                        value={newParentGalleryId}
+                        onChange={(e) => {
+                          setNewParentGalleryId(e.target.value);
+                          if (e.target.value) {
+                            const parent = galleries.find(g => g.id === e.target.value);
+                            if (parent?.category) {
+                              setNewCategory(parent.category.replace(/\s*\[(swipe|grid)\]/gi, '').trim());
+                            }
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl focus:border-[#B58B5C] outline-none transition-all text-xs text-[#1F1714]"
+                        disabled={isCreating}
+                      >
+                        <option value="">None (Top-Level Collection)</option>
+                        {galleries
+                          .filter(g => g.category && g.category.trim() !== '' && g.category !== 'ABOUT' && !getParentGalleryId(g))
+                          .map(g => (
+                            <option key={g.id} value={g.id}>
+                              Inside: {getCleanGalleryTitle(g)} ({g.category?.replace(/\s*\[(swipe|grid)\]/gi, '')})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </>
               )}
 
-              <div className="flex gap-3 justify-end mt-8">
+              <div className="flex gap-2.5 justify-end pt-3 border-t border-[#F0EBE0]">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-[#7A6F69] hover:bg-[#FAF7F0] border border-[#E6DFC6] rounded-xl transition-colors cursor-pointer"
                   disabled={isCreating}
                 >
                   Cancel
@@ -4970,9 +6991,16 @@ export const Dashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!newClientName.trim() || isCreating}
-                  className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-medium rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-5 py-2 bg-[#3B2E28] hover:bg-[#4E3D35] text-white text-xs font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
                 >
-                  {isCreating ? 'Creating...' : 'Create Gallery'}
+                  {isCreating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>
+                    {isCreating
+                      ? 'Creating...'
+                      : createModalType === 'delivery'
+                      ? 'Create Delivery Portal'
+                      : 'Create Gallery'}
+                  </span>
                 </button>
               </div>
             </form>
@@ -5053,6 +7081,7 @@ export const Dashboard: React.FC = () => {
                   disabled={isUpdatingBulk}
                   className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-medium rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
+                  {isUpdatingBulk ? 'Updating...' : 'Apply Changes'}
                 </button>
               </div>
             </form>

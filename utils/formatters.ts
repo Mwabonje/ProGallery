@@ -142,6 +142,9 @@ export interface GalleryMetadataPayload {
   parentGalleryId?: string | null;
   isParentGallery?: boolean;
   subGalleryIds?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  lockedExtraFileIds?: string[];
 }
 
 export const parseGalleryMetadata = (gal?: { title?: string | null; client_name?: string | null } | null): GalleryMetadataPayload => {
@@ -151,7 +154,10 @@ export const parseGalleryMetadata = (gal?: { title?: string | null; client_name?
       projectDescription: '',
       parentGalleryId: null,
       isParentGallery: false,
-      subGalleryIds: []
+      subGalleryIds: [],
+      seoTitle: '',
+      seoDescription: '',
+      lockedExtraFileIds: []
     };
   }
   const raw = gal.title.trim();
@@ -164,7 +170,12 @@ export const parseGalleryMetadata = (gal?: { title?: string | null; client_name?
           projectDescription: parsed.projectDescription || parsed.description || '',
           parentGalleryId: parsed.parentGalleryId || null,
           isParentGallery: Boolean(parsed.isParentGallery || (parsed.subGalleryIds && parsed.subGalleryIds.length > 0)),
-          subGalleryIds: Array.isArray(parsed.subGalleryIds) ? parsed.subGalleryIds : []
+          subGalleryIds: Array.isArray(parsed.subGalleryIds) ? parsed.subGalleryIds : [],
+          seoTitle: typeof parsed.seoTitle === 'string' ? parsed.seoTitle : '',
+          seoDescription: typeof parsed.seoDescription === 'string' ? parsed.seoDescription : '',
+          lockedExtraFileIds: Array.isArray(parsed.lockedExtraFileIds)
+            ? parsed.lockedExtraFileIds.filter((id: any): id is string => typeof id === 'string' && id.length > 0)
+            : []
         };
       }
     } catch {}
@@ -174,7 +185,10 @@ export const parseGalleryMetadata = (gal?: { title?: string | null; client_name?
     projectDescription: raw,
     parentGalleryId: null,
     isParentGallery: false,
-    subGalleryIds: []
+    subGalleryIds: [],
+    seoTitle: '',
+    seoDescription: '',
+    lockedExtraFileIds: []
   };
 };
 
@@ -192,12 +206,51 @@ export const getParentGalleryId = (gal?: { title?: string | null } | null): stri
   return null;
 };
 
+export const getLockedExtraFileIds = (gal?: { title?: string | null; client_name?: string | null } | null): string[] => {
+  return parseGalleryMetadata(gal).lockedExtraFileIds || [];
+};
+
+export const buildUpdatedGalleryTitleJson = (
+  gal: { title?: string | null; client_name?: string | null } | null | undefined,
+  patch: Partial<GalleryMetadataPayload>
+): string => {
+  let existingRawObj: Record<string, any> = {};
+  if (gal?.title && gal.title.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(gal.title.trim());
+      if (parsed && typeof parsed === 'object') {
+        existingRawObj = parsed;
+      }
+    } catch {}
+  }
+  const parsedMeta = parseGalleryMetadata(gal);
+  const nextMeta: Record<string, any> = {
+    ...existingRawObj,
+    projectTitle: patch.projectTitle !== undefined ? patch.projectTitle : (parsedMeta.projectTitle || getCleanGalleryTitle(gal)),
+    projectDescription: patch.projectDescription !== undefined ? patch.projectDescription : (parsedMeta.projectDescription || getCleanGalleryDescription(gal)),
+    parentGalleryId: patch.parentGalleryId !== undefined ? patch.parentGalleryId : (parsedMeta.parentGalleryId || null),
+    isParentGallery: patch.isParentGallery !== undefined ? patch.isParentGallery : Boolean(parsedMeta.isParentGallery),
+    subGalleryIds: patch.subGalleryIds !== undefined ? patch.subGalleryIds : (parsedMeta.subGalleryIds || []),
+    seoTitle: patch.seoTitle !== undefined ? patch.seoTitle : (parsedMeta.seoTitle || ''),
+    seoDescription: patch.seoDescription !== undefined ? patch.seoDescription : (parsedMeta.seoDescription || ''),
+    lockedExtraFileIds: patch.lockedExtraFileIds !== undefined
+      ? Array.from(new Set(patch.lockedExtraFileIds))
+      : (parsedMeta.lockedExtraFileIds || [])
+  };
+  return JSON.stringify(nextMeta);
+};
+
 export const encodeGalleryMetadata = (meta: GalleryMetadataPayload): string => {
   return JSON.stringify({
     projectTitle: meta.projectTitle || '',
     projectDescription: meta.projectDescription || '',
     parentGalleryId: meta.parentGalleryId || null,
     isParentGallery: Boolean(meta.isParentGallery),
-    subGalleryIds: Array.isArray(meta.subGalleryIds) ? meta.subGalleryIds : []
+    subGalleryIds: Array.isArray(meta.subGalleryIds) ? meta.subGalleryIds : [],
+    ...(meta.seoTitle ? { seoTitle: meta.seoTitle } : {}),
+    ...(meta.seoDescription ? { seoDescription: meta.seoDescription } : {}),
+    ...(Array.isArray(meta.lockedExtraFileIds) && meta.lockedExtraFileIds.length > 0
+      ? { lockedExtraFileIds: Array.from(new Set(meta.lockedExtraFileIds)) }
+      : {})
   });
 };
