@@ -152,8 +152,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   const [settings, setSettings] = useState({
     brandName: "MWABONJE",
     heroLocation: "Malindi · Watamu · Lamu",
-    heroTitle: "Visual Storyteller\n& *Lifestyle* Photographer",
-    heroSubtitle: "Photography and film on the Kenyan coast — capturing authentic lifestyle moments, hospitality, weddings, and the quiet architecture of the places in between.",
+    heroTitle: "Stories from the\nKenyan *Coast*",
+    heroSubtitle: "Photography and film celebrating people, places and considered spaces across the Kenyan coast — from Malindi and Watamu to Lamu and beyond.",
     contactLink: "https://mwabonjebooking.netlify.app/",
     whatsappLink: "https://wa.me/254705268604",
     footerEmail: "info@mwabonje.co.ke",
@@ -590,7 +590,7 @@ const pageDesc =
               onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
               className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-white/80 hover:text-white transition-colors cursor-pointer group px-4 py-2"
             >
-              <span>Explore Works</span>
+              <span>Explore the Stories</span>
               <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-1" />
             </button>
             <button 
@@ -598,7 +598,7 @@ const pageDesc =
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white text-white hover:text-slate-950 backdrop-blur-md border border-white/25 text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm cursor-pointer group"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-300 group-hover:text-emerald-700 transition-colors" />
-              <span>Check Dates &amp; Availability</span>
+              <span>Check Date &amp; Destination</span>
             </button>
           </div>
         </div>
@@ -612,7 +612,7 @@ const pageDesc =
               Selected Works
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-xl">
-              Curated architectural spaces, hospitality retreats, and intimate moments captured along East Africa&apos;s coastline.
+              A considered collection of people, places and experiences from the coast and beyond.
             </p>
           </div>
 
@@ -715,6 +715,23 @@ const pageDesc =
             })}
           </div>
         )}
+      </section>
+
+      {/* Photographer introduction — editorial interlude */}
+      <section className="mw-about-editorial grid grid-cols-1 md:grid-cols-2 bg-[#eee7da]">
+        <div className="mw-about-editorial__image relative min-h-[340px] md:min-h-[520px] overflow-hidden bg-[#d8c9b2]">
+          {aboutGallery?.coverUrl ? (
+            <img src={getOptimizedImageUrl(rewriteUrlToR2(aboutGallery.coverUrl), 1200, 1000, 85)} alt="Michael Mwabonje — photographer and visual storyteller" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <img src={getOptimizedImageUrl(REAL_HERO_IMAGE_URL, 1200, 1000, 85)} alt="Coastal visual storytelling by Mwabonje Photography" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+        </div>
+        <div className="flex flex-col justify-center px-7 py-14 sm:px-12 md:px-[9%] md:py-20">
+          <span className="atelier-eyebrow text-[#52634e] mb-5">Behind the Stories</span>
+          <h2 className="font-editorial text-4xl sm:text-5xl md:text-6xl leading-[.98] tracking-tight text-[#17271d] mb-6">A sense of place.<br/><em className="font-normal">A human point of view.</em></h2>
+          <p className="text-[#56594f] text-sm sm:text-base leading-8 max-w-xl">I’m Michael Mwabonje, a lifestyle photographer and visual storyteller based in Malindi, Kenya. I create thoughtful imagery for people, places and brands — guided by natural light, honest moments and the character of the coast.</p>
+          <Link to="/about" className="atelier-text-link mt-8 self-start text-[#173c2a]">More about Michael <ArrowUpRight className="w-4 h-4"/></Link>
+        </div>
       </section>
 
       {/* Services & Coastal Storytelling Overview Section */}
