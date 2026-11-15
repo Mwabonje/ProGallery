@@ -155,7 +155,7 @@ export const Blog: React.FC = () => {
                   {featuredPost.cover_image && <img src={featuredPost.cover_image} alt={featuredPost.title} loading="eager" fetchPriority="high" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.025]" />}
                 </>)}
                 <div className="lg:py-4">
-                  <span className="inline-flex px-3 py-1 rounded-full bg-[#0f172b] dark:bg-[#0f172b] text-[#0f172b] dark:text-[#faf8f5] text-[9px] font-bold tracking-[0.16em] uppercase mb-4">Featured Story</span>
+                  <span className="inline-flex px-3 py-1 rounded-full bg-[#0f172b] text-[#faf8f5] text-[9px] font-bold tracking-[0.16em] uppercase mb-4">Featured Story</span>
                   <h2 className="font-editorial text-3xl sm:text-4xl lg:text-[42px] leading-[1.06] text-[#050505] dark:text-[#faf8f5]">
                     {storyLink(featuredPost, "hover:text-[#050505] dark:hover:text-amber-200 transition-colors", featuredPost.title)}
                   </h2>
@@ -186,7 +186,7 @@ export const Blog: React.FC = () => {
                         {post.cover_image && <img src={post.cover_image} alt={post.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />}
                       </>)}
                       <div className="pt-3 px-1">
-                        {parseCategories(post.category).slice(0, 1).map(cat => <span key={cat} className="inline-block bg-[#0f172b] dark:bg-[#0f172b] text-[#0f172b] dark:text-[#faf8f5] rounded px-2 py-1 text-[9px] font-bold tracking-wider uppercase mb-2">{cat}</span>)}
+                        {parseCategories(post.category).slice(0, 1).map(cat => <span key={cat} className="inline-block bg-[#0f172b] text-[#faf8f5] rounded px-2 py-1 text-[9px] font-bold tracking-wider uppercase mb-2">{cat}</span>)}
                         <h3 className="font-editorial text-[23px] leading-[1.08] text-[#050505] dark:text-[#faf8f5]">{storyLink(post, "hover:text-[#050505] dark:hover:text-amber-200 transition-colors", post.title)}</h3>
                         <p className="mt-2 text-xs leading-relaxed text-[#0f172b] dark:text-slate-300 line-clamp-2">{post.excerpt}</p>
                         <p className="mt-3 text-[11px] text-[#0f172b] dark:text-slate-400">{formatDate(post.date)} <span className="mx-1.5">·</span> {calculateReadingTime(post.content)} min read</p>
