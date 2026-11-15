@@ -40,6 +40,9 @@ export const Blog: React.FC = () => {
   const archivePosts = filteredPosts.slice(4).filter(post => !popularPostIds.has(post.id));
   const totalPages = Math.max(1, Math.ceil(archivePosts.length / pageSize));
   const paginatedPosts = archivePosts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const categoryPageSize = 9;
+  const categoryTotalPages = Math.max(1, Math.ceil(filteredPosts.length / categoryPageSize));
+  const categoryPagePosts = filteredPosts.slice((currentPage - 1) * categoryPageSize, currentPage * categoryPageSize);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -190,6 +193,40 @@ export const Blog: React.FC = () => {
             {selectedCategory !== 'All' && <button type="button" onClick={() => setSearchParams({})} className="mt-4 text-xs font-semibold uppercase tracking-wider text-[#003223] underline underline-offset-4 dark:text-[#8cc74f]">View all stories</button>}
           </div>
         ) : (
+          {selectedCategory !== 'All' ? (
+            <section aria-labelledby="category-stories-heading" className="pt-2">
+              <div className="mb-7 flex flex-wrap items-end justify-between gap-3 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
+                <div>
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f172b] dark:text-[#faf8f5]">The Journal · Category</p>
+                  <h2 id="category-stories-heading" className="font-editorial text-3xl sm:text-4xl text-[#050505] dark:text-[#faf8f5]">{selectedCategory} Stories</h2>
+                </div>
+                <span className="text-xs text-[#0f172b] dark:text-slate-400">{filteredPosts.length} {filteredPosts.length === 1 ? 'story' : 'stories'}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+                {categoryPagePosts.map(post => (
+                  <article key={post.id} className="group min-w-0">
+                    {storyLink(post, "mb-3 block aspect-[1.55/1] overflow-hidden rounded-md bg-[#faf8f5]", <>
+                      {post.cover_image && <img src={post.cover_image} alt={post.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />}
+                    </>)}
+                    <div className="px-1">
+                      <p className="mb-2 text-[10px] text-[#0f172b] dark:text-slate-400">{formatDate(post.date)} <span className="mx-1">·</span> {calculateReadingTime(post.content)} min read</p>
+                      <h3 className="font-editorial text-2xl leading-tight text-[#050505] dark:text-[#faf8f5]">{storyLink(post, "transition-colors duration-200 hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:hover:text-[#8cc74f]", post.title)}</h3>
+                      {post.excerpt && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#0f172b] dark:text-slate-300">{post.excerpt}</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {categoryTotalPages > 1 && (
+                <nav aria-label="Category story pagination" className="flex justify-center items-center gap-2 sm:gap-4 pt-10">
+                  <button type="button" onClick={() => { setCurrentPage(page => Math.max(1, page - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} disabled={currentPage === 1} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Previous page"><ArrowLeft size={18} /></button>
+                  {Array.from({ length: categoryTotalPages }, (_, index) => index + 1).map(page => (
+                    <button key={page} type="button" onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentPage === page ? 'page' : undefined} className={`h-9 w-9 rounded-md text-sm transition-colors ${currentPage === page ? 'bg-[#0f172b] text-[#faf8f5] dark:bg-[#faf8f5] dark:text-[#050505]' : 'text-[#0f172b] hover:bg-[#faf8f5] dark:text-slate-300 dark:hover:bg-slate-800'}`}>{page}</button>
+                  ))}
+                  <button type="button" onClick={() => { setCurrentPage(page => Math.min(categoryTotalPages, page + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} disabled={currentPage === categoryTotalPages} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
+                </nav>
+              )}
+            </section>
+          ) : (
           <>
             {/* Featured story */}
             {featuredPost && (
@@ -304,7 +341,8 @@ export const Blog: React.FC = () => {
                 <button type="button" onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === totalPages} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
               </nav>
             )}
-          </>
+          </
+          )}>
         )}
       </main>
 
