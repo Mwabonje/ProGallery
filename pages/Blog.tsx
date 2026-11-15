@@ -313,7 +313,7 @@ export const Blog: React.FC = () => {
                     />
                   )}
                 </div>
-                <div className="min-h-[280px] lg:h-[300px] flex flex-col justify-center p-6 sm:p-8 lg:px-10 lg:py-7">
+                <div className="min-h-[300px] flex flex-col justify-start p-6 sm:p-8 lg:px-10 lg:py-7">
                   <p className="text-[10px] tracking-[0.22em] uppercase font-bold text-[#0f172b] dark:text-[#faf8f5] mb-5">Popular Stories</p>
                   <div className="space-y-4 sm:space-y-4">
                     {popularPosts.map(post => (
