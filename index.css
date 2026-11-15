@@ -565,3 +565,101 @@ body:has(#work) .atelier-work-grid > a:hover img {
     transition: none;
   }
 }
+
+
+/* Mwabonje Photography — coastal editorial direction (homepage only) */
+:root {
+  --atelier-canvas: #f6f0e6;
+  --atelier-paper: #fbf7ef;
+  --atelier-ink: #17221b;
+  --atelier-ink-soft: #334238;
+  --atelier-bronze: #8c9b70;
+  --atelier-taupe: #827b6f;
+  --atelier-hairline: rgba(48, 66, 52, .18);
+  --atelier-scrim: rgba(12, 25, 18, .34);
+  --font-atelier-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --font-atelier-body: "Manrope", "Plus Jakarta Sans", sans-serif;
+}
+body:has(#work) {
+  background: var(--atelier-canvas);
+  color: var(--atelier-ink);
+}
+body:has(#work) .atelier-hero {
+  min-height: min(88svh, 900px);
+  background: #18261d;
+}
+body:has(#work) .atelier-hero > div.absolute.inset-0 {
+  background:
+    linear-gradient(90deg, rgba(10, 25, 17, .58) 0%, rgba(10, 25, 17, .18) 65%, rgba(10, 25, 17, .04) 100%),
+    linear-gradient(0deg, rgba(10, 25, 17, .48), transparent 55%) !important;
+}
+body:has(#work) .atelier-hero h1 {
+  max-width: 850px;
+  font-size: clamp(3.4rem, 7.4vw, 7.6rem);
+  line-height: .94;
+  letter-spacing: -.045em;
+}
+body:has(#work) .atelier-hero h1 em { color: #e4d1ad; }
+body:has(#work) .atelier-hero__content > div:first-child { color: #f1e6d3; }
+body:has(#work) .atelier-hero__content button:last-child {
+  color: #fff;
+  background: #123b2a;
+  border-color: #123b2a;
+  border-radius: 999px;
+}
+body:has(#work) .atelier-hero__content button:last-child:hover {
+  background: #24543d;
+  border-color: #24543d;
+}
+body:has(#work) #work {
+  max-width: 1500px;
+  padding-top: clamp(4rem, 7vw, 7rem);
+  padding-bottom: clamp(4rem, 7vw, 7rem);
+}
+body:has(#work) #work h2,
+body:has(#work) section:has(+ #availability) h2 {
+  color: #17271d;
+}
+body:has(#work) #work > div:first-child p { color: #716f63; }
+body:has(#work) #work button {
+  border-radius: 999px;
+}
+body:has(#work) .atelier-work-grid > a {
+  border-radius: 8px;
+  overflow: hidden;
+}
+body:has(#work) .atelier-work-grid > a > div:last-child {
+  padding: clamp(1rem, 2.2vw, 1.8rem);
+}
+body:has(#work) .atelier-work-grid > a h3 {
+  color: #fff;
+  font-size: clamp(1.55rem, 2.5vw, 2.55rem);
+  line-height: 1.02;
+}
+body:has(#work) .atelier-work-grid > a img { filter: saturate(.94) contrast(1.015); }
+body:has(#work) section:has(+ #availability) {
+  background: #eee7da;
+  border-top-color: var(--atelier-hairline);
+}
+body:has(#work) section:has(+ #availability) > div > div:nth-child(2) > div {
+  background: #f8f3e9;
+  border-color: var(--atelier-hairline);
+  border-radius: 10px;
+}
+body:has(#work) section:has(+ #availability) > div > div:nth-child(3) {
+  background: #123b2a;
+  border-radius: 10px;
+}
+body:has(#work) #availability {
+  background: var(--atelier-canvas);
+}
+body:has(#work) footer {
+  background: #102b20;
+  border-top-color: rgba(220, 210, 184, .24);
+}
+body:has(#work) footer .font-serif { color: #f6f0e6; }
+@media (max-width: 767px) {
+  body:has(#work) .atelier-hero { min-height: 82svh; }
+  body:has(#work) .atelier-hero__content { padding-top: 8.5rem; }
+  body:has(#work) #work { padding-inline: 1rem; }
+}
