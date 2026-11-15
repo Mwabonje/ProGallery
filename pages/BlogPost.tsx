@@ -239,7 +239,7 @@ export const BlogPost: React.FC = () => {
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex xl:gap-7">
             <Link to="/" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">Home</Link>
-            <Link to="/#work" className="py-2 text-[11px] sm:text-xs font-bold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5] dark:hover:text-white border-b-2 border-[#0f172b] dark:border-[#faf8f5] pb-0.5">Portfolio</Link>
+            <Link to="/#work" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">Portfolio</Link>
             <Link to="/?category=FILMS#work" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">Films</Link>
             <Link to="/blog" className="py-2 text-[11px] sm:text-xs font-bold tracking-widest uppercase border-b-2 border-[#0f172b] pb-0.5 text-[#0f172b] dark:border-[#faf8f5] dark:text-[#faf8f5]">Journal</Link>
             <Link to="/about" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">About</Link>
