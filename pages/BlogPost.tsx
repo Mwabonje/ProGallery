@@ -373,7 +373,7 @@ export const BlogPost: React.FC = () => {
         </main>
 
         <aside className="order-2 min-w-0 space-y-5 lg:pt-0">
-          <section className="hidden rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:sticky lg:top-6 lg:block lg:self-start">
+          <section className="hidden rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:block lg:self-start">
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#0f172b]" /><h2 className="font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Table of Contents</h2></div>
             {tocItems.length ? (
               <nav aria-label="Table of contents" className="max-h-[min(38vh,300px)] space-y-1 overflow-y-auto overscroll-contain pr-1">
