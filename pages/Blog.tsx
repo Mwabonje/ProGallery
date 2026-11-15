@@ -72,7 +72,7 @@ export const Blog: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-[#faf8f5] dark:bg-[#0f172b] text-[#050505] dark:text-[#faf8f5] flex flex-col font-sans transition-colors duration-300">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -153,11 +153,11 @@ export const Blog: React.FC = () => {
 
       {/* Editorial Page Intro */}
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-4 flex flex-col items-center">
-        <span className="text-[10px] tracking-[0.25em] uppercase font-bold text-slate-400 dark:text-slate-500 mb-2">Stories &amp; Chronicles</span>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wider font-bold text-slate-900 dark:text-white text-center font-editorial">
+        <span className="text-[10px] tracking-[0.25em] uppercase font-bold text-[#0f172b]/65 dark:text-[#faf8f5]/60 mb-2">Stories &amp; Chronicles</span>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wider font-bold text-[#050505] dark:text-[#faf8f5] text-center font-editorial">
           Journal
         </h1>
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 text-center max-w-lg">
+        <p className="mt-3 text-sm text-[#0f172b]/75 dark:text-[#faf8f5]/70 text-center max-w-lg">
           Stories, wedding reflections, and visual narratives from the Kenyan coast.
         </p>
 
@@ -172,8 +172,8 @@ export const Blog: React.FC = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-semibold px-3 py-1.5 rounded-full transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      ? 'bg-[#0f172b] text-[#faf8f5] dark:bg-[#faf8f5] dark:text-[#050505] shadow-xs'
+                      : 'bg-[#0f172b]/[0.06] dark:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5]/80 hover:bg-[#0f172b]/[0.12] dark:hover:bg-[#faf8f5]/[0.14]'
                   }`}
                 >
                   {cat}
@@ -188,16 +188,16 @@ export const Blog: React.FC = () => {
       <main className="w-full max-w-5xl mx-auto px-4 py-10 md:py-16">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#0f172b]/60" />
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center text-slate-500 dark:text-slate-400 py-16 space-y-3">
+          <div className="text-center text-[#0f172b]/75 dark:text-[#faf8f5]/70 py-16 space-y-3">
             <p className="text-base">No journal entries found in "{selectedCategory}".</p>
             {selectedCategory !== 'All' && (
               <button
                 type="button"
                 onClick={() => setSelectedCategory('All')}
-                className="text-xs uppercase tracking-wider font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                className="text-xs uppercase tracking-wider font-semibold text-[#0f172b] dark:text-[#faf8f5] hover:underline cursor-pointer"
               >
                 View all articles
               </button>
@@ -209,7 +209,7 @@ export const Blog: React.FC = () => {
               const categories = parseCategories(post.category);
               return (
                 <article key={post.id} className="group flex flex-col h-full">
-                  <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-slate-100 dark:bg-slate-800 mb-4 md:mb-6" aria-label={`Read ${post.title}`}>
+                  <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block overflow-hidden relative aspect-[4/3] sm:aspect-[3/2] md:aspect-[4/3] bg-[#0f172b]/[0.06] dark:bg-[#faf8f5]/[0.08] mb-4 md:mb-6" aria-label={`Read ${post.title}`}>
                     {post.cover_image && (
                       <img 
                         src={post.cover_image} 
@@ -219,11 +219,11 @@ export const Blog: React.FC = () => {
                       />
                     )}
                   </Link>
-                  <div className="flex flex-wrap items-center gap-2 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-slate-500 dark:text-slate-400 font-semibold">
+                  <div className="flex flex-wrap items-center gap-2 mb-3 text-[9px] md:text-[10px] tracking-widest uppercase text-[#0f172b]/75 dark:text-[#faf8f5]/70 font-semibold">
                     <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     {categories.length > 0 && (
                       <>
-                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                        <span className="w-1 h-1 rounded-full bg-[#0f172b]/25 dark:bg-[#faf8f5]/25"></span>
                         <div className="flex flex-wrap items-center gap-1.5">
                           {categories.map((cat) => (
                             <button
@@ -242,18 +242,18 @@ export const Blog: React.FC = () => {
                         </div>
                       </>
                     )}
-                    <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 hidden sm:inline-block"></span>
+                    <span className="w-1 h-1 rounded-full bg-[#0f172b]/25 dark:bg-[#faf8f5]/25 hidden sm:inline-block"></span>
                     <span className="hidden sm:inline-block">{calculateReadingTime(post.content)} min read</span>
                   </div>
                   <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="block group">
-                    <h2 className="text-2xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    <h2 className="text-2xl md:text-2xl lg:text-3xl font-bold text-[#050505] dark:text-[#faf8f5] mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {post.title}
                     </h2>
                   </Link>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-4">
+                  <p className="text-[#0f172b] dark:text-[#faf8f5]/80 text-sm md:text-base leading-relaxed mb-6 flex-grow line-clamp-4">
                     {post.excerpt}
                   </p>
-                  <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 dark:text-slate-200 hover:text-slate-500 dark:hover:text-white transition-colors mt-auto">
+                  <Link to={`/blog/${post.slug}`} onClick={() => handlePostClick(post.slug)} className="inline-flex items-center text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-slate-900 dark:text-[#faf8f5] hover:text-[#0f172b]/75 dark:hover:text-white transition-colors mt-auto">
                     Read More
                   </Link>
                 </article>
