@@ -102,7 +102,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
   // Compact bar for header/top of post
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-y border-[#0f172b]/15 dark:border-[#faf8f5]/15 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/70 not-prose my-6">
-      <div className="flex items-center gap-1.5 uppercase tracking-widest text-[10px] font-bold text-[#0f172b]/60 dark:text-[#faf8f5]/60 dark:text-slate-500">
+      <div className="flex items-center gap-1.5 uppercase tracking-widest text-[10px] font-bold text-[#0f172b]/65 dark:text-[#faf8f5]/65">
         <Share2 className="w-3.5 h-3.5" />
         <span>Share Story</span>
       </div>
@@ -141,7 +141,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
           className="p-1.5 rounded-full hover:bg-[#0f172b]/[0.08] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] transition-colors cursor-pointer"
           title="Copy article link"
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-[#0f172b] dark:text-[#faf8f5]" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
     </div>
