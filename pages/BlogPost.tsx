@@ -355,7 +355,7 @@ export const BlogPost: React.FC = () => {
             <section className="mt-14 border-t border-[#0f172b]/15 pt-9 dark:border-[#faf8f5]/15">
               <div className="mb-6 flex items-end justify-between gap-4">
                 <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f172b]">Continue exploring</p><h2 className="font-editorial text-3xl font-semibold text-[#050505] dark:text-[#faf8f5]">Related Stories</h2></div>
-                <Link to="/blog" className="text-xs font-semibold text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]">All stories <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+                <Link to="/blog" className="group/all inline-flex items-center text-xs font-semibold text-[#0f172b] transition-colors duration-200 hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-4 dark:text-[#faf8f5] dark:hover:text-[#8cc74f]">All stories <ArrowRight className="ml-1 inline h-3.5 w-3.5 transition-transform duration-200 group-hover/all:translate-x-1" /></Link>
               </div>
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {relatedPosts.map(item => (
@@ -393,7 +393,7 @@ export const BlogPost: React.FC = () => {
               <div><p className="text-sm font-bold text-[#050505] dark:text-[#faf8f5]">{post.author || 'Mwabonje'}</p><p className="mt-1 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/65">Photographer &amp; Visual Storyteller</p></div>
             </div>
             <p className="text-xs leading-5 text-[#0f172b] dark:text-[#faf8f5]/80">A photographer and visual storyteller based on Kenya's coast, creating people-centred imagery for weddings, travel, hospitality and lifestyle brands.</p>
-            <Link to="/about" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]">More about Mwabonje <ArrowRight className="h-3.5 w-3.5" /></Link>
+            <Link to="/about" className="group/author mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#0f172b] transition-colors duration-200 hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-4 dark:text-[#faf8f5] dark:hover:text-[#8cc74f]">More about Mwabonje <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/author:translate-x-1" /></Link>
           </section>
 
           {relatedPosts.length > 0 && (
@@ -401,9 +401,9 @@ export const BlogPost: React.FC = () => {
               <h2 className="mb-4 font-editorial text-2xl font-semibold text-[#050505] dark:text-[#faf8f5]">Related Articles</h2>
               <div className="space-y-3">
                 {relatedPosts.map(item => (
-                  <Link key={item.id} to={`/blog/${item.slug}`} className="group flex gap-3">
-                    <div className="h-[76px] w-[100px] shrink-0 overflow-hidden rounded-lg bg-[#0f172b]/[0.06]">{item.cover_image && <img src={item.cover_image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}</div>
-                    <div className="min-w-0"><h3 className="font-editorial text-base font-semibold leading-tight text-[#050505] group-hover:text-[#0f172b] dark:text-[#faf8f5]">{item.title}</h3><p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#0f172b]/70 dark:text-[#faf8f5]/65"><Clock3 className="h-3 w-3" />{calculateReadingTime(item.content)} min read</p></div>
+                  <Link key={item.id} to={`/blog/${item.slug}`} className="group flex gap-3 rounded-lg p-1.5 -mx-1.5 transition-colors duration-200 hover:bg-[#003223]/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:hover:bg-[#faf8f5]/[0.07]">
+                    <div className="h-[76px] w-[100px] shrink-0 overflow-hidden rounded-lg bg-[#0f172b]/[0.06]"><div className="h-full w-full transition-transform duration-500 ease-out group-hover:scale-105">{item.cover_image && <img src={item.cover_image} alt="" loading="lazy" className="h-full w-full object-cover" />}</div></div>
+                    <div className="min-w-0"><h3 className="font-editorial text-base font-semibold leading-tight text-[#050505] transition-colors duration-200 group-hover:text-[#003223] dark:text-[#faf8f5] dark:group-hover:text-[#8cc74f]">{item.title}</h3><p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#0f172b]/70 transition-colors duration-200 group-hover:text-[#003223] dark:text-[#faf8f5]/65 dark:group-hover:text-[#8cc74f]"><Clock3 className="h-3 w-3" />{calculateReadingTime(item.content)} min read</p></div>
                   </Link>
                 ))}
               </div>
@@ -413,13 +413,13 @@ export const BlogPost: React.FC = () => {
           <section className="relative overflow-hidden rounded-2xl bg-[#0f172b] p-5 text-white">
             {post.cover_image && <img src={post.cover_image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />}
             <div className="absolute inset-0 bg-gradient-to-br from-[#050505]/85 to-[#0f172b]/80" />
-            <div className="relative"><span className="mb-3 block h-1 w-9 bg-[#faf8f5]" /><h2 className="font-editorial text-2xl font-semibold leading-tight">Get Photography Stories &amp; Tips</h2><p className="mt-2 text-xs leading-5 text-[#faf8f5]/85">Explore new articles, coastal location guides and photography inspiration.</p><Link to="/blog" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#faf8f5] px-4 py-2.5 text-xs font-bold text-[#050505] hover:bg-[#0f172b] hover:text-[#faf8f5]">Explore the Journal <ArrowUpRight className="h-4 w-4" /></Link></div>
+            <div className="relative"><span className="mb-3 block h-1 w-9 bg-[#faf8f5]" /><h2 className="font-editorial text-2xl font-semibold leading-tight">Get Photography Stories &amp; Tips</h2><p className="mt-2 text-xs leading-5 text-[#faf8f5]/85">Explore new articles, coastal location guides and photography inspiration.</p><Link to="/blog" className="group/journal mt-4 inline-flex items-center gap-2 rounded-lg bg-[#faf8f5] px-4 py-2.5 text-xs font-bold text-[#050505] transition-all duration-200 hover:bg-[#8cc74f] hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172b]">Explore the Journal <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover/journal:translate-x-0.5 group-hover/journal:-translate-y-0.5" /></Link></div>
           </section>
 
           {categories.length > 0 && (
             <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
               <h2 className="mb-3 font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Categories</h2>
-              <div className="space-y-1">{categories.map(category => <Link key={category} to="/blog" className="flex items-center justify-between border-b border-[#0f172b]/15 py-2 text-xs text-[#0f172b] last:border-0 hover:text-[#050505] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80"><span>{category}</span><ChevronRight className="h-3.5 w-3.5" /></Link>)}</div>
+              <div className="space-y-1">{categories.map(category => <Link key={category} to="/blog" className="group/category -mx-2 flex items-center justify-between rounded-md border-b border-[#0f172b]/15 px-2 py-2 text-xs text-[#0f172b] transition-colors duration-200 last:border-0 hover:bg-[#003223]/[0.045] hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.07] dark:hover:text-[#8cc74f]"><span>{category}</span><ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/category:translate-x-1" /></Link>)}</div>
             </section>
           )}
         </aside>
