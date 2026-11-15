@@ -3,7 +3,7 @@ import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Cl
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle, getCleanGalleryDescription } from '../utils/formatters';
+import { getOptimizedImageUrl, formatDate, rewriteUrlToR2, getParentGalleryId, getCleanGalleryTitle, getCleanGalleryDescription, getLockedExtraFileIds, buildUpdatedGalleryTitleJson } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { getApiUrl } from '../utils/api';
 import { toast } from 'sonner';
@@ -34,6 +34,7 @@ export interface DeliveryFileItem {
   expires_at?: string;
   is_selected?: boolean;
   is_edited?: boolean;
+  is_extra_locked?: boolean;
   thumbnail_url?: string;
   thumbnail_path?: string;
   client_note?: string;
@@ -212,7 +213,7 @@ export const Dashboard: React.FC = () => {
   // In-Dashboard Photo Lightbox & Management Modal
   const [selectedPhotoForDetail, setSelectedPhotoForDetail] = useState<DeliveryFileItem | null>(null);
   const [showAllPhotosInGrid, setShowAllPhotosInGrid] = useState<boolean>(false);
-  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'edited' | 'notes'>('all');
+  const [photosFilter, setPhotosFilter] = useState<'all' | 'picks' | 'edited' | 'locked' | 'notes'>('all');
   const [photosSort, setPhotosSort] = useState<'newest' | 'oldest' | 'downloads' | 'name'>('newest');
   const [galleryPhotoSearch, setGalleryPhotoSearch] = useState<string>('');
 
@@ -680,6 +681,8 @@ export const Dashboard: React.FC = () => {
             } catch {}
           }
 
+          const galleryLockedExtrasSet = new Set(getLockedExtraFileIds(gallery));
+
           return {
             ...gallery,
             seo_title: parsedSeoTitle,
@@ -710,6 +713,7 @@ export const Dashboard: React.FC = () => {
               expires_at: f.expires_at,
               is_selected: Boolean(selectionsMap[f.id]),
               is_edited: Boolean(f.is_edited),
+              is_extra_locked: galleryLockedExtrasSet.has(f.id),
               thumbnail_url: f.thumbnail_url,
               thumbnail_path: f.thumbnail_path,
               client_note: selectionsMap[f.id]?.client_note,
@@ -720,10 +724,21 @@ export const Dashboard: React.FC = () => {
         })
       );
 
-      const withSubGalleries: DashboardGallery[] = enrichedGalleries.map((gal) => ({
-        ...gal,
-        subGalleries: enrichedGalleries.filter((child) => getParentGalleryId(child) === gal.id),
-      }));
+      const withSubGalleries: DashboardGallery[] = enrichedGalleries.map((gal) => {
+        const parentLockedSet = new Set(getLockedExtraFileIds(gal));
+        return {
+          ...gal,
+          subGalleries: enrichedGalleries
+            .filter((child) => getParentGalleryId(child) === gal.id)
+            .map((child) => ({
+              ...child,
+              files: child.files?.map((f) => ({
+                ...f,
+                is_extra_locked: Boolean(f.is_extra_locked || parentLockedSet.has(f.id)),
+              })),
+            })),
+        };
+      });
       
       // Sort galleries
       const sortedGalleries = withSubGalleries.sort((a, b) => {
@@ -1627,6 +1642,99 @@ export const Dashboard: React.FC = () => {
 
   const handleBulkToggleEdited = async (markAsEdited: boolean) => {
     await handleMarkFilesEdited(selectedPhotoIds, markAsEdited);
+  };
+
+  const applyLocalExtraLockState = (galleryId: string, nextLockedIds: string[], updatedTitleJson: string) => {
+    const idSet = new Set(nextLockedIds);
+    setGalleries(prev =>
+      prev.map(g => {
+        if (g.id !== galleryId) return g;
+        return {
+          ...g,
+          title: updatedTitleJson,
+          files: g.files?.map(f => ({ ...f, is_extra_locked: idSet.has(f.id) })),
+          subGalleries: g.subGalleries?.map(sub => {
+            const subOwnSet = new Set(getLockedExtraFileIds(sub));
+            return {
+              ...sub,
+              files: sub.files?.map(f => ({ ...f, is_extra_locked: idSet.has(f.id) || subOwnSet.has(f.id) })),
+            };
+          }),
+        };
+      }),
+    );
+  };
+
+  const handleMarkFilesExtraLocked = async (targetIds: string[], lockAsExtra: boolean) => {
+    if (!currentDelivery || targetIds.length === 0) return;
+    const prevTitle = currentDelivery.title;
+    const existingLocked = new Set([
+      ...getLockedExtraFileIds(currentDelivery),
+      ...((currentDelivery.subGalleries || []).flatMap(s => getLockedExtraFileIds(s))),
+    ]);
+    targetIds.forEach(id => {
+      if (lockAsExtra) existingLocked.add(id);
+      else existingLocked.delete(id);
+    });
+    const nextLockedIds = Array.from(existingLocked);
+    const updatedTitleJson = buildUpdatedGalleryTitleJson(currentDelivery, {
+      lockedExtraFileIds: nextLockedIds,
+    });
+
+    applyLocalExtraLockState(currentDelivery.id, nextLockedIds, updatedTitleJson);
+    if (selectedPhotoForDetail && targetIds.includes(selectedPhotoForDetail.id)) {
+      setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_extra_locked: lockAsExtra });
+    }
+
+    try {
+      const { error } = await supabase
+        .from('galleries')
+        .update({ title: updatedTitleJson })
+        .eq('id', currentDelivery.id);
+      if (error) throw error;
+
+      // Also keep sub-galleries in sync if unlocking photos that were locked on a sub-gallery
+      if (!lockAsExtra && currentDelivery.subGalleries?.length) {
+        const targetSet = new Set(targetIds);
+        for (const sub of currentDelivery.subGalleries) {
+          const subIds = getLockedExtraFileIds(sub);
+          const filtered = subIds.filter(id => !targetSet.has(id));
+          if (filtered.length !== subIds.length) {
+            await supabase
+              .from('galleries')
+              .update({ title: buildUpdatedGalleryTitleJson(sub, { lockedExtraFileIds: filtered }) })
+              .eq('id', sub.id);
+          }
+        }
+      }
+
+      toast.success(
+        lockAsExtra
+          ? `${targetIds.length} extra image${targetIds.length === 1 ? '' : 's'} locked — client will be asked to pay to download high-res`
+          : `${targetIds.length} image${targetIds.length === 1 ? '' : 's'} unlocked for high-res download`
+      );
+      if (selectedPhotoIds.length > 0 && targetIds.length > 1) {
+        setSelectedPhotoIds([]);
+      }
+      await fetchData();
+    } catch (err: any) {
+      console.error('Extra lock update failed:', err);
+      const prevIds = getLockedExtraFileIds({ title: prevTitle, client_name: currentDelivery.client_name });
+      applyLocalExtraLockState(currentDelivery.id, prevIds, prevTitle || '');
+      if (selectedPhotoForDetail && targetIds.includes(selectedPhotoForDetail.id)) {
+        setSelectedPhotoForDetail({ ...selectedPhotoForDetail, is_extra_locked: !lockAsExtra });
+      }
+      toast.error('Failed to update extra image lock');
+    }
+  };
+
+  const handleToggleSingleExtraLock = async (file: DeliveryFileItem) => {
+    await handleMarkFilesExtraLocked([file.id], !file.is_extra_locked);
+  };
+
+  const handleBulkToggleExtraLock = async (lockAsExtra: boolean) => {
+    await handleMarkFilesExtraLocked(selectedPhotoIds, lockAsExtra);
+    setSelectedPhotoIds([]);
   };
 
   const handleOpenRenameModal = (singleFile?: DeliveryFileItem) => {
@@ -4117,6 +4225,8 @@ export const Dashboard: React.FC = () => {
                             displayFiles = displayFiles.filter(f => f.is_selected);
                           } else if (photosFilter === 'edited') {
                             displayFiles = displayFiles.filter(f => f.is_edited);
+                          } else if (photosFilter === 'locked') {
+                            displayFiles = displayFiles.filter(f => f.is_extra_locked);
                           } else if (photosFilter === 'notes') {
                             displayFiles = displayFiles.filter(f => f.client_note && f.client_note.trim());
                           }
@@ -4148,6 +4258,7 @@ export const Dashboard: React.FC = () => {
                           ];
                           const picksTotalCount = allDeliveryFilesList.filter(f => f.is_selected).length;
                           const editedTotalCount = allDeliveryFilesList.filter(f => f.is_edited).length;
+                          const lockedTotalCount = allDeliveryFilesList.filter(f => f.is_extra_locked).length;
 
                           const filterTabsBar = (
                             <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-0.5 gap-0.5 shrink-0">
@@ -4179,6 +4290,16 @@ export const Dashboard: React.FC = () => {
                               >
                                 <Check className="w-3 h-3 text-emerald-600" />
                                 <span>Edited ({editedTotalCount})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setPhotosFilter('locked'); setShowAllPhotosInGrid(true); }}
+                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                  photosFilter === 'locked' ? 'bg-white text-amber-800 font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
+                                }`}
+                              >
+                                <Lock className="w-3 h-3 text-amber-600" />
+                                <span>Extras ({lockedTotalCount})</span>
                               </button>
                               <button
                                 type="button"
@@ -4346,6 +4467,24 @@ export const Dashboard: React.FC = () => {
                                     </button>
                                     <button
                                       type="button"
+                                      onClick={() => handleBulkToggleExtraLock(true)}
+                                      className="h-7 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                      title="Lock selected photos as extra images (client pays to download high-res)"
+                                    >
+                                      <Lock className="w-3 h-3" />
+                                      <span>Lock Extra</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBulkToggleExtraLock(false)}
+                                      className="h-7 px-2.5 rounded-lg bg-[#FAF7F0] hover:bg-[#F3EFE8] border border-[#E6DFC6] text-[#7A6F69] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                                      title="Unlock selected extra photos for high-res download"
+                                    >
+                                      <Unlock className="w-3 h-3" />
+                                      <span>Unlock</span>
+                                    </button>
+                                    <button
+                                      type="button"
                                       onClick={handleBulkDeletePhotos}
                                       className="h-7 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                                     >
@@ -4402,6 +4541,11 @@ export const Dashboard: React.FC = () => {
                                                     Edited
                                                   </span>
                                                 )}
+                                                {file.is_extra_locked && (
+                                                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-amber-200 shrink-0">
+                                                    <Lock className="w-2.5 h-2.5" /> Extra Locked
+                                                  </span>
+                                                )}
                                                 {file.is_selected && (
                                                   <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-rose-200 shrink-0">
                                                     <Heart className="w-2.5 h-2.5 fill-rose-500" /> Client Pick
@@ -4417,6 +4561,22 @@ export const Dashboard: React.FC = () => {
                                           </div>
 
                                           <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSingleExtraLock(file);
+                                              }}
+                                              className={`h-8 px-2.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                                file.is_extra_locked
+                                                  ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
+                                                  : 'bg-[#FAF7F0] text-[#5C5049] border-[#E6DFC6] hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200'
+                                              }`}
+                                              title={file.is_extra_locked ? 'Unlock extra image for high-res download' : 'Lock as extra image (requires payment for high-res)'}
+                                            >
+                                              {file.is_extra_locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                                              <span className="hidden sm:inline">{file.is_extra_locked ? 'Locked' : 'Lock Extra'}</span>
+                                            </button>
                                             <button
                                               type="button"
                                               onClick={(e) => {
@@ -4512,8 +4672,8 @@ export const Dashboard: React.FC = () => {
                                       />
                                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors" />
 
-                                      {/* Badges: Client Pick / Notes / Edited */}
-                                      <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none">
+                                      {/* Badges: Client Pick / Notes / Edited / Extra Locked */}
+                                      <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap max-w-[78%] pointer-events-none">
                                         {file.is_selected && (
                                           <span className="w-6 h-6 rounded-full bg-rose-500/95 backdrop-blur-md text-white flex items-center justify-center shadow-xs">
                                             <Heart className="w-3.5 h-3.5 fill-white" />
@@ -4527,6 +4687,11 @@ export const Dashboard: React.FC = () => {
                                         {file.is_edited && (
                                           <span className="px-1.5 py-0.5 rounded-full bg-emerald-600/95 backdrop-blur-md text-white text-[9px] font-bold shadow-xs">
                                             Edited
+                                          </span>
+                                        )}
+                                        {file.is_extra_locked && (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-amber-600/95 backdrop-blur-md text-white text-[9px] font-bold inline-flex items-center gap-0.5 shadow-xs">
+                                            <Lock className="w-2.5 h-2.5" /> Extra
                                           </span>
                                         )}
                                       </div>
@@ -4546,7 +4711,7 @@ export const Dashboard: React.FC = () => {
                                       </button>
 
                                       {/* Filename Overlay Bottom-Left on hover */}
-                                      <div className="absolute bottom-2 left-2 max-w-[55%] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                      <div className="absolute bottom-2 left-2 max-w-[45%] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                         <span className="block truncate text-[10px] font-medium text-white bg-black/55 backdrop-blur-xs px-2 py-0.5 rounded-md">
                                           {displayName}
                                         </span>
@@ -4554,6 +4719,18 @@ export const Dashboard: React.FC = () => {
 
                                       {/* Hover Quick Action Buttons */}
                                       <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); handleToggleSingleExtraLock(file); }}
+                                          className={`w-7 h-7 rounded-lg backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-xs transition-colors ${
+                                            file.is_extra_locked
+                                              ? 'bg-amber-600 hover:bg-amber-700'
+                                              : 'bg-black/60 hover:bg-amber-600'
+                                          }`}
+                                          title={file.is_extra_locked ? 'Unlock Extra Image' : 'Lock Extra Image (Requires Payment)'}
+                                        >
+                                          {file.is_extra_locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                        </button>
                                         <button
                                           type="button"
                                           onClick={(e) => { e.stopPropagation(); handleToggleSingleEdited(file); }}
@@ -6291,6 +6468,17 @@ export const Dashboard: React.FC = () => {
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>{selectedPhotoForDetail.is_edited ? 'Edited' : 'Mark Edited'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleSingleExtraLock(selectedPhotoForDetail)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          selectedPhotoForDetail.is_extra_locked
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                      >
+                        {selectedPhotoForDetail.is_extra_locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                        <span>{selectedPhotoForDetail.is_extra_locked ? 'Extra Locked (Unlock)' : 'Lock Extra'}</span>
                       </button>
                       <button
                         onClick={() => window.open(rewriteUrlToR2(selectedPhotoForDetail.file_url), '_blank')}

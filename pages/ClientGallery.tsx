@@ -42,6 +42,7 @@ import {
   getCleanGalleryDescription,
   getParentGalleryId,
   parseGalleryMetadata,
+  getLockedExtraFileIds,
 } from "../utils/formatters";
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 import { getApiUrl } from "../utils/api";
@@ -89,6 +90,7 @@ export const ClientGallery: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showExtraImageModal, setShowExtraImageModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showBalanceWarningModal, setShowBalanceWarningModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -188,6 +190,7 @@ export const ClientGallery: React.FC = () => {
     url: string;
     name: string;
     count: number;
+    skippedExtrasCount?: number;
     videoFiles?: GalleryFile[];
   } | null>(null);
 
@@ -1047,7 +1050,12 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
-    if (isFileLocked(file.id)) {
+    if (isExtraLocked(file.id)) {
+      setShowExtraImageModal(true);
+      return;
+    }
+
+    if (isBalanceLocked(file.id)) {
       setShowPayModal(true);
       return;
     }
@@ -1244,6 +1252,13 @@ export const ClientGallery: React.FC = () => {
       return;
     }
 
+    const allActiveSource = activeSubGallery ? activeSubFiles : files;
+    const unlockedActiveFiles = allActiveSource.filter((f) => !isExtraLocked(f.id));
+    if (unlockedActiveFiles.length === 0) {
+      setShowExtraImageModal(true);
+      return;
+    }
+
     if (!canDownloadAll) {
       setShowPayModal(true);
       return;
@@ -1259,8 +1274,15 @@ export const ClientGallery: React.FC = () => {
         .replace(/[^a-z0-9]/gi, "_")
         .toLowerCase();
 
-      // Bulk increment download counts for all files in the gallery
-      const fileIds = files.map((f) => f.id);
+      const validFiles = allActiveSource.filter(
+        (f) => !failedFileIds.has(f.id) && !isExtraLocked(f.id),
+      );
+      const skippedExtrasCount = allActiveSource.filter(
+        (f) => !failedFileIds.has(f.id) && isExtraLocked(f.id),
+      ).length;
+
+      // Bulk increment download counts for unlocked files in the gallery
+      const fileIds = validFiles.map((f) => f.id);
       try {
         await supabase.rpc("increment_downloads_bulk", { file_ids: fileIds });
         fileIds.forEach((id) => trackFileClick(id));
@@ -1269,7 +1291,6 @@ export const ClientGallery: React.FC = () => {
       }
 
       const zip = new JSZip();
-      const validFiles = files.filter((f) => !failedFileIds.has(f.id));
 
       // Identify large videos (e.g. > 30MB) so we don't blow browser memory on mobile
       const videoFiles = validFiles.filter(
@@ -1372,11 +1393,18 @@ export const ClientGallery: React.FC = () => {
         url: blobUrl,
         name: zipName,
         count: targetFiles.length,
+        skippedExtrasCount,
         videoFiles: videoFiles,
       });
 
-      setToast({ message: "Your gallery ZIP is ready!", type: "download" });
-      setTimeout(() => setToast(null), 3000);
+      setToast({
+        message:
+          skippedExtrasCount > 0
+            ? `Your ZIP is ready! (${skippedExtrasCount} locked extra image${skippedExtrasCount === 1 ? "" : "s"} excluded pending payment)`
+            : "Your gallery ZIP is ready!",
+        type: "download",
+      });
+      setTimeout(() => setToast(null), 4000);
 
       // Log download all feature
       try {
@@ -1421,9 +1449,33 @@ export const ClientGallery: React.FC = () => {
   );
   
   const isBalancePending = balanceDue > 0 && !isPortfolio;
-  
+
+  const lockedExtraIds = useMemo(() => {
+    return new Set<string>([
+      ...getLockedExtraFileIds(gallery),
+      ...getLockedExtraFileIds(activeSubGallery),
+    ]);
+  }, [gallery, activeSubGallery]);
+
+  const isExtraLocked = (fileId: string) => {
+    if (isPortfolio) return false;
+    return lockedExtraIds.has(fileId);
+  };
+
   const downloadLimit = gallery?.downloads_before_clearing || 0;
-  const canDownloadAll = !isBalancePending || (downloadLimit >= files.length);
+
+  const isBalanceLocked = (fileId: string) => {
+    if (!isBalancePending) return false;
+    if (downloadLimit <= 0) return true;
+    if (downloadedImageIds.includes(fileId)) return false;
+    if (downloadedImageIds.length >= downloadLimit) return true;
+    return false;
+  };
+
+  const unlockedForZipCount = files.filter((f) => !isExtraLocked(f.id)).length;
+  const canDownloadAll =
+    (!isBalancePending || downloadLimit >= unlockedForZipCount) &&
+    unlockedForZipCount > 0;
 
   
   const getDisplayUrl = (file: GalleryFile, isLightbox = false) => {
@@ -1450,11 +1502,7 @@ export const ClientGallery: React.FC = () => {
   };
 
   const isFileLocked = (fileId: string) => {
-    if (!isBalancePending) return false;
-    if (downloadLimit <= 0) return true;
-    if (downloadedImageIds.includes(fileId)) return false;
-    if (downloadedImageIds.length >= downloadLimit) return true;
-    return false;
+    return isExtraLocked(fileId) || isBalanceLocked(fileId);
   };
 
   const isPortraitGallery =
@@ -1515,12 +1563,18 @@ export const ClientGallery: React.FC = () => {
     () =>
       !isPortfolio && !isSelectionLockedOut
         ? nonFailedFiles.find(
+            (f) =>
+              f.file_type === "image" &&
+              !f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) &&
+              !lockedExtraIds.has(f.id),
+          ) ||
+          nonFailedFiles.find(
             (f) => f.file_type === "image" && !f.file_url?.match(/\.(mp4|mov|webm|ogg)$/i),
           ) ||
           nonFailedFiles[0] ||
           null
         : null,
-    [isPortfolio, isSelectionLockedOut, nonFailedFiles],
+    [isPortfolio, isSelectionLockedOut, nonFailedFiles, lockedExtraIds],
   );
 
   const displayedFiles = useMemo(() => {
@@ -1589,7 +1643,7 @@ export const ClientGallery: React.FC = () => {
     if (index !== -1) {
       let prevIndex = index - 1;
       while (prevIndex >= 0) {
-        if (!isPortfolio && isFileLocked(displayedFiles[prevIndex].id)) {
+        if (!isPortfolio && isBalanceLocked(displayedFiles[prevIndex].id)) {
           prevIndex--;
         } else {
           break;
@@ -1600,7 +1654,7 @@ export const ClientGallery: React.FC = () => {
       } else {
         // wrap around
         let lastUnlocked = displayedFiles.length - 1;
-        while (lastUnlocked >= 0 && !isPortfolio && isFileLocked(displayedFiles[lastUnlocked].id)) {
+        while (lastUnlocked >= 0 && !isPortfolio && isBalanceLocked(displayedFiles[lastUnlocked].id)) {
           lastUnlocked--;
         }
         if (lastUnlocked >= 0) {
@@ -1617,7 +1671,7 @@ export const ClientGallery: React.FC = () => {
     if (index !== -1) {
       let nextIndex = index + 1;
       while (nextIndex < displayedFiles.length) {
-        if (!isPortfolio && isFileLocked(displayedFiles[nextIndex].id)) {
+        if (!isPortfolio && isBalanceLocked(displayedFiles[nextIndex].id)) {
           nextIndex++;
         } else {
           break;
@@ -1628,7 +1682,7 @@ export const ClientGallery: React.FC = () => {
       } else {
         // wrap around
         let firstUnlocked = 0;
-        while (firstUnlocked < displayedFiles.length && !isPortfolio && isFileLocked(displayedFiles[firstUnlocked].id)) {
+        while (firstUnlocked < displayedFiles.length && !isPortfolio && isBalanceLocked(displayedFiles[firstUnlocked].id)) {
           firstUnlocked++;
         }
         if (firstUnlocked < displayedFiles.length) {
@@ -2744,7 +2798,7 @@ export const ClientGallery: React.FC = () => {
                       key={file.id}
                       onClick={() => {
                         if (!isPortfolio) {
-                          if (isFileLocked(file.id)) {
+                          if (isBalanceLocked(file.id)) {
                             setShowBalanceWarningModal(true);
                             return;
                           }
@@ -2776,7 +2830,7 @@ export const ClientGallery: React.FC = () => {
                       }}
                     >
                       {/* Badges */}
-                      {!isPortfolio && ((isSelectionMode && isSelected) || file.is_edited) && (
+                      {!isPortfolio && ((isSelectionMode && isSelected) || file.is_edited || isExtraLocked(file.id)) && (
                         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none">
                           {isSelectionMode && isSelected && (
                             <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
@@ -2786,6 +2840,12 @@ export const ClientGallery: React.FC = () => {
                           {file.is_edited && (
                             <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm tracking-wide">
                               EDITED
+                            </span>
+                          )}
+                          {isExtraLocked(file.id) && (
+                            <span className="bg-amber-600/95 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm inline-flex items-center gap-1 tracking-wide">
+                              <Lock className="w-2.5 h-2.5" />
+                              EXTRA · LOCKED
                             </span>
                           )}
                           {isSelectionMode && isSelected && isExtra && (
@@ -3309,6 +3369,60 @@ export const ClientGallery: React.FC = () => {
         </div>
       )}
 
+      {/* Locked Extra Image Modal */}
+      {showExtraImageModal && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+          onClick={() => setShowExtraImageModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-[#EDE5D8] animate-in fade-in zoom-in-95 duration-200 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowExtraImageModal(false)}
+              className="absolute top-3.5 right-3.5 text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-12 h-12 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-6 h-6 text-amber-700" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              Extra Image Locked
+            </h3>
+            <p className="text-slate-700 mb-2 text-sm leading-relaxed">
+              Kindly note: this is an <strong>extra image</strong>. Kindly pay to access the high-res image.
+            </p>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              Once payment for your extra selected photo(s) is confirmed with the studio, high-resolution downloads will be unlocked immediately.
+            </p>
+            <div className="space-y-2.5">
+              <a
+                href={`https://wa.me/254705268604?text=${encodeURIComponent(
+                  `Hello Mwabonje Photography, I would like to pay for the locked extra image(s) in my "${displayGalleryTitle || gallery?.client_name || "Client"}" gallery to access the high-res downloads.`,
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#2C241E] text-white py-2.5 px-4 rounded-xl font-medium hover:bg-[#1E1813] transition-colors inline-flex items-center justify-center gap-2 text-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>Contact Studio to Unlock</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowExtraImageModal(false)}
+                className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-xl font-medium hover:bg-slate-200 transition-colors text-sm cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Download Progress Modal */}
       {downloadingAll && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -3365,6 +3479,11 @@ export const ClientGallery: React.FC = () => {
             <p className="text-xs text-slate-300 mt-1 mb-5">
               {readyZipModal.count} photos packaged into {readyZipModal.name}.
             </p>
+            {readyZipModal.skippedExtrasCount && readyZipModal.skippedExtrasCount > 0 ? (
+              <div className="mb-4 p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-200 text-[11px] leading-relaxed">
+                {readyZipModal.skippedExtrasCount} locked extra image{readyZipModal.skippedExtrasCount === 1 ? " was" : "s were"} excluded. Kindly pay for extra images to unlock their high-res versions.
+              </div>
+            ) : null}
 
             <div className="space-y-2.5">
               <a
@@ -3560,11 +3679,19 @@ export const ClientGallery: React.FC = () => {
               }
             }}
           >
-            {lightboxFile.is_edited && !isPortfolio && (
-              <div className="absolute top-4 left-4 z-50 pointer-events-none">
-                <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg tracking-wide">
-                  EDITED
-                </span>
+            {(lightboxFile.is_edited || isExtraLocked(lightboxFile.id)) && !isPortfolio && (
+              <div className="absolute top-4 left-4 z-50 flex items-center gap-2 pointer-events-none">
+                {lightboxFile.is_edited && (
+                  <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg tracking-wide">
+                    EDITED
+                  </span>
+                )}
+                {isExtraLocked(lightboxFile.id) && (
+                  <span className="bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg inline-flex items-center gap-1 tracking-wide">
+                    <Lock className="w-3 h-3" />
+                    EXTRA IMAGE · PAY FOR HIGH-RES
+                  </span>
+                )}
               </div>
             )}
             {displayedFiles.length > 1 && (
@@ -3847,7 +3974,7 @@ export const ClientGallery: React.FC = () => {
                   id={`thumbnail-${file.id}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!isPortfolio && isFileLocked(file.id)) {
+                    if (!isPortfolio && isBalanceLocked(file.id)) {
                       setShowBalanceWarningModal(true);
                       return;
                     }
