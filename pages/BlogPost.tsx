@@ -419,7 +419,7 @@ export const BlogPost: React.FC = () => {
           {categories.length > 0 && (
             <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
               <h2 className="mb-3 font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Categories</h2>
-              <div className="space-y-1">{categories.map(category => <Link key={category} to="/blog" className="group/category -mx-2 flex items-center justify-between rounded-md border-b border-[#0f172b]/15 px-2 py-2 text-xs text-[#0f172b] transition-colors duration-200 last:border-0 hover:bg-[#003223]/[0.045] hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.07] dark:hover:text-[#8cc74f]"><span>{category}</span><ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/category:translate-x-1" /></Link>)}</div>
+              <div className="space-y-1">{categories.map(category => <Link key={category} to={`/blog?category=${encodeURIComponent(category)}`} className="group/category -mx-2 flex items-center justify-between rounded-md border-b border-[#0f172b]/15 px-2 py-2 text-xs text-[#0f172b] transition-colors duration-200 last:border-0 hover:bg-[#003223]/[0.045] hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:border-[#faf8f5]/15 dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.07] dark:hover:text-[#8cc74f]"><span>{category}</span><ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/category:translate-x-1" /></Link>)}</div>
             </section>
           )}
         </aside>
