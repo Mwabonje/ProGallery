@@ -245,20 +245,20 @@ export const BlogPost: React.FC = () => {
             <Link to="/about" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">About</Link>
             <Link to="/faq" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">FAQ</Link>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link to="/blog" aria-label="Search journal" className="hidden text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85 sm:inline-flex"><Search className="h-[17px] w-[17px]" /></Link>
             <ThemeToggle className="text-[#0f172b] dark:text-[#faf8f5]" />
             <a href="https://mwabonjebooking.netlify.app/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#0f172b] px-5 text-[10px] font-semibold uppercase tracking-wider text-[#faf8f5] transition hover:bg-[#050505] sm:px-6">ENQUIRE <ArrowUpRight className="h-3.5 w-3.5" /></a>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-5 border-t border-[#0f172b]/15 px-3 py-2 lg:hidden dark:border-[#faf8f5]/15">
+        <nav aria-label="Mobile navigation" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-[#0f172b]/15 px-3 py-2.5 lg:hidden dark:border-[#faf8f5]/15">
           <Link to="/" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Home</Link>
           <Link to="/#work" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Portfolio</Link>
           <Link to="/?category=FILMS#work" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Films</Link>
           <Link to="/blog" className="text-[10px] font-semibold uppercase text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
           <Link to="/about" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">About</Link>
-          <Link to="/faq" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">FAQ</Link>
-        </div>
+          <Link to="/faq" className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#0f172b] dark:text-[#faf8f5]/80">FAQ</Link>
+        </nav>
       </header>
 
       {/* Cinematic editorial masthead */}
@@ -267,7 +267,7 @@ export const BlogPost: React.FC = () => {
           <img
             src={post.cover_image}
             alt={post.title}
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_42%] sm:object-center"
             loading="eager"
             fetchPriority="high"
             decoding="async"
@@ -277,7 +277,7 @@ export const BlogPost: React.FC = () => {
         )}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#050505]/85 via-[#050505]/50 to-[#050505]/10" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#050505]/35 via-transparent to-black/10" />
-        <div className="mx-auto flex min-h-[420px] max-w-[1440px] items-end px-5 pb-7 pt-20 sm:min-h-[480px] sm:px-8 sm:pb-8 lg:min-h-[520px] lg:px-12 lg:pb-9">
+        <div className="mx-auto flex min-h-[440px] max-w-[1440px] items-end px-5 pb-8 pt-16 sm:min-h-[480px] sm:px-8 sm:pb-8 lg:min-h-[520px] lg:px-12 lg:pb-9">
           <div className="max-w-3xl text-white">
             <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
               <Link to="/" className="hover:text-white">Home</Link><ChevronRight className="h-3 w-3" />
@@ -298,7 +298,7 @@ export const BlogPost: React.FC = () => {
       </section>
 
       <div className="mx-auto grid max-w-[1240px] grid-cols-1 items-start gap-10 px-5 pb-20 pt-6 sm:px-8 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_285px] lg:gap-12 lg:px-10 lg:pt-8 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <main className="min-w-0">
+        <main className="order-1 min-w-0">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 text-sm font-semibold text-[#0f172b]">
@@ -309,12 +309,12 @@ export const BlogPost: React.FC = () => {
                 <p className="mt-1 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/65">{formatArticleDate(post.date)} <span className="mx-1.5">·</span>{calculateReadingTime(post.content)} min read</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-[#0f172b] dark:text-[#faf8f5]">
-              <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 text-xs font-semibold hover:text-[#050505]" aria-label="Print article">
+            <div className="flex items-center gap-3 text-[#0f172b] dark:text-[#faf8f5] sm:gap-4">
+              <button type="button" onClick={() => window.print()} className="inline-flex min-h-10 items-center gap-2 rounded-full px-2 text-xs font-semibold transition-colors hover:bg-[#0f172b]/[0.06] hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:hover:bg-[#faf8f5]/[0.08] dark:focus-visible:ring-[#faf8f5]" aria-label="Print article">
                 <Bookmark className="h-4 w-4" /><span className="hidden sm:inline">Save / Print</span>
               </button>
               <span className="h-5 w-px bg-[#0f172b]/20 dark:bg-[#faf8f5]/20" />
-              <span className="inline-flex items-center gap-2 text-xs font-semibold"><Share2 className="h-4 w-4" />Share</span>
+              <span className="inline-flex min-h-10 items-center gap-2 rounded-full px-2 text-xs font-semibold"><Share2 className="h-4 w-4" />Share</span>
             </div>
           </div>
 
@@ -354,7 +354,7 @@ export const BlogPost: React.FC = () => {
           )}
         </main>
 
-        <aside className="space-y-5 lg:pt-0">
+        <aside className="order-2 min-w-0 space-y-5 lg:pt-0">
           <section className="rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:sticky lg:top-24 lg:self-start">
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#0f172b]" /><h2 className="font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Table of Contents</h2></div>
             {tocItems.length ? (
@@ -368,7 +368,7 @@ export const BlogPost: React.FC = () => {
             ) : <p className="text-xs leading-5 text-[#0f172b]/70 dark:text-[#faf8f5]/65">Section links will appear here when this story includes headings.</p>}
           </section>
 
-          <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 shadow-[0_2px_10px_rgba(61,39,22,0.035)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
+          <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
             <h2 className="mb-4 font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">About the Author</h2>
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 font-editorial text-xl text-[#0f172b]">{(post.author || 'M').slice(0, 1).toUpperCase()}</div>
