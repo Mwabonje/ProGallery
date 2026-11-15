@@ -378,8 +378,8 @@ export const BlogPost: React.FC = () => {
             {tocItems.length ? (
               <nav aria-label="Table of contents" className="max-h-[min(62vh,520px)] space-y-1 overflow-y-auto overscroll-contain pr-1">
                 {tocItems.map((item, index) => (
-                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`block break-words rounded-lg px-3 py-2.5 text-xs leading-[1.65] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:focus-visible:ring-[#faf8f5] ${activeHeading === item.id ? 'border-l-[3px] border-[#0f172b] bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.08]'}`}>
-                    <span className="mr-2">{index + 1}.</span>{item.text.replace(/^\s*\d+[.)]\s*/, '')}
+                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`flex items-start gap-2 break-words rounded-lg px-3 py-2.5 text-xs leading-[1.65] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:focus-visible:ring-[#faf8f5] ${activeHeading === item.id ? 'border-l-[3px] border-[#0f172b] bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:text-[#faf8f5]/80 dark:hover:bg-[#faf8f5]/[0.08]'}`}>
+                    <span className="w-5 shrink-0 text-right tabular-nums">{index + 1}.</span><span className="min-w-0 flex-1">{item.text.replace(/^\s*\d+[.)]\s*/, '')}</span>
                   </a>
                 ))}
               </nav>
