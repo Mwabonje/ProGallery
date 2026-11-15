@@ -87,8 +87,8 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Article Content */}
-      <div 
-        className="prose prose-slate dark:prose-invert prose-base sm:prose-lg md:prose-xl mx-auto prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-slate-900 dark:prose-a:text-amber-400 hover:prose-a:text-slate-600 dark:hover:prose-a:text-amber-300 prose-img:rounded-sm text-slate-700 dark:text-slate-300 transition-colors"
+      <div
+        className="blog-article-prose prose prose-slate dark:prose-invert prose-base sm:prose-lg max-w-[72ch] mx-auto prose-p:my-5 prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-[#050505] dark:prose-p:text-[#faf8f5]/85 prose-headings:font-['Playfair_Display'] prose-headings:font-semibold prose-headings:tracking-[-0.02em] prose-headings:text-[#050505] dark:prose-headings:text-[#faf8f5] prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[25px] md:prose-h2:text-[29px] prose-h2:leading-[1.2] prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-[20px] prose-h3:leading-[1.3] prose-a:text-[#0f172b] dark:prose-a:text-[#faf8f5] hover:prose-a:text-[#050505] prose-img:my-8 prose-img:max-h-[520px] prose-img:w-full prose-img:rounded-xl prose-img:object-cover prose-blockquote:my-8 prose-blockquote:border-l-[3px] prose-blockquote:border-[#0f172b] prose-blockquote:bg-[#0f172b]/[0.04] dark:prose-blockquote:bg-[#faf8f5]/[0.06] prose-blockquote:pl-5 prose-blockquote:py-3 prose-blockquote:font-editorial prose-blockquote:text-[21px] prose-blockquote:italic prose-blockquote:leading-[1.4] prose-blockquote:text-[#050505] dark:prose-blockquote:text-[#faf8f5] prose-ul:my-5 prose-ol:my-5 prose-li:my-2 prose-hr:my-10 prose-hr:border-[#0f172b]/15 dark:prose-hr:border-[#faf8f5]/15 text-[#050505] dark:text-[#faf8f5]/85 transition-colors"
         dangerouslySetInnerHTML={{
           __html: DOMPurify.sanitize(content, {
             ADD_TAGS: ['figure', 'figcaption'],
@@ -120,12 +120,12 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
           onMouseLeave={() => {
             setHoveredImage(prev => ({ ...prev, visible: false }));
           }}
-          className="z-30 pointer-events-auto animate-in fade-in zoom-in-95 duration-150"
+          className="z-30 hidden pointer-events-auto animate-in fade-in zoom-in-95 duration-150 sm:block"
         >
           <button
             type="button"
             onClick={handleSaveToPinterest}
-            className="px-3 py-1.5 rounded-full bg-[#E60023] hover:bg-[#ad081b] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-black/25 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+            className="px-3 py-1.5 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-black/25 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
             title="Save this photo to Pinterest"
           >
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
