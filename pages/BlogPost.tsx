@@ -279,7 +279,7 @@ export const BlogPost: React.FC = () => {
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#050505]/35 via-transparent to-black/10" />
         <div className="mx-auto flex min-h-[440px] max-w-[1440px] items-end px-5 pb-8 pt-16 sm:min-h-[480px] sm:px-8 sm:pb-8 lg:min-h-[520px] lg:px-12 lg:pb-9">
           <div className="max-w-3xl text-white">
-            <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
+            <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs font-medium text-[#faf8f5]/85 sm:text-sm">
               <Link to="/" className="hover:text-white">Home</Link><ChevronRight className="h-3 w-3" />
               <Link to="/blog" className="hover:text-white">Journal</Link><ChevronRight className="h-3 w-3" />
               <span>{categories[0] || 'Stories'}</span>
@@ -298,10 +298,28 @@ export const BlogPost: React.FC = () => {
       </section>
 
       <div className="mx-auto grid max-w-[1240px] grid-cols-1 items-start gap-10 px-5 pb-20 pt-6 sm:px-8 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_285px] lg:gap-12 lg:px-10 lg:pt-8 xl:grid-cols-[minmax(0,1fr)_300px]">
+        
+        <section className="order-0 rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:hidden">
+          <details>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-editorial text-lg font-semibold text-[#050505] dark:text-[#faf8f5]">
+              <span className="flex items-center gap-2"><List className="h-4 w-4" /> On this page</span>
+              <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-[#0f172b]/65 dark:text-[#faf8f5]/65">Contents</span>
+            </summary>
+            {tocItems.length > 0 && (
+              <nav aria-label="Mobile table of contents" className="mt-3 grid gap-1 border-t border-[#0f172b]/15 pt-3 dark:border-[#faf8f5]/15">
+                {tocItems.map((item, index) => (
+                  <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`rounded-lg px-3 py-2 text-xs leading-[1.6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:focus-visible:ring-[#faf8f5] ${activeHeading === item.id ? 'bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] dark:text-[#faf8f5]/80'}`}>
+                    <span className="mr-2">{index + 1}.</span>{item.text}
+                  </a>
+                ))}
+              </nav>
+            )}
+          </details>
+        </section>
         <main className="order-1 min-w-0">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 text-sm font-semibold text-[#0f172b]">
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 text-sm font-semibold text-[#0f172b] dark:bg-[#faf8f5]/10 dark:text-[#faf8f5]">
                 {(post.author || 'M').slice(0, 1).toUpperCase()}
               </div>
               <div>
@@ -355,7 +373,7 @@ export const BlogPost: React.FC = () => {
         </main>
 
         <aside className="order-2 min-w-0 space-y-5 lg:pt-0">
-          <section className="rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:sticky lg:top-24 lg:self-start">
+          <section className="hidden rounded-xl border border-[#0f172b]/15 bg-[#faf8f5] p-4 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04] lg:sticky lg:top-24 lg:block lg:self-start">
             <div className="mb-4 flex items-center gap-3"><List className="h-5 w-5 text-[#0f172b]" /><h2 className="font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">Table of Contents</h2></div>
             {tocItems.length ? (
               <nav aria-label="Table of contents" className="max-h-[min(62vh,520px)] space-y-1 overflow-y-auto overscroll-contain pr-1">
@@ -371,7 +389,7 @@ export const BlogPost: React.FC = () => {
           <section className="rounded-2xl border border-[#0f172b]/15 bg-[#faf8f5] p-5 shadow-[0_2px_10px_rgba(15,23,43,0.045)] dark:border-[#faf8f5]/15 dark:bg-[#faf8f5]/[0.04]">
             <h2 className="mb-4 font-editorial text-xl font-semibold text-[#050505] dark:text-[#faf8f5]">About the Author</h2>
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 font-editorial text-xl text-[#0f172b]">{(post.author || 'M').slice(0, 1).toUpperCase()}</div>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0f172b]/10 font-editorial text-xl text-[#0f172b] dark:bg-[#faf8f5]/10 dark:text-[#faf8f5]">{(post.author || 'M').slice(0, 1).toUpperCase()}</div>
               <div><p className="text-sm font-bold text-[#050505] dark:text-[#faf8f5]">{post.author || 'Mwabonje'}</p><p className="mt-1 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/65">Photographer &amp; Visual Storyteller</p></div>
             </div>
             <p className="text-xs leading-5 text-[#0f172b] dark:text-[#faf8f5]/80">A photographer and visual storyteller based on Kenya's coast, creating people-centred imagery for weddings, travel, hospitality and lifestyle brands.</p>
@@ -395,7 +413,7 @@ export const BlogPost: React.FC = () => {
           <section className="relative overflow-hidden rounded-2xl bg-[#0f172b] p-5 text-white">
             {post.cover_image && <img src={post.cover_image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />}
             <div className="absolute inset-0 bg-gradient-to-br from-[#050505]/85 to-[#0f172b]/80" />
-            <div className="relative"><span className="mb-3 block h-1 w-9 bg-[#faf8f5]" /><h2 className="font-editorial text-2xl font-semibold leading-tight">Get Photography Stories &amp; Tips</h2><p className="mt-2 text-xs leading-5 text-white/85">Explore new articles, coastal location guides and photography inspiration.</p><Link to="/blog" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#faf8f5] px-4 py-2.5 text-xs font-bold text-[#050505] hover:bg-[#0f172b] hover:text-[#faf8f5]">Explore the Journal <ArrowUpRight className="h-4 w-4" /></Link></div>
+            <div className="relative"><span className="mb-3 block h-1 w-9 bg-[#faf8f5]" /><h2 className="font-editorial text-2xl font-semibold leading-tight">Get Photography Stories &amp; Tips</h2><p className="mt-2 text-xs leading-5 text-[#faf8f5]/85">Explore new articles, coastal location guides and photography inspiration.</p><Link to="/blog" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#faf8f5] px-4 py-2.5 text-xs font-bold text-[#050505] hover:bg-[#0f172b] hover:text-[#faf8f5]">Explore the Journal <ArrowUpRight className="h-4 w-4" /></Link></div>
           </section>
 
           {categories.length > 0 && (
