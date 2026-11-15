@@ -238,12 +238,12 @@ export const BlogPost: React.FC = () => {
             <span className="font-editorial text-[25px] font-bold uppercase tracking-[-0.04em]">MWABONJE</span>
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex xl:gap-7">
-            <Link to="/" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Home</Link>
-            <Link to="/#work" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Portfolio</Link>
-            <Link to="/?category=FILMS#work" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Films</Link>
-            <Link to="/blog" className="border-b border-[#0f172b] pb-1 text-[11px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
-            <Link to="/about" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">About</Link>
-            <Link to="/faq" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">FAQ</Link>
+            <Link to="/" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">Home</Link>
+            <Link to="/#work" className="py-2 text-[11px] sm:text-xs font-bold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5] dark:hover:text-white border-b-2 border-[#0f172b] dark:border-[#faf8f5] pb-0.5">Portfolio</Link>
+            <Link to="/?category=FILMS#work" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">Films</Link>
+            <Link to="/blog" className="py-2 text-[11px] sm:text-xs font-bold tracking-widest uppercase border-b-2 border-[#0f172b] pb-0.5 text-[#0f172b] dark:border-[#faf8f5] dark:text-[#faf8f5]">Journal</Link>
+            <Link to="/about" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">About</Link>
+            <Link to="/faq" className="py-2 text-[11px] sm:text-xs font-semibold tracking-widest uppercase text-[#0f172b] hover:text-[#050505] dark:text-[#faf8f5]/85 dark:hover:text-white">FAQ</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link to="/blog" aria-label="Search journal" className="hidden text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85 sm:inline-flex"><Search className="h-[17px] w-[17px]" /></Link>
