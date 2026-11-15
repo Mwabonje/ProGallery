@@ -235,8 +235,7 @@ export const BlogPost: React.FC = () => {
       <header className="sticky top-0 z-50 border-b border-[#0f172b]/15 bg-[#faf8f5]/95 backdrop-blur-md dark:border-[#faf8f5]/15 dark:bg-[#0f172b]/95">
         <div className="mx-auto flex h-[58px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Link to="/" className="group flex shrink-0 flex-col leading-none text-[#050505] dark:text-[#faf8f5]">
-            <span className="font-editorial text-[25px] font-bold tracking-[-0.04em]">Mwabonje</span>
-            <span className="mt-0.5 text-center text-[7px] font-semibold tracking-[0.32em]">PHOTOGRAPHY</span>
+            <span className="font-editorial text-[25px] font-bold uppercase tracking-[-0.04em]">MWABONJE</span>
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex xl:gap-7">
             <Link to="/" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Home</Link>
