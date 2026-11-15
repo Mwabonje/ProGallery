@@ -192,8 +192,7 @@ export const Blog: React.FC = () => {
             <p>No journal stories found in &quot;{selectedCategory}&quot;.</p>
             {selectedCategory !== 'All' && <button type="button" onClick={() => setSearchParams({})} className="mt-4 text-xs font-semibold uppercase tracking-wider text-[#003223] underline underline-offset-4 dark:text-[#8cc74f]">View all stories</button>}
           </div>
-        ) : (
-          {selectedCategory !== 'All' ? (
+        ) : selectedCategory !== 'All' ? (
             <section aria-labelledby="category-stories-heading" className="pt-2">
               <div className="mb-7 flex flex-wrap items-end justify-between gap-3 border-b border-[#0f172b]/15 pb-4 dark:border-[#faf8f5]/15">
                 <div>
@@ -341,8 +340,8 @@ export const Blog: React.FC = () => {
                 <button type="button" onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => document.getElementById('more-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} disabled={currentPage === totalPages} className="p-2 text-[#0f172b] dark:text-[#faf8f5] disabled:opacity-30" aria-label="Next page"><ArrowRight size={18} /></button>
               </nav>
             )}
-          </
-          )}>
+            </>
+          )}
         )}
       </main>
 
