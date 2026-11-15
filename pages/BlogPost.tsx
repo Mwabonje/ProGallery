@@ -238,12 +238,12 @@ export const BlogPost: React.FC = () => {
             <span className="font-editorial text-[25px] font-bold uppercase tracking-[-0.04em]">MWABONJE</span>
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex xl:gap-7">
-            <Link to="/" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Home</Link>
-            <Link to="/#work" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Portfolio</Link>
-            <Link to="/?category=FILMS#work" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Films</Link>
+            <Link to="/" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Home</Link>
+            <Link to="/#work" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Portfolio</Link>
+            <Link to="/?category=FILMS#work" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">Films</Link>
             <Link to="/blog" className="border-b border-[#0f172b] pb-1 text-[11px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
-            <Link to="/about" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">About</Link>
-            <Link to="/faq" className="text-[11px] font-medium text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">FAQ</Link>
+            <Link to="/about" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">About</Link>
+            <Link to="/faq" className="text-[11px] font-medium uppercase text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/blog" aria-label="Search journal" className="hidden text-[#0f172b] hover:text-[#0f172b] dark:text-[#faf8f5]/85 sm:inline-flex"><Search className="h-[17px] w-[17px]" /></Link>
@@ -252,12 +252,12 @@ export const BlogPost: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center justify-center gap-5 border-t border-[#0f172b]/15 px-3 py-2 lg:hidden dark:border-[#faf8f5]/15">
-          <Link to="/" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Home</Link>
-          <Link to="/#work" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Portfolio</Link>
-          <Link to="/?category=FILMS#work" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">Films</Link>
-          <Link to="/blog" className="text-[10px] font-semibold text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
-          <Link to="/about" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">About</Link>
-          <Link to="/faq" className="text-[10px] text-[#0f172b] dark:text-[#faf8f5]/80">FAQ</Link>
+          <Link to="/" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Home</Link>
+          <Link to="/#work" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Portfolio</Link>
+          <Link to="/?category=FILMS#work" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">Films</Link>
+          <Link to="/blog" className="text-[10px] font-semibold uppercase text-[#0f172b] dark:text-[#faf8f5]">Journal</Link>
+          <Link to="/about" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">About</Link>
+          <Link to="/faq" className="text-[10px] uppercase text-[#0f172b] dark:text-[#faf8f5]/80">FAQ</Link>
         </div>
       </header>
 
