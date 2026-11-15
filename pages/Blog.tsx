@@ -342,7 +342,6 @@ export const Blog: React.FC = () => {
             )}
             </>
           )}
-        )}
       </main>
 
       {/* Newsletter contact band — directs readers to the existing contact channel */}
