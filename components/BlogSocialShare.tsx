@@ -91,7 +91,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
             onClick={handleCopyLink}
             className="px-3.5 py-2 rounded-full bg-[#faf8f5] dark:bg-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] border border-[#0f172b]/20 dark:border-[#faf8f5]/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#0f172b]/60 dark:text-[#faf8f5]/60" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-[#0f172b] dark:text-[#faf8f5]" /> : <Copy className="w-3.5 h-3.5 text-[#0f172b]/60 dark:text-[#faf8f5]/60" />}
             <span>{copied ? 'Copied' : 'Copy Link'}</span>
           </button>
         </div>
@@ -101,7 +101,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
 
   // Compact bar for header/top of post
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-y border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-[#0f172b]/60 dark:text-[#faf8f5]/60 not-prose my-6">
+    <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-y border-[#0f172b]/15 dark:border-[#faf8f5]/15 text-xs text-[#0f172b]/70 dark:text-[#faf8f5]/70 not-prose my-6">
       <div className="flex items-center gap-1.5 uppercase tracking-widest text-[10px] font-bold text-[#0f172b]/60 dark:text-[#faf8f5]/60 dark:text-slate-500">
         <Share2 className="w-3.5 h-3.5" />
         <span>Share Story</span>
