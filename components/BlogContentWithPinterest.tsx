@@ -108,12 +108,12 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
           onMouseLeave={() => {
             setHoveredImage(prev => ({ ...prev, visible: false }));
           }}
-          className="z-30 pointer-events-auto animate-in fade-in zoom-in-95 duration-150"
+          className="z-30 hidden pointer-events-auto animate-in fade-in zoom-in-95 duration-150 sm:block"
         >
           <button
             type="button"
             onClick={handleSaveToPinterest}
-            className="px-3 py-1.5 rounded-full bg-[#E60023] hover:bg-[#ad081b] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-black/25 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+            className="px-3 py-1.5 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-black/25 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
             title="Save this photo to Pinterest"
           >
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
