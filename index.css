@@ -663,3 +663,36 @@ body:has(#work) footer .font-serif { color: #f6f0e6; }
   body:has(#work) .atelier-hero__content { padding-top: 8.5rem; }
   body:has(#work) #work { padding-inline: 1rem; }
 }
+
+/* Editorial storyteller interlude and section rhythm */
+body:has(#work) .mw-about-editorial {
+  border-top: 1px solid rgba(48, 66, 52, .14);
+  border-bottom: 1px solid rgba(48, 66, 52, .14);
+}
+body:has(#work) .mw-about-editorial__image img {
+  transition: transform 1.1s cubic-bezier(.2,.65,.25,1);
+}
+body:has(#work) .mw-about-editorial__image:hover img { transform: scale(1.025); }
+body:has(#work) .mw-about-editorial h2 {
+  font-family: var(--font-atelier-display);
+  font-weight: 400;
+}
+body:has(#work) section:has(+ #availability) {
+  padding-top: clamp(4.5rem, 8vw, 7.5rem);
+  padding-bottom: clamp(4.5rem, 8vw, 7.5rem);
+}
+body:has(#work) section:has(+ #availability) h2 {
+  color: #17271d;
+}
+body:has(#work) section:has(+ #availability) h3 {
+  font-family: var(--font-atelier-display);
+  font-size: clamp(1.65rem, 2.5vw, 2.25rem);
+  line-height: 1.08;
+}
+body:has(#work) section:has(+ #availability) > div > div:nth-child(3) {
+  background: #123b2a;
+}
+@media (max-width: 767px) {
+  body:has(#work) .mw-about-editorial__image { min-height: 300px; }
+  body:has(#work) .mw-about-editorial > div:last-child { padding: 3.25rem 1.4rem; }
+}
