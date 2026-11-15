@@ -309,7 +309,7 @@ export const BlogPost: React.FC = () => {
               <nav aria-label="Mobile table of contents" className="mt-3 grid gap-1 border-t border-[#0f172b]/15 pt-3 dark:border-[#faf8f5]/15">
                 {tocItems.map((item, index) => (
                   <a key={item.id} href={`#${item.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className={`rounded-lg px-3 py-2 text-xs leading-[1.6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f172b] dark:focus-visible:ring-[#faf8f5] ${activeHeading === item.id ? 'bg-[#0f172b]/[0.08] font-semibold text-[#050505] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]' : 'text-[#0f172b] dark:text-[#faf8f5]/80'}`}>
-                    <span className="mr-2">{index + 1}.</span>{item.text}
+                    <span className="mr-2">{index + 1}.</span>{item.text.replace(/^\s*\d+[.)]\s*/, '')}
                   </a>
                 ))}
               </nav>
