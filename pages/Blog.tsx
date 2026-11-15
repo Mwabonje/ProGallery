@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { calculateReadingTime, parseCategories } from '../utils/blogData';
 import { BlogPost } from '../types';
 import { supabase } from '../services/supabase';
@@ -11,7 +11,7 @@ export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
   const pageTitle = "Journal & Stories | Mwabonje Photography — Malindi & Kenyan Coast";
   const pageDescription = "Explore photography guides, coastal location stories, wedding tips, and documentary visual storytelling from Malindi, Watamu, and Lamu by Mwabonje Photography.";
   const pageUrl = "https://mwabonje.co.ke/blog";
@@ -22,6 +22,9 @@ export const Blog: React.FC = () => {
     posts.forEach(post => parseCategories(post.category).forEach(category => categories.add(category)));
     return ['All', ...Array.from(categories)];
   }, [posts]);
+
+  const requestedCategory = searchParams.get('category') || 'All';
+  const selectedCategory = availableCategories.includes(requestedCategory) ? requestedCategory : 'All';
 
   const filteredPosts = useMemo(() => {
     if (selectedCategory === 'All') return posts;
@@ -162,7 +165,7 @@ export const Blog: React.FC = () => {
               <button
                 key={category}
                 type="button"
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => setSearchParams(category === 'All' ? {} : { category })}
                 aria-pressed={active}
                 className={
                   active
@@ -184,7 +187,7 @@ export const Blog: React.FC = () => {
           <div className="py-24 text-center text-[#0f172b] dark:text-slate-400">
             <BookOpen className="mx-auto mb-4" size={30} />
             <p>No journal stories found in &quot;{selectedCategory}&quot;.</p>
-            {selectedCategory !== 'All' && <button type="button" onClick={() => setSelectedCategory('All')} className="mt-4 text-xs font-semibold uppercase tracking-wider text-[#003223] underline underline-offset-4 dark:text-[#8cc74f]">View all stories</button>}
+            {selectedCategory !== 'All' && <button type="button" onClick={() => setSearchParams({})} className="mt-4 text-xs font-semibold uppercase tracking-wider text-[#003223] underline underline-offset-4 dark:text-[#8cc74f]">View all stories</button>}
           </div>
         ) : (
           <>
