@@ -27,8 +27,13 @@ html.dark {
 }
 
 body, html {
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
+}
+
+.delivery-grid-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 220px 165px;
 }
 
 body {
@@ -60,6 +65,64 @@ html.dark ::selection {
   color: #0f172a;
 }
 
+/* Keep Magazine Grid layouts arranged on mobile exactly as they appear on desktop */
+.editorial-photo-grid[data-layout="2-col"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="3-col"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:first-child {
+  grid-column: span 7 / span 7;
+  display: flex;
+  flex-direction: column;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:nth-child(2) {
+  grid-column: span 5 / span 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:first-child {
+  grid-column: span 7 / span 7;
+  grid-row: span 2 / span 2;
+}
+
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:nth-child(2),
+.editorial-photo-grid[data-layout="mosaic"] > div:first-child > figure:nth-child(3) {
+  grid-column: span 5 / span 5;
+}
+
+@media (max-width: 639px) {
+  .editorial-photo-grid[data-layout="2-col"] > div:first-child,
+  .editorial-photo-grid[data-layout="mosaic"] > div:first-child {
+    gap: 0.625rem;
+  }
+
+  .editorial-photo-grid[data-layout="3-col"] > div:first-child {
+    gap: 0.5rem;
+  }
+
+  .editorial-photo-grid[data-layout="mosaic"] > div:first-child > div:nth-child(2) {
+    gap: 0.625rem;
+  }
+
+  .editorial-photo-grid[data-layout="mosaic"] figure > div:first-child {
+    min-height: 160px;
+  }
+}
+
 /* Editorial article details: opening drop cap and pull-quote treatment */
 .blog-article-prose > p:first-of-type::first-letter {
   float: left;
@@ -67,22 +130,22 @@ html.dark ::selection {
   font-size: 4.35em;
   line-height: 0.78;
   font-weight: 600;
-  color: #3f281b;
+  color: #0f172b;
   padding: 0.08em 0.12em 0 0;
   margin: 0.04em 0.02em 0 0;
 }
 
 html.dark .blog-article-prose > p:first-of-type::first-letter {
-  color: #e8c99f;
+  color: #faf8f5;
 }
 
 .blog-article-prose blockquote {
   margin: 1.8rem 0;
   padding: 1.05rem 1.35rem;
-  border-left: 3px solid #d69a42;
+  border-left: 3px solid #0f172b;
   border-radius: 0 0.65rem 0.65rem 0;
-  background: #f5eee5;
-  color: #241a14;
+  background: rgba(15, 23, 43, 0.04);
+  color: #050505;
   font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
   font-size: 1.35rem;
   font-style: italic;
@@ -97,9 +160,9 @@ html.dark .blog-article-prose > p:first-of-type::first-letter {
 }
 
 html.dark .blog-article-prose blockquote {
-  background: rgba(120, 86, 54, 0.18);
-  border-left-color: #d6a45d;
-  color: #f1e7dc;
+  background: rgba(250, 248, 245, 0.06);
+  border-left-color: #faf8f5;
+  color: #faf8f5;
 }
 
 @media (max-width: 640px) {
@@ -113,4 +176,3 @@ html.dark .blog-article-prose blockquote {
     font-size: 1.2rem;
   }
 }
-
