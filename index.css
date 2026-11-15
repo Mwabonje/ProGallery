@@ -696,3 +696,427 @@ body:has(#work) section:has(+ #availability) > div > div:nth-child(3) {
   body:has(#work) .mw-about-editorial__image { min-height: 300px; }
   body:has(#work) .mw-about-editorial > div:last-child { padding: 3.25rem 1.4rem; }
 }
+
+
+/* Final homepage refinement — consistent coastal editorial system */
+body:has(#work) {
+  --mw-forest: #123b2a;
+  --mw-forest-deep: #0d2d21;
+  --mw-sand: #eee7da;
+  --mw-paper: #faf7f0;
+  --mw-muted: #6e7168;
+  background: var(--mw-paper);
+  color: #17271d;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+body:has(#work) > div > header {
+  padding-inline: clamp(.35rem, 2vw, 1.5rem);
+  min-height: 68px;
+  background: rgba(18, 43, 32, .28) !important;
+  border-bottom: 1px solid rgba(255,255,255,.18) !important;
+}
+body:has(#work) > div > header nav a {
+  font-size: .68rem;
+  letter-spacing: .16em;
+  text-shadow: 0 1px 12px rgba(0,0,0,.35);
+}
+body:has(#work) > div > header > div {
+  min-height: 68px;
+}
+body:has(#work) > div > header > div > a span {
+  font-size: clamp(1.15rem, 1.7vw, 1.55rem);
+  letter-spacing: .19em;
+}
+body:has(#work) .atelier-hero {
+  min-height: min(94svh, 980px);
+}
+body:has(#work) .atelier-hero__content {
+  padding-top: clamp(9rem, 18vh, 13rem);
+  padding-bottom: clamp(4.5rem, 9vh, 7rem);
+}
+body:has(#work) .atelier-hero__content > div:first-child {
+  font-size: .7rem;
+  letter-spacing: .2em;
+  margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+}
+body:has(#work) .atelier-hero h1 {
+  max-width: 950px;
+  font-size: clamp(3.6rem, 8vw, 8rem);
+  line-height: .92;
+  margin-bottom: clamp(1.25rem, 2vw, 1.8rem);
+}
+body:has(#work) .atelier-hero__content > p {
+  max-width: 570px;
+  font-size: clamp(.98rem, 1.25vw, 1.12rem);
+  line-height: 1.9;
+  margin-bottom: 2rem;
+}
+body:has(#work) .atelier-hero__content button {
+  min-height: 48px;
+  padding: .85rem 1.35rem;
+  font-size: .68rem;
+}
+body:has(#work) #work {
+  padding-top: clamp(4.5rem, 8vw, 7.5rem);
+  padding-bottom: clamp(4.5rem, 8vw, 7.5rem);
+}
+body:has(#work) #work > div:first-child {
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.8rem;
+}
+body:has(#work) #work h2 {
+  font-size: clamp(2.8rem, 5.2vw, 5rem);
+  line-height: .98;
+  margin-bottom: .75rem;
+}
+body:has(#work) #work > div:first-child p {
+  max-width: 520px;
+  font-size: .94rem;
+  line-height: 1.8;
+}
+body:has(#work) #work > div:first-child > div:last-child {
+  max-width: 620px;
+  justify-content: flex-end;
+  gap: .55rem;
+}
+body:has(#work) #work button {
+  min-height: 36px;
+  padding: .55rem .9rem;
+  font-size: .62rem;
+  letter-spacing: .1em;
+  border: 1px solid rgba(35, 63, 46, .14);
+}
+body:has(#work) .atelier-work-grid {
+  gap: clamp(.8rem, 1.7vw, 1.5rem);
+}
+body:has(#work) .atelier-work-grid > a {
+  box-shadow: 0 8px 24px rgba(31, 42, 32, .07);
+}
+body:has(#work) .atelier-work-grid > a:hover {
+  box-shadow: 0 18px 38px rgba(31, 42, 32, .15);
+}
+body:has(#work) .atelier-work-grid > a > div:first-of-type span {
+  font-size: .62rem;
+  padding: .4rem .65rem;
+}
+body:has(#work) .atelier-work-grid > a > div:last-child {
+  padding: clamp(1rem, 2.2vw, 1.8rem);
+}
+body:has(#work) .atelier-work-grid > a h3 {
+  font-size: clamp(1.7rem, 2.7vw, 2.8rem);
+  line-height: 1;
+}
+body:has(#work) .mw-about-editorial {
+  background: #eee7da;
+}
+body:has(#work) .mw-about-editorial > div:last-child {
+  padding: clamp(3rem, 7vw, 7rem);
+}
+body:has(#work) .mw-about-editorial h2 {
+  font-size: clamp(2.7rem, 4.8vw, 4.8rem);
+  line-height: .98;
+}
+body:has(#work) .mw-about-editorial p {
+  font-size: clamp(.95rem, 1.1vw, 1.08rem);
+  line-height: 1.95;
+}
+body:has(#work) section:has(+ #availability) {
+  background: #f3ede2;
+  padding-inline: clamp(1.2rem, 5vw, 5rem);
+}
+body:has(#work) section:has(+ #availability) > div {
+  max-width: 1240px;
+}
+body:has(#work) section:has(+ #availability) h2 {
+  font-size: clamp(2.5rem, 4.5vw, 4.4rem);
+}
+body:has(#work) section:has(+ #availability) p {
+  line-height: 1.85;
+}
+body:has(#work) section:has(+ #availability) > div > div:nth-child(2) > div {
+  box-shadow: 0 12px 35px rgba(34, 45, 34, .05);
+}
+body:has(#work) section:has(+ #availability) > div > div:nth-child(3) {
+  box-shadow: 0 12px 30px rgba(18, 59, 42, .12);
+}
+body:has(#work) #availability {
+  padding: clamp(3rem, 6vw, 5.5rem) clamp(1rem, 4vw, 3rem);
+  max-width: 100%;
+}
+body:has(#work) #availability > div > div {
+  border-radius: 6px;
+  border: 1px solid rgba(44, 69, 49, .14);
+  background: #f3ede2;
+  color: #17271d;
+  box-shadow: 0 18px 48px rgba(31, 42, 32, .08);
+}
+body:has(#work) #availability > div > div > div:first-child {
+  background: transparent;
+  padding-top: clamp(2rem, 4vw, 3.5rem);
+}
+body:has(#work) #availability > div > div > div:first-child > div {
+  background: #e7eddf;
+  color: #28523b;
+  border-color: rgba(40, 82, 59, .2);
+}
+body:has(#work) #availability > div > div h2 {
+  color: #17271d;
+  font-family: var(--font-atelier-display);
+  font-size: clamp(2.3rem, 4.5vw, 4rem);
+  letter-spacing: -.035em;
+}
+body:has(#work) #availability > div > div > div:first-child p {
+  color: #64695f;
+  max-width: 680px;
+}
+body:has(#work) #availability > div > div > div:last-child {
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+}
+body:has(#work) #availability label {
+  color: #465448;
+  letter-spacing: .13em;
+}
+body:has(#work) #availability label svg {
+  color: #456b4c;
+}
+body:has(#work) #availability button {
+  border-radius: 4px;
+  box-shadow: none;
+}
+body:has(#work) #availability input,
+body:has(#work) #availability select {
+  min-height: 46px;
+  border-radius: 4px;
+  background: #fffdf8;
+  color: #233329;
+  border-color: rgba(44, 69, 49, .22);
+  font-size: .78rem;
+}
+body:has(#work) #availability input::placeholder {
+  color: #8a8b80;
+}
+body:has(#work) #availability .text-slate-300,
+body:has(#work) #availability .text-slate-400 {
+  color: #70766c;
+}
+body:has(#work) #availability .text-white {
+  color: #17271d;
+}
+body:has(#work) #availability .bg-slate-900,
+body:has(#work) #availability .bg-slate-800 {
+  background: #fffdf8;
+}
+body:has(#work) #availability .border-slate-800,
+body:has(#work) #availability .border-slate-700 {
+  border-color: rgba(44, 69, 49, .18);
+}
+body:has(#work) #availability .bg-emerald-950\/60 {
+  background: #e2ebdf;
+}
+body:has(#work) #availability .text-emerald-400,
+body:has(#work) #availability .text-emerald-300 {
+  color: #315c3f;
+}
+body:has(#work) #availability .border-emerald-400\/80 {
+  border-color: #66896a;
+}
+body:has(#work) #availability .bg-gradient-to-r {
+  background: #123b2a;
+  border-color: rgba(18, 59, 42, .2);
+}
+body:has(#work) #availability .bg-gradient-to-r h3,
+body:has(#work) #availability .bg-gradient-to-r .text-white,
+body:has(#work) #availability .bg-gradient-to-r .text-slate-300 {
+  color: #f8f5ed;
+}
+body:has(#work) #availability .bg-gradient-to-r .text-emerald-400 {
+  color: #c9d9b8;
+}
+body:has(#work) #availability .bg-gradient-to-r button {
+  min-height: 44px;
+}
+body:has(#work) footer {
+  padding-top: clamp(3.5rem, 6vw, 5.5rem);
+  padding-bottom: clamp(3.5rem, 6vw, 5.5rem);
+}
+body:has(#work) footer .font-serif {
+  font-size: 1.65rem;
+  letter-spacing: .2em;
+}
+body:has(#work) footer p {
+  line-height: 1.8;
+}
+body:has(#work) a:focus-visible,
+body:has(#work) button:focus-visible,
+body:has(#work) input:focus-visible,
+body:has(#work) select:focus-visible {
+  outline: 2px solid #66896a;
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  body:has(#work) > div > header {
+    min-height: 62px;
+    background: rgba(18, 43, 32, .48) !important;
+  }
+  body:has(#work) > div > header > div {
+    min-height: 62px;
+    height: 62px;
+    padding-inline: 1rem;
+  }
+  body:has(#work) > div > header > div > a span {
+    font-size: 1.05rem;
+    letter-spacing: .16em;
+  }
+  body:has(#work) .atelier-hero {
+    min-height: 86svh;
+  }
+  body:has(#work) .atelier-hero > img {
+    object-position: 56% center;
+  }
+  body:has(#work) .atelier-hero > div.absolute.inset-0 {
+    background:
+      linear-gradient(90deg, rgba(10, 25, 17, .54), rgba(10, 25, 17, .12)),
+      linear-gradient(0deg, rgba(10, 25, 17, .68), transparent 75%) !important;
+  }
+  body:has(#work) .atelier-hero__content {
+    padding: 8rem 1.2rem 3.5rem;
+  }
+  body:has(#work) .atelier-hero h1 {
+    max-width: 11ch;
+    font-size: clamp(3.2rem, 14.5vw, 5rem);
+    line-height: .94;
+  }
+  body:has(#work) .atelier-hero__content > p {
+    max-width: 34rem;
+    font-size: .95rem;
+    line-height: 1.75;
+  }
+  body:has(#work) .atelier-hero__content > div:last-child {
+    width: 100%;
+    align-items: stretch;
+  }
+  body:has(#work) .atelier-hero__content > div:last-child button {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+  body:has(#work) #work {
+    padding: 4rem 1rem;
+  }
+  body:has(#work) #work > div:first-child {
+    gap: 1.4rem;
+    margin-bottom: 1.4rem;
+  }
+  body:has(#work) #work h2 {
+    font-size: clamp(2.65rem, 12vw, 3.6rem);
+  }
+  body:has(#work) #work > div:first-child p {
+    font-size: .9rem;
+  }
+  body:has(#work) #work > div:first-child > div:last-child {
+    justify-content: flex-start;
+    gap: .45rem;
+  }
+  body:has(#work) #work button {
+    min-height: 34px;
+    padding: .48rem .7rem;
+    font-size: .58rem;
+  }
+  body:has(#work) .atelier-work-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .65rem;
+  }
+  body:has(#work) .atelier-work-grid > a,
+  body:has(#work) .atelier-work-grid > a:nth-child(n) {
+    grid-column: span 1;
+    aspect-ratio: 3 / 4.15;
+  }
+  body:has(#work) .atelier-work-grid > a:nth-child(3n + 1) {
+    grid-column: span 2;
+    aspect-ratio: 1.22 / 1;
+  }
+  body:has(#work) .atelier-work-grid > a > div:last-child {
+    padding: .85rem;
+  }
+  body:has(#work) .atelier-work-grid > a h3 {
+    font-size: clamp(1.35rem, 6vw, 2rem);
+  }
+  body:has(#work) .atelier-work-grid > a > div:first-of-type span {
+    font-size: .52rem;
+    padding: .3rem .45rem;
+  }
+  body:has(#work) .mw-about-editorial {
+    grid-template-columns: 1fr;
+  }
+  body:has(#work) .mw-about-editorial__image {
+    min-height: 68vw;
+    max-height: 440px;
+  }
+  body:has(#work) .mw-about-editorial > div:last-child {
+    padding: 3rem 1.35rem 3.5rem;
+  }
+  body:has(#work) .mw-about-editorial h2 {
+    font-size: clamp(2.65rem, 11vw, 3.8rem);
+  }
+  body:has(#work) section:has(+ #availability) {
+    padding: 3.5rem 1.1rem;
+  }
+  body:has(#work) #availability {
+    padding: 2.75rem .85rem;
+  }
+  body:has(#work) #availability > div > div > div:first-child {
+    padding: 2rem 1.15rem 1.25rem;
+  }
+  body:has(#work) #availability > div > div > div:last-child {
+    padding: 1rem 1.1rem 1.4rem;
+    gap: 1.5rem;
+  }
+  body:has(#work) #availability .grid.grid-cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  body:has(#work) #availability .bg-gradient-to-r {
+    align-items: stretch;
+    padding: 1.2rem;
+  }
+  body:has(#work) #availability .bg-gradient-to-r > div:last-child {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  body:has(#work) #availability .bg-gradient-to-r button {
+    width: 100%;
+    justify-content: center;
+  }
+  body:has(#work) footer {
+    padding: 3rem 1.25rem;
+  }
+  body:has(#work) footer > div:first-child {
+    align-items: flex-start;
+    gap: 2rem;
+  }
+  body:has(#work) footer > div:first-child > div:last-child {
+    gap: 1rem 1.25rem;
+  }
+}
+@media (max-width: 380px) {
+  body:has(#work) .atelier-work-grid {
+    grid-template-columns: 1fr;
+  }
+  body:has(#work) .atelier-work-grid > a,
+  body:has(#work) .atelier-work-grid > a:nth-child(n),
+  body:has(#work) .atelier-work-grid > a:nth-child(3n + 1) {
+    grid-column: span 1;
+    aspect-ratio: 4 / 4.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:has(#work) *,
+  body:has(#work) *::before,
+  body:has(#work) *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
