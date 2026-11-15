@@ -58,6 +58,8 @@ export const WhatsAppFloatingChat: React.FC = () => {
   const [brandName, setBrandName] = useState('Mwabonje');
   const chatRef = useRef<HTMLDivElement>(null);
 
+  const isBlogArticleRoute = /^\/blog\/[^/]+\/?$/.test(location.pathname);
+
   // Hide on admin and management screens
   const isExcludedRoute = 
     location.pathname.startsWith('/dashboard') ||
@@ -132,7 +134,7 @@ export const WhatsAppFloatingChat: React.FC = () => {
   return (
     <div 
       ref={chatRef}
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-50 flex flex-col items-end pointer-events-auto sm:bottom-7 sm:right-7"
+      className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-50 flex-col items-end pointer-events-auto sm:bottom-7 sm:right-7 ${isBlogArticleRoute ? "hidden sm:flex" : "flex"}`}
     >
       {/* Floating Popover Card */}
       {isOpen && (
