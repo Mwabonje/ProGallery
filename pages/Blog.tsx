@@ -18,13 +18,15 @@ export const Blog: React.FC = () => {
 
   const filteredPosts = posts;
 
-  const totalPages = Math.max(1, Math.ceil(Math.max(0, filteredPosts.length - 4) / pageSize));
-  const paginatedPosts = filteredPosts.slice(4 + (currentPage - 1) * pageSize, 4 + currentPage * pageSize);
   const featuredPost = filteredPosts[0];
   const latestPosts = filteredPosts.slice(1, 4);
   const popularPosts = useMemo(() => {
     return [...filteredPosts.slice(4)].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3);
   }, [filteredPosts]);
+  const popularPostIds = useMemo(() => new Set(popularPosts.map(post => post.id)), [popularPosts]);
+  const archivePosts = filteredPosts.slice(4).filter(post => !popularPostIds.has(post.id));
+  const totalPages = Math.max(1, Math.ceil(archivePosts.length / pageSize));
+  const paginatedPosts = archivePosts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => { fetchPosts(); }, []);
 
@@ -272,7 +274,7 @@ export const Blog: React.FC = () => {
             <p className="font-editorial text-3xl sm:text-4xl">Stay Inspired</p>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-[#faf8f5]">Discover new photography stories, destination guides and creative notes from the Kenyan coast.</p>
           </div>
-          <a href="mailto:info@mwabonje.co.ke?subject=Journal%20updates" className="inline-flex items-center justify-center gap-3 rounded-md bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] px-6 py-3 text-sm font-semibold transition-colors">Get in Touch <ArrowRight size={16} /></a>
+          <a href="mailto:info@mwabonje.co.ke?subject=Journal%20updates" className="inline-flex items-center justify-center gap-3 rounded-md bg-[#faf8f5] hover:bg-white text-[#0f172b] px-6 py-3 text-sm font-semibold transition-colors">Get in Touch <ArrowRight size={16} /></a>
         </div>
       </section>
     </div>
