@@ -11,12 +11,22 @@ export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const pageTitle = "Journal & Stories | Mwabonje Photography — Malindi & Kenyan Coast";
   const pageDescription = "Explore photography guides, coastal location stories, wedding tips, and documentary visual storytelling from Malindi, Watamu, and Lamu by Mwabonje Photography.";
   const pageUrl = "https://mwabonje.co.ke/blog";
   const pageSize = 6;
 
-  const filteredPosts = posts;
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    posts.forEach(post => parseCategories(post.category).forEach(category => categories.add(category)));
+    return ['All', ...Array.from(categories)];
+  }, [posts]);
+
+  const filteredPosts = useMemo(() => {
+    if (selectedCategory === 'All') return posts;
+    return posts.filter(post => parseCategories(post.category).includes(selectedCategory));
+  }, [posts, selectedCategory]);
 
   const featuredPost = filteredPosts[0];
   const latestPosts = filteredPosts.slice(1, 4);
@@ -27,6 +37,10 @@ export const Blog: React.FC = () => {
   const archivePosts = filteredPosts.slice(4).filter(post => !popularPostIds.has(post.id));
   const totalPages = Math.max(1, Math.ceil(archivePosts.length / pageSize));
   const paginatedPosts = archivePosts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
 
   useEffect(() => { fetchPosts(); }, []);
 
@@ -140,13 +154,37 @@ export const Blog: React.FC = () => {
         </div>
       </section>
 
+      {availableCategories.length > 2 && (
+        <nav aria-label="Filter journal by category" className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 px-5 pt-7 sm:px-8 lg:px-10">
+          {availableCategories.map(category => {
+            const active = selectedCategory === category;
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                aria-pressed={active}
+                className={
+                  active
+                    ? 'rounded-full bg-[#0f172b] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#faf8f5] dark:bg-[#faf8f5] dark:text-[#0f172b]'
+                    : 'rounded-full bg-[#0f172b]/[0.06] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0f172b] transition-colors duration-200 hover:bg-[#003223]/[0.10] hover:text-[#003223] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5]/85 dark:hover:bg-[#faf8f5]/[0.14] dark:hover:text-[#8cc74f]'
+                }
+              >
+                {category}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       <main className="max-w-7xl mx-auto w-full px-5 sm:px-8 lg:px-10 py-8 sm:py-10 lg:py-12">
         {loading ? (
           <div className="h-72 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#0f172b]" /></div>
         ) : filteredPosts.length === 0 ? (
           <div className="py-24 text-center text-[#0f172b] dark:text-slate-400">
             <BookOpen className="mx-auto mb-4" size={30} />
-            <p>No journal stories found.</p>
+            <p>No journal stories found in &quot;{selectedCategory}&quot;.</p>
+            {selectedCategory !== 'All' && <button type="button" onClick={() => setSelectedCategory('All')} className="mt-4 text-xs font-semibold uppercase tracking-wider text-[#003223] underline underline-offset-4 dark:text-[#8cc74f]">View all stories</button>}
           </div>
         ) : (
           <>
