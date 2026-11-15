@@ -144,7 +144,7 @@ export const Blog: React.FC = () => {
         ) : filteredPosts.length === 0 ? (
           <div className="py-24 text-center text-[#725b4b] dark:text-slate-400">
             <BookOpen className="mx-auto mb-4" size={30} />
-            <p>No journal stories found{selectedCategory !== 'All' ? ` in “${selectedCategory}”` : ''}.</p>
+            <p>No journal stories found.</p>
           </div>
         ) : (
           <>
