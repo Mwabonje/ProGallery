@@ -63,7 +63,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
           <button
             type="button"
             onClick={(e) => openShare(e, shareLinks.pinterest)}
-            className="px-4 py-2 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-xs font-bold flex items-center gap-2 shadow-xs transition-transform active:scale-95 cursor-pointer"
+            className="px-4 py-2 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-xs font-bold flex items-center gap-2 shadow-xs transition-transform active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           >
             {/* Pinterest SVG */}
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
           <button
             type="button"
             onClick={(e) => openShare(e, shareLinks.whatsapp)}
-            className="px-4 py-2 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-xs font-bold flex items-center gap-2 shadow-xs transition-transform active:scale-95 cursor-pointer"
+            className="px-4 py-2 rounded-full bg-[#0f172b] hover:bg-[#050505] text-[#faf8f5] text-xs font-bold flex items-center gap-2 shadow-xs transition-transform active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           >
             {/* WhatsApp SVG */}
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
           <button
             type="button"
             onClick={handleCopyLink}
-            className="px-3.5 py-2 rounded-full bg-[#faf8f5] dark:bg-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] border border-[#0f172b]/20 dark:border-[#faf8f5]/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-full bg-[#faf8f5] dark:bg-[#0f172b] hover:bg-[#0f172b]/[0.06] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] border border-[#0f172b]/20 dark:border-[#faf8f5]/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-[#0f172b] dark:text-[#faf8f5]" /> : <Copy className="w-3.5 h-3.5 text-[#0f172b]/60 dark:text-[#faf8f5]/60" />}
             <span>{copied ? 'Copied' : 'Copy Link'}</span>
@@ -112,7 +112,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
         <button
           type="button"
           onClick={(e) => openShare(e, shareLinks.pinterest)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0f172b]/[0.08] hover:bg-[#0f172b] text-[#0f172b] hover:text-[#faf8f5] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5] dark:hover:bg-[#faf8f5] dark:hover:text-[#0f172b] transition-all text-xs font-semibold cursor-pointer group"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0f172b]/[0.08] hover:bg-[#0f172b] text-[#0f172b] hover:text-[#faf8f5] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5] dark:hover:bg-[#faf8f5] dark:hover:text-[#0f172b] transition-all text-xs font-semibold cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           title="Save this story to Pinterest"
         >
           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
         <button
           type="button"
           onClick={(e) => openShare(e, shareLinks.whatsapp)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0f172b]/[0.08] hover:bg-[#0f172b] text-[#0f172b] hover:text-[#faf8f5] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5] dark:hover:bg-[#faf8f5] dark:hover:text-[#0f172b] transition-all text-xs font-semibold cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0f172b]/[0.08] hover:bg-[#0f172b] text-[#0f172b] hover:text-[#faf8f5] dark:bg-[#faf8f5]/[0.08] dark:text-[#faf8f5] dark:hover:bg-[#faf8f5] dark:hover:text-[#0f172b] transition-all text-xs font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           title="Share on WhatsApp"
         >
           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -138,7 +138,7 @@ export const BlogSocialShare: React.FC<BlogSocialShareProps> = ({
         <button
           type="button"
           onClick={handleCopyLink}
-          className="p-1.5 rounded-full hover:bg-[#0f172b]/[0.08] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] transition-colors cursor-pointer"
+          className="p-1.5 rounded-full hover:bg-[#0f172b]/[0.08] dark:hover:bg-[#faf8f5]/[0.08] text-[#0f172b] dark:text-[#faf8f5] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8cc74f] focus-visible:ring-offset-2"
           title="Copy article link"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-[#0f172b] dark:text-[#faf8f5]" /> : <Copy className="w-3.5 h-3.5" />}
