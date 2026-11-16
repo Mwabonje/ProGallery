@@ -2,7 +2,7 @@ import { Handler } from "@netlify/functions";
 import { randomUUID } from "node:crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { authenticatePhotographer, ownsGallery } from "./_shared/auth";
+import { authenticatePhotographer, ownsGallery } from "../utils/auth";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": process.env.APP_ORIGIN || "https://mwabonje.co.ke",
