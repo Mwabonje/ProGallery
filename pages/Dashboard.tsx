@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Lock, Unlock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square, CreditCard } from 'lucide-react';
+import { Plus, Eye, EyeOff, Image as ImageIcon, Loader2, Trash2, Heart, Bell, Clock, Globe, User, MousePointerClick, TrendingUp, Link as LinkIcon, Search, Filter, AlertCircle, QrCode, LayoutGrid, GalleryHorizontalEnd, RefreshCw, Database, Camera, FileText, FolderCheck, Mail, CheckCircle2, Shield, Calendar, HelpCircle, Layers, Download, Send, MessageSquare, ArrowUpRight, ArrowRight, ChevronRight, ChevronDown, Package, Users, Folder, CalendarCheck, Coins, Sparkles, ExternalLink, Zap, Settings, UserPlus, FolderPlus, CalendarPlus, Edit2, Share2, Link2, Link2Off, Lock, Unlock, Sliders, ShoppingBag, BarChart2, BarChart3, Play, PlaySquare, Smartphone, SlidersHorizontal, ArrowUpDown, MoreVertical, Copy, Check, Star, X, List, Upload, FileDown, CheckSquare, Square, CreditCard } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Gallery, ActivityLog } from '../types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -167,7 +167,7 @@ export const Dashboard: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [bulkExpiryHours, setBulkExpiryHours] = useState<number>(24);
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
-  const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'live' | 'expired'>('all');
+  const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'live' | 'disabled' | 'expired'>('all');
   const [chartData, setChartData] = useState<any[]>([]);
   const [realStorageUsedMB, setRealStorageUsedMB] = useState<number>(0);
   const [isPurging, setIsPurging] = useState(false);
@@ -197,7 +197,19 @@ export const Dashboard: React.FC = () => {
   // In-Dashboard File Upload & Management
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const clientLinkDropdownRef = useRef<HTMLDivElement>(null);
   const { uploading, progress, activeGalleryId, uploadFiles } = useUpload();
+
+  useEffect(() => {
+    if (!isClientLinkDropdownOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (clientLinkDropdownRef.current && !clientLinkDropdownRef.current.contains(event.target as Node)) {
+        setIsClientLinkDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isClientLinkDropdownOpen]);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
 
   // In-Dashboard Section / Sub-Gallery Creation
@@ -1084,6 +1096,10 @@ export const Dashboard: React.FC = () => {
     return deliveryGalleries.filter(g => !g.isExpired && g.link_enabled).length;
   }, [deliveryGalleries]);
 
+  const disabledDeliveryCount = React.useMemo(() => {
+    return deliveryGalleries.filter(g => !g.isExpired && !g.link_enabled).length;
+  }, [deliveryGalleries]);
+
   // Current active delivery gallery dynamically sourced from real database data
   const currentDelivery = React.useMemo(() => {
     if (deliveryGalleries.length === 0) return null;
@@ -1244,13 +1260,15 @@ export const Dashboard: React.FC = () => {
     await handleSaveDeliveryPassword(pass);
   };
 
-  const handleToggleLinkEnabled = async () => {
-    if (!currentDelivery) return;
+  const handleToggleLinkEnabled = async (galleryOrEvent?: DashboardGallery | React.MouseEvent) => {
+    const targetGallery =
+      galleryOrEvent && 'id' in galleryOrEvent ? galleryOrEvent : currentDelivery;
+    if (!targetGallery) return;
     try {
-      const nextStatus = !currentDelivery.link_enabled;
+      const nextStatus = !targetGallery.link_enabled;
       const updatePayload: any = { link_enabled: nextStatus };
 
-      if (nextStatus && currentDelivery.selection_status === 'submitted') {
+      if (nextStatus && targetGallery.selection_status === 'submitted') {
         if (window.confirm("The client has already submitted their selection. Do you also want to reopen the selection allowing them to edit/add their selections?")) {
           updatePayload.selection_status = 'pending';
         }
@@ -1259,10 +1277,14 @@ export const Dashboard: React.FC = () => {
       const { error } = await supabase
         .from('galleries')
         .update(updatePayload)
-        .eq('id', currentDelivery.id);
+        .eq('id', targetGallery.id);
       if (error) throw error;
 
-      toast.success(nextStatus ? 'Client portal link is now Live' : 'Client portal link is now Hidden');
+      toast.success(
+        nextStatus
+          ? `Client link enabled — ${targetGallery.client_name} is now Live`
+          : `Client link disabled — ${targetGallery.client_name} can no longer be accessed by clients`
+      );
       await fetchData();
     } catch (err: any) {
       console.error('Error toggling portal link:', err);
@@ -3686,6 +3708,31 @@ export const Dashboard: React.FC = () => {
               </div>
             ) : deliveryViewMode === 'detail' ? (
               <div className="space-y-6">
+                {/* Disabled Client Link Banner */}
+                {currentDelivery && !currentDelivery.link_enabled && !currentDelivery.isExpired && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                        <Link2Off className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-rose-950">Client Link Disabled</p>
+                        <p className="text-[11px] text-rose-800 mt-0.5">
+                          Clients opening the portal or vanity URL currently see an unavailable notice. Files and selections remain safely stored.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleLinkEnabled(currentDelivery)}
+                      className="h-9 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0 inline-flex items-center gap-1.5"
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Re-enable Link</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Submitted Selection Banner */}
                 {currentDelivery?.selection_status === 'submitted' && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
@@ -3768,15 +3815,19 @@ export const Dashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleToggleLinkEnabled}
-                          title="Click to toggle Live / Hidden portal visibility"
+                          title={currentDelivery?.link_enabled ? "Client link is Live — click to disable link" : "Client link is Disabled — click to re-enable link"}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
                             currentDelivery?.link_enabled
                               ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0] hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${currentDelivery?.link_enabled ? 'bg-[#059669]' : 'bg-slate-400'}`} />
-                          {currentDelivery?.link_enabled ? 'Live' : 'Hidden'}
+                          {currentDelivery?.link_enabled ? (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+                          ) : (
+                            <Link2Off className="w-3 h-3 text-rose-600" />
+                          )}
+                          {currentDelivery?.link_enabled ? 'Live' : 'Link Disabled'}
                         </button>
                       )}
                       {currentDelivery?.selection_status === 'submitted' && (
@@ -3846,23 +3897,41 @@ export const Dashboard: React.FC = () => {
                     )}
 
                     {/* Client Link ⌄ Dropdown */}
-                    <div className="relative shrink-0">
+                    <div ref={clientLinkDropdownRef} className="relative shrink-0">
                       <button
                         onClick={() => setIsClientLinkDropdownOpen(prev => !prev)}
-                        className="h-9 bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7] px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                        className={`h-9 px-4 rounded-xl text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                          currentDelivery?.link_enabled === false
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                            : 'bg-[#231A16] hover:bg-[#352822] text-[#FDFBF7]'
+                        }`}
                       >
-                        <Link2 className="w-4 h-4 text-[#CBBDB8]" />
-                        <span>Client Link</span>
-                        <ChevronDown className="w-3.5 h-3.5 text-[#CBBDB8]" />
+                        {currentDelivery?.link_enabled === false ? (
+                          <Link2Off className="w-4 h-4 text-rose-100" />
+                        ) : (
+                          <Link2 className="w-4 h-4 text-[#CBBDB8]" />
+                        )}
+                        <span>{currentDelivery?.link_enabled === false ? 'Link Disabled' : 'Client Link'}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 ${currentDelivery?.link_enabled === false ? 'text-rose-100' : 'text-[#CBBDB8]'}`} />
                       </button>
 
                       {isClientLinkDropdownOpen && currentDelivery && (
                         <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E8E2D2] p-2 z-50">
+                          {!currentDelivery.link_enabled && (
+                            <div className="px-3 py-1.5 mb-1.5 rounded-xl bg-rose-50 border border-rose-200/80 text-[11px] font-medium text-rose-700 flex items-center gap-2">
+                              <Link2Off className="w-3.5 h-3.5 shrink-0" />
+                              <span>This link is currently disabled</span>
+                            </div>
+                          )}
                           <button
                             onClick={() => {
                               const url = `${window.location.origin}/g/${currentDelivery.id}`;
                               navigator.clipboard.writeText(url);
-                              toast.success("Client link copied to clipboard!");
+                              toast.success(
+                                currentDelivery.link_enabled
+                                  ? "Client link copied to clipboard!"
+                                  : "Client link copied (note: link is currently disabled)"
+                              );
                               setIsClientLinkDropdownOpen(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
@@ -3875,7 +3944,11 @@ export const Dashboard: React.FC = () => {
                               const slug = generateSlug(currentDelivery.client_name);
                               const url = `${window.location.origin}/${slug}`;
                               navigator.clipboard.writeText(url);
-                              toast.success(`Vanity link /${slug} copied!`);
+                              toast.success(
+                                currentDelivery.link_enabled
+                                  ? `Vanity link /${slug} copied!`
+                                  : `Vanity link /${slug} copied (note: link is currently disabled)`
+                              );
                               setIsClientLinkDropdownOpen(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-[#1F1714] hover:bg-[#FAF7F0] flex items-center gap-2.5 cursor-pointer"
@@ -3935,6 +4008,30 @@ export const Dashboard: React.FC = () => {
                           >
                             <Send className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Send via WhatsApp</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsClientLinkDropdownOpen(false);
+                              await handleToggleLinkEnabled(currentDelivery);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 cursor-pointer mt-0.5 ${
+                              currentDelivery.link_enabled
+                                ? 'text-rose-600 hover:bg-rose-50'
+                                : 'text-emerald-700 hover:bg-emerald-50'
+                            }`}
+                          >
+                            {currentDelivery.link_enabled ? (
+                              <>
+                                <Link2Off className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Disable Client Link</span>
+                              </>
+                            ) : (
+                              <>
+                                <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Enable Client Link</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       )}
@@ -6089,6 +6186,16 @@ export const Dashboard: React.FC = () => {
                     Active ({activeDeliveryCount})
                   </button>
                   <button
+                    onClick={() => setDeliveryFilter('disabled')}
+                    className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+                      deliveryFilter === 'disabled'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-white border border-[#E6DFC6] text-[#7A6F69] hover:text-[#1F1714]'
+                    }`}
+                  >
+                    Link Disabled ({disabledDeliveryCount})
+                  </button>
+                  <button
                     onClick={() => setDeliveryFilter('expired')}
                     className={`h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                       deliveryFilter === 'expired'
@@ -6120,6 +6227,7 @@ export const Dashboard: React.FC = () => {
                           return false;
                         }
                         if (deliveryFilter === 'expired') return g.isExpired;
+                        if (deliveryFilter === 'disabled') return !g.isExpired && !g.link_enabled;
                         if (deliveryFilter === 'live') return !g.isExpired && g.link_enabled;
                         return true;
                       })
@@ -6200,10 +6308,10 @@ export const Dashboard: React.FC = () => {
                                   </span>
                                 )}
                               </div>
+                            ) : !gallery.link_enabled ? (
+                              <div className="status hidden"><span className="status-dot"></span>Link Disabled</div>
                             ) : gallery.selection_status === 'submitted' ? (
                               <div className="status submitted"><span className="status-dot"></span>Selection submitted</div>
-                            ) : !gallery.link_enabled ? (
-                              <div className="status hidden"><span className="status-dot"></span>Hidden</div>
                             ) : (
                               <div className="status live flex flex-col items-start gap-0.5">
                                 <div className="inline-flex items-center gap-1.5">
@@ -6224,6 +6332,22 @@ export const Dashboard: React.FC = () => {
                             <div className="text-[#6D635D] font-mono text-[11px]">{formatDate(gallery.created_at)}</div>
 
                             <div className="flex justify-end pr-2 gap-1 items-center">
+                              {/* Quick Disable / Enable Client Link */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleLinkEnabled(gallery);
+                                }}
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                  gallery.link_enabled
+                                    ? 'text-[#8E827B] hover:text-rose-600 hover:bg-rose-50'
+                                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                }`}
+                                title={gallery.link_enabled ? 'Disable Client Link' : 'Enable Client Link'}
+                              >
+                                {gallery.link_enabled ? <Link2Off className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                              </button>
                               {/* 1-Click WhatsApp Delivery Button */}
                               <button
                                 onClick={(e) => {

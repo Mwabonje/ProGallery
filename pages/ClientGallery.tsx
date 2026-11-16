@@ -29,6 +29,7 @@ import {
   List,
   PlayCircle,
   ChevronDown,
+  Link2Off,
 } from "lucide-react";
 import { supabase } from "../services/supabase";
 import { Gallery, GalleryFile } from "../types";
@@ -643,7 +644,7 @@ export const ClientGallery: React.FC = () => {
 
       if (!galData.link_enabled) {
         setError(
-          "This gallery is currently unavailable. Please contact the photographer.",
+          "This gallery link has been disabled by the photographer. Please contact the photographer for access.",
         );
         setLoading(false);
         return;
@@ -1837,10 +1838,14 @@ export const ClientGallery: React.FC = () => {
         </Helmet>
         <div className="bg-white dark:bg-[#151c28] p-8 md:p-12 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 max-w-md w-full">
           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Clock className="w-8 h-8 text-slate-400" />
+            {error.toLowerCase().includes("disabled") ? (
+              <Link2Off className="w-8 h-8 text-slate-400" />
+            ) : (
+              <Clock className="w-8 h-8 text-slate-400" />
+            )}
           </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
-            Gallery Unavailable
+            {error.toLowerCase().includes("disabled") ? "Link Disabled" : "Gallery Unavailable"}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">{error}</p>
           <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
