@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
-  Calendar as CalendarIcon, MapPin, Sparkles, Send, 
-  CheckCircle2, Clock, Users, ArrowRight, Heart 
+  Calendar as CalendarIcon, MapPin, Sparkles, 
+  CheckCircle2, Clock, Users, ArrowRight, Heart, User 
 } from 'lucide-react';
 import { DESTINATIONS, SHOOT_EXPERIENCES, DestinationInfo } from '../data/destinations';
 import { formatWhatsappUrl } from './WhatsAppFloatingChat';
@@ -20,6 +20,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
   const [selectedDestId, setSelectedDestId] = useState<string>(initialDestinationId);
   const [selectedExperienceId, setSelectedExperienceId] = useState<string>('wedding');
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Keep selected destination in sync if parent passes a new initialDestinationId (e.g. from location hub)
   React.useEffect(() => {
@@ -34,6 +35,8 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
     return d.toISOString().split('T')[0];
   });
   const [guestCount, setGuestCount] = useState<string>('Classic (30 – 80 Guests)');
+  const [clientName, setClientName] = useState<string>('');
+  const [nameError, setNameError] = useState<string>('');
   const [specialNotes, setSpecialNotes] = useState<string>('');
 
   const currentDestination: DestinationInfo = 
@@ -52,10 +55,19 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
     }
   })();
 
+  const normalizedClientName = clientName.trim().replace(/\s+/g, ' ');
+  const nameParts = normalizedClientName
+    .split(' ')
+    .filter(part => /[a-zA-Z\u00C0-\u024F]/.test(part));
+  const hasTwoNames = nameParts.length >= 2;
+
   // Construct instant WhatsApp message
   const whatsappMessage = (() => {
-    let text = `Hello ${brandName}! 👋\n\n`;
+    let text = `Hi Mike!\n`;
     text += `I would love to check your availability for a photoshoot:\n`;
+    if (normalizedClientName) {
+      text += `• Name: ${normalizedClientName}\n`;
+    }
     text += `• Experience: ${currentExperience.title}\n`;
     text += `• Destination: ${currentDestination.name}, Kenya\n`;
     text += `• Requested Date: ${formattedDate}\n`;
@@ -69,14 +81,27 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
     return text;
   })();
 
+  const ensureValidClientName = () => {
+    if (!hasTwoNames) {
+      setNameError('Please enter at least 2 names (e.g. First & Last name) before sending.');
+      nameInputRef.current?.focus();
+      nameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    setNameError('');
+    return true;
+  };
+
   const handleOpenWhatsApp = () => {
+    if (!ensureValidClientName()) return;
     const baseUrl = formatWhatsappUrl(whatsappLink);
     const targetUrl = `${baseUrl}?text=${encodeURIComponent(whatsappMessage)}`;
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenEmail = () => {
-    const subject = encodeURIComponent(`${currentExperience.title} Inquiry — ${currentDestination.name} (${formattedDate})`);
+    if (!ensureValidClientName()) return;
+    const subject = encodeURIComponent(`${currentExperience.title} Inquiry (${normalizedClientName}) — ${currentDestination.name} (${formattedDate})`);
     const body = encodeURIComponent(whatsappMessage);
     window.location.href = `mailto:info@mwabonje.co.ke?subject=${subject}&body=${body}`;
   };
@@ -200,9 +225,51 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
           </div>
 
           {/* Step 3: Dates & Details */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-start">
+            {/* Client Full Name (Required: at least 2 names) */}
+            <div className="lg:col-span-3 space-y-2">
+              <label
+                htmlFor="availability-client-name"
+                className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Your Full Name <span className="text-rose-400">*</span></span>
+              </label>
+              <input
+                ref={nameInputRef}
+                id="availability-client-name"
+                type="text"
+                required
+                placeholder="e.g. Amina Hassan"
+                value={clientName}
+                onChange={e => {
+                  const val = e.target.value;
+                  setClientName(val);
+                  const parts = val.trim().replace(/\s+/g, ' ').split(' ').filter(p => /[a-zA-Z\u00C0-\u024F]/.test(p));
+                  if (parts.length >= 2 && nameError) {
+                    setNameError('');
+                  }
+                }}
+                aria-invalid={Boolean(nameError)}
+                className={`w-full px-3 py-2.5 text-xs bg-slate-900 border rounded-xl text-white focus:outline-none focus:ring-2 placeholder:text-slate-500 transition-colors ${
+                  nameError
+                    ? 'border-rose-500 focus:ring-rose-500/40 focus:border-rose-400'
+                    : 'border-slate-700 focus:ring-emerald-500/40 focus:border-emerald-400'
+                }`}
+              />
+              {nameError ? (
+                <p className="text-[10px] text-rose-400 font-medium">
+                  {nameError}
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-400">
+                  Enter at least 2 names (e.g. First &amp; Last name).
+                </p>
+              )}
+            </div>
+
             {/* Date Picker */}
-            <div className="md:col-span-5 space-y-2">
+            <div className="lg:col-span-3 space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                 <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
                 <span>3. Requested Shoot Date</span>
@@ -241,7 +308,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
             </div>
 
             {/* Scope / Guest Count */}
-            <div className="md:col-span-4 space-y-2">
+            <div className="lg:col-span-3 space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Guest Count / Scope</span>
@@ -265,7 +332,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
             </div>
 
             {/* Venue or Vision notes */}
-            <div className="md:col-span-3 space-y-2">
+            <div className="lg:col-span-3 space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
                 Venue or Villa (Optional)
               </label>
@@ -293,33 +360,40 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
                 {currentExperience.title} in {currentDestination.name}
               </h3>
               <p className="text-xs text-slate-300">
-                Requested Date: <strong className="text-white">{formattedDate}</strong> · Direct WhatsApp consultation with Mwabonje
+                Requested Date: <strong className="text-white">{formattedDate}</strong> · Direct WhatsApp consultation with Mike
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
-              {/* WhatsApp Action Button */}
-              <button
-                type="button"
-                onClick={handleOpenWhatsApp}
-                className="px-6 py-3 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer flex-shrink-0"
-              >
-                {/* WhatsApp SVG */}
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.004 2C6.479 2 2 6.48 2 12.006c0 1.91.536 3.738 1.554 5.32L2.09 22.09l4.908-1.42a9.96 9.96 0 0 0 5.006 1.34h.004c5.524 0 10.003-4.48 10.003-10.005 0-2.67-1.04-5.18-2.93-7.07A9.94 9.94 0 0 0 12.004 2zm5.834 14.195c-.244.686-1.417 1.31-1.954 1.393-.505.077-1.157.11-1.874-.12-.435-.14-1-.326-1.72-.638-3.04-1.315-5.02-4.385-5.17-4.587-.15-.202-1.233-1.64-1.233-3.13 0-1.49.78-2.222 1.057-2.525.277-.302.604-.378.805-.378.2 0 .403.002.58.01.187.01.436-.07.68.518.252.605.856 2.094.932 2.245.076.15.126.328.025.53-.1.201-.151.327-.302.503-.15.177-.318.394-.453.529-.151.15-.31.313-.134.614.177.302.784 1.293 1.68 2.092 1.152 1.026 2.122 1.344 2.424 1.494.302.152.479.127.655-.075.177-.202.756-.88 1.008-1.182.251-.303.503-.252.855-.126.353.126 2.238 1.057 2.62 1.25.38.192.633.287.726.448.093.161.093.931-.151 1.617z"/>
-                </svg>
-                <span>Check Dates on WhatsApp</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-              </button>
+            <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
+                {/* WhatsApp Action Button */}
+                <button
+                  type="button"
+                  onClick={handleOpenWhatsApp}
+                  className="px-6 py-3 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer flex-shrink-0"
+                >
+                  {/* WhatsApp SVG */}
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12.004 2C6.479 2 2 6.48 2 12.006c0 1.91.536 3.738 1.554 5.32L2.09 22.09l4.908-1.42a9.96 9.96 0 0 0 5.006 1.34h.004c5.524 0 10.003-4.48 10.003-10.005 0-2.67-1.04-5.18-2.93-7.07A9.94 9.94 0 0 0 12.004 2zm5.834 14.195c-.244.686-1.417 1.31-1.954 1.393-.505.077-1.157.11-1.874-.12-.435-.14-1-.326-1.72-.638-3.04-1.315-5.02-4.385-5.17-4.587-.15-.202-1.233-1.64-1.233-3.13 0-1.49.78-2.222 1.057-2.525.277-.302.604-.378.805-.378.2 0 .403.002.58.01.187.01.436-.07.68.518.252.605.856 2.094.932 2.245.076.15.126.328.025.53-.1.201-.151.327-.302.503-.15.177-.318.394-.453.529-.151.15-.31.313-.134.614.177.302.784 1.293 1.68 2.092 1.152 1.026 2.122 1.344 2.424 1.494.302.152.479.127.655-.075.177-.202.756-.88 1.008-1.182.251-.303.503-.252.855-.126.353.126 2.238 1.057 2.62 1.25.38.192.633.287.726.448.093.161.093.931-.151 1.617z"/>
+                  </svg>
+                  <span>Check Dates on WhatsApp</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+                </button>
 
-              {/* Email Option */}
-              <button
-                type="button"
-                onClick={handleOpenEmail}
-                className="px-4 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
-              >
-                Send via Email
-              </button>
+                {/* Email Option */}
+                <button
+                  type="button"
+                  onClick={handleOpenEmail}
+                  className="px-4 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+                >
+                  Send via Email
+                </button>
+              </div>
+              {nameError && (
+                <p className="text-[11px] text-rose-400 font-medium">
+                  {nameError}
+                </p>
+              )}
             </div>
           </div>
         </div>
