@@ -460,7 +460,8 @@ export function Portfolio({ photographerId }: { photographerId?: string }) {
   };
 
   const getGalleryLocation = (g: Gallery): string | null => {
-    const text = `${g.client_name || ''} ${g.title || ''} ${g.category || ''} ${g.description || ''}`.toLowerCase();
+    const legacyDescription = (g as Gallery & { description?: string }).description;
+    const text = `${g.client_name || ''} ${g.title || ''} ${g.category || ''} ${legacyDescription || g.seo_description || ''}`.toLowerCase();
     if (text.includes('watamu') || text.includes('tamu') || text.includes('dacoum') || text.includes('mida') || text.includes('hemingways') || text.includes('medina') || text.includes('chiedza')) return 'watamu';
     if (text.includes('lamu') || text.includes('shela') || text.includes('kilele') || text.includes('peponi') || text.includes('manda')) return 'lamu';
     if (text.includes('malindi') || text.includes('che shale') || text.includes('driftwood') || text.includes('warehouse') || text.includes('raffaella')) return 'malindi';

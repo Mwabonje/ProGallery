@@ -63,7 +63,7 @@ const App: React.FC = () => {
                   }
                 }
               }
-            }).catch(() => {});
+            }).then(undefined, () => {});
         }
       }).catch((err) => {
         console.warn("Supabase session check failed:", err);
@@ -106,7 +106,7 @@ const App: React.FC = () => {
                 }
               }
             }
-          }).catch(() => {});
+          }).then(undefined, () => {});
       }
     });
 

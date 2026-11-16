@@ -4261,11 +4261,11 @@ export const Dashboard: React.FC = () => {
                           const lockedTotalCount = allDeliveryFilesList.filter(f => f.is_extra_locked).length;
 
                           const filterTabsBar = (
-                            <div className="inline-flex items-center flex-nowrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-0.5 gap-0.5 shrink-0">
+                            <div className="inline-flex items-center flex-wrap bg-[#FAF7F0] border border-[#EDE5D8] rounded-xl p-0.5 gap-0.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => setPhotosFilter('all')}
-                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'all' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4274,7 +4274,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('picks'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'picks' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4284,7 +4284,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('edited'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'edited' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4294,7 +4294,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('locked'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'locked' ? 'bg-white text-amber-800 font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4304,7 +4304,7 @@ export const Dashboard: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => { setPhotosFilter('notes'); setShowAllPhotosInGrid(true); }}
-                                className={`h-7 px-2 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
+                                className={`h-7 px-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 tabular-nums ${
                                   photosFilter === 'notes' ? 'bg-white text-[#8C6432] font-bold shadow-2xs' : 'text-[#7A6F69] hover:text-[#1F1714]'
                                 }`}
                               >
@@ -4317,7 +4317,7 @@ export const Dashboard: React.FC = () => {
                           if (displayFiles.length === 0) {
                             return (
                               <div className="space-y-3">
-                                <div className="bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                <div className="bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs flex flex-wrap items-center justify-between gap-2">
                                   {filterTabsBar}
                                   {(photosFilter !== 'all' || galleryPhotoSearch) && (
                                     <button
@@ -4360,10 +4360,10 @@ export const Dashboard: React.FC = () => {
                           const editedPicksCount = clientPickedFiles.filter(f => f.is_edited).length;
                           const bulkActionBar = (
                             <div className="mb-3 bg-white px-2.5 py-1.5 rounded-2xl border border-[#E8E2D2] shadow-2xs space-y-2">
-                              <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                              <div className="flex flex-wrap items-center justify-between gap-1.5">
                                 {filterTabsBar}
 
-                                <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -4373,7 +4373,8 @@ export const Dashboard: React.FC = () => {
                                         setSelectedPhotoIds(displayFiles.map(f => f.id));
                                       }
                                     }}
-                                    className="h-7 px-2 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+                                    title={`Select all ${displayFiles.length} visible photos`}
+                                    className="h-7 px-1.5 rounded-lg hover:bg-[#FAF7F0] inline-flex items-center gap-1 text-[11px] font-semibold text-[#1F1714] hover:text-[#8C6432] cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
                                   >
                                     {allVisibleSelected ? (
                                       <CheckSquare className="w-3.5 h-3.5 text-[#B58B5C]" />
@@ -4383,7 +4384,7 @@ export const Dashboard: React.FC = () => {
                                     <span>
                                       {selectedPhotoIds.length > 0
                                         ? `${selectedPhotoIds.length} selected`
-                                        : `Select all (${displayFiles.length})`}
+                                        : 'Select all'}
                                     </span>
                                   </button>
 
@@ -4391,15 +4392,16 @@ export const Dashboard: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => setSelectedPhotoIds(clientPickedFiles.map(f => f.id))}
+                                      title={`Select all ${clientPickedFiles.length} client picks`}
                                       className="h-7 inline-flex items-center gap-1 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
                                     >
                                       <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                                      <span>Select Picks ({clientPickedFiles.length})</span>
+                                      <span>Select Picks</span>
                                     </button>
                                   )}
 
                                   {clientPickedFiles.length > 0 && (
-                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-1">
+                                    <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0 tabular-nums px-0.5">
                                       {editedPicksCount}/{clientPickedFiles.length} edited
                                     </span>
                                   )}
@@ -4408,7 +4410,7 @@ export const Dashboard: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleMarkFilesEdited(uneditedPickedIds, true)}
-                                      className="h-7 inline-flex items-center gap-1 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
+                                      className="h-7 inline-flex items-center gap-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold cursor-pointer shadow-2xs whitespace-nowrap shrink-0 tabular-nums"
                                     >
                                       <Check className="w-3 h-3" />
                                       <span>Mark {uneditedPickedIds.length} Edited</span>
@@ -4428,11 +4430,11 @@ export const Dashboard: React.FC = () => {
                               </div>
 
                               {selectedPhotoIds.length > 0 && (
-                                <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+                                <div className="pt-2 border-t border-[#F0EBE0] flex flex-wrap items-center justify-between gap-2">
                                   <span className="text-[11px] font-medium text-[#7A6F69] whitespace-nowrap shrink-0 tabular-nums pl-1">
                                     Bulk actions for {selectedPhotoIds.length} photo{selectedPhotoIds.length === 1 ? '' : 's'}
                                   </span>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <button
                                       type="button"
                                       onClick={handleBulkDownloadZip}

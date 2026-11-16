@@ -756,9 +756,17 @@ export const AboutSettingsModal = ({
     const file = e.target.files[0];
 
     try {
-      const result = await uploadFiles([file], galleryId);
-      if (result && result.length > 0) {
-        const newUrl = result[0].file_url;
+      await uploadFiles(galleryId, [file], 87600);
+      const { data: uploadedFiles } = await supabase
+        .from('files')
+        .select('file_url')
+        .eq('gallery_id', galleryId)
+        .neq('file_path', 'GALLERY_PASSWORD')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (uploadedFiles && uploadedFiles.length > 0 && uploadedFiles[0].file_url) {
+        const newUrl = uploadedFiles[0].file_url;
         setCoverUrl(newUrl);
         try {
           localStorage.setItem('mwabonje_about_image', newUrl);

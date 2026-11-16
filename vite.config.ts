@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'autoUpdate',
           workbox: {
-            maximumFileSizeToCacheInBytes: 3000000,
+            maximumFileSizeToCacheInBytes: 5000000,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
             runtimeCaching: [
               {
@@ -74,6 +74,33 @@ export default defineConfig(({ mode }) => {
           }
         })
       ],
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (!id.includes('node_modules')) return;
+              if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@tiptap') || id.includes('prosemirror')) {
+                return 'vendor-editor';
+              }
+              if (id.includes('recharts') || id.includes('d3-')) {
+                return 'vendor-charts';
+              }
+              if (id.includes('@aws-sdk') || id.includes('@smithy')) {
+                return 'vendor-aws';
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('jszip')) {
+                return 'vendor-zip';
+              }
+            }
+          }
+        }
+      },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

@@ -174,7 +174,7 @@ export const GalleryManager: React.FC = () => {
             setSubGalleries(subs);
           }
         })
-        .catch(err => console.warn('Error loading photographer galleries:', err));
+        .then(undefined, err => console.warn('Error loading photographer galleries:', err));
     }
 
     // Get Files

@@ -64,8 +64,7 @@ export const BlogPost: React.FC = () => {
       const container = document.getElementById('article-rich-content');
       if (!container) return;
 
-      const headings = Array.from(container.querySelectorAll('h2'))
-        .filter((heading): heading is HTMLElement => heading instanceof HTMLElement);
+      const headings = Array.from(container.querySelectorAll<HTMLElement>('h2'));
 
       const usedIds = new Set<string>();
       const items: TocItem[] = headings.reduce<TocItem[]>((result, heading, index) => {

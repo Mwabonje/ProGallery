@@ -43,7 +43,7 @@ export const PagesAdmin: React.FC = () => {
                 }
               }
             }
-          }).catch(() => {});
+          }).then(undefined, () => {});
       }
     });
   }, []);

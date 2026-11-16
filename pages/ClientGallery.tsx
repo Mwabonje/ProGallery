@@ -726,7 +726,7 @@ export const ClientGallery: React.FC = () => {
               }
             }
           })
-          .catch(err => console.warn("Error fetching sub-galleries:", err));
+          .then(undefined, err => console.warn("Error fetching sub-galleries:", err));
       }
 
       // Helper to initialize authenticated gallery state
