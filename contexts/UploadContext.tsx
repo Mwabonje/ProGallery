@@ -244,17 +244,22 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             try {
                 const mimeType = getMimeType(file);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.access_token) throw new Error("Your session has expired. Please sign in again.");
 
                 const apiUrl = getApiUrl('/api/upload-url');
                 
                 // 1. Get Presigned URL from Backend (organized by gallery)
                 const presignRes = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        fileName: file.name, 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name,
                         fileType: mimeType,
-                        folderPath: `galleries/${galleryId}`
+                        galleryId
                     }),
                     signal: controller.signal
                 });
@@ -325,11 +330,14 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             const cleanBaseName = file.name.replace(/\.[^/.]+$/, "");
                             const thumbPresignRes = await fetch(apiUrl, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    fileName: `watermark_${cleanBaseName}.jpg`, 
-                                    fileType: 'image/jpeg', 
-                                    folderPath: `galleries/${galleryId}` 
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`
+                                },
+                                body: JSON.stringify({
+                                    fileName: `watermark_${cleanBaseName}.jpg`,
+                                    fileType: 'image/jpeg',
+                                    galleryId
                                 }),
                                 signal: controller.signal
                             });

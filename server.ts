@@ -691,110 +691,46 @@ async function startServer() {
       res.json({ success: true, count: data.galleries[galleryId].views });
   });
 
-  // --- GALLERY PASSWORD MANAGEMENT ---
-  const GALLERY_PASSWORDS_FILE = path.join(process.cwd(), "data", "gallery_passwords.json");
-  const readGalleryPasswords = (): Record<string, string> => {
-    try {
-      if (fs.existsSync(GALLERY_PASSWORDS_FILE)) {
-        return JSON.parse(fs.readFileSync(GALLERY_PASSWORDS_FILE, "utf8"));
-      }
-    } catch (e) {
-      console.error("Error reading gallery passwords file:", e);
-    }
-    return {};
-  };
-
-  const writeGalleryPasswords = (passwords: Record<string, string>) => {
-    try {
-      const dir = path.dirname(GALLERY_PASSWORDS_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(GALLERY_PASSWORDS_FILE, JSON.stringify(passwords, null, 2), "utf8");
-    } catch (e) {
-      console.error("Error writing gallery passwords file:", e);
-    }
-  };
-
-  // Check if gallery requires password - NEVER returns the plaintext password!
+  // --- GALLERY PASSWORD VERIFICATION ---
+  // Password management is intentionally not exposed through this unauthenticated
+  // development server. Password creation/rotation must be handled by an authenticated
+  // owner-only endpoint and stored as a hash, not in a committed JSON file.
   app.get("/api/gallery/:id/auth-status", async (req, res) => {
     const { id } = req.params;
-    const passwords = readGalleryPasswords();
-    let hasPassword = Boolean(passwords[id] && passwords[id].trim() !== "");
-    
-    // Fallback check in Supabase files table if not in local json
-    if (!hasPassword && supabaseUrl && supabaseKey) {
-      try {
-        const checkRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&file_path=eq.GALLERY_PASSWORD&select=id&limit=1`, {
-          headers: {
-            "apikey": supabaseKey,
-            "Authorization": `Bearer ${supabaseKey}`
-          }
-        });
-        if (checkRes.ok) {
-          const files = await checkRes.json();
-          if (files && files.length > 0) hasPassword = true;
-        }
-      } catch (e) {}
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: "Invalid gallery id" });
+    try {
+      const checkRes = await fetch(
+        `${supabaseUrl}/rest/v1/files?gallery_id=eq.${encodeURIComponent(id)}&file_path=eq.GALLERY_PASSWORD&select=id&limit=1`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+      );
+      if (!checkRes.ok) return res.status(503).json({ error: "Unable to check gallery access" });
+      const files = await checkRes.json();
+      return res.setHeader("Cache-Control", "no-store").json({ requiresPassword: Array.isArray(files) && files.length > 0 });
+    } catch {
+      return res.status(500).json({ error: "Unable to check gallery access" });
     }
-    
-    res.json({ requiresPassword: hasPassword });
   });
 
-  // Verify password securely on the server
   app.post("/api/gallery/:id/verify-password", async (req, res) => {
     const { id } = req.params;
-    const { password } = req.body;
-    const passwords = readGalleryPasswords();
-    let target = passwords[id] || null;
-
-    if (!target && supabaseUrl && supabaseKey) {
-      try {
-        const checkRes = await fetch(`${supabaseUrl}/rest/v1/files?gallery_id=eq.${id}&file_path=eq.GALLERY_PASSWORD&select=caption&limit=1`, {
-          headers: {
-            "apikey": supabaseKey,
-            "Authorization": `Bearer ${supabaseKey}`
-          }
-        });
-        if (checkRes.ok) {
-          const files = await checkRes.json();
-          if (files && files.length > 0 && files[0].caption) {
-            target = files[0].caption.trim();
-          }
-        }
-      } catch (e) {}
+    const submittedPassword = typeof req.body?.password === "string" ? req.body.password.trim() : "";
+    if (!/^[0-9a-f-]{36}$/i.test(id) || !submittedPassword || submittedPassword.length > 128) {
+      return res.status(400).json({ success: false, error: "Invalid request" });
     }
-
-    if (!target) {
-      // Gallery has no password, access is open
-      return res.json({ success: true, requiresPassword: false });
+    try {
+      const checkRes = await fetch(
+        `${supabaseUrl}/rest/v1/files?gallery_id=eq.${encodeURIComponent(id)}&file_path=eq.GALLERY_PASSWORD&select=caption&limit=1`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+      );
+      if (!checkRes.ok) return res.status(503).json({ success: false, error: "Unable to verify password" });
+      const files = await checkRes.json();
+      const expectedPassword = Array.isArray(files) && files[0]?.caption ? String(files[0].caption).trim() : "";
+      if (!expectedPassword) return res.json({ success: true, requiresPassword: false });
+      if (submittedPassword !== expectedPassword) return res.status(401).json({ success: false, error: "Incorrect password" });
+      return res.setHeader("Cache-Control", "no-store").json({ success: true, requiresPassword: true });
+    } catch {
+      return res.status(500).json({ success: false, error: "Unable to verify password" });
     }
-
-    const cleanInput = (password || "").trim();
-    if (cleanInput && cleanInput === target) {
-      return res.json({ success: true, requiresPassword: true });
-    }
-
-    return res.status(401).json({ success: false, error: "Incorrect password" });
-  });
-
-  app.post("/api/gallery/:id/password", (req, res) => {
-    const { id } = req.params;
-    const { password } = req.body;
-    const passwords = readGalleryPasswords();
-    if (password && typeof password === "string" && password.trim()) {
-      passwords[id] = password.trim();
-    } else {
-      delete passwords[id];
-    }
-    writeGalleryPasswords(passwords);
-    res.json({ success: true, password: passwords[id] || null });
-  });
-
-  app.delete("/api/gallery/:id/password", (req, res) => {
-    const { id } = req.params;
-    const passwords = readGalleryPasswords();
-    delete passwords[id];
-    writeGalleryPasswords(passwords);
-    res.json({ success: true, password: null });
   });
 
   // --- RATE LIMITING FOR GALLERY ACCESS ---

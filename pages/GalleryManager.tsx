@@ -939,18 +939,22 @@ export const GalleryManager: React.FC = () => {
 
     try {
       const filesToDelete = files.filter(f => checkedFiles.includes(f.id));
-      
-      // Delete from storage
-      const filePaths = filesToDelete.map(f => f.file_path);
-      
-      await fetch(getApiUrl('/api/delete-file'), {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ filePaths })
+      const filePaths = filesToDelete.map(f => f.file_path).filter(Boolean);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+
+      const storageResponse = await fetch(getApiUrl('/api/delete-file'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ filePaths })
       });
-      
-      // Delete from DB
-      await supabase.from('files').delete().in('id', checkedFiles);
+      if (!storageResponse.ok) throw new Error("Storage deletion was rejected.");
+
+      const { error: dbError } = await supabase.from('files').delete().in('id', checkedFiles);
+      if (dbError) throw dbError;
       
       setFiles(files.filter(f => !checkedFiles.includes(f.id)));
       setCheckedFiles([]);
@@ -1000,14 +1004,20 @@ export const GalleryManager: React.FC = () => {
     if (!confirm('Delete this file permanently?')) return;
 
     try {
-      // Delete from storage
-      await fetch(getApiUrl('/api/delete-file'), {
+      // The server checks the signed-in photographer owns the gallery and file.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+      const storageResponse = await fetch(getApiUrl('/api/delete-file'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ filePath })
       });
-      // Delete from DB
-      await supabase.from('files').delete().eq('id', fileId);
+      if (!storageResponse.ok) throw new Error("Storage deletion was rejected.");
+      const { error: dbError } = await supabase.from('files').delete().eq('id', fileId);
+      if (dbError) throw dbError;
       
       setFiles(files.filter(f => f.id !== fileId));
     } catch (error) {

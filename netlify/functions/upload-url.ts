@@ -1,11 +1,18 @@
 import { Handler } from "@netlify/functions";
+import { randomUUID } from "node:crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { authenticatePhotographer, ownsGallery } from "../utils/auth";
+
+const allowedOrigins = (process.env.APP_ORIGINS || process.env.APP_ORIGIN || "https://mwabonje.co.ke,https://www.mwabonje.co.ke")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
 };
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -14,84 +21,57 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const VITE_R2_PUBLIC_URL = process.env.VITE_R2_PUBLIC_URL;
 
+const allowedMime = /^(image\/(jpeg|png|webp|gif|heic|heif|tiff|x-[a-z0-9.+-]+)|video\/(mp4|quicktime|webm|x-msvideo|x-matroska|x-ms-wmv))$/i;
+
 export const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: "",
-    };
-  }
+  const origin = event.headers.origin || event.headers.Origin;
+  const headers = { ...corsHeaders, ...(origin && allowedOrigins.includes(origin) ? { "Access-Control-Allow-Origin": origin } : {}) };
 
-  if (event.httpMethod !== "POST") {
-    return { 
-      statusCode: 405, 
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Method Not Allowed" }) 
-    };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Method Not Allowed" }) };
 
-  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-     return { 
-       statusCode: 500, 
-       headers: corsHeaders,
-       body: JSON.stringify({ error: "Missing Cloudflare keys in Netlify Environment Variables" }) 
-     };
+  const auth = await authenticatePhotographer(event.headers.authorization || event.headers.Authorization);
+  if (!auth) return { statusCode: 401, headers, body: JSON.stringify({ error: "Authentication required" }) };
+
+  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME || !VITE_R2_PUBLIC_URL) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Storage is not configured" }) };
   }
 
   try {
-    const accountId = R2_ACCOUNT_ID.replace(/^https?:\/\//, '').replace(/\.r2\.cloudflarestorage\.com.*$/, '').replace(/\/$/, '');
-    
+    const body = JSON.parse(event.body || "{}");
+    const { fileName, fileType, galleryId } = body;
+    if (typeof galleryId !== "string" || !/^[0-9a-f-]{36}$/i.test(galleryId)) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "A valid galleryId is required" }) };
+    }
+    if (typeof fileName !== "string" || fileName.length < 1 || fileName.length > 180 ||
+        typeof fileType !== "string" || !allowedMime.test(fileType)) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "A valid filename and supported image/video MIME type are required" }) };
+    }
+    if (!(await ownsGallery(auth.admin, galleryId, auth.userId))) {
+      return { statusCode: 403, headers, body: JSON.stringify({ error: "You do not own this gallery" }) };
+    }
+
+    const accountId = R2_ACCOUNT_ID.replace(/^https?:\/\//, "").replace(/\.r2\.cloudflarestorage\.com.*$/, "").replace(/\/$/, "");
     const s3 = new S3Client({
       region: "auto",
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       forcePathStyle: true,
-      credentials: {
-        accessKeyId: R2_ACCESS_KEY_ID,
-        secretAccessKey: R2_SECRET_ACCESS_KEY,
-      },
+      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
     });
 
-    const body = JSON.parse(event.body || "{}");
-    const { fileName, fileType, folderPath } = body;
-    
-    if (!fileName || !fileType) {
-      return { 
-        statusCode: 400, 
-        headers: corsHeaders,
-        body: JSON.stringify({ error: "fileName and fileType required" }) 
-      };
-    }
-
-    const uniqueId = Math.random().toString(36).substring(2);
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const baseFolder = folderPath ? folderPath.replace(/^\/+|\/+$/g, '') : `uploads/${Date.now()}_${uniqueId}`;
-    const filePath = `${baseFolder}/${sanitizedFileName}`;
-
-    const command = new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME!,
-      Key: filePath,
-      ContentType: fileType,
-    });
-
-    const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
-    const publicBase = (VITE_R2_PUBLIC_URL || (R2_BUCKET_NAME ? `https://${accountId}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}` : '')).replace(/\/$/, "");
-    const publicUrl = publicBase ? `${publicBase}/${filePath}` : filePath;
+    const sanitizedFileName = fileName.split(/[\\/]/).pop()!.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `galleries/${galleryId}/${randomUUID()}-${sanitizedFileName}`;
+    const command = new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath, ContentType: fileType });
+    const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+    const publicUrl = `${VITE_R2_PUBLIC_URL.replace(/\/$/, "")}/${filePath}`;
 
     return {
       statusCode: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
+      headers: { ...headers, "Content-Type": "application/json", "Cache-Control": "no-store" },
       body: JSON.stringify({ presignedUrl, publicUrl, filePath }),
     };
-  } catch (error: any) {
-    console.error("Presign error:", error);
-    return { 
-      statusCode: 500, 
-      headers: corsHeaders,
-      body: JSON.stringify({ error: error?.message || "Failed to generate URL" }) 
-    };
+  } catch (error) {
+    console.error("Upload URL error:", error);
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid upload request" }) };
   }
 };
