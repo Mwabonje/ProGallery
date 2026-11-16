@@ -4,8 +4,12 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { authenticatePhotographer, ownsGallery } from "../utils/auth";
 
+const allowedOrigins = (process.env.APP_ORIGINS || process.env.APP_ORIGIN || "https://mwabonje.co.ke,https://www.mwabonje.co.ke")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": process.env.APP_ORIGIN || "https://mwabonje.co.ke",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
@@ -21,8 +25,7 @@ const allowedMime = /^(image\/(jpeg|png|webp|gif|heic|heif|tiff|x-[a-z0-9.+-]+)|
 
 export const handler: Handler = async (event) => {
   const origin = event.headers.origin || event.headers.Origin;
-  const allowedOrigin = process.env.APP_ORIGIN || "https://mwabonje.co.ke";
-  const headers = { ...corsHeaders, ...(origin === allowedOrigin ? { "Access-Control-Allow-Origin": origin } : {}) };
+  const headers = { ...corsHeaders, ...(origin && allowedOrigins.includes(origin) ? { "Access-Control-Allow-Origin": origin } : {}) };
 
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Method Not Allowed" }) };
