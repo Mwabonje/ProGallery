@@ -1,6 +1,6 @@
 import { Handler } from "@netlify/functions";
 import { S3Client, DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { authenticatePhotographer, ownsGallery } from "./_shared/auth";
+import { authenticatePhotographer, ownsGallery } from "../utils/auth";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
