@@ -888,7 +888,7 @@ async function startServer() {
       const targetFile = fs.existsSync(distSitemap) ? distSitemap : (fs.existsSync(publicSitemap) ? publicSitemap : null);
 
       if (targetFile) {
-        res.header('Content-Type', 'application/xml');
+        res.header('Content-Type', 'application/xml; charset=UTF-8');
         return res.sendFile(targetFile);
       }
 
@@ -896,23 +896,57 @@ async function startServer() {
         ? process.env.SITE_URL.replace(/\/$/, '') 
         : 'https://mwabonje.co.ke';
 
-      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${domain}/</loc>
-  </url>
-  <url>
-    <loc>${domain}/about</loc>
-  </url>
-  <url>
-    <loc>${domain}/faq</loc>
-  </url>
-  <url>
-    <loc>${domain}/blog</loc>
-  </url>
-</urlset>
-`;
-      res.header('Content-Type', 'application/xml');
+      const urlEntries = new Map<string, { loc: string; lastmod: string | null }>([
+        [`${domain}/`, { loc: `${domain}/`, lastmod: null }],
+        [`${domain}/about`, { loc: `${domain}/about`, lastmod: null }],
+        [`${domain}/faq`, { loc: `${domain}/faq`, lastmod: null }],
+        [`${domain}/blog`, { loc: `${domain}/blog`, lastmod: null }],
+      ]);
+
+      try {
+        const publicSupabaseKey =
+          process.env.VITE_SUPABASE_ANON_KEY ||
+          process.env.REACT_APP_SUPABASE_ANON_KEY ||
+          "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
+        const blogsRes = await fetch(`${supabaseUrl}/rest/v1/blogs?select=slug,date,created_at,status&or=(status.eq.published,status.eq.scheduled,status.is.null)&order=date.desc`, {
+          headers: { apikey: publicSupabaseKey, Authorization: `Bearer ${publicSupabaseKey}` }
+        });
+        if (blogsRes.ok) {
+          const rows = await blogsRes.json();
+          const now = new Date();
+          if (Array.isArray(rows)) {
+            for (const b of rows) {
+              if (!b || typeof b.slug !== 'string') continue;
+              const cleanSlug = b.slug.trim().replace(/^\/+|\/+$/g, '');
+              if (!cleanSlug || cleanSlug.includes('/')) continue;
+              const status = String(b.status || 'published').toLowerCase().trim();
+              if (status === 'scheduled') {
+                const d = new Date(b.date);
+                if (isNaN(d.getTime()) || d > now) continue;
+              } else if (status !== 'published') {
+                continue;
+              }
+              const loc = `${domain}/blog/${encodeURIComponent(cleanSlug)}`;
+              const rawDate = b.date || b.created_at;
+              const parsedDate = rawDate ? new Date(rawDate) : null;
+              const lastmod = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate.toISOString().split('T')[0] : null;
+              if (!urlEntries.has(loc)) urlEntries.set(loc, { loc, lastmod });
+            }
+          }
+        }
+      } catch (fetchErr) {
+        console.warn("Dynamic blog fetch for /sitemap.xml failed:", fetchErr);
+      }
+
+      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+      for (const entry of urlEntries.values()) {
+        sitemap += `\n  <url>\n    <loc>${entry.loc}</loc>`;
+        if (entry.lastmod) sitemap += `\n    <lastmod>${entry.lastmod}</lastmod>`;
+        sitemap += `\n  </url>`;
+      }
+      sitemap += `\n</urlset>\n`;
+
+      res.header('Content-Type', 'application/xml; charset=UTF-8');
       res.send(sitemap);
     } catch (err) {
       console.error("Sitemap generation error:", err);

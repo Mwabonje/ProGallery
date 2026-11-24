@@ -58,6 +58,7 @@
 # Edge functions for dynamic crawler/SEO routing across all HTML routes
 [[edge_functions]]
   path = "/*"
+  excludedPath = ["/sitemap.xml", "/robots.txt", "/api/*", "/.netlify/*", "/assets/*"]
   function = "og-tags"
 
 # HTTP response headers for private and administrative routes

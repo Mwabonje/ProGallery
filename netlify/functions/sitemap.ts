@@ -1,24 +1,36 @@
 import { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-// Safe environment variable retrieval
-const getEnv = (key: string, fallback: string) => process.env[key] || fallback;
+const CANONICAL_ORIGIN = "https://mwabonje.co.ke";
+const STATIC_PUBLIC_PATHS = ["/", "/about", "/faq", "/blog"];
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const FALLBACK_PUBLISHED_BLOGS = [
-  { slug: "why-professional-photography-is-better-than-smartphone-photos", date: "2026-07-19" },
-  { slug: "top-beach-photography-spots-in-watamu", date: "2026-07-19" },
-  { slug: "indoor-vs-outdoor-photography-which-is-better", date: "2026-07-19" },
-  { slug: "why-golden-hour-is-the-best-time-for-photos", date: "2026-07-19" },
-  { slug: "professional-photographers-in-malindi", date: "2026-07-20" },
-  { slug: "why-lamu-is-perfect-for-pre-wedding-photography", date: "2026-10-15" },
-  { slug: "best-places-for-a-photoshoot-in-lamu-kenya", date: "2026-10-15" }
-];
+function resolveCanonicalOrigin(): string {
+  const raw = process.env.SITE_URL;
+  if (!raw) return CANONICAL_ORIGIN;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.includes("netlify.app")) return CANONICAL_ORIGIN;
+    return `https://${parsed.host}`.replace(/\/$/, "");
+  } catch {
+    return CANONICAL_ORIGIN;
+  }
+}
+
+function escapeXml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 function formatW3CDate(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return null;
-  return d.toISOString().split('T')[0];
+  return d.toISOString().split("T")[0];
 }
 
 export const handler: Handler = async (event) => {
@@ -26,64 +38,82 @@ export const handler: Handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const supabaseUrl = getEnv('REACT_APP_SUPABASE_URL', process.env.VITE_SUPABASE_URL || 'https://bdaqtpyzqutelkdgcoex.supabase.co');
-  const supabaseKey = getEnv('REACT_APP_SUPABASE_ANON_KEY', process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib');
+  const supabaseUrl =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.REACT_APP_SUPABASE_URL ||
+    "https://bdaqtpyzqutelkdgcoex.supabase.co";
+  const supabaseKey =
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.REACT_APP_SUPABASE_ANON_KEY ||
+    "sb_publishable_aQY9i_vVRwG-CEWB2Nz4lQ_GwtLYqib";
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    let blogs = [];
-    const { data, error } = await supabase
-      .from("blogs")
-      .select("slug, date, status, password")
-      .order("date", { ascending: false });
+    const pageSize = 1000;
+    const allRows: Array<{ slug: string; date?: string | null; created_at?: string | null; status?: string | null }> = [];
+    let offset = 0;
 
-    if (error) {
-      console.error("Error fetching blogs:", error);
-    } else if (data) {
-      const now = new Date();
-      blogs = data.filter((b) => {
-        if (!b.slug) return false;
-        const status = b.status || 'published';
-        if (status === 'draft') return false;
-        if (status === 'scheduled') {
-          const postDate = new Date(b.date);
-          if (isNaN(postDate.getTime()) || postDate > now) return false;
-        }
-        if (b.password && b.password.trim() !== '') return false;
-        return true;
-      });
+    while (true) {
+      const { data, error } = await supabase
+        .from("blogs")
+        .select("slug, date, created_at, status")
+        .or("status.eq.published,status.eq.scheduled,status.is.null")
+        .order("date", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        throw new Error(`Supabase blogs query failed: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) break;
+      allRows.push(...data);
+      if (data.length < pageSize) break;
+      offset += pageSize;
     }
 
-    if (!blogs || blogs.length === 0) {
-      blogs = FALLBACK_PUBLISHED_BLOGS;
+    const now = new Date();
+    const publishedBlogs = allRows.filter((b) => {
+      if (!b || typeof b.slug !== "string") return false;
+      const cleanSlug = b.slug.trim().replace(/^\/+|\/+$/g, "");
+      if (!cleanSlug || cleanSlug.includes("/") || UUID_REGEX.test(cleanSlug)) return false;
+
+      const status = String(b.status || "published").toLowerCase().trim();
+      if (status === "scheduled") {
+        const postDate = b.date ? new Date(b.date) : null;
+        if (!postDate || isNaN(postDate.getTime()) || postDate > now) return false;
+      } else if (status !== "published") {
+        return false;
+      }
+
+      return true;
+    });
+
+    const baseUrl = resolveCanonicalOrigin();
+    const urlEntries = new Map<string, { loc: string; lastmod: string | null }>();
+
+    for (const staticPath of STATIC_PUBLIC_PATHS) {
+      const loc = `${baseUrl}${staticPath}`;
+      urlEntries.set(loc, { loc, lastmod: null });
     }
 
-    const baseUrl = (process.env.SITE_URL && !process.env.SITE_URL.includes("netlify.app"))
-      ? process.env.SITE_URL.replace(/\/$/, '')
-      : "https://mwabonje.co.ke";
-    
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}/</loc>
-  </url>
-  <url>
-    <loc>${baseUrl}/about</loc>
-  </url>
-  <url>
-    <loc>${baseUrl}/faq</loc>
-  </url>
-  <url>
-    <loc>${baseUrl}/blog</loc>
-  </url>`;
+    for (const blog of publishedBlogs) {
+      const cleanSlug = blog.slug.trim().replace(/^\/+|\/+$/g, "");
+      const loc = `${baseUrl}/blog/${encodeURIComponent(cleanSlug)}`;
+      const lastmod = formatW3CDate(blog.date) || formatW3CDate(blog.created_at);
+      if (!urlEntries.has(loc)) {
+        urlEntries.set(loc, { loc, lastmod });
+      }
+    }
 
-    for (const blog of blogs) {
-      const lastmod = formatW3CDate(blog.date);
-      xml += `
-  <url>
-    <loc>${baseUrl}/blog/${blog.slug}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}
-  </url>`;
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+    for (const entry of urlEntries.values()) {
+      xml += `\n  <url>\n    <loc>${escapeXml(entry.loc)}</loc>`;
+      if (entry.lastmod) {
+        xml += `\n    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`;
+      }
+      xml += `\n  </url>`;
     }
 
     xml += `\n</urlset>\n`;
@@ -91,13 +121,13 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/xml",
+        "Content-Type": "application/xml; charset=UTF-8",
         "Cache-Control": "public, max-age=3600",
       },
       body: xml,
     };
   } catch (err) {
-    console.error(err);
+    console.error("Sitemap generation error:", err);
     return { statusCode: 500, body: "Internal Server Error" };
   }
 };

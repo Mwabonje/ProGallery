@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+            navigateFallbackDenylist: [/^\/api\//, /^\/\.netlify\//, /\/sitemap\.xml$/, /\/robots\.txt$/, /\.xml$/],
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/images\.mwabonje\.com\/.*/i,
