@@ -137,7 +137,7 @@ async function generateSitemap() {
     }
   }
 
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
   for (const entry of urlEntries.values()) {
     sitemap += `\n  <url>\n    <loc>${escapeXml(entry.loc)}</loc>`;
