@@ -38,6 +38,7 @@ import {
   formatCurrency,
   getTimeRemaining,
   getOptimizedImageUrl,
+  isVideoMediaUrl,
   rewriteUrlToR2,
   getCleanGalleryTitle,
   getCleanGalleryDescription,
@@ -47,9 +48,17 @@ import {
 } from "../utils/formatters";
 import { isRealPortfolioUrl, getThemedLookbookImages } from "../utils/portfolioImages";
 import { getApiUrl } from "../utils/api";
+import {
+  LIGHTBOX_IMAGE_QUALITY,
+  LIGHTBOX_IMAGE_SIZES,
+  LIGHTBOX_IMAGE_WIDTHS,
+  preloadResponsiveImage,
+} from "../utils/imagePreloader";
 
 import { Helmet } from "react-helmet-async";
 import { PublicHeader } from "../components/PublicHeader";
+import { ProgressiveImage } from "../components/ProgressiveImage";
+import { GalleryLightbox } from "../components/GalleryLightbox";
 // @ts-ignore
 import JSZip from "jszip";
 // @ts-ignore
@@ -176,9 +185,6 @@ export const ClientGallery: React.FC = () => {
   const [projectTitle, setProjectTitle] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
 
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-
   // Download states
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -203,9 +209,6 @@ export const ClientGallery: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const singleAbortControllerRef = useRef<AbortController | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastWheelTime = useRef<number>(0);
-  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const accumulatedDelta = useRef<number>(0);
 
   const activeLoadIdRef = useRef<number>(0);
 
@@ -1700,118 +1703,6 @@ export const ClientGallery: React.FC = () => {
     });
   };
 
-  const handlePrevLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
-    if (e && "stopPropagation" in e) e.stopPropagation();
-    if (!lightboxFile) return;
-    const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
-    if (index !== -1) {
-      let prevIndex = index - 1;
-      while (prevIndex >= 0) {
-        if (!isPortfolio && isBalanceLocked(displayedFiles[prevIndex].id)) {
-          prevIndex--;
-        } else {
-          break;
-        }
-      }
-      if (prevIndex >= 0) {
-        setLightboxFileWithTracking(displayedFiles[prevIndex]);
-      } else {
-        // wrap around
-        let lastUnlocked = displayedFiles.length - 1;
-        while (lastUnlocked >= 0 && !isPortfolio && isBalanceLocked(displayedFiles[lastUnlocked].id)) {
-          lastUnlocked--;
-        }
-        if (lastUnlocked >= 0) {
-           setLightboxFileWithTracking(displayedFiles[lastUnlocked]);
-        }
-      }
-    }
-  };
-
-  const handleNextLightbox = (e?: React.MouseEvent | KeyboardEvent) => {
-    if (e && "stopPropagation" in e) e.stopPropagation();
-    if (!lightboxFile) return;
-    const index = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
-    if (index !== -1) {
-      let nextIndex = index + 1;
-      while (nextIndex < displayedFiles.length) {
-        if (!isPortfolio && isBalanceLocked(displayedFiles[nextIndex].id)) {
-          nextIndex++;
-        } else {
-          break;
-        }
-      }
-      if (nextIndex < displayedFiles.length) {
-        setLightboxFileWithTracking(displayedFiles[nextIndex]);
-      } else {
-        // wrap around
-        let firstUnlocked = 0;
-        while (firstUnlocked < displayedFiles.length && !isPortfolio && isBalanceLocked(displayedFiles[firstUnlocked].id)) {
-          firstUnlocked++;
-        }
-        if (firstUnlocked < displayedFiles.length) {
-          setLightboxFileWithTracking(displayedFiles[firstUnlocked]);
-        }
-      }
-    }
-  };
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchEndX.current = null;
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    if (isLeftSwipe) {
-      handleNextLightbox();
-    }
-    if (isRightSwipe) {
-      handlePrevLightbox();
-    }
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    // Prevent native scrolling so it doesn't fight with our image transition and scrollIntoView
-    // Check if the event is cancelable before preventing default (React synthetic events might not need this, but good practice)
-    // Wait, e.preventDefault() in React WheelEvent is allowed if it's not a passive listener. 
-    // Just in case, if it throws a warning, it's fine, but let's prevent the default scroll.
-    e.preventDefault();
-
-    // Determine the primary scrolling direction (horizontal vs vertical)
-    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    
-    // Smooth scrolling for trackpads: Accumulate delta instead of time delay
-    accumulatedDelta.current += delta;
-
-    // Threshold determines how much scrolling is required to change an image
-    // A threshold of ~50-100 feels smooth on Mac trackpads
-    const threshold = 60;
-
-    if (accumulatedDelta.current > threshold) {
-      handleNextLightbox();
-      accumulatedDelta.current = 0;
-    } else if (accumulatedDelta.current < -threshold) {
-      handlePrevLightbox();
-      accumulatedDelta.current = 0;
-    }
-
-    // Reset accumulated delta if the user stops scrolling for a short time
-    if (wheelTimeoutRef.current) {
-      clearTimeout(wheelTimeoutRef.current);
-    }
-    wheelTimeoutRef.current = setTimeout(() => {
-      accumulatedDelta.current = 0;
-    }, 150);
-  };
-
   const handleLongPressStart = () => {
     longPressTimerRef.current = setTimeout(() => {
       if (!isPortfolio) {
@@ -1826,55 +1717,6 @@ export const ClientGallery: React.FC = () => {
       longPressTimerRef.current = null;
     }
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!lightboxFile) return;
-
-      // Do not handle keyboard events if the user is typing in an input or textarea
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement).isContentEditable
-      ) {
-        return;
-      }
-
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        handlePrevLightbox(e);
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        handleNextLightbox(e);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setLightboxFile(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxFile, displayedFiles]);
-
-  // Scroll active thumbnail into view
-  useEffect(() => {
-    if (lightboxFile) {
-      const thumb = document.getElementById(`thumbnail-${lightboxFile.id}`);
-      if (thumb) {
-        thumb.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }
-      // Prevent body scroll when lightbox is open
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [lightboxFile]);
 
   if (loading)
     return (
@@ -2042,10 +1884,6 @@ export const ClientGallery: React.FC = () => {
     const locationLabel = matchedPlace ? matchedPlace[1] : "KENYAN COAST";
     return `${rawCat} / ${locationLabel}`;
   })();
-
-  const currentLightboxIndex = lightboxFile
-    ? displayedFiles.findIndex((f) => f.id === lightboxFile.id)
-    : -1;
 
   return (
     <div
@@ -2500,7 +2338,7 @@ export const ClientGallery: React.FC = () => {
                 const coverUrl = coverTarget ? getDisplayUrl(coverTarget) : fallbackCoverUrl;
                 if (!coverUrl) return null;
                 const isVideo = coverTarget 
-                  ? (coverTarget.file_type === "video" || Boolean(coverTarget.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)))
+                  ? isVideoMediaUrl(coverTarget.file_url, coverTarget.file_type)
                   : false;
                 return (
                   <div className="w-full">
@@ -2521,9 +2359,6 @@ export const ClientGallery: React.FC = () => {
                         coverTarget ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300" : ""
                       }`}
                     >
-                      {!heroLoaded && (
-                        <div className="absolute inset-0 bg-[#EFEBE4] dark:bg-slate-900" />
-                      )}
                       {isVideo && coverTarget ? (
                         <video
                           src={`${rewriteUrlToR2(coverTarget.file_url)}#t=0.001`}
@@ -2537,31 +2372,16 @@ export const ClientGallery: React.FC = () => {
                           playsInline
                         />
                       ) : (
-                        <img
-                          key={coverUrl}
-                          ref={(el) => {
-                            if (el && el.complete && el.naturalWidth > 0 && !heroLoaded) {
-                              setHeroLoaded(true);
-                            }
-                          }}
-                          onLoad={() => setHeroLoaded(true)}
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            const rawFallback = rewriteUrlToR2(coverUrl);
-                            if (rawFallback && target.src !== rawFallback) {
-                              target.src = rawFallback;
-                            } else {
-                              setHeroLoaded(true);
-                            }
-                          }}
-                          src={getOptimizedImageUrl(coverUrl, 2560, undefined, 88)}
+                        <ProgressiveImage
+                          src={coverUrl}
                           alt={displayGalleryTitle || "Cover Image"}
-                          className={`w-full h-full object-cover transition-opacity duration-700 ease-out motion-reduce:transition-none ${
-                            heroLoaded ? "opacity-100" : "opacity-0"
-                          }`}
-                          loading="eager"
-                          // @ts-ignore
-                          fetchPriority="high"
+                          widths={[640, 1024, 1536, 2048]}
+                          sizes="100vw"
+                          quality={88}
+                          priority="hero"
+                          containerClassName="relative w-full h-full overflow-hidden bg-[#EFEBE4] dark:bg-slate-900"
+                          className="w-full h-full object-cover"
+                          onLoadComplete={() => setHeroLoaded(true)}
                         />
                       )}
                     </div>
@@ -2605,7 +2425,7 @@ export const ClientGallery: React.FC = () => {
               {subGalleries.length > 0 && !activeSubGallery && (
                 <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mb-12 sm:mb-16">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-5 lg:gap-6">
-                    {subGalleries.map((sub) => {
+                    {subGalleries.map((sub, subIdx) => {
                       const subTitle = getCleanGalleryTitle(sub);
                       const subCover = sub.coverUrl;
                       return (
@@ -2616,10 +2436,16 @@ export const ClientGallery: React.FC = () => {
                         >
                           <div className="relative aspect-[3/4] bg-[#EFEBE4] dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
                             {subCover ? (
-                              <img
-                                src={getOptimizedImageUrl(subCover, 900, 1200, 85)}
+                              <ProgressiveImage
+                                src={subCover}
                                 alt={subTitle}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-none"
+                                widths={[320, 480, 720, 960]}
+                                aspectRatio={4 / 3}
+                                sizes="(max-width: 767px) 48vw, (max-width: 1280px) 32vw, 400px"
+                                quality={82}
+                                priority={subIdx < 3 ? "above-fold" : "lazy"}
+                                containerClassName="relative w-full h-full overflow-hidden bg-[#EFEBE4] dark:bg-slate-900"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-none motion-reduce:transform-none"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-300">
@@ -2648,58 +2474,53 @@ export const ClientGallery: React.FC = () => {
                 <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-5 lg:gap-6 animate-in fade-in duration-500">
                     {displayedFiles.slice(1).map((file, idx) => {
-                      const isVideo =
-                        file.file_type === "video" || Boolean(file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i));
+                      const isVideo = isVideoMediaUrl(file.file_url, file.file_type);
+                      const prefetchTileLightbox = () => {
+                        if (!isVideo) {
+                          preloadResponsiveImage({
+                            url: getDisplayUrl(file, true),
+                            widths: LIGHTBOX_IMAGE_WIDTHS,
+                            sizes: LIGHTBOX_IMAGE_SIZES,
+                            quality: LIGHTBOX_IMAGE_QUALITY,
+                          });
+                        }
+                      };
                       return (
                         <button
                           key={file.id}
                           type="button"
                           onClick={() => setLightboxFileWithTracking(file)}
+                          onMouseEnter={prefetchTileLightbox}
+                          onFocus={prefetchTileLightbox}
                           aria-label={`Open ${displayGalleryTitle || "gallery"} ${isVideo ? "video" : "photograph"} ${idx + 2} in full screen`}
                           className="group relative w-full aspect-[3/4] bg-[#EFEBE4] dark:bg-slate-900 overflow-hidden rounded-none cursor-pointer block text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5] dark:focus-visible:ring-offset-[#0b0f17]"
                         >
-                          <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-[#E6E0D6]/70 dark:bg-slate-800/60 animate-pulse" />
                           {isVideo ? (
                             <div className="relative w-full h-full">
                               <video
                                 src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                                onLoadedData={() => {
-                                  const skeleton = document.getElementById(`skeleton-${file.id}`);
-                                  if (skeleton) skeleton.style.display = 'none';
-                                }}
                                 className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] motion-reduce:transform-none"
                                 muted
                                 loop
                                 playsInline
                                 autoPlay
+                                preload="metadata"
                               />
                               <div className="absolute top-2.5 right-2.5 bg-black/45 backdrop-blur-sm p-1.5 rounded-full">
                                 <FileVideo className="w-3.5 h-3.5 text-white" />
                               </div>
                             </div>
                           ) : (
-                            <img
-                              onLoad={() => {
-                                const skeleton = document.getElementById(`skeleton-${file.id}`);
-                                if (skeleton) skeleton.style.display = 'none';
-                              }}
-                              onError={(e) => {
-                                const target = e.currentTarget;
-                                const rawFallback = rewriteUrlToR2(getDisplayUrl(file));
-                                if (rawFallback && target.src !== rawFallback) {
-                                  target.src = rawFallback;
-                                } else {
-                                  const skeleton = document.getElementById(`skeleton-${file.id}`);
-                                  if (skeleton) skeleton.style.display = 'none';
-                                }
-                              }}
-                              src={getOptimizedImageUrl(getDisplayUrl(file), 900, 1200, 82)}
+                            <ProgressiveImage
+                              src={getDisplayUrl(file)}
                               alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
+                              widths={[320, 480, 720, 960]}
+                              aspectRatio={4 / 3}
+                              sizes="(max-width: 767px) 48vw, (max-width: 1280px) 32vw, 400px"
+                              quality={80}
+                              priority={idx < 3 ? "above-fold" : "lazy"}
+                              containerClassName="relative w-full h-full overflow-hidden bg-[#EFEBE4] dark:bg-slate-900"
                               className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] motion-reduce:transform-none"
-                              loading={idx < 6 ? "eager" : "lazy"}
-                              decoding="async"
-                              // @ts-ignore
-                              fetchPriority={idx < 3 ? "high" : "auto"}
                             />
                           )}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.06] transition-colors duration-300 pointer-events-none" />
@@ -3023,6 +2844,16 @@ export const ClientGallery: React.FC = () => {
                   return (
                     <div
                       key={file.id}
+                      onMouseEnter={() => {
+                        if (!isPortfolio && !isBalanceLocked(file.id) && !isVideoMediaUrl(file.file_url, file.file_type)) {
+                          preloadResponsiveImage({
+                            url: getDisplayUrl(file, true),
+                            widths: LIGHTBOX_IMAGE_WIDTHS,
+                            sizes: LIGHTBOX_IMAGE_SIZES,
+                            quality: LIGHTBOX_IMAGE_QUALITY,
+                          });
+                        }
+                      }}
                       onClick={() => {
                         if (!isPortfolio) {
                           if (isBalanceLocked(file.id)) {
@@ -3851,447 +3682,39 @@ export const ClientGallery: React.FC = () => {
 
       {/* Lightbox Modal (Editorial Portfolio + Client Delivery) */}
       {lightboxFile && !isSelectionLockedOut && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${displayGalleryTitle || "Gallery"} image viewer`}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#090d16]/95 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-200"
-          onClick={() => setLightboxFile(null)}
-        >
-          {/* Top Lightbox Header: Counter + Actions */}
-          <div className="absolute top-0 inset-x-0 px-4 sm:px-6 py-3.5 flex items-center justify-between z-50 pointer-events-none">
-            <div className="flex items-center gap-3 pointer-events-auto">
-              {currentLightboxIndex >= 0 && displayedFiles.length > 0 && (
-                <span className="text-xs font-sans font-medium tracking-[0.22em] uppercase text-white/80 tabular-nums">
-                  {currentLightboxIndex + 1} / {displayedFiles.length}
-                </span>
-              )}
-              {isPortfolio && displayGalleryTitle && (
-                <span className="hidden sm:inline font-serif text-sm tracking-[0.14em] uppercase text-white/55">
-                  {displayGalleryTitle}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 pointer-events-auto">
-              {!isPortfolio && !isSelectionMode && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (downloadingId === lightboxFile.id) {
-                      cancelSingleDownload();
-                    } else {
-                      handleDownload(lightboxFile);
-                    }
-                  }}
-                  disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
-                  className="text-white/90 hover:text-white min-h-[44px] min-w-[44px] p-2.5 bg-black/50 hover:bg-black/80 rounded-full transition-colors flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                  title="Download"
-                  aria-label="Download"
-                >
-                  {downloadingId === lightboxFile.id ? (
-                    <X className="w-5 h-5 text-red-400" />
-                  ) : isFileLocked(lightboxFile.id) ? (
-                    <Lock className="w-5 h-5 text-amber-400" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightboxFile(null);
-                }}
-                className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2.5 bg-black/40 hover:bg-black/75 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                title="Close (Esc)"
-                aria-label="Close lightbox"
-              >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="relative w-full h-full flex items-center justify-center pt-14 pb-20"
-            style={{ WebkitTouchCallout: "none", userSelect: "none" }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onWheel={handleWheel}
-            onContextMenu={(e) => {
-              if (!isPortfolio) {
-                e.preventDefault();
-                setShowScreenshotWarning(true);
-              }
-            }}
-          >
-            {(lightboxFile.is_edited || isExtraLocked(lightboxFile.id)) && !isPortfolio && (
-              <div className="absolute top-14 left-4 z-50 flex items-center gap-2 pointer-events-none">
-                {lightboxFile.is_edited && (
-                  <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg tracking-wide">
-                    EDITED
-                  </span>
-                )}
-                {isExtraLocked(lightboxFile.id) && (
-                  <span className="bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg inline-flex items-center gap-1 tracking-wide">
-                    <Lock className="w-3 h-3" />
-                    EXTRA IMAGE · PAY FOR HIGH-RES
-                  </span>
-                )}
-              </div>
-            )}
-            {displayedFiles.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrevLightbox}
-                  aria-label="Previous photograph"
-                  className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white min-h-[44px] min-w-[44px] p-2.5 sm:p-3 z-50 bg-black/40 hover:bg-black/75 rounded-full transition-all flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                >
-                  <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextLightbox}
-                  aria-label="Next photograph"
-                  className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white min-h-[44px] min-w-[44px] p-2.5 sm:p-3 z-50 bg-black/40 hover:bg-black/75 rounded-full transition-all flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                >
-                  <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
-                </button>
-              </>
-            )}
-
-            {!(lightboxFile.file_type === "video" || Boolean(lightboxFile.file_url?.match(/\.(mp4|mov|webm|ogg)$/i))) ? (
-              <div className="relative w-full h-full flex items-center justify-center px-10 sm:px-16 md:px-20">
-                <div id={`lightbox-loader-${lightboxFile.id}`} className="absolute flex items-center justify-center inset-0 pointer-events-none z-10">
-                  <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                </div>
-                <img
-                  key={lightboxFile.id}
-                  src={getOptimizedImageUrl(
-                    getDisplayUrl(lightboxFile, true),
-                    2200,
-                    undefined,
-                    88,
-                  )}
-                  onLoad={() => {
-                    const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
-                    if (loader) loader.style.display = 'none';
-                  }}
-                  alt={`${displayGalleryTitle || "Gallery"} photograph ${currentLightboxIndex >= 0 ? currentLightboxIndex + 1 : ""}`}
-                  className="max-w-full max-h-full w-auto h-auto object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300 relative z-20"
-                  style={{ WebkitTouchCallout: "none", userSelect: "none" }}
-                  onContextMenu={(e) => {
-                    if (!isPortfolio) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowScreenshotWarning(true);
-                    }
-                  }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
-                    if (loader) loader.style.display = 'none';
-
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = "true";
-                      target.src = rewriteUrlToR2(getDisplayUrl(lightboxFile, true)) || "";
-                    } else if (isPortfolio) {
-                      const idx = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
-                      const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
-                      const fallbackPhoto = lookbook[Math.max(0, idx) % lookbook.length];
-                      if (target.src !== fallbackPhoto) {
-                        target.src = fallbackPhoto;
-                      }
-                    }
-                  }}
-                />
-                {isFileLocked(lightboxFile ? lightboxFile.id : "") && !isPortfolio && <WatermarkOverlay />}
-                {!isPortfolio && (
-                  /* Protection overlay to catch right-clicks / drag-and-drops on client delivery galleries */
-                  <div
-                    className="absolute inset-0 z-10"
-                    style={{ WebkitTouchCallout: "none", userSelect: "none" }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowScreenshotWarning(true);
-                    }}
-                    onTouchStart={handleLongPressStart}
-                    onTouchEnd={handleLongPressEnd}
-                    onTouchMove={handleLongPressEnd}
-                    onMouseDown={handleLongPressStart}
-                    onMouseUp={handleLongPressEnd}
-                    onMouseLeave={handleLongPressEnd}
-                    onDragStart={(e) => e.preventDefault()}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="relative w-full h-full flex items-center justify-center px-10 sm:px-16 md:px-20">
-                <video
-                  key={lightboxFile.id}
-                  src={`${rewriteUrlToR2(lightboxFile.file_url)}#t=0.001`}
-                  className="max-w-full max-h-full object-contain pointer-events-auto shadow-2xl animate-in fade-in duration-300"
-                  controls
-                  controlsList={
-                    isFileLocked(lightboxFile ? lightboxFile.id : "") ? "nodownload nofullscreen" : ""
-                  }
-                  disablePictureInPicture={isFileLocked(lightboxFile ? lightboxFile.id : "")}
-                  autoPlay
-                  playsInline preload="metadata"
-                  onContextMenu={(e) => {
-                    if (!isPortfolio) {
-                      e.preventDefault();
-                      setShowScreenshotWarning(true);
-                    }
-                  }}
-                />
-                {isFileLocked(lightboxFile ? lightboxFile.id : "") && !isPortfolio && <WatermarkOverlay />}
-              </div>
-            )}
-          </div>
-
-          {/* Print Info in Lightbox */}
-          {(isPrintsGallery && lightboxFile.title?.trim()) ||
-          (lightboxFile.description ?? lightboxFile.caption)?.trim() ||
-          lightboxFile.print_size?.trim() ||
-          lightboxFile.material?.trim() ||
-          lightboxFile.price?.trim() ? (
-            <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-black/60 backdrop-blur-md text-white p-5 rounded-lg border border-white/10 overflow-y-auto max-h-[40vh]">
-              {lightboxFile.title?.trim() && isPrintsGallery && (
-                <h3 className="font-sans text-2xl font-medium mb-1 drop-shadow-sm">
-                  {lightboxFile.title}
-                </h3>
-              )}
-              {(lightboxFile.description ?? lightboxFile.caption)?.trim() && (
-                <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
-                  {lightboxFile.description ?? lightboxFile.caption}
-                </p>
-              )}
-              {(lightboxFile.print_size?.trim() ||
-                lightboxFile.material?.trim()) && (
-                <div className="text-xs text-slate-400 uppercase tracking-widest mt-2 flex flex-wrap items-center gap-2">
-                  {lightboxFile.print_size?.trim() && (
-                    <span>{lightboxFile.print_size}</span>
-                  )}
-                  {lightboxFile.print_size?.trim() &&
-                    lightboxFile.material?.trim() && (
-                      <span className="opacity-50">|</span>
-                    )}
-                  {lightboxFile.material?.trim() && (
-                    <span>{lightboxFile.material}</span>
-                  )}
-                </div>
-              )}
-              {lightboxFile.price?.trim() && (
-                <p className="text-lg font-bold text-slate-300 mt-2">
-                  {lightboxFile.price}
-                </p>
-              )}
-            </div>
-          ) : null}
-
-          {/* Action buttons in lightbox */}
-          <div className="absolute bottom-[90px] left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-4 w-[90%] max-w-sm">
-            {isSelectionMode ? (
-              <>
-                {selectedFileIds.has(lightboxFile.id) && (
-                  <div className="w-full bg-black/60 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 border border-white/20">
-                    <textarea
-                      value={selectionNotes[lightboxFile.id] || ""}
-                      placeholder="Add a note (e.g., Please crop this)..."
-                      onChange={(e) =>
-                        updateSelectionNoteLocal(
-                          lightboxFile.id,
-                          e.target.value,
-                        )
-                      }
-                      // Submit to DB when user finishes typing
-                      onBlur={(e) =>
-                        saveSelectionNoteDb(lightboxFile.id, e.target.value)
-                      }
-                      // Make sure typing doesn't trigger lightbox shortcuts or close lightbox
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        // Allow using arrows without navigating photos
-                      }}
-                      disabled={selectionSubmitted}
-                      className="w-full bg-transparent text-white placeholder-white/50 text-sm p-4 resize-none outline-none focus:bg-white/10 transition-colors"
-                      rows={2}
-                    />
-                  </div>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSelection(lightboxFile);
-                  }}
-                  disabled={selectionSubmitted}
-                  className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all ${
-                    selectedFileIds.has(lightboxFile.id)
-                      ? "bg-rose-500 text-white hover:bg-rose-600"
-                      : "bg-white text-slate-900 hover:bg-slate-100"
-                  }`}
-                >
-                  <Heart
-                    className={`w-5 h-5 ${selectedFileIds.has(lightboxFile.id) ? "fill-current" : ""}`}
-                  />
-                  <span>
-                    {selectedFileIds.has(lightboxFile.id)
-                      ? "Selected"
-                      : "Select Photo"}
-                  </span>
-                </button>
-              </>
-            ) : (
-              !isPortfolio && (
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLocalFavourite(lightboxFile);
-                    }}
-                    className={`p-3 rounded-full shadow-2xl flex items-center justify-center transition-all border border-white/20 ${
-                      localFavouriteIds.has(lightboxFile.id)
-                        ? "bg-rose-500 text-white hover:bg-rose-600"
-                        : "bg-white text-slate-800 hover:bg-slate-100"
-                    }`}
-                    title={localFavouriteIds.has(lightboxFile.id) ? "Remove from Favourites" : "Save to Favourites"}
-                  >
-                    <Heart className={`w-5 h-5 ${localFavouriteIds.has(lightboxFile.id) ? "fill-current" : ""}`} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (downloadingId === lightboxFile.id) {
-                        cancelSingleDownload();
-                      } else {
-                        handleDownload(lightboxFile);
-                      }
-                    }}
-                    disabled={
-                      downloadingId !== null && downloadingId !== lightboxFile.id
-                    }
-                    className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-medium transition-all border border-white/20 ${
-                      isFileLocked(lightboxFile ? lightboxFile.id : "")
-                        ? "bg-slate-100 text-slate-800"
-                        : downloadingId === lightboxFile.id
-                          ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                          : "bg-white text-slate-900 hover:bg-slate-100"
-                    }`}
-                  >
-                    {downloadingId === lightboxFile.id ? (
-                      <X className="w-5 h-5" />
-                    ) : isFileLocked(lightboxFile ? lightboxFile.id : "") ? (
-                      <Lock className="w-5 h-5" />
-                    ) : (
-                      <Download className="w-5 h-5" />
-                    )}
-                    <span>
-                      {downloadingId === lightboxFile.id
-                        ? singleDownloadStats
-                          ? singleDownloadStats.total
-                            ? `Cancel (${Math.round((singleDownloadStats.loaded / singleDownloadStats.total) * 100)}%)`
-                            : `Cancel (${(singleDownloadStats.loaded / 1024 / 1024).toFixed(1)}MB)`
-                          : "Cancel"
-                        : isFileLocked(lightboxFile ? lightboxFile.id : "")
-                          ? "Locked"
-                          : lightboxFile?.file_type === "video" || lightboxFile?.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? "Download Video" : "Download Photo"}
-                    </span>
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-
-          {/* Thumbnail slider */}
-          <div
-            className="absolute bottom-4 left-0 right-0 z-50 px-4 pointer-events-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              id="lightbox-thumbnails-container"
-              className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-              onWheel={handleWheel}
-            >
-              {displayedFiles.map((file, index) => {
-                const isThumbVideo =
-                  file.file_type === "video" || Boolean(file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i));
-                return (
-                <button
-                  key={file.id}
-                  id={`thumbnail-${file.id}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isPortfolio && isBalanceLocked(file.id)) {
-                      setShowBalanceWarningModal(true);
-                      return;
-                    }
-                    setLightboxFileWithTracking(file);
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (!isPortfolio) {
-                      setShowScreenshotWarning(true);
-                    }
-                  }}
-                  onTouchStart={handleLongPressStart}
-                  onTouchEnd={handleLongPressEnd}
-                  onTouchMove={handleLongPressEnd}
-                  onMouseDown={handleLongPressStart}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
-                  className={`relative shrink-0 snap-center rounded-none overflow-hidden transition-all duration-300 cursor-pointer ${
-                    lightboxFile.id === file.id
-                      ? "w-16 h-16 border-2 border-white opacity-100 shadow-lg"
-                      : "w-12 h-12 border border-white/20 opacity-50 hover:opacity-100"
-                  }`}
-                >
-                  {isThumbVideo ? (
-                    <video
-                      src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={getOptimizedImageUrl(
-                        getDisplayUrl(file),
-                        150,
-                        150,
-                        40,
-                      )}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        const rawFallback = rewriteUrlToR2(getDisplayUrl(file));
-                        if (!target.dataset.retried && rawFallback && target.src !== rawFallback) {
-                          target.dataset.retried = "true";
-                          target.src = rawFallback;
-                        } else if (isPortfolio) {
-                          const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
-                          const fallbackPhoto = lookbook[index % lookbook.length];
-                          if (target.src !== fallbackPhoto) {
-                            target.src = fallbackPhoto;
-                          }
-                        }
-                      }}
-                    />
-                  )}
-                </button>
-              );})}
-            </div>
-          </div>
-        </div>
+        <GalleryLightbox
+          displayedFiles={displayedFiles}
+          currentFile={lightboxFile}
+          onSelectFile={(file) => setLightboxFileWithTracking(file)}
+          onClose={() => setLightboxFile(null)}
+          galleryTitle={displayGalleryTitle}
+          galleryClientName={gallery?.client_name}
+          galleryCategory={gallery?.category}
+          isPortfolio={Boolean(isPortfolio)}
+          isPrintsGallery={Boolean(isPrintsGallery)}
+          getDisplayUrl={getDisplayUrl}
+          isBalanceLocked={isBalanceLocked}
+          isExtraLocked={isExtraLocked}
+          isFileLocked={isFileLocked}
+          isSelectionMode={Boolean(isSelectionMode)}
+          selectionSubmitted={Boolean(selectionSubmitted)}
+          selectedFileIds={selectedFileIds}
+          selectionNotes={selectionNotes}
+          updateSelectionNoteLocal={updateSelectionNoteLocal}
+          saveSelectionNoteDb={saveSelectionNoteDb}
+          toggleSelection={toggleSelection}
+          localFavouriteIds={localFavouriteIds}
+          toggleLocalFavourite={toggleLocalFavourite}
+          downloadingId={downloadingId}
+          singleDownloadStats={singleDownloadStats}
+          handleDownload={handleDownload}
+          cancelSingleDownload={cancelSingleDownload}
+          onShowScreenshotWarning={() => setShowScreenshotWarning(true)}
+          onShowBalanceWarning={() => setShowBalanceWarningModal(true)}
+          handleLongPressStart={handleLongPressStart}
+          handleLongPressEnd={handleLongPressEnd}
+          watermarkOverlay={<WatermarkOverlay />}
+        />
       )}
     
       {/* Unlock Selection Modal */}

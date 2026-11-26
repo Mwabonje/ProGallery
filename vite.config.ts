@@ -22,6 +22,34 @@ export default defineConfig(({ mode }) => {
             navigateFallbackDenylist: [/^\/api\//, /^\/\.netlify\//, /\/sitemap\.xml$/, /\/robots\.txt$/, /\.xml$/],
             runtimeCaching: [
               {
+                urlPattern: /^https:\/\/wsrv\.nl\/.*/i,
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'optimized-webp-images',
+                  expiration: {
+                    maxEntries: 600,
+                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200]
+                  }
+                }
+              },
+              {
+                urlPattern: /^https:\/\/.*\.r2\.dev\/.*/i,
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'r2-gallery-media',
+                  expiration: {
+                    maxEntries: 500,
+                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200]
+                  }
+                }
+              },
+              {
                 urlPattern: /^https:\/\/images\.mwabonje\.com\/.*/i,
                 handler: 'CacheFirst',
                 options: {

@@ -48,9 +48,15 @@ export const rewriteUrlToR2 = (url: string) => {
   return cleanUrl;
 };
 
+export const isVideoMediaUrl = (url?: string | null, fileType?: string | null): boolean => {
+  if (fileType && fileType.toLowerCase().startsWith('video')) return true;
+  if (!url) return false;
+  return /\.(mp4|mov|webm|ogg|m4v)(\?|$)/i.test(url);
+};
+
 export const getOptimizedImageUrl = (url: string, width: number = 800, height?: number, quality: number = 70) => {
   if (!url) return '';
-  
+
   if (url.includes('images.unsplash.com')) {
     const base = url.split('?')[0];
     return `${base}?auto=format&fit=crop&w=${width}${height ? `&h=${height}` : ''}&q=${quality}`;
@@ -59,19 +65,58 @@ export const getOptimizedImageUrl = (url: string, width: number = 800, height?: 
   // HOTFIX for Supabase Egress: automatically rewrite old supabase.co URLs to use R2 proxy on the fly!
   try {
     const cleanUrl = rewriteUrlToR2(url);
-    
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      return cleanUrl;
+    }
+
     const encodedUrl = encodeURIComponent(cleanUrl);
     // Tell wsrv.nl to cache aggressively for 1 month
     let wsrvUrl = `https://wsrv.nl/?url=${encodedUrl}&w=${width}&q=${quality}&output=webp&maxage=31d`;
-    
+
     if (height) {
       wsrvUrl += `&h=${height}&fit=cover`;
     }
-    
+
     return wsrvUrl;
-  } catch (e) {
+  } catch {
     return url;
   }
+};
+
+/**
+ * Generates an ultra-lightweight (~1-2 KB) blurred WebP preview URL via wsrv.nl
+ * for smooth progressive image loading without layout shift.
+ */
+export const getLowResPreviewUrl = (url: string, aspectRatio?: number): string => {
+  if (!url) return '';
+  const previewWidth = 48;
+  const previewHeight = aspectRatio ? Math.max(1, Math.round(previewWidth * aspectRatio)) : undefined;
+  return getOptimizedImageUrl(url, previewWidth, previewHeight, 25);
+};
+
+/**
+ * Builds a responsive `srcSet` string across breakpoints using the existing
+ * wsrv.nl / Unsplash CDN pipeline so browsers download appropriately sized WebP images.
+ */
+export const getResponsiveImageSrcSet = (
+  url: string,
+  widths: number[],
+  aspectRatio?: number,
+  quality: number = 82
+): string => {
+  if (!url || !widths.length) return '';
+  const cleanUrl = rewriteUrlToR2(url);
+  if (!/^https?:\/\//i.test(cleanUrl) && !url.includes('images.unsplash.com')) {
+    return '';
+  }
+
+  const uniqueWidths = Array.from(new Set(widths.filter((w) => w > 0))).sort((a, b) => a - b);
+  return uniqueWidths
+    .map((w) => {
+      const h = aspectRatio ? Math.max(1, Math.round(w * aspectRatio)) : undefined;
+      return `${getOptimizedImageUrl(url, w, h, quality)} ${w}w`;
+    })
+    .join(', ');
 };
 
 /**

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../types';
-import { getOptimizedImageUrl, rewriteUrlToR2, getCleanGalleryTitle, getParentGalleryId } from '../utils/formatters';
+import { getOptimizedImageUrl, getResponsiveImageSrcSet, rewriteUrlToR2, getCleanGalleryTitle, getParentGalleryId } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Menu, X, ArrowUpRight, Play, MapPin, Sparkles } from 'lucide-react';
@@ -10,6 +10,7 @@ import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { formatWhatsappUrl } from '../components/AboutSettingsModal';
 import { PublicHeader } from '../components/PublicHeader';
+import { ProgressiveImage } from '../components/ProgressiveImage';
 import { LocationShowcaseHub } from '../components/LocationShowcaseHub';
 import { DestinationAvailabilityChecker } from '../components/DestinationAvailabilityChecker';
 import { DESTINATIONS } from '../data/destinations';
@@ -23,31 +24,15 @@ interface PortfolioGallery extends Gallery {
   subGalleryCount?: number;
 }
 
-const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
+const CardMedia = ({ gallery, index = 99 }: { gallery: PortfolioGallery; index?: number }) => {
   const isVideo = gallery.coverType?.startsWith('video') || (gallery.category && gallery.category.toLowerCase().includes('film'));
 
   const rawUrl = gallery.coverUrl ? rewriteUrlToR2(gallery.coverUrl) : '';
-  const optimizedUrl = rawUrl ? getOptimizedImageUrl(rawUrl, 1000, 1200, 85) : '';
-  const [currentSrc, setCurrentSrc] = useState(optimizedUrl || rawUrl);
-  const [retried, setRetried] = useState(false);
   const [hasError, setHasError] = useState(!rawUrl);
 
   useEffect(() => {
-    const raw = gallery.coverUrl ? rewriteUrlToR2(gallery.coverUrl) : '';
-    const opt = raw ? getOptimizedImageUrl(raw, 1000, 1200, 85) : '';
-    setCurrentSrc(opt || raw);
-    setRetried(false);
-    setHasError(!raw);
+    setHasError(!gallery.coverUrl);
   }, [gallery.coverUrl]);
-
-  const handleError = () => {
-    if (!retried && rawUrl && currentSrc !== rawUrl) {
-      setRetried(true);
-      setCurrentSrc(rawUrl);
-    } else {
-      setHasError(true);
-    }
-  };
 
   if (isVideo && gallery.coverUrl) {
     return (
@@ -58,6 +43,7 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
           muted 
           loop 
           playsInline 
+          preload="metadata"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
@@ -74,16 +60,19 @@ const CardMedia = ({ gallery }: { gallery: PortfolioGallery }) => {
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-900 flex items-center justify-center">
-      {currentSrc && !hasError ? (
-        <img 
-          src={currentSrc}
+      {rawUrl && !hasError ? (
+        <ProgressiveImage
+          src={rawUrl}
           alt={altText}
-          loading="lazy"
-          decoding="async"
-          width={1000}
-          height={1200}
-          onError={handleError}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          widths={[360, 560, 800, 1080]}
+          aspectRatio={5 / 4}
+          sizes="(max-width: 767px) 92vw, (max-width: 1023px) 46vw, 31vw"
+          quality={82}
+          priority={index < 3 ? 'above-fold' : 'lazy'}
+          containerClassName="relative w-full h-full overflow-hidden bg-slate-900"
+          placeholderClassName="opacity-80"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none"
+          onFinalError={() => setHasError(true)}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 text-center text-white">
@@ -551,17 +540,19 @@ const pageDesc =
       <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
         {/* Hero Background Image */}
         <img 
-          src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)} 
+          src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)}
+          srcSet={getResponsiveImageSrcSet(heroBg, [640, 1024, 1536, 2048], undefined, 85) || undefined}
+          sizes="100vw"
           alt="Mwabonje Photography — Editorial, wedding, and hospitality photography on the Kenyan coast"
           loading="eager"
-          // @ts-ignore
           fetchPriority="high"
-          decoding="async"
+          decoding="sync"
           width={1920}
           height={1080}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100 hover:scale-105"
           onError={(e) => {
             const target = e.currentTarget;
+            target.srcset = '';
             if (heroBg && target.src !== heroBg) {
               target.src = heroBg;
             } else if (target.src !== REAL_HERO_IMAGE_URL) {
@@ -664,7 +655,7 @@ const pageDesc =
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredGalleries.map((gallery) => {
+            {filteredGalleries.map((gallery, index) => {
               const displayCategory = gallery.baseCategory || 'PHOTOGRAPHY';
               const slug = generateSlug(gallery.client_name);
 
@@ -678,7 +669,7 @@ const pageDesc =
                   className="group relative block aspect-[4/5] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-100 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 scroll-mt-24"
                 >
                   {/* Card Media Image or Video */}
-                  <CardMedia gallery={gallery} />
+                  <CardMedia gallery={gallery} index={index} />
 
                   {/* Gentle Gradient Shadow on Lower Half */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none" />
