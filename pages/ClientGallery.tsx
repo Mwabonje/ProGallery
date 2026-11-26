@@ -168,6 +168,8 @@ export const ClientGallery: React.FC = () => {
     type: "success" | "info" | "download";
   } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<GalleryFile | null>(null);
+  const [heroLoaded, setHeroLoaded] = useState(false);
+  const [portfolioNavList, setPortfolioNavList] = useState<Gallery[]>([]);
   const pendingNoteSaves = useRef<Promise<void>[]>([]);
 
   // Project Info States for Portfolio Mode (Cover + Title + Description)
@@ -227,6 +229,8 @@ export const ClientGallery: React.FC = () => {
       setActiveSubFiles([]);
       setFiles([]);
       setLightboxFile(null);
+      setHeroLoaded(false);
+      setPortfolioNavList([]);
       setScrollProgress(0);
       setDownloadedImageIds([]);
       setLocalFavouriteIds(new Set());
@@ -584,6 +588,7 @@ export const ClientGallery: React.FC = () => {
   };
 
   const handleSelectSubGallery = (sub: (Gallery & { coverUrl?: string | null }) | null) => {
+    setHeroLoaded(false);
     setActiveSubGallery(sub);
     if (sub) {
       loadSubGalleryFiles(sub);
@@ -722,6 +727,24 @@ export const ClientGallery: React.FC = () => {
           .then(async ({ data: allPhotogGals }) => {
             if (isStale()) return;
             if (allPhotogGals) {
+              const topLevelPortfolio = allPhotogGals
+                .filter(
+                  g =>
+                    g.link_enabled !== false &&
+                    g.category &&
+                    g.category.trim() !== '' &&
+                    g.category.toLowerCase() !== 'delivery' &&
+                    g.category !== 'SETTINGS' &&
+                    g.category !== 'ABOUT' &&
+                    g.category !== 'FAQ' &&
+                    g.client_name !== '__FAQ__' &&
+                    g.client_name !== '__ABOUT__' &&
+                    g.client_name !== 'SITE_SETTINGS' &&
+                    !getParentGalleryId(g)
+                )
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+              setPortfolioNavList(topLevelPortfolio);
+
               const children = allPhotogGals.filter(g => getParentGalleryId(g) === galData.id);
               if (children.length > 0) {
                 const enrichedChildren = await Promise.all(
@@ -1979,9 +2002,56 @@ export const ClientGallery: React.FC = () => {
     : (projectDescription || getCleanGalleryDescription(gallery));
   const parentCollectionTitle = parentGallery ? getCleanGalleryTitle(parentGallery) : getCleanGalleryTitle(gallery);
 
+  const activeTopLevelGallery = parentGallery || gallery;
+  const activePortfolioNavIndex = activeTopLevelGallery
+    ? portfolioNavList.findIndex(g => g.id === activeTopLevelGallery.id)
+    : -1;
+  const prevPortfolioGallery =
+    activePortfolioNavIndex > 0 ? portfolioNavList[activePortfolioNavIndex - 1] : null;
+  const nextPortfolioGallery =
+    activePortfolioNavIndex >= 0 && activePortfolioNavIndex < portfolioNavList.length - 1
+      ? portfolioNavList[activePortfolioNavIndex + 1]
+      : null;
+
+  const editorialKicker = (() => {
+    const rawCat =
+      (activeSubGallery?.category || gallery?.category || "PORTFOLIO")
+        .replace(/\s*\[(swipe|grid)\]/gi, "")
+        .trim()
+        .toUpperCase() || "PORTFOLIO";
+
+    if (activeSubGallery && parentGallery) {
+      return `${rawCat} / ${getCleanGalleryTitle(parentGallery).toUpperCase()}`;
+    }
+    if (activeSubGallery) {
+      return `${rawCat} / ${getCleanGalleryTitle(gallery).toUpperCase()}`;
+    }
+
+    const haystack = `${displayGalleryTitle || ""} ${displayGalleryDescription || ""}`.toLowerCase();
+    const knownPlaces: Array<[RegExp, string]> = [
+      [/\blamu\b/, "LAMU, KENYA"],
+      [/\bwatamu\b/, "WATAMU, KENYA"],
+      [/\bmalindi\b/, "MALINDI, KENYA"],
+      [/\bkilifi\b/, "KILIFI, KENYA"],
+      [/\bdiani\b/, "DIANI, KENYA"],
+      [/\bmombasa\b/, "MOMBASA, KENYA"],
+      [/\bmida\b/, "MIDA CREEK, KENYA"],
+      [/\bnairobi\b/, "NAIROBI, KENYA"],
+    ];
+    const matchedPlace = knownPlaces.find(([re]) => re.test(haystack));
+    const locationLabel = matchedPlace ? matchedPlace[1] : "KENYAN COAST";
+    return `${rawCat} / ${locationLabel}`;
+  })();
+
+  const currentLightboxIndex = lightboxFile
+    ? displayedFiles.findIndex((f) => f.id === lightboxFile.id)
+    : -1;
+
   return (
     <div
-      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-[#FAF7F2] dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 select-none ${isSelectionMode ? "pb-24" : "pb-16"}`}
+      className={`min-h-screen ${isPortfolio ? "bg-[#FAF8F5] dark:bg-[#0b0f17]" : "bg-[#FAF7F2] dark:bg-[#0b0f17]"} text-slate-900 dark:text-slate-100 select-none ${
+        isPortfolio ? "pb-0" : isSelectionMode ? "pb-24" : "pb-16"
+      }`}
     >
       {/* Scroll Progress Bar for Client Galleries (GPU compositor transform, zero re-renders) */}
       {!isPortfolio && (
@@ -2371,7 +2441,7 @@ export const ClientGallery: React.FC = () => {
 
       {/* Portfolio vs Delivery Gallery Layout */}
       {isPortfolio ? (
-        <main className="w-full bg-[#FAF8F5] dark:bg-[#0b0f17] min-h-screen text-slate-900 dark:text-slate-100 pb-24 transition-colors">
+        <main className="w-full bg-[#FAF8F5] dark:bg-[#0b0f17] min-h-screen text-slate-900 dark:text-slate-100 pb-16 sm:pb-24 transition-colors">
           {/* Breadcrumb Bar if navigating a child gallery directly */}
           {parentGallery && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between text-xs tracking-widest uppercase border-b border-slate-200/60 dark:border-slate-800/80">
@@ -2423,27 +2493,44 @@ export const ClientGallery: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* 1. Cover Image (Full Bleed Edge-to-Edge Hero) */}
+              {/* 1. Opening Editorial Hero Image */}
               {(() => {
                 const coverTarget = displayedFiles[0];
                 const fallbackCoverUrl = subGalleries.find(s => s.coverUrl)?.coverUrl;
                 const coverUrl = coverTarget ? getDisplayUrl(coverTarget) : fallbackCoverUrl;
                 if (!coverUrl) return null;
                 const isVideo = coverTarget 
-                  ? (coverTarget.file_type === "video" || coverTarget.file_url?.match(/\.(mp4|mov|webm|ogg)$/i))
+                  ? (coverTarget.file_type === "video" || Boolean(coverTarget.file_url?.match(/\.(mp4|mov|webm|ogg)$/i)))
                   : false;
                 return (
                   <div className="w-full">
                     <div
-                      className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[82vh] bg-slate-100 dark:bg-slate-900 overflow-hidden"
+                      onClick={() => {
+                        if (coverTarget) setLightboxFileWithTracking(coverTarget);
+                      }}
+                      role={coverTarget ? "button" : undefined}
+                      tabIndex={coverTarget ? 0 : undefined}
+                      onKeyDown={(e) => {
+                        if (coverTarget && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          setLightboxFileWithTracking(coverTarget);
+                        }
+                      }}
+                      aria-label={coverTarget ? `Open ${displayGalleryTitle || "gallery"} opening photograph in full screen` : undefined}
+                      className={`relative w-full aspect-[16/10] sm:aspect-auto sm:h-[52vh] md:h-[58vh] lg:h-[62vh] min-h-[260px] max-h-[680px] bg-[#EFEBE4] dark:bg-slate-900 overflow-hidden ${
+                        coverTarget ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300" : ""
+                      }`}
                     >
-                      {coverTarget && (
-                        <div id={`skeleton-cover-${coverTarget.id}`} className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800 animate-pulse" />
+                      {!heroLoaded && (
+                        <div className="absolute inset-0 bg-[#EFEBE4] dark:bg-slate-900" />
                       )}
-                      {isVideo ? (
+                      {isVideo && coverTarget ? (
                         <video
                           src={`${rewriteUrlToR2(coverTarget.file_url)}#t=0.001`}
-                          className="w-full h-full object-cover"
+                          onLoadedData={() => setHeroLoaded(true)}
+                          className={`w-full h-full object-cover transition-opacity duration-700 ease-out motion-reduce:transition-none ${
+                            heroLoaded ? "opacity-100" : "opacity-0"
+                          }`}
                           autoPlay
                           muted
                           loop
@@ -2451,15 +2538,27 @@ export const ClientGallery: React.FC = () => {
                         />
                       ) : (
                         <img
-                          onLoad={() => {
-                            if (coverTarget) {
-                              const skeleton = document.getElementById(`skeleton-cover-${coverTarget.id}`);
-                              if (skeleton) skeleton.style.display = 'none';
+                          key={coverUrl}
+                          ref={(el) => {
+                            if (el && el.complete && el.naturalWidth > 0 && !heroLoaded) {
+                              setHeroLoaded(true);
                             }
                           }}
-                          src={getOptimizedImageUrl(coverUrl, 2560, 1440, 85)}
+                          onLoad={() => setHeroLoaded(true)}
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            const rawFallback = rewriteUrlToR2(coverUrl);
+                            if (rawFallback && target.src !== rawFallback) {
+                              target.src = rawFallback;
+                            } else {
+                              setHeroLoaded(true);
+                            }
+                          }}
+                          src={getOptimizedImageUrl(coverUrl, 2560, undefined, 88)}
                           alt={displayGalleryTitle || "Cover Image"}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-opacity duration-700 ease-out motion-reduce:transition-none ${
+                            heroLoaded ? "opacity-100" : "opacity-0"
+                          }`}
                           loading="eager"
                           // @ts-ignore
                           fetchPriority="high"
@@ -2470,14 +2569,18 @@ export const ClientGallery: React.FC = () => {
                 );
               })()}
 
-              {/* 2. Project Title and Description */}
-              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 text-center">
-                <div className="inline-block w-full">
-                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl tracking-[0.2em] font-semibold text-slate-900 dark:text-white uppercase">
-                    {displayGalleryTitle || "UNTITLED PROJECT"}
-                  </h1>
-                  {displayGalleryDescription ? (
-                    <div className="mt-4 md:mt-6 space-y-4 max-w-2xl mx-auto">
+              {/* 2. Editorial Introduction */}
+              <header className="max-w-2xl mx-auto px-5 sm:px-6 pt-12 pb-10 sm:pt-16 sm:pb-12 md:pt-20 md:pb-16 text-center">
+                <p className="text-[10.5px] sm:text-[11px] font-sans font-medium tracking-[0.26em] uppercase text-slate-500 dark:text-slate-400 mb-3.5 sm:mb-4">
+                  {editorialKicker}
+                </p>
+                <h1 className="font-serif text-3xl sm:text-4xl md:text-[46px] tracking-[0.16em] sm:tracking-[0.18em] font-medium text-slate-900 dark:text-white uppercase leading-[1.15] [text-wrap:balance]">
+                  {displayGalleryTitle || "UNTITLED PROJECT"}
+                </h1>
+                {displayGalleryDescription ? (
+                  <>
+                    <div className="w-10 h-px bg-slate-900/20 dark:bg-white/20 mx-auto my-5 sm:my-6" aria-hidden="true" />
+                    <div className="space-y-4 max-w-xl mx-auto">
                       {displayGalleryDescription
                         .replace(/\\n/g, '\n')
                         .split(/\n\s*\n/)
@@ -2487,21 +2590,21 @@ export const ClientGallery: React.FC = () => {
                           return (
                             <p
                               key={idx}
-                              className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-light leading-relaxed whitespace-pre-line"
+                              className="text-[15px] sm:text-base text-slate-600 dark:text-slate-300 font-normal leading-[1.82] tracking-[0.01em] whitespace-pre-line"
                             >
                               {trimmed}
                             </p>
                           );
                         })}
                     </div>
-                  ) : null}
-                </div>
-              </div>
+                  </>
+                ) : null}
+              </header>
 
               {/* 2.5 Sub-Galleries Showcase Grid (Rendered when viewing parent overview and child stories exist) */}
               {subGalleries.length > 0 && !activeSubGallery && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 sm:mb-16">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 md:gap-7">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mb-12 sm:mb-16">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-5 lg:gap-6">
                     {subGalleries.map((sub) => {
                       const subTitle = getCleanGalleryTitle(sub);
                       const subCover = sub.coverUrl;
@@ -2511,7 +2614,7 @@ export const ClientGallery: React.FC = () => {
                           onClick={() => handleSelectSubGallery(sub)}
                           className="group cursor-pointer flex flex-col text-center"
                         >
-                          <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
+                          <div className="relative aspect-[3/4] bg-[#EFEBE4] dark:bg-slate-900 overflow-hidden rounded-none shadow-sm group-hover:shadow-md transition-shadow">
                             {subCover ? (
                               <img
                                 src={getOptimizedImageUrl(subCover, 900, 1200, 85)}
@@ -2540,50 +2643,127 @@ export const ClientGallery: React.FC = () => {
                 </div>
               )}
 
-              {/* 3. Followed with Images in 2-Column Mobile / 3-Column Desktop Grid */}
+              {/* 3. Photography Grid (Strict 3-Column Desktop / 2-Column Mobile Grid) */}
               {displayedFiles.length > 1 && (
-                <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 animate-in fade-in duration-500">
-                    {displayedFiles.slice(1).map((file, idx) => (
-                      <div
-                        key={file.id}
-                        className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden shadow-sm rounded-none"
-                      >
-                        <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-slate-200/60 animate-pulse" />
-                        {file.file_type === "video" || file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i) ? (
-                          <div className="relative w-full h-full">
-                            <video
-                              src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
-                              className="w-full h-full object-cover"
-                              muted
-                              loop
-                              playsInline
-                              autoPlay
-                            />
-                            <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-sm p-1.5 rounded-full">
-                              <FileVideo className="w-3.5 h-3.5 text-white" />
+                <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-5 lg:gap-6 animate-in fade-in duration-500">
+                    {displayedFiles.slice(1).map((file, idx) => {
+                      const isVideo =
+                        file.file_type === "video" || Boolean(file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i));
+                      return (
+                        <button
+                          key={file.id}
+                          type="button"
+                          onClick={() => setLightboxFileWithTracking(file)}
+                          aria-label={`Open ${displayGalleryTitle || "gallery"} ${isVideo ? "video" : "photograph"} ${idx + 2} in full screen`}
+                          className="group relative w-full aspect-[3/4] bg-[#EFEBE4] dark:bg-slate-900 overflow-hidden rounded-none cursor-pointer block text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5] dark:focus-visible:ring-offset-[#0b0f17]"
+                        >
+                          <div id={`skeleton-${file.id}`} className="absolute inset-0 bg-[#E6E0D6]/70 dark:bg-slate-800/60 animate-pulse" />
+                          {isVideo ? (
+                            <div className="relative w-full h-full">
+                              <video
+                                src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
+                                onLoadedData={() => {
+                                  const skeleton = document.getElementById(`skeleton-${file.id}`);
+                                  if (skeleton) skeleton.style.display = 'none';
+                                }}
+                                className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] motion-reduce:transform-none"
+                                muted
+                                loop
+                                playsInline
+                                autoPlay
+                              />
+                              <div className="absolute top-2.5 right-2.5 bg-black/45 backdrop-blur-sm p-1.5 rounded-full">
+                                <FileVideo className="w-3.5 h-3.5 text-white" />
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <img
-                            onLoad={() => {
-                              const skeleton = document.getElementById(`skeleton-${file.id}`);
-                              if (skeleton) skeleton.style.display = 'none';
-                            }}
-                            src={getOptimizedImageUrl(getDisplayUrl(file), 800, 1067, 80)}
-                            alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
-                            className="w-full h-full object-cover"
-                            loading={idx < 6 ? "eager" : "lazy"}
-                            decoding="async"
-                            // @ts-ignore
-                            fetchPriority={idx < 3 ? "high" : "auto"}
-                          />
-                        )}
-                      </div>
-                    ))}
+                          ) : (
+                            <img
+                              onLoad={() => {
+                                const skeleton = document.getElementById(`skeleton-${file.id}`);
+                                if (skeleton) skeleton.style.display = 'none';
+                              }}
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                const rawFallback = rewriteUrlToR2(getDisplayUrl(file));
+                                if (rawFallback && target.src !== rawFallback) {
+                                  target.src = rawFallback;
+                                } else {
+                                  const skeleton = document.getElementById(`skeleton-${file.id}`);
+                                  if (skeleton) skeleton.style.display = 'none';
+                                }
+                              }}
+                              src={getOptimizedImageUrl(getDisplayUrl(file), 900, 1200, 82)}
+                              alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
+                              className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] motion-reduce:transform-none"
+                              loading={idx < 6 ? "eager" : "lazy"}
+                              decoding="async"
+                              // @ts-ignore
+                              fetchPriority={idx < 3 ? "high" : "auto"}
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.06] transition-colors duration-300 pointer-events-none" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
+
+              {/* 4. Discreet Editorial Navigation Between Galleries */}
+              <nav
+                aria-label="Gallery navigation"
+                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 sm:mt-24 pt-10 sm:pt-12 border-t border-slate-900/10 dark:border-white/10"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-8 sm:gap-4">
+                  <div className="flex justify-center sm:justify-start min-w-0">
+                    {prevPortfolioGallery ? (
+                      <Link
+                        to={`/${generateSlug(prevPortfolioGallery.client_name)}`}
+                        className="group inline-flex flex-col items-center sm:items-start gap-1.5 min-w-0 py-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300 focus-visible:ring-offset-4 focus-visible:ring-offset-[#FAF8F5] dark:focus-visible:ring-offset-[#0b0f17]"
+                      >
+                        <span className="text-[10px] font-sans font-medium tracking-[0.22em] uppercase text-slate-500 dark:text-slate-400">
+                          Previous Gallery
+                        </span>
+                        <span className="inline-flex items-center gap-2 font-serif text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors max-w-full">
+                          <ArrowLeft className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true" />
+                          <span className="truncate">{getCleanGalleryTitle(prevPortfolioGallery)}</span>
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="hidden sm:block" aria-hidden="true" />
+                    )}
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Link
+                      to="/"
+                      className="inline-flex items-center justify-center min-h-[44px] px-3 text-[11px] font-sans font-semibold tracking-[0.2em] uppercase text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border-b border-slate-900/25 dark:border-white/25 hover:border-slate-900 dark:hover:border-white pb-1 transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300 focus-visible:ring-offset-4 focus-visible:ring-offset-[#FAF8F5] dark:focus-visible:ring-offset-[#0b0f17]"
+                    >
+                      Explore All Portfolio Works
+                    </Link>
+                  </div>
+
+                  <div className="flex justify-center sm:justify-end min-w-0">
+                    {nextPortfolioGallery ? (
+                      <Link
+                        to={`/${generateSlug(nextPortfolioGallery.client_name)}`}
+                        className="group inline-flex flex-col items-center sm:items-end gap-1.5 min-w-0 py-1 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-amber-300 focus-visible:ring-offset-4 focus-visible:ring-offset-[#FAF8F5] dark:focus-visible:ring-offset-[#0b0f17]"
+                      >
+                        <span className="text-[10px] font-sans font-medium tracking-[0.22em] uppercase text-slate-500 dark:text-slate-400">
+                          Next Gallery
+                        </span>
+                        <span className="inline-flex items-center gap-2 font-serif text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors max-w-full">
+                          <span className="truncate">{getCleanGalleryTitle(nextPortfolioGallery)}</span>
+                          <ChevronRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="hidden sm:block" aria-hidden="true" />
+                    )}
+                  </div>
+                </div>
+              </nav>
             </>
           )}
         </main>
@@ -3669,50 +3849,72 @@ export const ClientGallery: React.FC = () => {
         </div>
       )}
 
-      {/* Lightbox Modal */}
-      {lightboxFile && !isPortfolio && !isSelectionLockedOut && (
+      {/* Lightbox Modal (Editorial Portfolio + Client Delivery) */}
+      {lightboxFile && !isSelectionLockedOut && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${displayGalleryTitle || "Gallery"} image viewer`}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#090d16]/95 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setLightboxFile(null)}
         >
-          <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-            {!isPortfolio && !isSelectionMode && (
+          {/* Top Lightbox Header: Counter + Actions */}
+          <div className="absolute top-0 inset-x-0 px-4 sm:px-6 py-3.5 flex items-center justify-between z-50 pointer-events-none">
+            <div className="flex items-center gap-3 pointer-events-auto">
+              {currentLightboxIndex >= 0 && displayedFiles.length > 0 && (
+                <span className="text-xs font-sans font-medium tracking-[0.22em] uppercase text-white/80 tabular-nums">
+                  {currentLightboxIndex + 1} / {displayedFiles.length}
+                </span>
+              )}
+              {isPortfolio && displayGalleryTitle && (
+                <span className="hidden sm:inline font-serif text-sm tracking-[0.14em] uppercase text-white/55">
+                  {displayGalleryTitle}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 pointer-events-auto">
+              {!isPortfolio && !isSelectionMode && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (downloadingId === lightboxFile.id) {
+                      cancelSingleDownload();
+                    } else {
+                      handleDownload(lightboxFile);
+                    }
+                  }}
+                  disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
+                  className="text-white/90 hover:text-white min-h-[44px] min-w-[44px] p-2.5 bg-black/50 hover:bg-black/80 rounded-full transition-colors flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                  title="Download"
+                  aria-label="Download"
+                >
+                  {downloadingId === lightboxFile.id ? (
+                    <X className="w-5 h-5 text-red-400" />
+                  ) : isFileLocked(lightboxFile.id) ? (
+                    <Lock className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                </button>
+              )}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (downloadingId === lightboxFile.id) {
-                    cancelSingleDownload();
-                  } else {
-                    handleDownload(lightboxFile);
-                  }
+                  setLightboxFile(null);
                 }}
-                disabled={downloadingId !== null && downloadingId !== lightboxFile.id}
-                className="text-white/90 hover:text-white p-3 md:p-2 bg-black/50 hover:bg-black/80 rounded-full transition-colors flex items-center justify-center"
-                title="Download"
+                className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2.5 bg-black/40 hover:bg-black/75 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                title="Close (Esc)"
+                aria-label="Close lightbox"
               >
-                {downloadingId === lightboxFile.id ? (
-                  <X className="w-5 h-5 text-red-400" />
-                ) : isFileLocked(lightboxFile.id) ? (
-                  <Lock className="w-5 h-5 text-amber-400" />
-                ) : (
-                  <Download className="w-5 h-5" />
-                )}
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxFile(null);
-              }}
-              className="text-white/70 hover:text-white p-3 md:p-2 bg-black/50 hover:bg-black/80 rounded-full transition-colors"
-              title="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            </div>
           </div>
 
           <div
-            className="relative w-full h-full flex items-center justify-center pb-20"
+            className="relative w-full h-full flex items-center justify-center pt-14 pb-20"
             style={{ WebkitTouchCallout: "none", userSelect: "none" }}
             onClick={(e) => e.stopPropagation()}
             onTouchStart={onTouchStart}
@@ -3720,14 +3922,14 @@ export const ClientGallery: React.FC = () => {
             onTouchEnd={onTouchEnd}
             onWheel={handleWheel}
             onContextMenu={(e) => {
-              e.preventDefault();
               if (!isPortfolio) {
+                e.preventDefault();
                 setShowScreenshotWarning(true);
               }
             }}
           >
             {(lightboxFile.is_edited || isExtraLocked(lightboxFile.id)) && !isPortfolio && (
-              <div className="absolute top-4 left-4 z-50 flex items-center gap-2 pointer-events-none">
+              <div className="absolute top-14 left-4 z-50 flex items-center gap-2 pointer-events-none">
                 {lightboxFile.is_edited && (
                   <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-lg tracking-wide">
                     EDITED
@@ -3744,44 +3946,48 @@ export const ClientGallery: React.FC = () => {
             {displayedFiles.length > 1 && (
               <>
                 <button
+                  type="button"
                   onClick={handlePrevLightbox}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 z-50 bg-black/50 hover:bg-black/80 rounded-full transition-all"
+                  aria-label="Previous photograph"
+                  className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white min-h-[44px] min-w-[44px] p-2.5 sm:p-3 z-50 bg-black/40 hover:bg-black/75 rounded-full transition-all flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 >
-                  <ChevronLeft className="w-8 h-8" />
+                  <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
                 </button>
                 <button
+                  type="button"
                   onClick={handleNextLightbox}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 z-50 bg-black/50 hover:bg-black/80 rounded-full transition-all"
+                  aria-label="Next photograph"
+                  className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white min-h-[44px] min-w-[44px] p-2.5 sm:p-3 z-50 bg-black/40 hover:bg-black/75 rounded-full transition-all flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 >
-                  <ChevronRight className="w-8 h-8" />
+                  <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
                 </button>
               </>
             )}
 
-            {lightboxFile.file_type === "image" ? (
-              <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+            {!(lightboxFile.file_type === "video" || Boolean(lightboxFile.file_url?.match(/\.(mp4|mov|webm|ogg)$/i))) ? (
+              <div className="relative w-full h-full flex items-center justify-center px-10 sm:px-16 md:px-20">
                 <div id={`lightbox-loader-${lightboxFile.id}`} className="absolute flex items-center justify-center inset-0 pointer-events-none z-10">
-                  <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                 </div>
                 <img
                   key={lightboxFile.id}
                   src={getOptimizedImageUrl(
                     getDisplayUrl(lightboxFile, true),
-                    1920,
+                    2200,
                     undefined,
-                    85,
+                    88,
                   )}
                   onLoad={() => {
                     const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
                     if (loader) loader.style.display = 'none';
                   }}
-                  alt="Gallery item preview"
-                  className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300 relative z-20"
+                  alt={`${displayGalleryTitle || "Gallery"} photograph ${currentLightboxIndex >= 0 ? currentLightboxIndex + 1 : ""}`}
+                  className="max-w-full max-h-full w-auto h-auto object-contain pointer-events-none drop-shadow-2xl animate-in fade-in duration-300 relative z-20"
                   style={{ WebkitTouchCallout: "none", userSelect: "none" }}
                   onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
                     if (!isPortfolio) {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowScreenshotWarning(true);
                     }
                   }}
@@ -3790,43 +3996,42 @@ export const ClientGallery: React.FC = () => {
                     const loader = document.getElementById(`lightbox-loader-${lightboxFile.id}`);
                     if (loader) loader.style.display = 'none';
 
-                    if (isPortfolio) {
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "true";
+                      target.src = rewriteUrlToR2(getDisplayUrl(lightboxFile, true)) || "";
+                    } else if (isPortfolio) {
                       const idx = displayedFiles.findIndex((f) => f.id === lightboxFile.id);
                       const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
                       const fallbackPhoto = lookbook[Math.max(0, idx) % lookbook.length];
                       if (target.src !== fallbackPhoto) {
                         target.src = fallbackPhoto;
                       }
-                    } else if (!target.dataset.retried) {
-                      target.dataset.retried = "true";
-                      // Fallback to original image if watermarked version fails
-                      target.src = rewriteUrlToR2(lightboxFile.file_url) || "";
                     }
                   }}
                 />
                 {isFileLocked(lightboxFile ? lightboxFile.id : "") && !isPortfolio && <WatermarkOverlay />}
-                {/* Protection overlay to catch right-clicks / drag-and-drops from extensions */}
-                <div
-                  className="absolute inset-0 z-10"
-                  style={{ WebkitTouchCallout: "none", userSelect: "none" }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!isPortfolio) {
+                {!isPortfolio && (
+                  /* Protection overlay to catch right-clicks / drag-and-drops on client delivery galleries */
+                  <div
+                    className="absolute inset-0 z-10"
+                    style={{ WebkitTouchCallout: "none", userSelect: "none" }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowScreenshotWarning(true);
-                    }
-                  }}
-                  onTouchStart={handleLongPressStart}
-                  onTouchEnd={handleLongPressEnd}
-                  onTouchMove={handleLongPressEnd}
-                  onMouseDown={handleLongPressStart}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
-                  onDragStart={(e) => e.preventDefault()}
-                />
+                    }}
+                    onTouchStart={handleLongPressStart}
+                    onTouchEnd={handleLongPressEnd}
+                    onTouchMove={handleLongPressEnd}
+                    onMouseDown={handleLongPressStart}
+                    onMouseUp={handleLongPressEnd}
+                    onMouseLeave={handleLongPressEnd}
+                    onDragStart={(e) => e.preventDefault()}
+                  />
+                )}
               </div>
             ) : (
-              <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+              <div className="relative w-full h-full flex items-center justify-center px-10 sm:px-16 md:px-20">
                 <video
                   key={lightboxFile.id}
                   src={`${rewriteUrlToR2(lightboxFile.file_url)}#t=0.001`}
@@ -3839,8 +4044,8 @@ export const ClientGallery: React.FC = () => {
                   autoPlay
                   playsInline preload="metadata"
                   onContextMenu={(e) => {
-                    e.preventDefault();
                     if (!isPortfolio) {
+                      e.preventDefault();
                       setShowScreenshotWarning(true);
                     }
                   }}
@@ -4015,7 +4220,10 @@ export const ClientGallery: React.FC = () => {
               className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               onWheel={handleWheel}
             >
-              {displayedFiles.map((file, index) => (
+              {displayedFiles.map((file, index) => {
+                const isThumbVideo =
+                  file.file_type === "video" || Boolean(file.file_url?.match(/\.(mp4|mov|webm|ogg)$/i));
+                return (
                 <button
                   key={file.id}
                   id={`thumbnail-${file.id}`}
@@ -4039,33 +4247,48 @@ export const ClientGallery: React.FC = () => {
                   onMouseDown={handleLongPressStart}
                   onMouseUp={handleLongPressEnd}
                   onMouseLeave={handleLongPressEnd}
-                  className={`relative shrink-0 snap-center rounded-none overflow-hidden transition-all duration-300 ${
+                  className={`relative shrink-0 snap-center rounded-none overflow-hidden transition-all duration-300 cursor-pointer ${
                     lightboxFile.id === file.id
                       ? "w-16 h-16 border-2 border-white opacity-100 shadow-lg"
                       : "w-12 h-12 border border-white/20 opacity-50 hover:opacity-100"
                   }`}
                 >
-                  <img
-                    src={getOptimizedImageUrl(
-                      getDisplayUrl(file),
-                      150,
-                      150,
-                      30,
-                    )}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      if (isPortfolio) {
-                        const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
-                        const fallbackPhoto = lookbook[index % lookbook.length];
-                        if (e.currentTarget.src !== fallbackPhoto) {
-                          e.currentTarget.src = fallbackPhoto;
+                  {isThumbVideo ? (
+                    <video
+                      src={`${rewriteUrlToR2(file.file_url)}#t=0.001`}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={getOptimizedImageUrl(
+                        getDisplayUrl(file),
+                        150,
+                        150,
+                        40,
+                      )}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const rawFallback = rewriteUrlToR2(getDisplayUrl(file));
+                        if (!target.dataset.retried && rawFallback && target.src !== rawFallback) {
+                          target.dataset.retried = "true";
+                          target.src = rawFallback;
+                        } else if (isPortfolio) {
+                          const lookbook = getThemedLookbookImages(gallery?.client_name, gallery?.category);
+                          const fallbackPhoto = lookbook[index % lookbook.length];
+                          if (target.src !== fallbackPhoto) {
+                            target.src = fallbackPhoto;
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                 </button>
-              ))}
+              );})}
             </div>
           </div>
         </div>
@@ -4113,7 +4336,7 @@ export const ClientGallery: React.FC = () => {
 
       {/* Portfolio Gallery Site Footer */}
       {isPortfolio && (
-        <footer className="bg-slate-950 text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 mt-16 sm:mt-24 border-t border-white/10">
+        <footer className="bg-slate-950 text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-12 border-t border-white/10">
           <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-10 pb-10 sm:pb-12 border-b border-white/10">
             <div>
               <span className="font-serif text-2xl sm:text-3xl font-bold tracking-widest text-white">
