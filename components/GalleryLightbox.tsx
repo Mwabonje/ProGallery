@@ -155,6 +155,7 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
   });
 
   const wheelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wheelCooldownUntilRef = useRef(0);
   const accumulatedDeltaRef = useRef(0);
 
   const clearTimers = useCallback(() => {
@@ -393,19 +394,30 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
     }
   };
 
-  // Trackpad / mouse wheel navigation
+  // Trackpad / mouse wheel navigation (debounced so trackpad inertia moves one slide per swipe)
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    const now = performance.now();
+
+    if (slideState || now < wheelCooldownUntilRef.current) {
+      accumulatedDeltaRef.current = 0;
+      return;
+    }
+
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     accumulatedDeltaRef.current += delta;
 
-    const threshold = 60;
+    const threshold = 50;
     if (accumulatedDeltaRef.current > threshold) {
+      wheelCooldownUntilRef.current = now + SLIDE_DURATION_MS + 100;
+      accumulatedDeltaRef.current = 0;
       triggerSlide('next');
-      accumulatedDeltaRef.current = 0;
     } else if (accumulatedDeltaRef.current < -threshold) {
-      triggerSlide('prev');
+      wheelCooldownUntilRef.current = now + SLIDE_DURATION_MS + 100;
       accumulatedDeltaRef.current = 0;
+      triggerSlide('prev');
     }
 
     if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
@@ -480,12 +492,13 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
     return (
       <div className="relative w-full h-full flex items-center justify-center px-10 sm:px-16 md:px-20">
         <ProgressiveImage
+          key={file.id}
           src={displayUrl}
           alt={`${galleryTitle || 'Gallery'} photograph ${fileIdx >= 0 ? fileIdx + 1 : ''}`}
           widths={LIGHTBOX_IMAGE_WIDTHS}
           sizes={LIGHTBOX_IMAGE_SIZES}
           quality={LIGHTBOX_IMAGE_QUALITY}
-          priority={isActiveSlide ? 'hero' : 'above-fold'}
+          priority="above-fold"
           objectFit="contain"
           fallbackSrc={portfolioFallback}
           containerClassName="relative w-full h-full flex items-center justify-center overflow-hidden"
@@ -823,7 +836,7 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
         <div
           id="lightbox-thumbnails-container"
           className="flex gap-2 overflow-x-auto pb-2 snap-x items-center justify-start max-w-4xl mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          onWheel={handleWheel}
+          onWheel={(e) => e.stopPropagation()}
         >
           {displayedFiles.map((file, index) => {
             const isThumbVideo = isVideoMediaUrl(file.file_url, file.file_type);

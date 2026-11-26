@@ -64,6 +64,9 @@ import JSZip from "jszip";
 // @ts-ignore
 import saveAs from "file-saver";
 
+const HERO_IMAGE_WIDTHS = [640, 1024, 1536, 2048];
+const GRID_PORTRAIT_WIDTHS = [320, 480, 720, 960];
+
 const WatermarkOverlay = () => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
         <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="36" fill="rgba(255,255,255,0.32)" transform="rotate(-45 150 150)" letter-spacing="6">
@@ -2375,7 +2378,7 @@ export const ClientGallery: React.FC = () => {
                         <ProgressiveImage
                           src={coverUrl}
                           alt={displayGalleryTitle || "Cover Image"}
-                          widths={[640, 1024, 1536, 2048]}
+                          widths={HERO_IMAGE_WIDTHS}
                           sizes="100vw"
                           quality={88}
                           priority="hero"
@@ -2439,7 +2442,7 @@ export const ClientGallery: React.FC = () => {
                               <ProgressiveImage
                                 src={subCover}
                                 alt={subTitle}
-                                widths={[320, 480, 720, 960]}
+                                widths={GRID_PORTRAIT_WIDTHS}
                                 aspectRatio={4 / 3}
                                 sizes="(max-width: 767px) 48vw, (max-width: 1280px) 32vw, 400px"
                                 quality={82}
@@ -2514,7 +2517,7 @@ export const ClientGallery: React.FC = () => {
                             <ProgressiveImage
                               src={getDisplayUrl(file)}
                               alt={`${displayGalleryTitle || "Gallery"} photo ${idx + 2}`}
-                              widths={[320, 480, 720, 960]}
+                              widths={GRID_PORTRAIT_WIDTHS}
                               aspectRatio={4 / 3}
                               sizes="(max-width: 767px) 48vw, (max-width: 1280px) 32vw, 400px"
                               quality={80}

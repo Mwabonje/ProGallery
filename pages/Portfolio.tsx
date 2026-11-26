@@ -24,6 +24,8 @@ interface PortfolioGallery extends Gallery {
   subGalleryCount?: number;
 }
 
+const PORTFOLIO_CARD_WIDTHS = [360, 560, 800, 1080];
+
 const CardMedia = ({ gallery, index = 99 }: { gallery: PortfolioGallery; index?: number }) => {
   const isVideo = gallery.coverType?.startsWith('video') || (gallery.category && gallery.category.toLowerCase().includes('film'));
 
@@ -64,7 +66,7 @@ const CardMedia = ({ gallery, index = 99 }: { gallery: PortfolioGallery; index?:
         <ProgressiveImage
           src={rawUrl}
           alt={altText}
-          widths={[360, 560, 800, 1080]}
+          widths={PORTFOLIO_CARD_WIDTHS}
           aspectRatio={5 / 4}
           sizes="(max-width: 767px) 92vw, (max-width: 1023px) 46vw, 31vw"
           quality={82}

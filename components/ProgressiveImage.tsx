@@ -1,11 +1,11 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   getLowResPreviewUrl,
   getOptimizedImageUrl,
   getResponsiveImageSrcSet,
   rewriteUrlToR2,
 } from '../utils/formatters';
-import { markImagePreloaded } from '../utils/imagePreloader';
+import { isImagePreloaded, markImagePreloaded } from '../utils/imagePreloader';
 
 export type ImagePriority = 'hero' | 'above-fold' | 'lazy';
 
@@ -34,10 +34,12 @@ export interface ProgressiveImageProps {
   onContextMenu?: React.MouseEventHandler<HTMLImageElement>;
 }
 
+const DEFAULT_WIDTHS = [400, 800, 1200];
+
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   src,
   alt,
-  widths = [400, 800, 1200],
+  widths = DEFAULT_WIDTHS,
   sizes,
   aspectRatio,
   quality = 82,
@@ -55,8 +57,21 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   onContextMenu,
 }) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [fallbackStage, setFallbackStage] = useState<'optimized' | 'raw' | 'custom' | 'failed'>('optimized');
+  const widthsKey = widths.join(',');
+
+  const [stageState, setStageState] = useState<{
+    forSrc: string;
+    stage: 'optimized' | 'raw' | 'custom' | 'failed';
+  }>(() => ({
+    forSrc: src,
+    stage: src ? 'optimized' : 'failed',
+  }));
+
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const [instantReveal, setInstantReveal] = useState(false);
+
+  const fallbackStage =
+    stageState.forSrc === src ? stageState.stage : src ? 'optimized' : 'failed';
 
   const rawUrl = useMemo(() => (src ? rewriteUrlToR2(src) : ''), [src]);
 
@@ -68,33 +83,17 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   const srcSet = useMemo(() => {
     if (!src) return '';
     return getResponsiveImageSrcSet(src, widths, aspectRatio, quality);
-  }, [src, widths, aspectRatio, quality]);
+  }, [src, widthsKey, aspectRatio, quality]);
 
   const primarySrc = useMemo(() => {
     if (!src) return '';
     const sorted = [...widths].filter((w) => w > 0).sort((a, b) => a - b);
     const defaultWidth = sorted[Math.max(0, sorted.length - 1)] || 800;
-    const defaultHeight = aspectRatio ? Math.max(1, Math.round(defaultWidth * aspectRatio)) : undefined;
+    const defaultHeight = aspectRatio
+      ? Math.max(1, Math.round(defaultWidth * aspectRatio))
+      : undefined;
     return getOptimizedImageUrl(src, defaultWidth, defaultHeight, quality);
-  }, [src, widths, aspectRatio, quality]);
-
-  // Reset state cleanly whenever the underlying image source changes
-  useEffect(() => {
-    setFallbackStage(src ? 'optimized' : 'failed');
-    setLoaded(false);
-  }, [src, primarySrc]);
-
-  // Skip fade/blur flash when browser already holds decoded image in memory cache
-  useLayoutEffect(() => {
-    const el = imgRef.current;
-    if (el && el.complete && el.naturalWidth > 0) {
-      setLoaded(true);
-      if (src) {
-        markImagePreloaded({ url: src, widths, sizes, aspectRatio, quality });
-      }
-      onLoadComplete?.();
-    }
-  }, [src, primarySrc, fallbackStage]);
+  }, [src, widthsKey, aspectRatio, quality]);
 
   const activeSrc =
     fallbackStage === 'optimized'
@@ -105,37 +104,83 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           ? fallbackSrc || ''
           : '';
 
-  const handleLoad = () => {
-    setLoaded(true);
-    if (src) {
-      markImagePreloaded({ url: src, widths, sizes, aspectRatio, quality });
+  const isPreloadedInCache = useMemo(
+    () =>
+      Boolean(
+        src &&
+          isImagePreloaded({
+            url: src,
+            widths,
+            sizes,
+            aspectRatio,
+            quality,
+          }),
+      ),
+    [src, widthsKey, sizes, aspectRatio, quality],
+  );
+
+  const isLoaded = Boolean(activeSrc && loadedUrl === activeSrc);
+
+  // Synchronously reveal already-cached images before paint (and never revert via a post-paint effect)
+  useLayoutEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0 && activeSrc) {
+      if (loadedUrl !== activeSrc) {
+        setInstantReveal(true);
+        setLoadedUrl(activeSrc);
+        if (src) {
+          markImagePreloaded({ url: src, widths, sizes, aspectRatio, quality });
+        }
+        onLoadComplete?.();
+      }
     }
-    onLoadComplete?.();
+  }, [activeSrc, loadedUrl, src, widthsKey, sizes, aspectRatio, quality]);
+
+  const handleLoad = () => {
+    if (activeSrc && loadedUrl !== activeSrc) {
+      setInstantReveal(false);
+      setLoadedUrl(activeSrc);
+      if (src) {
+        markImagePreloaded({ url: src, widths, sizes, aspectRatio, quality });
+      }
+      onLoadComplete?.();
+    }
   };
 
   const handleError = () => {
     if (fallbackStage === 'optimized' && rawUrl && primarySrc !== rawUrl) {
-      setFallbackStage('raw');
+      setStageState({ forSrc: src, stage: 'raw' });
       return;
     }
-    if (fallbackStage !== 'custom' && fallbackSrc && fallbackSrc !== rawUrl && fallbackSrc !== activeSrc) {
-      setFallbackStage('custom');
+    if (
+      fallbackStage !== 'custom' &&
+      fallbackSrc &&
+      fallbackSrc !== rawUrl &&
+      fallbackSrc !== activeSrc
+    ) {
+      setStageState({ forSrc: src, stage: 'custom' });
       return;
     }
-    setFallbackStage('failed');
-    setLoaded(true);
+    setStageState({ forSrc: src, stage: 'failed' });
+    setLoadedUrl(null);
     onFinalError?.();
   };
 
   const loadingAttr: 'eager' | 'lazy' = priority === 'lazy' ? 'lazy' : 'eager';
   const decodingAttr: 'sync' | 'async' = priority === 'hero' ? 'sync' : 'async';
   const fetchPriorityAttr: 'high' | 'auto' = priority === 'hero' ? 'high' : 'auto';
-  const previewFitClass = objectFit === 'contain' ? 'object-contain' : 'object-cover scale-105';
+  const previewFitClass =
+    objectFit === 'contain' ? 'object-contain' : 'object-cover scale-105';
+  const showBlurredPreview =
+    !isLoaded &&
+    !isPreloadedInCache &&
+    fallbackStage === 'optimized' &&
+    Boolean(previewUrl);
 
   return (
     <div className={containerClassName}>
-      {/* Lightweight blurred low-resolution preview while full image streams in */}
-      {!loaded && fallbackStage === 'optimized' && previewUrl && (
+      {/* Lightweight blurred low-resolution preview while uncached full image streams in */}
+      {showBlurredPreview && (
         <img
           src={previewUrl}
           alt=""
@@ -161,8 +206,12 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           onLoad={handleLoad}
           onError={handleError}
           onContextMenu={onContextMenu}
-          className={`${className} transition-opacity duration-500 ease-out motion-reduce:transition-none ${
-            loaded ? 'opacity-100' : 'opacity-0'
+          className={`${className} ${
+            instantReveal || isPreloadedInCache
+              ? 'transition-none opacity-100'
+              : `transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+                  isLoaded ? 'opacity-100' : 'opacity-0'
+                }`
           }`}
         />
       ) : (
