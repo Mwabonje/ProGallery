@@ -205,6 +205,8 @@ export const ClientGallery: React.FC = () => {
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const accumulatedDelta = useRef<number>(0);
 
+  const activeLoadIdRef = useRef<number>(0);
+
   const cancelSingleDownload = () => {
     if (singleAbortControllerRef.current) {
       singleAbortControllerRef.current.abort();
@@ -215,7 +217,34 @@ export const ClientGallery: React.FC = () => {
 
   useEffect(() => {
     if (galleryId) {
-      loadGallery();
+      window.scrollTo({ top: 0, behavior: "auto" });
+      setLoading(true);
+      setError(null);
+      setGallery(null);
+      setParentGallery(null);
+      setSubGalleries([]);
+      setActiveSubGallery(null);
+      setActiveSubFiles([]);
+      setFiles([]);
+      setLightboxFile(null);
+      setScrollProgress(0);
+      setDownloadedImageIds([]);
+      setLocalFavouriteIds(new Set());
+      setFailedFileIds(new Set());
+      setSelectedFileIds(new Set());
+      setSelectionNotes({});
+      setSelectionSubmitted(false);
+      setShowBalanceWarningModal(false);
+      setShowWelcomeModal(false);
+      setGalleryPassword(null);
+      setIsAuthenticated(false);
+      setPasswordInput("");
+      setPasswordError(false);
+      setProjectTitle("");
+      setProjectDescription("");
+
+      const requestId = ++activeLoadIdRef.current;
+      loadGallery(requestId);
       const storedDownloads = localStorage.getItem(`gallery_downloads_${galleryId}`);
       if (storedDownloads) {
         try {
@@ -598,7 +627,8 @@ export const ClientGallery: React.FC = () => {
     }
   };
 
-  const loadGallery = async () => {
+  const loadGallery = async (requestId: number = activeLoadIdRef.current) => {
+    const isStale = () => requestId !== activeLoadIdRef.current;
     try {
       if (!galleryId) return;
 
@@ -633,6 +663,8 @@ export const ClientGallery: React.FC = () => {
           galError = new Error("Gallery not found");
         }
       }
+
+      if (isStale()) return;
 
       if (galError || !galData) {
         setError("Gallery not found or accessed denied.");
@@ -674,7 +706,7 @@ export const ClientGallery: React.FC = () => {
           .eq("id", parentId)
           .maybeSingle()
           .then(({ data: pData }) => {
-            if (pData) setParentGallery(pData);
+            if (!isStale() && pData) setParentGallery(pData);
           });
       } else {
         setParentGallery(null);
@@ -688,6 +720,7 @@ export const ClientGallery: React.FC = () => {
           .eq("photographer_id", galData.photographer_id)
           .order("created_at", { ascending: true })
           .then(async ({ data: allPhotogGals }) => {
+            if (isStale()) return;
             if (allPhotogGals) {
               const children = allPhotogGals.filter(g => getParentGalleryId(g) === galData.id);
               if (children.length > 0) {
@@ -709,6 +742,7 @@ export const ClientGallery: React.FC = () => {
                     };
                   })
                 );
+                if (isStale()) return;
                 setSubGalleries(enrichedChildren);
 
                 // Auto-activate sub-gallery if subGallerySlug or ?sub= was supplied
@@ -792,15 +826,17 @@ export const ClientGallery: React.FC = () => {
         console.warn("Password status check error:", e);
       }
 
+      if (isStale()) return;
       setGalleryPassword(requiresPassword ? 'PROTECTED' : null);
 
       if (requiresPassword) {
         const savedAuth = sessionStorage.getItem(`auth_${activeGalleryId}`) || (galleryId ? sessionStorage.getItem(`auth_${galleryId}`) : null);
         if (savedAuth) {
           const verifyResult = await verifyPasswordOnServer(activeGalleryId, savedAuth);
+          if (isStale()) return;
           if (verifyResult.authorized) {
             await initAuthenticatedGallery(activeGalleryId, galData);
-            setLoading(false);
+            if (!isStale()) setLoading(false);
             return;
           }
         }
@@ -814,10 +850,14 @@ export const ClientGallery: React.FC = () => {
       // No password required: initialize authenticated session immediately
       await initAuthenticatedGallery(activeGalleryId, galData);
     } catch (err) {
-      console.error(err);
-      setError("Error loading gallery.");
+      if (!isStale()) {
+        console.error(err);
+        setError("Error loading gallery.");
+      }
     } finally {
-      setLoading(false);
+      if (!isStale()) {
+        setLoading(false);
+      }
     }
   };
 
@@ -1980,6 +2020,8 @@ export const ClientGallery: React.FC = () => {
         <PublicHeader
           activeNav={gallery?.category?.toLowerCase().includes("film") ? "films" : "portfolio"}
           scrollProgress={scrollProgress * 100}
+          isGalleryView={true}
+          currentGallerySlug={generateSlug((parentGallery || gallery)?.client_name || "")}
         />
       ) : (
         /* Editorial Client Delivery Hero Banner + Overlay Top Navigation */
