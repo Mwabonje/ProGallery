@@ -91,7 +91,20 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
         className="blog-article-prose prose prose-slate dark:prose-invert prose-base sm:prose-lg max-w-[72ch] mx-auto prose-p:my-5 prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-[#050505] dark:prose-p:text-[#faf8f5]/85 prose-headings:font-['Playfair_Display'] prose-headings:font-semibold prose-headings:tracking-[-0.02em] prose-headings:text-[#050505] dark:prose-headings:text-[#faf8f5] prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[25px] md:prose-h2:text-[29px] prose-h2:leading-[1.2] prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-[20px] prose-h3:leading-[1.3] prose-a:text-[#0f172b] dark:prose-a:text-[#faf8f5] hover:prose-a:text-[#050505] prose-img:my-8 prose-img:max-h-[520px] prose-img:w-full prose-img:rounded-xl prose-img:object-cover prose-blockquote:my-8 prose-blockquote:border-l-[3px] prose-blockquote:border-[#0f172b] prose-blockquote:bg-[#0f172b]/[0.04] dark:prose-blockquote:bg-[#faf8f5]/[0.06] prose-blockquote:pl-5 prose-blockquote:py-3 prose-blockquote:font-editorial prose-blockquote:text-[21px] prose-blockquote:italic prose-blockquote:leading-[1.4] prose-blockquote:text-[#050505] dark:prose-blockquote:text-[#faf8f5] prose-ul:my-5 prose-ol:my-5 prose-li:my-2 prose-hr:my-10 prose-hr:border-[#0f172b]/15 dark:prose-hr:border-[#faf8f5]/15 text-[#050505] dark:text-[#faf8f5]/85 transition-colors"
         dangerouslySetInnerHTML={{
           __html: DOMPurify.sanitize(content, {
-            ADD_TAGS: ['figure', 'figcaption'],
+            ADD_TAGS: [
+              'figure',
+              'figcaption',
+              'table',
+              'thead',
+              'tbody',
+              'tfoot',
+              'tr',
+              'th',
+              'td',
+              'colgroup',
+              'col',
+              'caption',
+            ],
             ADD_ATTR: [
               'loading',
               'data-editorial-grid',
@@ -100,6 +113,9 @@ export const BlogContentWithPinterest: React.FC<BlogContentWithPinterestProps> =
               'data-caption',
               'target',
               'rel',
+              'colspan',
+              'rowspan',
+              'colwidth',
             ],
           }),
         }}

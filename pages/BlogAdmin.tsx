@@ -1381,7 +1381,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                   )}
                 </div>
                 <div
-                  className="prose prose-stone prose-lg max-w-none pt-4 border-t border-[#E6DFC6]"
+                  className="blog-article-prose prose prose-stone prose-lg max-w-none pt-4 border-t border-[#E6DFC6]"
                   dangerouslySetInnerHTML={{ __html: editingPost.content || '<p>No content yet.</p>' }}
                 />
               </div>

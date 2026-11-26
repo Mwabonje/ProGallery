@@ -9,18 +9,24 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
+import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table';
 import { Extension } from '@tiptap/core';
-import { Fragment } from '@tiptap/pm/model';
+import { DOMParser as ProseMirrorDOMParser, Fragment } from '@tiptap/pm/model';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { 
   Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, 
   List, ListOrdered, Quote, Image as ImageIcon, AlignLeft, AlignCenter, 
   AlignRight, AlignJustify, Undo, Redo, Type, Link as LinkIcon, Highlighter, RemoveFormatting,
-  Sparkles, LayoutGrid
+  Sparkles, LayoutGrid, Table as TableIcon, Trash2
 } from 'lucide-react';
 import { EditorialGridNode } from './EditorialGridNode';
 import { EditorialGridModal } from './EditorialGridModal';
 import { EditorialGridData } from '../utils/editorialGrid';
+import {
+  convertPlainTextWithTablesToHTML,
+  hasConvertibleTextTable,
+  normalizePastedTableHTML,
+} from '../utils/tablePaste';
 import { toast } from 'sonner';
 
 interface RichTextEditorProps {
@@ -706,7 +712,7 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
 
       <div className="w-px h-5 bg-[#E6DFC6] mx-1 self-center" />
 
-      {/* Media & Magazine Layout */}
+      {/* Media, Table & Magazine Layout */}
       <button
         type="button"
         onClick={addImage}
@@ -714,6 +720,19 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
         title="Insert Image"
       >
         <ImageIcon className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        className={`px-2 py-1 rounded-md border font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs ${
+          editor.isActive('table')
+            ? 'bg-[#3B2E28] text-white border-[#3B2E28]'
+            : 'bg-white hover:bg-[#FAF8F5] text-[#3B2E28] border-[#E6DFC6]'
+        }`}
+        title="Insert Table (or paste a table directly)"
+      >
+        <TableIcon className={`w-3.5 h-3.5 ${editor.isActive('table') ? 'text-white' : 'text-[#B58B5C]'}`} />
+        <span className="hidden sm:inline">Table</span>
       </button>
       <button
         type="button"
@@ -734,6 +753,116 @@ const MenuBar = ({ editor, onOpenGridModal }: { editor: any; onOpenGridModal: ()
         title="Clear Formatting"
       >
         <RemoveFormatting className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
+const TableContextBar = ({ editor }: { editor: any }) => {
+  if (!editor || !editor.isActive('table')) {
+    return null;
+  }
+
+  const btnClass =
+    'px-2 py-1 rounded-md text-[11px] font-medium bg-white hover:bg-[#EFEAE1] text-[#3B2E28] border border-[#E6DFC6] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E6DFC6] bg-[#F5EFE4] text-xs">
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5C524C] mr-1">
+        <TableIcon className="w-3.5 h-3.5 text-[#B58B5C]" />
+        Table:
+      </span>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().addRowBefore().run()}
+        className={btnClass}
+        title="Add row above"
+      >
+        + Row Above
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().addRowAfter().run()}
+        className={btnClass}
+        title="Add row below"
+      >
+        + Row Below
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().deleteRow().run()}
+        className={btnClass}
+        title="Delete current row"
+      >
+        - Row
+      </button>
+
+      <div className="w-px h-4 bg-[#D8CEBE] mx-0.5" />
+
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().addColumnBefore().run()}
+        className={btnClass}
+        title="Add column left"
+      >
+        + Col Left
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().addColumnAfter().run()}
+        className={btnClass}
+        title="Add column right"
+      >
+        + Col Right
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().deleteColumn().run()}
+        className={btnClass}
+        title="Delete current column"
+      >
+        - Col
+      </button>
+
+      <div className="w-px h-4 bg-[#D8CEBE] mx-0.5" />
+
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+        className={btnClass}
+        title="Toggle header row"
+      >
+        Header Row
+      </button>
+      {editor.can().mergeCells() && (
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().mergeCells().run()}
+          className={btnClass}
+          title="Merge selected cells"
+        >
+          Merge
+        </button>
+      )}
+      {editor.can().splitCell() && (
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().splitCell().run()}
+          className={btnClass}
+          title="Split cell"
+        >
+          Split
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().deleteTable().run()}
+        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors cursor-pointer"
+        title="Delete entire table"
+      >
+        <Trash2 className="w-3 h-3" />
+        <span>Delete Table</span>
       </button>
     </div>
   );
@@ -847,6 +976,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      Table.configure({
+        resizable: true,
+        renderWrapper: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content,
     editorProps: {
@@ -854,13 +990,41 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         class: 'prose prose-slate prose-lg md:prose-xl mx-auto prose-headings:font-serif prose-headings:font-bold prose-a:text-slate-900 hover:prose-a:text-slate-600 prose-img:rounded-sm focus:outline-none min-h-[300px] p-4 w-full max-w-full',
       },
       transformPastedHTML(html) {
-        return html
+        const cleaned = html
           .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
           .replace(/<!--[\s\S]*?-->/gi, '')
           .replace(/<\/?o:p[^>]*>/gi, '')
           .replace(/<\/?xml[^>]*>/gi, '')
           .replace(/class="[^"]*"/gi, '')
           .replace(/id="[^"]*"/gi, '');
+        return normalizePastedTableHTML(cleaned);
+      },
+      handlePaste(view, event) {
+        const clipboard = event.clipboardData;
+        if (!clipboard) return false;
+
+        const html = clipboard.getData('text/html') || '';
+        const text = clipboard.getData('text/plain') || '';
+
+        // If clipboard already contains an HTML <table>, let TipTap parse it natively via transformPastedHTML
+        if (/<table\b/i.test(html)) {
+          return false;
+        }
+
+        // Handle plain-text / Markdown / TSV / space-aligned tables when no rich HTML formatting is present
+        const hasRichHtmlFormatting = /<(h[1-6]|ul|ol|li|blockquote|a|img|strong|b|em|i)\b/i.test(html);
+        if (!hasRichHtmlFormatting && text && hasConvertibleTextTable(text)) {
+          const convertedHtml = convertPlainTextWithTablesToHTML(text);
+          if (convertedHtml && /<table\b/i.test(convertedHtml)) {
+            const container = document.createElement('div');
+            container.innerHTML = convertedHtml;
+            const slice = ProseMirrorDOMParser.fromSchema(view.state.schema).parseSlice(container);
+            view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
+            return true;
+          }
+        }
+
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -977,6 +1141,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
   return (
     <div className="border border-[#E6DFC6] rounded-xl bg-white overflow-hidden flex flex-col focus-within:border-[#B58B5C] transition-shadow shadow-xs">
       <MenuBar editor={editor} onOpenGridModal={handleOpenGridModal} />
+      <TableContextBar editor={editor} />
       <div className="flex-1 overflow-y-auto max-h-[600px] relative">
         {editor && (
           <BubbleMenu 
