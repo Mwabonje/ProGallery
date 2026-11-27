@@ -93,14 +93,7 @@ export default defineConfig(({ mode }) => {
               }
             ]
           },
-          manifest: {
-            name: 'Mwabonje Galleries',
-            short_name: 'Mwabonje',
-            description: 'Mwabonje - East African photographer specializing in hospitality, portraits, and documentary visual storytelling.',
-            theme_color: '#0f1423',
-            background_color: '#ffffff',
-            display: 'standalone'
-          }
+          manifest: false
         })
       ],
       build: {

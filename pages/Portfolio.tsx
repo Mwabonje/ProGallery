@@ -539,7 +539,7 @@ const pageDesc =
       />
 
       {/* Hero Section */}
-      <section className="relative min-h-[82vh] sm:min-h-[86vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
+      <section className="relative min-h-[84svh] sm:min-h-[86vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
         {/* Hero Background Image */}
         <img 
           src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)}
@@ -551,7 +551,7 @@ const pageDesc =
           decoding="sync"
           width={1920}
           height={1080}
-          className="absolute inset-0 w-full h-full object-cover animate-hero-zoom"
+          className="absolute inset-0 w-full h-full object-cover object-[50%_36%] sm:object-center animate-hero-zoom"
           onError={(e) => {
             const target = e.currentTarget;
             target.srcset = '';
@@ -564,32 +564,32 @@ const pageDesc =
         />
         {/* Balanced Light-Preserving Vignette Overlay for Text Legibility */}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-slate-950/28 to-slate-950/65 pointer-events-none"
+          className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-slate-950/36 to-slate-950/70 sm:from-slate-950/35 sm:via-slate-950/28 sm:to-slate-950/65 pointer-events-none"
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.44)_0%,rgba(2,6,23,0.18)_55%,rgba(2,6,23,0.30)_100%)] pointer-events-none"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.40)_0%,rgba(2,6,23,0.20)_58%,rgba(2,6,23,0.32)_100%)] sm:bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.44)_0%,rgba(2,6,23,0.18)_55%,rgba(2,6,23,0.30)_100%)] pointer-events-none"
           aria-hidden="true"
         />
         
-        <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-10 py-16 sm:py-20 md:py-24 text-center flex flex-col items-center">
-          <p className="text-[11px] sm:text-xs font-sans font-medium tracking-[0.28em] uppercase text-white/90 mb-4 sm:mb-5 drop-shadow-[0_1px_8px_rgba(2,6,23,0.45)]">
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-5 sm:px-10 py-14 min-[390px]:py-16 sm:py-20 md:py-24 text-center flex flex-col items-center">
+          <p className="text-[10px] min-[390px]:text-[11px] sm:text-xs font-sans font-medium tracking-[0.22em] sm:tracking-[0.28em] uppercase text-white/90 mb-4 min-[390px]:mb-5 drop-shadow-[0_1px_8px_rgba(2,6,23,0.45)]">
             {settings.heroLocation}
           </p>
 
-          <h1 className="font-serif text-[2.35rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal tracking-[-0.015em] text-white mb-5 sm:mb-6 leading-[1.08] max-w-[54rem] [text-wrap:balance] drop-shadow-[0_2px_18px_rgba(2,6,23,0.4)]">
+          <h1 className="font-serif text-[2.3rem] min-[390px]:text-[2.6rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal tracking-[-0.015em] text-white mb-5 min-[390px]:mb-6 leading-[1.16] sm:leading-[1.08] max-w-[20.5rem] min-[390px]:max-w-[23rem] sm:max-w-[54rem] [text-wrap:balance] drop-shadow-[0_2px_18px_rgba(2,6,23,0.4)]">
             {renderHeroTitle(settings.heroTitle)}
           </h1>
 
-          <p className="font-sans text-sm sm:text-base md:text-[1.0625rem] text-white/90 max-w-xl sm:max-w-2xl font-light leading-[1.65] mb-8 sm:mb-10 drop-shadow-[0_1px_12px_rgba(2,6,23,0.4)]">
+          <p className="font-sans text-[15px] sm:text-base md:text-[1.0625rem] text-white/90 max-w-[21rem] min-[390px]:max-w-[23.5rem] sm:max-w-2xl font-light leading-[1.68] sm:leading-[1.65] mb-8 min-[390px]:mb-9 sm:mb-10 drop-shadow-[0_1px_12px_rgba(2,6,23,0.4)]">
             {settings.heroSubtitle}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-5">
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
             <button 
               type="button"
               onClick={() => document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth' })}
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#FAF8F5] hover:bg-white text-slate-950 text-xs font-semibold tracking-[0.14em] uppercase transition-all duration-200 shadow-[0_8px_24px_rgba(2,6,23,0.28)] active:scale-[0.98] cursor-pointer group whitespace-nowrap shrink-0"
+              className="w-full max-w-[18.5rem] sm:w-auto sm:max-w-none inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 rounded-full bg-[#FAF8F5] hover:bg-white text-slate-950 text-xs font-semibold tracking-[0.13em] sm:tracking-[0.14em] uppercase transition-all duration-200 shadow-[0_8px_24px_rgba(2,6,23,0.28)] active:scale-[0.98] cursor-pointer group whitespace-nowrap shrink-0"
             >
               <span>Check Dates &amp; Availability</span>
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
@@ -597,7 +597,7 @@ const pageDesc =
             <button 
               type="button"
               onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/35 bg-slate-950/20 hover:bg-white/15 hover:border-white/60 backdrop-blur-sm text-xs uppercase tracking-[0.16em] font-semibold text-white/95 hover:text-white transition-all duration-200 cursor-pointer group whitespace-nowrap shrink-0"
+              className="w-full max-w-[18.5rem] sm:w-auto sm:max-w-none inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/35 bg-slate-950/20 hover:bg-white/15 hover:border-white/60 backdrop-blur-sm text-xs uppercase tracking-[0.15em] sm:tracking-[0.16em] font-semibold text-white/95 hover:text-white transition-all duration-200 cursor-pointer group whitespace-nowrap shrink-0"
             >
               <span>Explore Works</span>
               <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-y-0.5" aria-hidden="true" />
