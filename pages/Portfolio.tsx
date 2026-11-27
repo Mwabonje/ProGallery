@@ -5,7 +5,7 @@ import { Gallery, DEFAULT_SERVICES_SECTION, ServicesSectionConfig } from '../typ
 import { getOptimizedImageUrl, getResponsiveImageSrcSet, rewriteUrlToR2, getCleanGalleryTitle, getParentGalleryId } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { Helmet } from 'react-helmet-async';
-import { ChevronDown, Menu, X, ArrowUpRight, Play, MapPin, Sparkles } from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowUpRight, ArrowRight, Play, MapPin } from 'lucide-react';
 import { REAL_HERO_IMAGE_URL } from '../utils/portfolioImages';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { formatWhatsappUrl } from '../components/AboutSettingsModal';
@@ -539,7 +539,7 @@ const pageDesc =
       />
 
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
+      <section className="relative min-h-[82vh] sm:min-h-[86vh] md:min-h-[90vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden">
         {/* Hero Background Image */}
         <img 
           src={getOptimizedImageUrl(heroBg, 1920, 1080, 85)}
@@ -551,7 +551,7 @@ const pageDesc =
           decoding="sync"
           width={1920}
           height={1080}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100 hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover animate-hero-zoom"
           onError={(e) => {
             const target = e.currentTarget;
             target.srcset = '';
@@ -562,37 +562,45 @@ const pageDesc =
             }
           }}
         />
-        {/* Dark Vignette Overlay for Text Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-950/60 to-slate-950/80 pointer-events-none" />
+        {/* Balanced Light-Preserving Vignette Overlay for Text Legibility */}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-slate-950/28 to-slate-950/65 pointer-events-none"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.44)_0%,rgba(2,6,23,0.18)_55%,rgba(2,6,23,0.30)_100%)] pointer-events-none"
+          aria-hidden="true"
+        />
         
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] md:text-xs tracking-widest uppercase font-semibold text-white/90 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{settings.heroLocation}</span>
-          </div>
+        <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-10 py-16 sm:py-20 md:py-24 text-center flex flex-col items-center">
+          <p className="text-[11px] sm:text-xs font-sans font-medium tracking-[0.28em] uppercase text-white/90 mb-4 sm:mb-5 drop-shadow-[0_1px_8px_rgba(2,6,23,0.45)]">
+            {settings.heroLocation}
+          </p>
 
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-normal tracking-tight text-white mb-6 leading-[1.1] max-w-3xl">
+          <h1 className="font-serif text-[2.35rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal tracking-[-0.015em] text-white mb-5 sm:mb-6 leading-[1.08] max-w-[54rem] [text-wrap:balance] drop-shadow-[0_2px_18px_rgba(2,6,23,0.4)]">
             {renderHeroTitle(settings.heroTitle)}
           </h1>
 
-          <p className="font-sans text-sm md:text-lg text-slate-200/90 max-w-2xl font-light leading-relaxed mb-10">
+          <p className="font-sans text-sm sm:text-base md:text-[1.0625rem] text-white/90 max-w-xl sm:max-w-2xl font-light leading-[1.65] mb-8 sm:mb-10 drop-shadow-[0_1px_12px_rgba(2,6,23,0.4)]">
             {settings.heroSubtitle}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-5">
             <button 
-              onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-white/80 hover:text-white transition-colors cursor-pointer group px-4 py-2"
+              type="button"
+              onClick={() => document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#FAF8F5] hover:bg-white text-slate-950 text-xs font-semibold tracking-[0.14em] uppercase transition-all duration-200 shadow-[0_8px_24px_rgba(2,6,23,0.28)] active:scale-[0.98] cursor-pointer group whitespace-nowrap shrink-0"
             >
-              <span>Explore Works</span>
-              <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-1" />
+              <span>Check Dates &amp; Availability</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
             </button>
             <button 
-              onClick={() => document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth' })}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white text-white hover:text-slate-950 backdrop-blur-md border border-white/25 text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm cursor-pointer group"
+              type="button"
+              onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/35 bg-slate-950/20 hover:bg-white/15 hover:border-white/60 backdrop-blur-sm text-xs uppercase tracking-[0.16em] font-semibold text-white/95 hover:text-white transition-all duration-200 cursor-pointer group whitespace-nowrap shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-300 group-hover:text-emerald-700 transition-colors" />
-              <span>Check Dates &amp; Availability</span>
+              <span>Explore Works</span>
+              <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-y-0.5" aria-hidden="true" />
             </button>
           </div>
         </div>
