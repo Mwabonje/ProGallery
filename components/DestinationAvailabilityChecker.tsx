@@ -135,7 +135,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
         </header>
 
         {/* Editorial Steps Flow */}
-        <div className="px-5 sm:px-9 md:px-12 py-7 sm:py-9 space-y-8 sm:space-y-9">
+        <div className="px-4 sm:px-9 md:px-12 py-7 sm:py-9 space-y-8 sm:space-y-9">
           {/* Step 1: Destination Selection */}
           <section aria-labelledby="availability-step-destination" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2.5 border-b border-slate-900/[0.08] dark:border-white/[0.08]">
@@ -493,7 +493,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
           {/* Step 4: Personalised Availability Summary & Direct Enquiry Actions */}
           <section
             aria-label="Enquiry summary and studio contact"
-            className="rounded-xl bg-[#E7DFD0]/90 dark:bg-[#151c28] border border-slate-900/12 dark:border-white/10 p-6 sm:p-7"
+            className="rounded-xl bg-[#E7DFD0]/90 dark:bg-[#151c28] border border-slate-900/12 dark:border-white/10 p-4 sm:p-7"
           >
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 lg:gap-8">
               <div className="space-y-4 flex-1 min-w-0">
@@ -538,15 +538,15 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
                 </p>
               </div>
 
-              <div className="flex flex-col items-stretch sm:items-start lg:items-end gap-2.5 shrink-0">
-                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex flex-col items-stretch sm:items-start lg:items-end gap-2.5 w-full lg:w-auto lg:shrink-0 min-w-0">
+                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto min-w-0">
                   {/* WhatsApp Action Button */}
                   <button
                     type="button"
                     onClick={handleOpenWhatsApp}
-                    className="px-7 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 text-xs font-semibold tracking-[0.14em] uppercase flex items-center justify-center gap-2.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0"
+                    className="w-full sm:w-auto max-w-full px-3.5 sm:px-7 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 text-[10.5px] sm:text-xs font-semibold tracking-[0.05em] sm:tracking-[0.14em] uppercase flex items-center justify-center gap-1.5 sm:gap-2.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer sm:whitespace-nowrap min-w-0"
                   >
-                    <svg className="w-4 h-4 fill-current text-emerald-400 dark:text-emerald-700 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current text-emerald-400 dark:text-emerald-700 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12.004 2C6.479 2 2 6.48 2 12.006c0 1.91.536 3.738 1.554 5.32L2.09 22.09l4.908-1.42a9.96 9.96 0 0 0 5.006 1.34h.004c5.524 0 10.003-4.48 10.003-10.005 0-2.67-1.04-5.18-2.93-7.07A9.94 9.94 0 0 0 12.004 2zm5.834 14.195c-.244.686-1.417 1.31-1.954 1.393-.505.077-1.157.11-1.874-.12-.435-.14-1-.326-1.72-.638-3.04-1.315-5.02-4.385-5.17-4.587-.15-.202-1.233-1.64-1.233-3.13 0-1.49.78-2.222 1.057-2.525.277-.302.604-.378.805-.378.2 0 .403.002.58.01.187.01.436-.07.68.518.252.605.856 2.094.932 2.245.076.15.126.328.025.53-.1.201-.151.327-.302.503-.15.177-.318.394-.453.529-.151.15-.31.313-.134.614.177.302.784 1.293 1.68 2.092 1.152 1.026 2.122 1.344 2.424 1.494.302.152.479.127.655-.075.177-.202.756-.88 1.008-1.182.251-.303.503-.252.855-.126.353.126 2.238 1.057 2.62 1.25.38.192.633.287.726.448.093.161.093.931-.151 1.617z" />
                     </svg>
                     <span>Check Dates on WhatsApp</span>
@@ -557,7 +557,7 @@ export const DestinationAvailabilityChecker: React.FC<DestinationAvailabilityChe
                   <button
                     type="button"
                     onClick={handleOpenEmail}
-                    className="px-6 py-3.5 rounded-full bg-[#FAF7F1] hover:bg-[#EFE9DC] dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold tracking-[0.14em] uppercase border border-slate-900/15 dark:border-white/15 transition-colors cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+                    className="w-full sm:w-auto max-w-full px-5 sm:px-6 py-3.5 rounded-full bg-[#FAF7F1] hover:bg-[#EFE9DC] dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-900 dark:text-white text-[11px] sm:text-xs font-semibold tracking-[0.08em] sm:tracking-[0.14em] uppercase border border-slate-900/15 dark:border-white/15 transition-colors cursor-pointer inline-flex items-center justify-center gap-2 sm:whitespace-nowrap min-w-0"
                   >
                     <Mail className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" aria-hidden="true" />
                     <span>Send via Email</span>
